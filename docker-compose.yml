@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Local Postgres database for development and testing
+  postgres:
+    image: postgres:15-alpine
+    container_name: local-postgres-testing
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: my_local_password
+      POSTGRES_DB: online_auction_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/database.sql:/docker-entrypoint-initdb.d/01-database.sql
+      - ./data/category/category.insert.sql:/docker-entrypoint-initdb.d/02-category.insert.sql
+      - ./data/product/tikiAPI/product.insert.sql:/docker-entrypoint-initdb.d/03-product.insert.sql
+
+  # Local Redis cache and rate limiting service
+  redis:
+    image: redis:7-alpine
+    container_name: local-redis-testing
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Local RabbitMQ message queue with management dashboard UI
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: local-rabbitmq-testing
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:

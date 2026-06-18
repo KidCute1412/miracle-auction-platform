@@ -41,9 +41,9 @@ Dự án này sử dụng PostgreSQL thông qua dịch vụ đám mây Supabase 
 
 1. Trong Supabase dashboard, vào phần "SQL Editor".
 2. Chạy các file Jupyter Notebook hoặc SQL theo thứ tự:
-   - Chạy file `Backend/data/database.sql` để khởi tạo database.
-   - Chạy nội dung của `Backend/data/category/category.ipynb`, file này tạo nội dung `Backend/data/category/category.insert.sql` phù hợp để thêm dữ liệu categories.
-   - Chạy nội dung của `Backend/data/product/tikiAPI/product.ipynb`, file này cho phép tạo products phù hợp mỗi categories, kết quả mỗi bộ products sẽ ghi đè lên file `Backend/data/product/tikiAPI/product.insert.sql` để thêm dữ liệu products.
+   - Chạy file `data/database.sql` để khởi tạo database.
+   - Chạy nội dung của `data/category/category.ipynb`, file này tạo nội dung `data/category/category.insert.sql` phù hợp để thêm dữ liệu categories.
+   - Chạy nội dung của `data/product/tikiAPI/product.ipynb`, file này cho phép tạo products phù hợp mỗi categories, kết quả mỗi bộ products sẽ ghi đè lên file `data/product/tikiAPI/product.insert.sql` để thêm dữ liệu products.
 
 Bạn có thể copy-paste nội dung các file SQL vào SQL Editor của Supabase và chạy.
 

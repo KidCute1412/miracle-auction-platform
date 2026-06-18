@@ -520,9 +520,9 @@ $$;
 ---------------------------------- RESET TIME---------------------------
 update products set end_time = now() + interval '5 days', 
                     auction_end_email_sent = false
-where end_time < now()
+where end_time < now();
 
-delete from orders
+delete from orders;
 
 
 

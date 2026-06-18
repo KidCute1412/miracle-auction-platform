@@ -10,14 +10,19 @@
 
 -- ============================================
 
-INSERT INTO categories (name, parent_id, status, deleted, description, slug, cat_image)
-VALUES ('Nội Thất & Gia Dụng', NULL, 'active', FALSE, 'Danh mục Nội Thất & Gia Dụng', 'noi-that-gia-dung', 'https://shop-images.imgix.net/291872_2.jpg');
+-- Reset sequence and truncate
+TRUNCATE TABLE categories RESTART IDENTITY CASCADE;
 
-INSERT INTO categories (name, parent_id, status, deleted, description, slug, cat_image)
-VALUES ('Thể Thao & Du Lịch', NULL, 'active', FALSE, 'Danh mục Thể Thao & Du Lịch', 'the-thao-du-lich', 'https://shop-images.imgix.net/291300_2.jpg');
+-- Insert parent categories with explicit IDs to make child references completely deterministic
+INSERT INTO categories (id, name, parent_id, status, deleted, description, slug, cat_image) VALUES
+(1, 'Điện Tử', NULL, 'active', FALSE, 'Danh mục Điện Tử', 'dien-tu', 'https://shop-images.imgix.net/291430_2.jpg'),
+(2, 'Thời Trang', NULL, 'active', FALSE, 'Danh mục Thời Trang', 'thoi-trang', 'https://shop-images.imgix.net/291631_2.jpg'),
+(7, 'Nội Thất & Gia Dụng', NULL, 'active', FALSE, 'Danh mục Nội Thất & Gia Dụng', 'noi-that-gia-dung', 'https://shop-images.imgix.net/291872_2.jpg'),
+(8, 'Thể Thao & Du Lịch', NULL, 'active', FALSE, 'Danh mục Thể Thao & Du Lịch', 'the-thao-du-lich', 'https://shop-images.imgix.net/291300_2.jpg'),
+(9, 'Sách & Văn Phòng Phẩm', NULL, 'active', FALSE, 'Danh mục Sách & Văn Phòng Phẩm', 'sach-van-phong-pham', 'https://shop-images.imgix.net/291736_2.jpg');
 
-INSERT INTO categories (name, parent_id, status, deleted, description, slug, cat_image)
-VALUES ('Sách & Văn Phòng Phẩm', NULL, 'active', FALSE, 'Danh mục Sách & Văn Phòng Phẩm', 'sach-van-phong-pham', 'https://shop-images.imgix.net/291736_2.jpg');
+-- Adjust the sequence so that subsequent auto-generated IDs start after the max ID (9)
+SELECT setval('categories_id_seq', (SELECT MAX(id) FROM categories));
 
 
 
