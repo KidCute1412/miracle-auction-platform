@@ -42,7 +42,7 @@ export default function PreviewImage({ images, name, modalImageIndex, setModalIm
   return (
     <>
       <div className="fixed inset-0 z-[10001] flex items-center justify-center p-2 bg-black/80 backdrop-blur-sm" onClick={() => setImageModalOpen(false)}>
-        <div className="relative w-full max-w-5xl h-[90vh] flex flex-col rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="relative w-full max-w-5xl h-[90vh] flex flex-col rounded-xl shadow-2xl overflow-hidden animate__animated animate__zoomIn" onClick={e => e.stopPropagation()}>
           {/* Modal Header */}
           <div className="flex items-center justify-between p-4 bg-black/40 text-white border-b border-white/10 flex-shrink-0">
             <h3 className="text-lg font-semibold flex items-center">

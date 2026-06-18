@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { formatToVN } from "@/utils/format_time";
 import Loading from "@/components/common/Loading";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ProductDetail = {
   product_id: number;
@@ -28,6 +29,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -201,15 +203,40 @@ export default function ProductDetailPage() {
             </label>
             <div className="border border-border rounded-xl bg-muted/20 p-4 transition-colors">
               {productImages.length > 0 ? (
-                <div className="flex flex-wrap gap-4">
-                  {productImages.map((img, index) => (
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  {/* Large Main Display Image */}
+                  <div className="relative w-full md:w-80 h-80 overflow-hidden rounded-2xl border border-accent/30 bg-black/10 group shadow-gold-glow flex-shrink-0">
                     <img
-                      key={index}
-                      src={img.trim()}
-                      alt={`${product.product_name} - ${index + 1}`}
-                      className="w-32 h-32 object-cover rounded-lg shadow-xs border border-border"
+                      key={activeImageIndex}
+                      src={productImages[activeImageIndex].trim()}
+                      alt={`${product.product_name} - Main`}
+                      className="w-full h-full object-cover transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 hover:brightness-105 hover:saturate-[1.1] animate-in fade-in duration-300"
                     />
-                  ))}
+                    {/* Metallic shine reflection sweep */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-100%] group-hover:animate-[shine_1.8s_ease-in-out_infinite] pointer-events-none"></div>
+                  </div>
+
+                  {/* Thumbnails Row */}
+                  <div className="flex flex-wrap gap-3 max-h-80 overflow-y-auto pr-1">
+                    {productImages.map((img, index) => (
+                      <div
+                        key={index}
+                        onClick={() => setActiveImageIndex(index)}
+                        className={cn(
+                          "w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 cursor-pointer active:scale-95 flex-shrink-0 relative group",
+                          index === activeImageIndex
+                            ? "border-accent ring-2 ring-accent/30 scale-102"
+                            : "border-border hover:border-accent/40 opacity-70 hover:opacity-100"
+                        )}
+                      >
+                        <img
+                          src={img.trim()}
+                          alt={`${product.product_name} - Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-center py-6">

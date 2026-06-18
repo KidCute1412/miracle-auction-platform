@@ -1,16 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { NumericFormat } from "react-number-format";
-import { TrendingUp, AlertCircle, Zap, ChevronDown, X, AlertTriangle } from "lucide-react";
+import { TrendingUp, AlertCircle, Zap, ChevronDown, X, AlertTriangle, CheckCircle } from "lucide-react";
 import JustValidate from "just-validate";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 export default function PlayBidSection({ product_id, current_price, step_price, buy_now_price }: { product_id?: number; current_price?: number; step_price?: number; buy_now_price?: number }) {
   const [isSubmit, setIsSubmit] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [bidValue, setBidValue] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [successBidAmount, setSuccessBidAmount] = useState<number>(0);
   const [pendingBidData, setPendingBidData] = useState<{ product_id?: number; max_price: number } | null>(null);
+  const [isFlashing, setIsFlashing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
@@ -37,14 +41,14 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
         { rule: "required", errorMessage: "Please enter your bid price!" },
         {
           validator: (value: string) => {
-            const numericValue = value.split(".").join("").split(",").join(".");
+            const numericValue = value.replace(/,/g, "");
             return parseFloat(numericValue) >= (current_price ?? 0) + (step_price ?? 0);
           },
           errorMessage: `Bid price must be at least ${((current_price ?? 0) + (step_price ?? 0)).toLocaleString()} VND!`
         },
         {
           validator: (value: string) => {
-            const numericValue = value.split(".").join("").split(",").join(".");
+            const numericValue = value.replace(/,/g, "");
             if (!step_price) return true;
             return (parseFloat(numericValue) - (current_price ?? 0)) % step_price === 0;
           },
@@ -55,7 +59,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
     .onSuccess((event: any) => {
       event.preventDefault();
       const form = event.target;
-      const maxPriceSubmit = form.max_price.value.split(".").join("").split(",").join(".");
+      const maxPriceSubmit = form.max_price.value.replace(/,/g, "");
       
       setPendingBidData({
         product_id: product_id,
@@ -92,7 +96,8 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
 
       const data = await response.json();
       if (data.status === "success") {
-        toast.success("Bid placed successfully!");
+        setSuccessBidAmount(pendingBidData.max_price);
+        setShowSuccessOverlay(true);
         setBidValue("");
       } else {
         toast.error(`Failed to place bid`);
@@ -120,6 +125,8 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
   const handleSuggestionClick = (price: number) => {
     setBidValue(price.toLocaleString("en-US"));
     setShowSuggestions(false);
+    setIsFlashing(true);
+    setTimeout(() => setIsFlashing(false), 800);
   };
 
   return (
@@ -172,22 +179,25 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
                   placeholder="e.g. 1,500,000"
                   onFocus={() => setShowSuggestions(true)}
                   autoComplete="off"
-                  className="w-full px-4 py-3 bg-card border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 text-lg pr-24 text-foreground"
+                  className={cn(
+                    "w-full px-4 py-3 bg-card border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-300 text-lg pr-24 text-foreground",
+                    isFlashing && "ring-2 ring-accent border-accent shadow-[0_0_15px_oklch(0.78_0.09_75_/_25%)]"
+                  )}
                 />
-                <div className="absolute right-12 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                <div className="absolute right-12 top-0 bottom-0 flex items-center text-muted-foreground font-medium pointer-events-none">
                   VND
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowSuggestions(!showSuggestions)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-0 bottom-0 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${showSuggestions ? "rotate-180" : ""}`} />
                 </button>
                 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && (
-                  <div className="absolute z-10 w-full mt-2 bg-card border border-border rounded-lg shadow-lg max-h-80 overflow-y-auto scrollbar-hide">
+                  <div className="absolute z-10 w-full mt-2 bg-card border border-border rounded-lg shadow-lg max-h-80 overflow-y-auto scrollbar-hide animate-in fade-in slide-in-from-top-2 duration-250 ease-out">
                     <div className="p-2">
                       <div className="text-xs font-semibold text-muted-foreground px-3 py-2">
                         Suggested Bid Prices
@@ -220,11 +230,17 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
               </div>
               <button
                 type="submit"
-                className={`bg-accent hover:bg-accent/90 cursor-pointer text-white py-3 px-8 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap
-                  ${isSubmit ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={cn(
+                  "group relative overflow-hidden bg-accent cursor-pointer text-white py-3 px-8 rounded-lg font-semibold shadow-md",
+                  "hover:bg-accent/90 hover:shadow-[0_0_20px_oklch(0.78_0.09_75_/_40%)] hover:scale-[1.02]",
+                  "active:scale-95 active:shadow-sm transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap",
+                  isSubmit && "opacity-50 cursor-not-allowed pointer-events-none"
+                )}
               >
-                <Zap className="w-5 h-5" />
-                Place Bid Now
+                {/* Metallic shine reflection sweep */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-white/25 to-transparent -skew-x-12 group-hover:animate-[shine_1.5s_ease-in-out_infinite] pointer-events-none"></div>
+                <Zap className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Place Bid Now</span>
               </button>
             </div>
           </div>
@@ -247,13 +263,16 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
 
       {/* Confirmation Modal */}
       {showConfirmModal && pendingBidData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-300 ease-out relative overflow-hidden">
+            {/* Ambient luxury light background */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none"></div>
+
             {/* Modal Header */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 relative z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-500/10 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                  <AlertTriangle className="w-6 h-6 text-yellow-500 animate-bounce" />
                 </div>
                 <h3 className="text-xl font-bold text-foreground">Confirm Bid</h3>
               </div>
@@ -269,13 +288,15 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
             </div>
 
             {/* Modal Content */}
-            <div className="space-y-4 mb-6">
-              <p className="text-muted-foreground">
+            <div className="space-y-4 mb-6 relative z-10">
+              <p className="text-muted-foreground text-sm">
                 Are you sure you want to place a bid on this product?
               </p>
-              <div className="bg-muted/50 border border-border rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1">Your Bid Amount</p>
-                <p className="text-2xl font-bold text-accent">
+              <div className="bg-muted/50 border border-border rounded-lg p-4 relative overflow-hidden group">
+                {/* Micro shine sweep */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/5 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out"></div>
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Your Bid Amount</p>
+                <p className="text-3xl font-extrabold text-accent font-heading">
                   {pendingBidData.max_price.toLocaleString()} VND
                 </p>
               </div>              
@@ -306,26 +327,77 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
             </div>
 
             {/* Modal Actions */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 relative z-10">
               <button
                 onClick={() => {
                   setShowConfirmModal(false);
                   setPendingBidData(null);
                 }}
-                className="flex-1 px-4 py-2.5 border border-border text-muted-foreground rounded-lg hover:bg-muted/50 transition-colors font-medium cursor-pointer"
+                className="flex-1 px-4 py-3 border border-border text-muted-foreground rounded-lg hover:bg-muted/50 hover:text-foreground transition-all font-semibold cursor-pointer active:scale-95 text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmBid}
                 disabled={isSubmit}
-                className={`flex-1 px-4 py-2.5 cursor-pointer bg-accent hover:bg-accent/90 text-white rounded-lg transition-colors font-semibold shadow-md hover:shadow-lg ${
-                  isSubmit ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={cn(
+                  "flex-1 px-4 py-3 cursor-pointer bg-accent hover:bg-accent/90 text-white rounded-lg transition-all font-semibold shadow-md hover:shadow-lg active:scale-95 active:shadow-sm flex items-center justify-center gap-2 text-sm",
+                  isSubmit && "opacity-50 cursor-not-allowed pointer-events-none"
+                )}
               >
                 {isSubmit ? "Processing..." : "Confirm Bid"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Luxury Success Overlay */}
+      {showSuccessOverlay && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-2xl flex flex-col items-center justify-center z-[999] p-6 animate-in fade-in duration-500">
+          {/* Animated background elements */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse pointer-events-none"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse pointer-events-none [animation-delay:1.5s]"></div>
+
+          <div className="max-w-md w-full bg-card/60 border border-accent/40 rounded-3xl p-8 shadow-[0_30px_60px_-15px_oklch(0.78_0.09_75_/_20%)] text-center relative overflow-hidden animate-in zoom-in-95 duration-500 ease-out">
+            {/* Spinning decorative frame */}
+            <div className="absolute inset-0 border border-dashed border-accent/20 rounded-3xl animate-[spin_60s_linear_infinite] pointer-events-none"></div>
+
+            {/* Success icon medallion */}
+            <div className="relative w-20 h-20 mx-auto mb-6 flex items-center justify-center rounded-full bg-accent/15 border border-accent/50 animate-bounce">
+              <CheckCircle className="w-10 h-10 text-accent" />
+              <div className="absolute inset-[-6px] rounded-full border border-dashed border-accent/45 animate-[spin_12s_linear_infinite]"></div>
+            </div>
+
+            {/* Content heading with gold shimmer */}
+            <h3 className="font-heading text-2xl font-extrabold text-foreground mb-3 tracking-wide animate-text-shimmer">
+              VALUED BID RECORDED
+            </h3>
+
+            <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+              Your maximum bid of <strong className="text-foreground">{successBidAmount.toLocaleString()} VND</strong> has been registered successfully on our platform.
+            </p>
+
+            {/* Inner certificate-like box */}
+            <div className="bg-background/40 border border-border rounded-xl p-4 mb-6">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-muted-foreground">Product Identification</span>
+                <span className="text-foreground font-semibold">#{product_id}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Bid Status</span>
+                <span className="text-emerald-500 font-bold uppercase tracking-wider">Active</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowSuccessOverlay(false)}
+              className="group relative w-full overflow-hidden bg-accent cursor-pointer text-white py-3 px-6 rounded-xl font-bold shadow-md hover:shadow-[0_0_20px_oklch(0.78_0.09_75_/_40%)] hover:scale-[1.02] active:scale-95 transition-all duration-300"
+            >
+              {/* Inner metallic reflection */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 group-hover:animate-[shine_1.5s_ease-in-out_infinite] pointer-events-none"></div>
+              <span className="relative z-10">CONTINUE EXPERIENCE</span>
+            </button>
           </div>
         </div>
       )}

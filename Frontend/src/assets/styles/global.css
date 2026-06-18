@@ -534,3 +534,75 @@ html {
 .animate-shine {
   animation: shine 1.5s ease-out;
 }
+
+/* Elegant heartbeat pulse animation for countdown timers under 5 minutes */
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 1.2s ease-in-out infinite;
+}
+
+/* Radar ripple animation for category card interactions */
+@keyframes radar {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.animate-radar {
+  animation: radar 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Golden liquid shimmer animation for luxury titles */
+@keyframes text-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-text-shimmer {
+  background: linear-gradient(90deg, oklch(0.78 0.09 75), oklch(0.98 0.03 70), oklch(0.60 0.08 75), oklch(0.78 0.09 75));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer 4s linear infinite;
+}
+
+/* Glass shatter animation for click feedback */
+@keyframes glass-shatter {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0.2) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+.animate-glass-shard {
+  animation: glass-shatter 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+
+

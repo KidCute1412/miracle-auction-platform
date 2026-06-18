@@ -26,7 +26,7 @@ const Footer = () => {
             </p>
             <div className="flex space-x-3 pt-2">
               <Link
-                to="https://www.github.com/NguyenThanhTien539/Online-Auction"
+                to="https://www.github.com/KidCute1412/Online-Auction"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-accent p-2.5 rounded-full transition-all duration-300"

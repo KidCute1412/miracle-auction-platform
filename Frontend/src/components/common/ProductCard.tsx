@@ -111,9 +111,9 @@ function ProductCard({
     <div
       ref={ref}
       className={cn(
-        "group relative w-80 h-112 cursor-pointer overflow-hidden rounded-2xl flex flex-col items-center shrink-0 transition-all duration-500 ease-out",
+        "group relative w-80 h-112 cursor-pointer overflow-hidden rounded-2xl flex flex-col items-center shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "bg-card/40 backdrop-blur-xl border border-border",
-        "hover:scale-[1.01] hover:shadow-gold-glow hover:border-accent/30",
+        "hover:scale-[1.015] hover:shadow-gold-glow hover:border-accent/30",
         hasIntersected ? "animate__animated animate__fadeInUp" : "opacity-0",
         data.className
       )}
@@ -184,8 +184,8 @@ function ProductCard({
           <div className="font-semibold text-muted-foreground">Ends In:</div>
           <span
             className={cn(
-              "font-medium transition-colors",
-              isUrgent ? "text-red-500 animate-pulse font-bold" : "text-chart-2"
+              "font-medium transition-colors inline-block",
+              isUrgent ? "text-red-500 animate-heartbeat font-bold" : "text-chart-2"
             )}
           >
             {timeLeft}
@@ -215,7 +215,7 @@ function ProductCard({
 
       {/* Shine Hover Effect */}
       <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none overflow-hidden">
-        <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-accent/10 to-transparent -skew-x-12 animate-shine"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-accent/10 to-transparent -skew-x-12 group-hover:animate-[shine_1.2s_ease-in-out_infinite]"></div>
       </div>
     </div>
   );
