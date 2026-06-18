@@ -13,7 +13,11 @@ try {
       password: process.env.DB_PASSWORD,
       port: Number(process.env.DB_PORT),
     },
-    pool: { min: 0, max: 10 },
+    pool: { 
+      min: 0, 
+      max: 10,
+      idleTimeoutMillis: 30000 // Close idle connections after 30 seconds to prevent leaks
+    },
   });
   console.log("Connect to database successfully!");
 } catch (error) {

@@ -71,4 +71,23 @@ httpServer.listen(port, () => {
   // Start auction end email cron job
   startAuctionEndEmailJob();
 });
-//
+
+import db from "./config/database.config.ts";
+
+// Handle process termination to close database connections cleanly
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n[SYSTEM] Received ${signal}. Starting graceful shutdown...`);
+  try {
+    await db.destroy();
+    console.log("[SYSTEM] Database connection pool closed successfully.");
+  } catch (error) {
+    console.error("[SYSTEM] Error closing database connection pool:", error);
+  } finally {
+    process.exit(0);
+  }
+};
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGHUP", () => gracefulShutdown("SIGHUP"));
+
