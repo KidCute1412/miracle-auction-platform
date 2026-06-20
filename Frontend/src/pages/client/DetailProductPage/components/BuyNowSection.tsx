@@ -231,13 +231,12 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name 
             <button
               onClick={() => {
                 setShowSuccessOverlay(false);
-                navigate("/profile");
               }}
               className="group relative w-full overflow-hidden bg-rose-600 hover:bg-rose-700 cursor-pointer text-white py-3 px-6 rounded-xl font-bold shadow-md hover:shadow-[0_0_20px_rgba(244,63,94,0.4)] hover:scale-[1.02] active:scale-95 transition-all duration-300"
             >
               {/* Inner light reflection */}
               <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 group-hover:animate-[shine_1.5s_ease-in-out_infinite] pointer-events-none"></div>
-              <span className="relative z-10">VIEW IN PROFILE</span>
+              <span className="relative z-10">SUCCESSFULLY PURCHASED!</span>
             </button>
           </div>
         </div>

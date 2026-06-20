@@ -72,8 +72,17 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, [range]);
 
-  const handleRefresh = () => {
-    fetchDashboardData(range);
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await dashboardService.syncCache();
+      setTimeout(() => {
+        fetchDashboardData(range);
+      }, 1500);
+    } catch (err) {
+      console.error("Failed to sync dashboard cache", err);
+      setIsRefreshing(false);
+    }
   };
 
   const currentChartItems = activeTab === "revenue"

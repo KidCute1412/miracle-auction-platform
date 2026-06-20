@@ -7,4 +7,9 @@ export const dashboardService = {
   getSummary: async (params?: Record<string, any>): Promise<any> => {
     return apiRequest(`/${ADMIN_PATH}/dashboard`, { params });
   },
+
+  // Trigger cache recalculation
+  syncCache: async (): Promise<any> => {
+    return apiRequest(`/${ADMIN_PATH}/dashboard/sync`, { method: "POST" });
+  },
 };

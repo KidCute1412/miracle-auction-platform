@@ -2,7 +2,7 @@ import db from "./config/database.config.ts";
 
 async function test() {
   try {
-    const range = "6m";
+
     const interval = "6 months";
     const format = "Mon";
     const dateTrunc = "month";

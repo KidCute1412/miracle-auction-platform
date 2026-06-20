@@ -64,10 +64,15 @@ io.on("connection", (socket) => {
   });
 });
 
+import { initRabbitMQ } from "./config/rabbitmq.config.ts";
+
 // Start the server
-httpServer.listen(port, () => {
+httpServer.listen(port, async () => {
   console.log(`Your website is running at port: http://localhost:${port}`);
   
+  // Initialize RabbitMQ connection
+  await initRabbitMQ();
+
   // Start auction end email cron job
   startAuctionEndEmailJob();
 });

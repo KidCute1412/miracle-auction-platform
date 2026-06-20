@@ -37,6 +37,28 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
+  # Background queue worker process
+  worker:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: local-background-worker
+    command: npm run worker
+    volumes:
+      - ./Backend:/app
+      - /app/node_modules
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=my_local_password
+      - DB_NAME=online_auction_test
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      - postgres
+      - rabbitmq
+
 volumes:
   postgres_data:
   redis_data:
