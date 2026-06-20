@@ -1,4 +1,4 @@
-import Cristiano from "@/assets/images/cristiano.jpg";
+import Cristiano from "@/assets/images/Cristiano.jpg";
 import { cn } from "@/lib/utils";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 
