@@ -35,16 +35,10 @@ export async function getProductsPageList(req: Request, res: Response) {
 // Fetch detailed product row by slug and id
 export async function getProductDetailBySlugId(req: Request, res: Response) {
   try {
-    const product_id = req.query.product_id as string;
-    const product_slug = req.query.product_slug as string;
-    if (!product_id || !product_slug) {
-      return res.status(400).json({
-        status: "error",
-        message: "product_id and product_slug are required",
-      });
-    }
+    const product_id = req.params.id as string;
+    const product_slug = req.query.slug as string | undefined;
 
-    const productDetail = await ProductsService.getProductDetailBySlugId(product_id, product_slug);
+    const productDetail = await ProductsService.getProductDetailBySlugId(product_id, product_slug ?? "");
     if (!productDetail) {
       return res.status(404).json({
         status: "error",
@@ -141,13 +135,7 @@ export async function searchProducts(req: Request, res: Response) {
 export async function getLoveStatus(req: Request, res: Response) {
   try {
     const user = (req as any).user;
-    const product_id = req.query.product_id as string;
-    if (!product_id) {
-      return res.status(400).json({
-        status: "error",
-        message: "product_id is required",
-      });
-    }
+    const product_id = req.params.id as string;
 
     const loveStatus = await ProductsService.getLoveStatus(
       user ? user.user_id : null,
@@ -174,7 +162,7 @@ export async function getLoveStatus(req: Request, res: Response) {
 export async function updateLoveStatus(req: Request, res: Response) {
   try {
     const user = (req as any).user;
-    const product_id = req.body.product_id as string;
+    const product_id = req.params.id as string;
     const love_status = req.body.love_status as boolean;
 
     await ProductsService.updateLoveStatus(user.user_id, parseInt(product_id), love_status);
@@ -193,16 +181,9 @@ export async function updateLoveStatus(req: Request, res: Response) {
 
 // Fetch QA list mapped to product
 export async function getProductQuestions(req: Request, res: Response) {
-  const product_id = req.query.product_id as string;
+  const product_id = req.params.id as string;
   const page = parseInt(req.query.page as string) || 1;
   const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
-
-  if (!product_id) {
-    return res.status(400).json({
-      status: "error",
-      message: "product_id is required",
-    });
-  }
 
   const result = await ProductsService.getProductQuestions(parseInt(product_id), page, limit);
   return res.status(200).json({
@@ -215,7 +196,7 @@ export async function getProductQuestions(req: Request, res: Response) {
 // Post a question or answer reply
 export async function postProductQuestion(req: Request, res: Response) {
   const user = (req as any).user;
-  const product_id = req.body.product_id as string;
+  const product_id = req.params.id as string;
   const content = req.body.content as string;
   const question_parent_id = req.body.question_parent_id
     ? parseInt(req.body.question_parent_id as string)
@@ -275,7 +256,7 @@ export async function getRelatedProducts(req: Request, res: Response) {
 export async function updateProductDescription(req: Request, res: Response) {
   try {
     const user = (req as any).user;
-    const product_id = req.body.product_id as number;
+    const product_id = parseInt(req.params.id) as unknown as number;
     const newDescription = req.body.description as string;
     const promise = await ProductsService.updateProductDescription(product_id, user.user_id, newDescription);
 
@@ -302,13 +283,7 @@ export async function updateProductDescription(req: Request, res: Response) {
 // Retrieve general product details for winner checkout view
 export async function getProductDetailForWinner(req: Request, res: Response) {
   try {
-    const product_id = req.query.product_id as string;
-    if (!product_id) {
-      return res.status(400).json({
-        status: "error",
-        message: "Product does not exist",
-      });
-    }
+    const product_id = req.params.id as string;
     const winner_id = (req as any).user.user_id;
     const detailResult = await ProductsService.getProductDetailForWinner(parseInt(product_id), winner_id);
 

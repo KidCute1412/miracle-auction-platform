@@ -61,7 +61,7 @@ export async function getAllCategoriesLv2(req: Request, res: Response) {
 
 // Fetch details for level 2 category by ID
 export async function getCategoryLv2ById(req: Request, res: Response) {
-  const cat2_id = req.query.cat2_id;
+  const cat2_id = req.params.id;
   const resultData = await CategoriesService.getCategoryLv2ById(Number(cat2_id));
   if (resultData === null) {
     return res.status(500).json({

@@ -12,14 +12,14 @@ export const accountService = {
     return apiRequest(`/accounts/verification`, { params });
   },
 
-  verifyRegister: async (body: { email: string; otp: string }): Promise<any> => {
+  verifyRegister: async (body: { email?: string; otp: string }): Promise<any> => {
     return apiRequest(`/accounts/registration/verification`, {
       method: "POST",
       body,
     });
   },
 
-  verifyForgotPassword: async (body: { email: string; otp: string }): Promise<any> => {
+  verifyForgotPassword: async (body: { email?: string; otp: string }): Promise<any> => {
     return apiRequest(`/accounts/password/recovery/verification`, {
       method: "PATCH",
       body,
@@ -47,7 +47,7 @@ export const accountService = {
     });
   },
 
-  verifyChangePassword: async (body: { email: string; otp: string }): Promise<any> => {
+  verifyChangePassword: async (body: { email?: string; otp: string }): Promise<any> => {
     return apiRequest(`/accounts/password/verification`, {
       method: "POST",
       body,
@@ -61,7 +61,7 @@ export const accountService = {
     });
   },
 
-  googleLogin: async (body: { idToken: string }): Promise<any> => {
+  googleLogin: async (body: { credential: string; rememberMe?: boolean }): Promise<any> => {
     return apiRequest(`/accounts/sessions/google`, {
       method: "POST",
       body,

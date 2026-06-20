@@ -37,7 +37,6 @@ function AllCategoriesPage({ level }: { level: number }) {
   const [cat1_name, setCat1_name] = useState("");
 
   const { slugid } = useParams();
-  console.log(slugid);
   let catSlug: string | undefined;
   let catId: string | undefined;
   if (slugid) {

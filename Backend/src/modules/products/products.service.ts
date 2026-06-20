@@ -58,9 +58,12 @@ export async function getProductDetailBySlugId(product_id: string, product_slug:
   if (!productName) {
     return null;
   }
-  const generatedSlug = slugify(productName);
-  if (generatedSlug !== product_slug) {
-    return null;
+  // Only validate slug if one was provided
+  if (product_slug) {
+    const generatedSlug = slugify(productName);
+    if (generatedSlug !== product_slug) {
+      return null;
+    }
   }
   return await ProductsModel.getProductById(Number(product_id));
 }

@@ -20,9 +20,8 @@ adminUserRouter.get("/:id", adminController.detail);
 adminUserRouter.patch("/:id/role", adminController.editRole);
 adminUserRouter.patch("/:id/password", adminController.resetPassword);
 
-// Admin seller registration (application) routes
+// Admin seller registration routes
 adminApplicationRouter.get("/", adminController.applications);
 adminApplicationRouter.get("/count", adminController.calTotalApplications);
 adminApplicationRouter.get("/:id", adminController.applicationDetail);
-adminApplicationRouter.patch("/:id", adminController.setStatus);
 adminApplicationRouter.patch("/:id/status", adminController.setStatus);
