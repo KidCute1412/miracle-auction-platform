@@ -16,21 +16,73 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
+import { dashboardService } from "@/services/dashboard.service";
 
 export default function DashboardPage() {
   const [time, setTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState("overview");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [range, setRange] = useState("6m");
+  const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
+
+  const rangeLabels: Record<string, string> = {
+    "7d": "Last 7 Days",
+    "30d": "Last 30 Days",
+    "3m": "Last 3 Months",
+    "6m": "Last 6 Months",
+    "1y": "Last Year",
+  };
+
+  const [metrics, setMetrics] = useState({
+    gmv: 0,
+    activeUsers: 0,
+    activeAuctions: 0,
+    pendingVerifications: 0,
+  });
+  const [chartData, setChartData] = useState<{
+    overview: Array<{ month: string; count: string | number }>;
+    revenue: Array<{ month: string; count: string | number }>;
+    bids: Array<{ month: string; count: string | number }>;
+  }>({
+    overview: [],
+    revenue: [],
+    bids: [],
+  });
+  const [activities, setActivities] = useState<any[]>([]);
+
+  const fetchDashboardData = async (selectedRange: string) => {
+    try {
+      setIsRefreshing(true);
+      const res = await dashboardService.getSummary({ range: selectedRange });
+      if (res.code === "success" && res.data) {
+        setMetrics(res.data.metrics);
+        setChartData(res.data.chartData);
+        setActivities(res.data.activities);
+      }
+    } catch (err) {
+      console.error("Failed to load dashboard data", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
+    fetchDashboardData(range);
     return () => clearInterval(timer);
-  }, []);
+  }, [range]);
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 800);
+    fetchDashboardData(range);
   };
+
+  const currentChartItems = activeTab === "revenue"
+    ? chartData.revenue
+    : activeTab === "bids"
+    ? chartData.bids
+    : chartData.overview;
+
+  const maxVal = Math.max(...currentChartItems.map(item => Number(item.count) || 0), 1);
 
   return (
     <div className="p-4 sm:p-8 space-y-8 text-foreground bg-background transition-colors duration-300 min-h-screen">
@@ -79,13 +131,12 @@ export default function DashboardPage() {
               <TrendingUp className="w-6 h-6" />
             </div>
             <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <ArrowUpRight className="w-3 h-3" /> +14.2%
+              <ArrowUpRight className="w-3 h-3" /> Live data
             </span>
           </div>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Gross Merchandise Value</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">$412,890</h3>
+          <h3 className="text-2xl sm:text-3xl font-black mt-1">${metrics.gmv.toLocaleString()}</h3>
           <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            {/* Animated progress bar indicator */}
             <div className="bg-primary h-full rounded-full w-[76%] transition-all duration-1000" />
           </div>
         </div>
@@ -98,13 +149,12 @@ export default function DashboardPage() {
               <Users className="w-6 h-6" />
             </div>
             <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <ArrowUpRight className="w-3 h-3" /> +8.6%
+              <ArrowUpRight className="w-3 h-3" /> Live data
             </span>
           </div>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Active Users</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">12,482</h3>
+          <h3 className="text-2xl sm:text-3xl font-black mt-1">{metrics.activeUsers.toLocaleString()}</h3>
           <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            {/* Animated progress bar indicator */}
             <div className="bg-purple-500 h-full rounded-full w-[64%] transition-all duration-1000" />
           </div>
         </div>
@@ -121,9 +171,8 @@ export default function DashboardPage() {
             </span>
           </div>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Active Auctions</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">1,824</h3>
+          <h3 className="text-2xl sm:text-3xl font-black mt-1">{metrics.activeAuctions.toLocaleString()}</h3>
           <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            {/* Animated progress bar indicator */}
             <div className="bg-orange-500 h-full rounded-full w-[91%] transition-all duration-1000" />
           </div>
         </div>
@@ -136,13 +185,12 @@ export default function DashboardPage() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <span className="flex items-center gap-0.5 text-xs font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-              <ArrowDownRight className="w-3 h-3" /> -2.4%
+              Action Required
             </span>
           </div>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Seller Verification Requests</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">47 Pending</h3>
+          <h3 className="text-2xl sm:text-3xl font-black mt-1">{metrics.pendingVerifications} Pending</h3>
           <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            {/* Animated progress bar indicator */}
             <div className="bg-emerald-500 h-full rounded-full w-[42%] transition-all duration-1000" />
           </div>
         </div>
@@ -158,21 +206,63 @@ export default function DashboardPage() {
                 <Activity className="text-primary w-5 h-5 animate-pulse" />
                 <h2 className="text-lg font-bold">Auction Platform Performance</h2>
               </div>
-              {/* Tab Selector */}
-              <div className="flex bg-muted p-1 rounded-lg border border-border">
-                {["overview", "revenue", "bids"].map((tab) => (
+              {/* Controls Wrapper */}
+              <div className="flex items-center gap-3">
+                {/* Custom Timeframe Selector */}
+                <div className="relative">
                   <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3 py-1 text-xs rounded-md font-semibold capitalize cursor-pointer transition-all duration-150 ${
-                      activeTab === tab
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    onClick={() => setIsTimeframeOpen(!isTimeframeOpen)}
+                    className="flex items-center gap-2 bg-card hover:bg-muted/80 text-foreground border border-border px-3 py-1.5 text-xs rounded-xl font-semibold transition-all duration-200 shadow-sm cursor-pointer"
                   >
-                    {tab}
+                    <span>{rangeLabels[range]}</span>
+                    <svg
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${isTimeframeOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </button>
-                ))}
+                  {isTimeframeOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setIsTimeframeOpen(false)} />
+                      <div className="absolute right-0 mt-2 w-40 bg-card/95 backdrop-blur-md border border-border rounded-xl shadow-xl py-1.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+                        {Object.entries(rangeLabels).map(([key, label]) => (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              setRange(key);
+                              setIsTimeframeOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                              range === key ? "text-primary bg-primary/5" : "text-muted-foreground"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Tab Selector */}
+                <div className="flex bg-muted p-1 rounded-lg border border-border">
+                  {["overview", "revenue", "bids"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3 py-1 text-xs rounded-md font-semibold capitalize cursor-pointer transition-all duration-150 ${
+                        activeTab === tab
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -182,10 +272,6 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 bg-primary rounded-full" />
                   <span>Target Achievement</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 bg-accent rounded-full" />
-                  <span>Realized Volatility</span>
                 </div>
               </div>
 
@@ -198,16 +284,24 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-end justify-between h-40 z-10">
-                {[45, 68, 52, 90, 75, 88, 62, 95, 78, 85, 70, 99].map((val, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-2 group w-full text-center">
-                    <div className="relative w-full bg-gradient-to-t from-primary/40 to-primary group-hover:from-accent/60 group-hover:to-accent rounded-t transition-all duration-500 ease-out" style={{ height: `${val}%` }}>
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] font-mono py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 shadow border border-border transition-opacity duration-200 pointer-events-none">
-                        {val}%
+                {currentChartItems.length > 0 ? (
+                  currentChartItems.map((item, idx) => {
+                    const val = Number(item.count) || 0;
+                    const percent = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                    return (
+                      <div key={idx} className="flex flex-col justify-end items-center gap-2 group w-full h-full text-center">
+                        <div className="relative w-8 sm:w-10 bg-gradient-to-t from-primary/40 to-primary group-hover:from-accent/60 group-hover:to-accent rounded-t transition-all duration-500 ease-out" style={{ height: `${percent}%` }}>
+                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] font-mono py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 shadow border border-border transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                            {activeTab === "revenue" ? `$${val.toLocaleString()}` : val}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase">{item.month}</span>
                       </div>
-                    </div>
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase">{["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][idx]}</span>
-                  </div>
-                ))}
+                    );
+                  })
+                ) : (
+                  <div className="w-full text-center py-8 text-xs text-muted-foreground">No data recorded.</div>
+                )}
               </div>
             </div>
           </div>
@@ -267,26 +361,26 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-4">
-                {[
-                  { user: "Alexander Gray", action: "placed new bid", item: "Vintage Rolex Submariner", time: "just now", value: "$14,200", color: "text-primary" },
-                  { user: "Sophia Miller", action: "completed purchase", item: "Modernist Bronze Sculpture", time: "3m ago", value: "$4,500", color: "text-emerald-500" },
-                  { user: "Marcus Vance", action: "requested seller upgrade", item: "Verify profile document", time: "12m ago", value: "Pending", color: "text-amber-500" },
-                  { user: "Eleanor Vance", action: "listed new property", item: "Rare First Edition Novel", time: "18m ago", value: "$850", color: "text-purple-500" },
-                  { user: "James Patterson", action: "reported dispute", item: "Incomplete shipment case", time: "30m ago", value: "Urgent", color: "text-rose-500" }
-                ].map((act, idx) => (
-                  <div key={idx} className="flex gap-3 text-xs border-b border-border/40 pb-3 last:border-0 last:pb-0 hover:bg-muted/10 p-1.5 rounded-lg transition-colors duration-150">
-                    <div className="flex-1">
-                      <p className="text-foreground font-semibold">
-                        {act.user} <span className="text-muted-foreground font-normal">{act.action}</span>
-                      </p>
-                      <p className="text-muted-foreground/80 font-mono text-[10px] mt-0.5">{act.item}</p>
-                      <span className="text-[10px] text-muted-foreground/60">{act.time}</span>
+                {activities.length > 0 ? (
+                  activities.map((act, idx) => (
+                    <div key={idx} className="flex gap-3 text-xs border-b border-border/40 pb-3 last:border-0 last:pb-0 hover:bg-muted/10 p-1.5 rounded-lg transition-colors duration-150">
+                      <div className="flex-1">
+                        <p className="text-foreground font-semibold">
+                          {act.user} <span className="text-muted-foreground font-normal">{act.action}</span>
+                        </p>
+                        <p className="text-muted-foreground/80 font-mono text-[10px] mt-0.5">{act.item}</p>
+                        <span className="text-[10px] text-muted-foreground/60">{new Date(act.created_at).toLocaleTimeString()}</span>
+                      </div>
+                      <div className="text-right flex flex-col justify-center">
+                        <span className={`font-mono font-bold ${act.color}`}>
+                          {isNaN(Number(act.value)) ? act.value : `$${Number(act.value).toLocaleString()}`}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right flex flex-col justify-center">
-                      <span className={`font-mono font-bold ${act.color}`}>{act.value}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="text-xs text-muted-foreground text-center py-6">No recent activities.</div>
+                )}
               </div>
             </div>
           </div>

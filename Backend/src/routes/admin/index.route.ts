@@ -2,9 +2,17 @@ import express from "express";
 import { adminCategoryRouter as categoryRoute } from "@/modules/categories/categories.routes.ts";
 import { adminApplicationRouter as applicationFormRoute, adminUserRouter as userRoute } from "@/modules/users/users.routes.ts";
 import { adminProductRouter as productRoute } from "@/modules/products/products.routes.ts";
+import { adminDashboardRouter as dashboardRoute } from "@/modules/dashboard/dashboard.routes.ts";
 import * as authMiddleware from "../../middlewares/auth.middleware.ts";
 
 const route = express.Router();
+
+route.use(
+  "/dashboard",
+  authMiddleware.verifyToken,
+  authMiddleware.verifyRole("admin"),
+  dashboardRoute
+);
 
 route.use(
   "/categories",
