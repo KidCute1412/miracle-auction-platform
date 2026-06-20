@@ -346,15 +346,15 @@ export const getProductWithOffsetLimit = async (
   if (filter?.creator) {
     q.andWhereILike("seller_id", `%${filter.creator}%`);
   }
-  if (filter?.dateFrom && filter?.dateTo) {
-    q.andWhereBetween("created_at", [
-      `${filter.dateFrom} 00:00:00`,
-      `${filter.dateTo} 23:59:59`,
+  if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
+    q.andWhereRaw("start_time::date >= ? and start_time::date <= ?", [
+      filter.dateFrom,
+      filter.dateTo,
     ]);
-  } else if (filter?.dateFrom) {
-    q.andWhere("created_at", ">=", `${filter.dateFrom} 00:00:00`);
-  } else if (filter?.dateTo) {
-    q.andWhere("created_at", "<=", `${filter.dateTo} 23:59:59`);
+  } else if (filter?.dateFrom?.trim()) {
+    q.andWhereRaw("start_time::date >= ?", [filter.dateFrom]);
+  } else if (filter?.dateTo?.trim()) {
+    q.andWhereRaw("start_time::date <= ?", [filter.dateTo]);
   }
   if (filter?.search) {
     q.andWhereRaw("fts @@ websearch_to_tsquery('english', remove_accents(?))", [filter.search]);
@@ -372,15 +372,15 @@ export const calTotalProducts = async (filter: any = {}, is_removed: boolean = f
   if (filter?.creator) {
     q.andWhereILike("seller_id", `%${filter.creator}%`);
   }
-  if (filter?.dateFrom && filter?.dateTo) {
-    q.andWhereBetween("created_at", [
-      `${filter.dateFrom} 00:00:00`,
-      `${filter.dateTo} 23:59:59`,
+  if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
+    q.andWhereRaw("start_time::date >= ? and start_time::date <= ?", [
+      filter.dateFrom,
+      filter.dateTo,
     ]);
-  } else if (filter?.dateFrom) {
-    q.andWhere("created_at", ">=", `${filter.dateFrom} 00:00:00`);
-  } else if (filter?.dateTo) {
-    q.andWhere("created_at", "<=", `${filter.dateTo} 23:59:59`);
+  } else if (filter?.dateFrom?.trim()) {
+    q.andWhereRaw("start_time::date >= ?", [filter.dateFrom]);
+  } else if (filter?.dateTo?.trim()) {
+    q.andWhereRaw("start_time::date <= ?", [filter.dateTo]);
   }
   if (filter?.search) {
     q.andWhereRaw("fts @@ websearch_to_tsquery('english', remove_accents(?))", [filter.search]);

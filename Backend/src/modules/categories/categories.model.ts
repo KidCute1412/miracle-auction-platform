@@ -89,14 +89,14 @@ export const getCategoryWithOffsetLimit = async (
     q.join("users", "categories.created_by", "users.user_id")
       .andWhereILike("users.full_name", `%${filter.creator}%`);
   }
-  if (filter?.dateFrom && filter?.dateTo) {
+  if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
     q.andWhereBetween("categories.created_at", [
       `${filter.dateFrom} 00:00:00`,
       `${filter.dateTo} 23:59:59`,
     ]);
-  } else if (filter?.dateFrom) {
+  } else if (filter?.dateFrom?.trim()) {
     q.andWhere("categories.created_at", ">=", `${filter.dateFrom} 00:00:00`);
-  } else if (filter?.dateTo) {
+  } else if (filter?.dateTo?.trim()) {
     q.andWhere("categories.created_at", "<=", `${filter.dateTo} 23:59:59`);
   }
   if (filter?.search) {
@@ -116,14 +116,14 @@ export const calTotalCategories = async (filter: any = {}, deleted: boolean = fa
     q.join("users", "categories.created_by", "users.user_id")
       .andWhereILike("users.full_name", `%${filter.creator}%`);
   }
-  if (filter?.dateFrom && filter?.dateTo) {
+  if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
     q.andWhereBetween("categories.created_at", [
       `${filter.dateFrom} 00:00:00`,
       `${filter.dateTo} 23:59:59`,
     ]);
-  } else if (filter?.dateFrom) {
+  } else if (filter?.dateFrom?.trim()) {
     q.andWhere("categories.created_at", ">=", `${filter.dateFrom} 00:00:00`);
-  } else if (filter?.dateTo) {
+  } else if (filter?.dateTo?.trim()) {
     q.andWhere("categories.created_at", "<=", `${filter.dateTo} 23:59:59`);
   }
   if (filter?.search) {

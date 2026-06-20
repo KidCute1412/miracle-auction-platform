@@ -228,6 +228,16 @@ export default function FilterBar({
 
   const [selectedAction, setSelectedAction] = useState<string>("");
   const [isComposing, setIsComposing] = useState(false);
+  const [localDateFrom, setLocalDateFrom] = useState(dateFrom || "");
+  const [localDateTo, setLocalDateTo] = useState(dateTo || "");
+
+  useEffect(() => {
+    setLocalDateFrom(dateFrom || "");
+  }, [dateFrom]);
+
+  useEffect(() => {
+    setLocalDateTo(dateTo || "");
+  }, [dateTo]);
 
   const handleApplyClick = () => {
     if (!onApplyBulkAction) return;
@@ -276,15 +286,37 @@ export default function FilterBar({
               <input
                 type="date"
                 className="h-8 rounded-lg px-2 text-sm border border-border bg-muted/30 text-foreground outline-none"
-                value={dateFrom}
-                onChange={(e) => setDateFrom!(e.target.value)}
+                value={localDateFrom}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setLocalDateFrom(val);
+                  if (val.length === 10 || val === "") {
+                    setDateFrom!(val);
+                  }
+                }}
+                onBlur={() => {
+                  if (localDateFrom !== dateFrom) {
+                    setDateFrom!(localDateFrom);
+                  }
+                }}
               />
               <span className="text-muted-foreground">-</span>
               <input
                 type="date"
                 className="h-8 rounded-lg px-2 text-sm border border-border bg-muted/30 text-foreground outline-none"
-                value={dateTo}
-                onChange={(e) => setDateTo!(e.target.value)}
+                value={localDateTo}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setLocalDateTo(val);
+                  if (val.length === 10 || val === "") {
+                    setDateTo!(val);
+                  }
+                }}
+                onBlur={() => {
+                  if (localDateTo !== dateTo) {
+                    setDateTo!(localDateTo);
+                  }
+                }}
               />
             </div>
           )}

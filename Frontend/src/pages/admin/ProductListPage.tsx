@@ -3,6 +3,7 @@ import { Eye, Trash2, ShoppingBag, Plus } from "lucide-react";
 import FilterBar from "@/components/admin/FilterBar";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatToVN } from "@/utils/format_time";
+import { formatPrice } from "@/utils/format_price";
 import { useFilters } from "@/hooks/useFilters";
 import { toast } from "sonner";
 import Loading from "@/components/common/Loading";
@@ -20,6 +21,10 @@ type ProductItem = {
   creator_name?: string;
   created_at: string;
   edited_at?: string;
+  start_time: string;
+  end_time: string;
+  bid_turns: number;
+  current_price: number;
 };
 
 export default function ProductListPage() {
@@ -205,7 +210,16 @@ export default function ProductListPage() {
                   Creator Name
                 </th>
                 <th className="px-6 py-4.5 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Created At
+                  Start Time
+                </th>
+                <th className="px-6 py-4.5 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  End Time
+                </th>
+                <th className="px-6 py-4.5 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Bid Turns
+                </th>
+                <th className="px-6 py-4.5 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Current Price
                 </th>
                 <th className="px-6 py-4.5 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground w-28">
                   Actions
@@ -225,7 +239,16 @@ export default function ProductListPage() {
                     {item.creator_name || "Unknown"}
                   </td>
                   <td className="px-6 py-4 text-center text-sm text-muted-foreground">
-                    {formatToVN(item.created_at)}
+                    {formatToVN(item.start_time)}
+                  </td>
+                  <td className="px-6 py-4 text-center text-sm text-muted-foreground">
+                    {formatToVN(item.end_time)}
+                  </td>
+                  <td className="px-6 py-4 text-center text-sm font-medium text-foreground">
+                    {item.bid_turns ?? 0}
+                  </td>
+                  <td className="px-6 py-4 text-center text-sm font-bold text-accent">
+                    {formatPrice(item.current_price)}
                   </td>
                   <td className="px-6 py-4 text-center text-sm">
                     <div className="flex items-center justify-center gap-2">
@@ -284,8 +307,20 @@ export default function ProductListPage() {
                 <span className="font-semibold text-foreground mt-0.5 block">{item.creator_name || "Unknown"}</span>
               </div>
               <div>
-                <span className="text-muted-foreground block">Created At:</span>
-                <span className="font-semibold text-foreground mt-0.5 block">{formatToVN(item.created_at)}</span>
+                <span className="text-muted-foreground block">Current Price:</span>
+                <span className="font-bold text-accent mt-0.5 block">{formatPrice(item.current_price)}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Start Time:</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{formatToVN(item.start_time)}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">End Time:</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{formatToVN(item.end_time)}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-muted-foreground block">Bid Turns:</span>
+                <span className="font-semibold text-foreground mt-0.5 block">{item.bid_turns ?? 0}</span>
               </div>
             </div>
 
