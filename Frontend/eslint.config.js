@@ -22,6 +22,10 @@ export default defineConfig([
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-use-before-define": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "react-refresh/only-export-components": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "warn",
+      "no-var": "warn"
     }
   },
 ])
