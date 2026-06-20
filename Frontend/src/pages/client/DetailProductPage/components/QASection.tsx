@@ -34,11 +34,7 @@ export default function QASection({ product_id, seller_id }: { product_id?: numb
     setIsLoading(true);
     async function fetchQuestions() {
       try {
-        const data = await productService.getQuestions({
-          product_id,
-          page: currentPage,
-          limit,
-        });
+        const data = await productService.getQuestions(product_id!, { page: currentPage, limit });
         setQuestions(data.data);
         setTotalQuestions(Number(data.totalQuestions) || 0);
         setTotalPages(Math.ceil(Number(data.totalQuestions) / limit) || 1);
@@ -59,14 +55,13 @@ export default function QASection({ product_id, seller_id }: { product_id?: numb
     }
 
     const dataToSend = {
-      product_id: product_id,
       content: e.target.question.value.trim(),
       question_parent_id: replyingTo,
     };
 
     async function postQuestion() {
       try {
-        const data = await productService.postQuestion(dataToSend);
+        const data = await productService.postQuestion(product_id!, dataToSend);
         toast.success(data.message || "Question/reply submitted successfully");
 
         setQuestions((prev) => [...prev, data.data]);

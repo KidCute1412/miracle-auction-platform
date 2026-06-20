@@ -122,7 +122,7 @@ export default function SellerOrderPage() {
             formData.append("shipping_label", shippingLabelImage);
           }
 
-          const data = await orderService.approveOrder(formData);
+          const data = await orderService.approveOrder(String(orderInfo!.order_id), formData);
           if (data.status === "success") {
             toast.success("Order confirmed successfully!");
             window.location.reload();
@@ -149,7 +149,7 @@ export default function SellerOrderPage() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const data = await orderService.rejectOrder({ product_id: product_id } as any);
+          const data = await orderService.rejectOrder(String(orderInfo!.order_id), {});
           if (data.status === "success") {
             toast.success("Order rejected successfully");
             navigate(-1);

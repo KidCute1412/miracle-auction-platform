@@ -74,10 +74,7 @@ export default function EditProductPage() {
 
   const fetchProductDetail = async () => {
     try {
-      const data = await productService.getDetail({
-        product_id,
-        product_slug,
-      });
+      const data = await productService.getDetail(product_id!);
       setProduct(data.data);
     } catch (error: any) {
       toast.error(error.message || "Failed to load product details");
@@ -113,10 +110,7 @@ export default function EditProductPage() {
       
       const updatedDescription = (product?.description || "") + timestampDiv + newDescription;
       
-      await productService.updateDescription({
-        product_id: product_id!,
-        description: updatedDescription
-      });
+      await productService.updateDescription(product_id!, { description: updatedDescription });
 
       toast.success("Description updated successfully!");
       setProduct(product ? { ...product, description: updatedDescription } : null);

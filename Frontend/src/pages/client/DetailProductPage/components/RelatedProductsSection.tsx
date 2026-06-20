@@ -25,11 +25,7 @@ export default function RelatedProductsSection({ category_id, product_id }: { ca
     async function fetchData() {
       setIsLoading(true);
       try {
-        const result = await productService.getRelated({
-          category_id,
-          product_id,
-          limit: 5,
-        });
+        const result = await productService.getRelated(product_id!, { category_id, limit: 5 });
         setProducts(result.data || []);
       } catch (err) {
         console.error(err);

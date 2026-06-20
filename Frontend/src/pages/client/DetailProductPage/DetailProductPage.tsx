@@ -72,10 +72,7 @@ function DetailProductPage() {
     async function fetchProduct() {
       try {
         setLoading(true);
-        const data = await productService.getDetail({
-          product_id,
-          product_slug,
-        });
+        const data = await productService.getDetail(product_id!);
         setProduct(data.data);
       } catch (e) {
         toast.error("Error connecting to server");

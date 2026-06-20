@@ -50,8 +50,7 @@ export default function AddToLove({ product_id, className }: { product_id: numbe
     setTimeout(() => setShards([]), 750);
 
     isLovedRef.current = newLoveStatus;
-    productService.updateLoveStatus({
-      product_id: product_id,
+    productService.updateLoveStatus(product_id, {
       love_status: newLoveStatus,
     })
       .then(() => {

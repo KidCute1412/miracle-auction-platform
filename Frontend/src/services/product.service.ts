@@ -4,113 +4,109 @@ const ADMIN_PATH = import.meta.env.VITE_PATH_ADMIN;
 
 export const productService = {
   getPageList: async (params?: Record<string, any>): Promise<any> => {
-    return apiRequest(`/api/products/page_list`, { params });
+    return apiRequest(`/products`, { params });
   },
 
-  getDetail: async (params?: Record<string, any>): Promise<any> => {
-    return apiRequest(`/api/products/detail`, { params });
+  getDetail: async (id: string | number): Promise<any> => {
+    return apiRequest(`/products/${id}`);
   },
 
   postProduct: async (body: FormData): Promise<any> => {
-    return apiRequest(`/api/products/post-product`, {
+    return apiRequest(`/products`, {
       method: "POST",
       body,
     });
   },
 
-  updateDescription: async (body: any): Promise<any> => {
-    return apiRequest(`/api/products/update/description`, {
+  updateDescription: async (id: string | number, body: any): Promise<any> => {
+    return apiRequest(`/products/${id}/description`, {
       method: "PATCH",
       body,
     });
   },
 
   getMyProducts: async (): Promise<any> => {
-    return apiRequest(`/api/products/my-products`);
+    return apiRequest(`/products/me`);
   },
 
   search: async (params?: Record<string, any>): Promise<any> => {
-    return apiRequest(`/api/products/search`, { params });
+    return apiRequest(`/products`, { params });
   },
 
   getLoveStatus: async (productId: number): Promise<any> => {
-    return apiRequest(`/api/products/love_status`, {
-      params: { product_id: productId },
-    });
+    return apiRequest(`/products/${productId}/likes`);
   },
 
-  updateLoveStatus: async (body: any): Promise<any> => {
-    return apiRequest(`/api/products/update_love_status`, {
+  updateLoveStatus: async (productId: number, body: any): Promise<any> => {
+    return apiRequest(`/products/${productId}/likes`, {
       method: "POST",
       body,
     });
   },
 
-  getQuestions: async (params?: Record<string, any>): Promise<any> => {
-    return apiRequest(`/api/products/questions`, { params });
+  getQuestions: async (productId: number, params?: Record<string, any>): Promise<any> => {
+    return apiRequest(`/products/${productId}/questions`, { params });
   },
 
-  postQuestion: async (body: any): Promise<any> => {
-    return apiRequest(`/api/products/questions`, {
+  postQuestion: async (productId: number, body: any): Promise<any> => {
+    return apiRequest(`/products/${productId}/questions`, {
       method: "POST",
       body,
     });
   },
 
   getEndingSoon: async (): Promise<any> => {
-    return apiRequest(`/api/products/ending_soon`);
+    return apiRequest(`/products`, { params: { sort: "ending_soon" } });
   },
 
   getHighestPrice: async (): Promise<any> => {
-    return apiRequest(`/api/products/highest_price`);
+    return apiRequest(`/products`, { params: { sort: "highest_price" } });
   },
 
   getMostBids: async (): Promise<any> => {
-    return apiRequest(`/api/products/most_bids`);
+    return apiRequest(`/products`, { params: { sort: "most_bids" } });
   },
 
-  getDetailForWinner: async (params?: Record<string, any>): Promise<any> => {
-    return apiRequest(`/api/products/detail-for-winner`, { params });
+  getDetailForWinner: async (id: string | number): Promise<any> => {
+    return apiRequest(`/products/${id}/winner`);
   },
 
-  getRelated: async (params?: Record<string, any>): Promise<any> => {
-    return apiRequest(`/api/products/related`, { params });
+  getRelated: async (id: string | number, params?: Record<string, any>): Promise<any> => {
+    return apiRequest(`/products/${id}/related`, { params });
   },
 
-  adminList: async (params?: Record<string, any>, body?: any): Promise<any> => {
-    return apiRequest(`/${ADMIN_PATH}/api/product/list`, {
-      method: "POST",
+  adminList: async (params?: Record<string, any>): Promise<any> => {
+    return apiRequest(`/${ADMIN_PATH}/products`, {
+      method: "GET",
       params,
-      body,
     });
   },
 
-  adminGetTotal: async (params?: Record<string, any>, body?: any): Promise<any> => {
-    return apiRequest(`/${ADMIN_PATH}/api/product/number-of-products`, {
-      method: "POST",
+  adminGetTotal: async (params?: Record<string, any>): Promise<any> => {
+    return apiRequest(`/${ADMIN_PATH}/products/count`, {
+      method: "GET",
       params,
-      body,
     });
   },
 
   adminDetail: async (id: number): Promise<any> => {
-    return apiRequest(`/${ADMIN_PATH}/api/product/detail/${id}`);
+    return apiRequest(`/${ADMIN_PATH}/products/${id}`);
   },
 
   adminDelete: async (id: number): Promise<any> => {
-    return apiRequest(`/${ADMIN_PATH}/api/product/delete/${id}`, {
+    return apiRequest(`/${ADMIN_PATH}/products/${id}/status`, {
       method: "PATCH",
     });
   },
 
   adminRestore: async (id: number): Promise<any> => {
-    return apiRequest(`/${ADMIN_PATH}/api/product/restore/${id}`, {
+    return apiRequest(`/${ADMIN_PATH}/products/${id}/restoration`, {
       method: "PATCH",
     });
   },
 
   adminDestroy: async (id: number): Promise<any> => {
-    return apiRequest(`/${ADMIN_PATH}/api/product/destroy/${id}`, {
+    return apiRequest(`/${ADMIN_PATH}/products/${id}`, {
       method: "DELETE",
     });
   },

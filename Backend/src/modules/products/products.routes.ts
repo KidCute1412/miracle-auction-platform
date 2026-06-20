@@ -7,31 +7,43 @@ import upload from "@/helpers/uploadImage.helper.ts";
 export const clientProductRouter = Router();
 export const adminProductRouter = Router();
 
-// Client product routes
-clientProductRouter.get("/page_list", clientController.getProductsPageList);
-clientProductRouter.get("/detail", clientController.getProductDetailBySlugId);
-clientProductRouter.post("/post-product", verifyToken, verifyRole("seller", "admin"), upload.array("product_images", 10), clientController.postNewProduct);
-clientProductRouter.patch("/update/description", verifyToken, verifyRole("seller", "admin"), clientController.updateProductDescription);
-clientProductRouter.get("/my-products", verifyToken, clientController.getMyProductsList);
-clientProductRouter.get("/search", clientController.searchProducts);
-clientProductRouter.get("/love_status", justDecodeToken, clientController.getLoveStatus);
-clientProductRouter.post("/update_love_status", verifyToken, clientController.updateLoveStatus);
-clientProductRouter.get("/questions", clientController.getProductQuestions);
-clientProductRouter.post("/questions", verifyToken, clientController.postProductQuestion);
+// Get paginated product list (supports search and sort via query params)
+clientProductRouter.get("/", clientController.getProductsPageList);
 
-// Top client products for homepage listing
-clientProductRouter.get("/ending_soon", clientController.getTopEndingSoonProducts);
-clientProductRouter.get("/highest_price", clientController.getTopHighestPriceProducts);
-clientProductRouter.get("/most_bids", clientController.getTopMostBidProducts);
+// Get product detail by ID
+clientProductRouter.get("/:id", justDecodeToken, clientController.getProductDetailBySlugId);
 
-// Winner view and related product routes
-clientProductRouter.get("/detail-for-winner", verifyToken, clientController.getProductDetailForWinner);
-clientProductRouter.get("/related", clientController.getRelatedProducts);
+// Create a new product listing
+clientProductRouter.post("/", verifyToken, verifyRole("seller", "admin"), upload.array("product_images", 10), clientController.postNewProduct);
+
+// Update product description by ID
+clientProductRouter.patch("/:id/description", verifyToken, verifyRole("seller", "admin"), clientController.updateProductDescription);
+
+// Get current user's product listings
+clientProductRouter.get("/me", verifyToken, clientController.getMyProductsList);
+
+// Get like status for a product
+clientProductRouter.get("/:id/likes", justDecodeToken, clientController.getLoveStatus);
+
+// Toggle like status for a product
+clientProductRouter.post("/:id/likes", verifyToken, clientController.updateLoveStatus);
+
+// Get questions for a product
+clientProductRouter.get("/:id/questions", clientController.getProductQuestions);
+
+// Post a question on a product
+clientProductRouter.post("/:id/questions", verifyToken, clientController.postProductQuestion);
+
+// Get winner details for a product
+clientProductRouter.get("/:id/winner", verifyToken, clientController.getProductDetailForWinner);
+
+// Get related products for a product
+clientProductRouter.get("/:id/related", clientController.getRelatedProducts);
 
 // Admin product routes
-adminProductRouter.post("/list", adminController.list);
-adminProductRouter.post("/number-of-products", adminController.calTotalProducts);
-adminProductRouter.get("/detail/:id", adminController.detail);
-adminProductRouter.patch("/delete/:id", adminController.deleteProduct);
-adminProductRouter.patch("/restore/:id", adminController.restoreProduct);
-adminProductRouter.delete("/destroy/:id", adminController.destroyProduct);
+adminProductRouter.get("/", adminController.list);
+adminProductRouter.get("/count", adminController.calTotalProducts);
+adminProductRouter.get("/:id", adminController.detail);
+adminProductRouter.patch("/:id/status", adminController.deleteProduct);
+adminProductRouter.patch("/:id/restoration", adminController.restoreProduct);
+adminProductRouter.delete("/:id", adminController.destroyProduct);
