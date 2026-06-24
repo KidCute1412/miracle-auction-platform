@@ -14,7 +14,12 @@ import variableConfig from "./config/variable.config.ts";
 import cookieParser from "cookie-parser";
 import { startAuctionEndEmailJob } from "./jobs/auction-end.job.ts";
 
+import rateLimit from "express-rate-limit";
+import RedisStore from "rate-limit-redis";
+import { redisClient } from "./config/redis.config.ts";
+
 const app = express(); // Create express app
+app.set("trust proxy", 1); // Trust first proxy header
 const httpServer = createServer(app); // Create HTTP server
 
 // Create Socket.io server
@@ -39,6 +44,19 @@ const port = 5000;
 // Middlewares
 app.use(express.json());
 app.use(cookieParser());
+
+// Configure Redis store rate limiting middleware
+const limiter = rateLimit({
+  store: new RedisStore({
+    sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)),
+  }),
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  limit: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true, // Return rate limit info in the headers
+  legacyHeaders: false, // Disable legacy rate limit headers
+  message: { message: "Too many requests from this IP, please try again later." },
+});
+app.use(limiter);
 
 app.use(
   cors({
