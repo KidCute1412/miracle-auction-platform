@@ -6,7 +6,7 @@ This document describes the unified system architecture designed to handle **1,0
 
 ## 1. Unified Architecture Topology
 
-The system topology maps the actual deployment layout (1 API Gateway/Server, 1 Redis Cache, 1 RabbitMQ Message Broker, 1 Worker, and 1 PostgreSQL Database):
+The system topology maps the actual deployment layout (1 API Gateway/Server, 1 Redis Cache, 1 Kafka Event Streaming Broker, 1 Worker, and 1 PostgreSQL Database):
 
 ```mermaid
 graph TD
@@ -19,7 +19,7 @@ graph TD
 
     subgraph "State & Event Streaming"
         Redis[(Redis Cache: Lua Bid Verification)]
-        MQ[RabbitMQ Message Broker]
+        Kafka[Kafka Event Streaming Broker]
     end
 
     subgraph "Database"
@@ -33,12 +33,12 @@ graph TD
     API <--> Redis
     
     %% Decoupling write path
-    API -- Publish Events --> MQ
+    API -- Publish Events --> Kafka
     
     %% Worker consumption
-    MQ -- "bidding_events" --> Worker
-    MQ -- "email_notifications" --> Worker
-    MQ -- "dashboard_updates" --> Worker
+    Kafka -- "bidding_events" --> Worker
+    Kafka -- "email_notifications" --> Worker
+    Kafka -- "dashboard_updates" --> Worker
     
     %% Async durability writes
     Worker --> DB
@@ -53,10 +53,10 @@ The codebase is structured as a **Modular Monolith** where the API Server and th
 | Component | Production Role | Host/Service Platform | Local Instance (Docker) |
 | :--- | :--- | :--- | :--- |
 | **Frontend** | Delivers static web assets. | Vercel | Local Port `5173` |
-| **API Server** | Verifies bids via Redis & pushes jobs to RabbitMQ. | Railway (Web Service) | Local Port `5000` |
+| **API Server** | Verifies bids via Redis & pushes jobs to Kafka. | Railway (Web Service) | Local Port `5000` |
 | **Worker Process** | Consumes tasks (Emails, DB Writes, Dashboards). | Railway (Worker Service) | Background worker container |
 | **Redis** | Fast in-memory state & atomic Lua scripts. | Railway Redis | Local Port `6379` |
-| **RabbitMQ** | Message Broker routing events to queues. | Railway RabbitMQ | Local Port `5672` |
+| **Kafka** | Event Streaming Broker routing events to topics. | Upstash Kafka | Local Port `9092` |
 | **PostgreSQL** | Permanent ACID-compliant system storage. | Railway PostgreSQL | Local Port `5432` |
 
 ---
@@ -70,8 +70,8 @@ Under the pessimistic locking model, requests queue behind database row-locks (`
    * Redis evaluates bid prices and timestamps atomically via single-threaded Lua scripting, responding in $<1$ millisecond.
    * Invalid bids are rejected immediately without hitting the database.
 
-2. **Asynchronous Write-Behind (RabbitMQ + Worker):**
-   * Validated bids are published to the `bidding_events` queue in RabbitMQ.
+2. **Asynchronous Write-Behind (Kafka + Worker):**
+   * Validated bids are published to the `bidding_events` topic in Kafka.
    * The API Server returns a success response to the client immediately.
    * The background `Worker` consumes the events at its own pace and writes them safely to PostgreSQL, shielding the database from peak traffic surges.
 
@@ -79,13 +79,13 @@ Under the pessimistic locking model, requests queue behind database row-locks (`
 
 ## 4. Scaling the Worker
 
-If background queue lengths grow under high load, you can scale the worker capacity without modifying the code or adding new databases:
+If background message volumes grow under high load, you can scale the worker capacity without modifying the code or adding new databases:
 
 * **Locally:** Scale the worker service to 3 parallel containers:
   ```bash
   docker compose up --scale worker=3 -d
   ```
-* **In Production (Railway):** Go to your **Worker Service** settings and increase the **Replicas** count. Railway will run duplicate worker containers that share the queue load using RabbitMQ's automatic Round-Robin distribution.
+* **In Production (Railway):** Go to your **Worker Service** settings and increase the **Replicas** count. Railway will run duplicate worker containers that share the consumer group load using Kafka's automatic partition distribution.
 
 ---
 

@@ -27,22 +27,31 @@ services:
     volumes:
       - redis_data:/data
 
-  # Local RabbitMQ message queue with management dashboard UI
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: local-rabbitmq-testing
+  # Local Kafka event streaming broker in KRaft mode
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: local-kafka-testing
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - kafka_data:/var/lib/kafka/data
 
-  # Background queue worker process
-  worker:
+  # Node.js Worker (handles bidding writes, dashboard, email)
+  node-worker:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-    container_name: local-background-worker
+    container_name: local-node-worker
     command: npm run worker
     volumes:
       - ./Backend:/app
@@ -54,12 +63,26 @@ services:
       - DB_PASSWORD=my_local_password
       - DB_NAME=online_auction_test
       - REDIS_URL=redis://redis:6379
-      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - KAFKA_BROKERS=kafka:9092
     depends_on:
       - postgres
-      - rabbitmq
+      - kafka
+
+  # Python AI Worker (uncomment and configure once your python codebase is ready)
+  # python-worker:
+  #   build:
+  #     context: ./AI-Service
+  #     dockerfile: Dockerfile
+  #   container_name: local-python-worker
+  #   command: python main.py
+  #   environment:
+  #     - KAFKA_BROKERS=kafka:9092
+  #     - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test
+  #   depends_on:
+  #     - postgres
+  #     - kafka
 
 volumes:
   postgres_data:
   redis_data:
-  rabbitmq_data:
+  kafka_data:

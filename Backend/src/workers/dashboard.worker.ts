@@ -1,5 +1,5 @@
 import db from "@/config/database.config.ts";
-import { getChannel } from "@/config/rabbitmq.config.ts";
+import { kafka } from "@/config/kafka.config.ts";
 import * as DashboardModel from "../modules/dashboard/dashboard.model.ts";
 
 // Create cache table if it does not exist
@@ -57,7 +57,7 @@ async function refreshDashboardCache() {
   }
 }
 
-// Start consuming dashboard update jobs from RabbitMQ and run scheduled crons
+// Start consuming dashboard update jobs from Kafka and run scheduled crons
 export async function startDashboardConsumer() {
   // Pre-calculate immediately on startup
   await refreshDashboardCache();
@@ -68,17 +68,18 @@ export async function startDashboardConsumer() {
     await refreshDashboardCache();
   }, 60000);
 
-  const channel = getChannel();
-  if (!channel) {
-    console.warn("[WORKER] RabbitMQ channel not available, skipped manual queue listener.");
-    return;
-  }
+  try {
+    const consumer = kafka.consumer({ groupId: "dashboard-group" });
+    await consumer.connect();
+    await consumer.subscribe({ topic: "dashboard_updates", fromBeginning: false });
 
-  channel.consume("dashboard_updates", async (msg: any) => {
-    if (msg) {
-      console.log("[WORKER] Received manual sync trigger from queue...");
-      await refreshDashboardCache();
-      channel.ack(msg);
-    }
-  });
+    await consumer.run({
+      eachMessage: async () => {
+        console.log("[WORKER] Received manual sync trigger from Kafka topic...");
+        await refreshDashboardCache();
+      },
+    });
+  } catch (error) {
+    console.error("[WORKER] Failed to run Kafka consumer:", error);
+  }
 }

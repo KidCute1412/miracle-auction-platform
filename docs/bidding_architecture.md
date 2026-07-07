@@ -54,22 +54,18 @@ sequenceDiagram
 
 ---
 
-## 3. Technology Analysis & Comparisons
+## 3. Technology Analysis & Rationale
 
 ### Why Redis?
 * **Single-Threaded Execution**: Redis runs command sequences on a single thread. When logic is wrapped in a **Lua script**, Redis executes it atomically. No two scripts can run concurrently, preventing double-bidding/race conditions.
 * **Sub-millisecond Latency**: Operations run entirely in RAM.
 
-### Why a Message Queue (Kafka vs. RabbitMQ)?
-The queue decouples the fast frontend (Redis) from the slower backend database write.
+### Why Kafka (Over RabbitMQ)?
+The event broker decouples the fast frontend (Redis) from the slower backend database write. We select **Kafka** as the event streaming backbone for three reasons:
 
-| Feature | Kafka (Recommended for Scale) | RabbitMQ (Good Alternative) |
-| :--- | :--- | :--- |
-| **Ordering** | Guarantees ordering per partition (e.g., using `product_id` as the partition key). | Message ordering is guaranteed per queue, but harder to scale horizontally without multiplexing queues. |
-| **Throughput** | High throughput via sequential disk log appending. | High throughput, but degrades if queue sizes grow very large. |
-| **Persistence** | Log compaction and event replayability out-of-the-box. | Messages are deleted after consumer acknowledgment. |
-
-* **Can you use RabbitMQ?** Yes. For standard workloads, RabbitMQ is simpler to set up and manage. Simply route bids using a routing key based on `product_id` to ensure strict processing sequence.
+1. **Partition-Key-Based Ordering**: Bids are published to Kafka using the `product_id` as the partition key. Kafka guarantees that all messages with the same partition key are processed sequentially in the exact order they arrive, even when multiple consumer workers are running in parallel. This is extremely difficult to achieve with standard RabbitMQ queues.
+2. **Durability and Replayability**: Kafka appends events to a sequential disk log that can be replayed. If the consumer database service crashes, Kafka retains the logs, allowing workers to resume processing without data loss.
+3. **High Throughput Scaling**: Kafka can handle millions of events per second with low CPU overhead by leveraging zero-copy and sequential OS page cache writes.
 
 ---
 

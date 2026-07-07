@@ -1,21 +1,27 @@
-# Agent Rules & Guidelines
+﻿# Agent Rules & Guidelines
 
-This document outlines workspace-scoped rules and guidelines for all AI agents working on this project.
+Workspace-scoped rules for AI agents working on this online auction project.
 
-## Critical Behavioral Rules
+## Professional Portability
+- Do not require personal greetings or local-only phrasing in responses.
+- Keep communication concise, factual, and useful for any collaborator reviewing the work.
+- Use English for new code, code comments, log messages, docs, tests, branch names, and commit messages.
 
-1. **Greeting Requirement:**
-   - Every response must start with the phrase: "Hi Lok".
+## Language Handling
+- Do not modify unrelated Vietnamese content.
+- Translate Vietnamese only when it appears in code identifiers, code comments, logs, validation messages, or documentation that you are already touching.
+- Preserve user-facing product copy unless the task explicitly asks for copy changes.
 
-2. **Code Commenting Style:**
-   - Code comments must be concise and limited to exactly one line.
-   - All code comments must be written in English.
+## Engineering Rules
+- Prefer the repo stack already in use: Express 5, TypeScript, Knex, PostgreSQL, Redis, Kafka/RabbitMQ-style workers, Socket.io, React, Vite, Tailwind, Docker, and k6.
+- Keep implementation changes focused on the requested scope.
+- Do not mix large codebase upgrades with skill or documentation rewrites in the same change.
+- Add or update tests when changing behavior, especially for auction bidding, auth, payments/orders, cache invalidation, workers, or API contracts.
+- Every implementation response must include verification commands that were run or should be run.
+- Every implementation response must include a short risk note covering the most likely remaining failure mode.
 
-3. **Communication Style & Token Optimization:**
-   - Keep explanations extremely focused, direct, and concise.
-   - Avoid fluff, excessive apologies, or lengthy introductory/concluding remarks.
-   - Optimize for minimal token usage while maintaining accuracy and clarity.
-
-4.**Languages in code:**
-   - Write everything in code in English.
-   - If you see Vietnamese in the code, change it to English.
+## Documentation Style
+- Write executable checklists instead of broad tutorial prose.
+- Make acceptance criteria measurable.
+- Reference actual repo commands when they exist.
+- When a recommended command requires a missing script or dependency, label it as a target command to add first.

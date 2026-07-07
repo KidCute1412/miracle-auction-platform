@@ -1,5 +1,5 @@
 import db from "@/config/database.config.ts";
-import { publishDashboardUpdate } from "@/config/rabbitmq.config.ts";
+import { publishDashboardUpdate } from "@/config/kafka.config.ts";
 import * as DashboardModel from "./dashboard.model.ts";
 
 // Fetch cached dashboard statistics summary

@@ -82,14 +82,14 @@ io.on("connection", (socket) => {
   });
 });
 
-import { initRabbitMQ } from "./config/rabbitmq.config.ts";
+import { initKafka } from "./config/kafka.config.ts";
 
 // Start the server
 httpServer.listen(port, async () => {
   console.log(`Your website is running at port: http://localhost:${port}`);
   
-  // Initialize RabbitMQ connection
-  await initRabbitMQ();
+  // Initialize Kafka connection
+  await initKafka();
 
   // Start auction end email cron job
   startAuctionEndEmailJob();
