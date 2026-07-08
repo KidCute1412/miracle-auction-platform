@@ -1,6 +1,10 @@
 Frontend/node_modules/
 Backend/node_modules/
+AgentService/node_modules/
+AgentService/dist/
+AgentService/.agent-workspaces/
 Backend/.env
+AgentService/.env
 Python/.venv/
 data/.venv
 data/.env

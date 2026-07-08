@@ -61,6 +61,32 @@ jobs:
         run: npm run build
         working-directory: Frontend
 
+  agent-service:
+    name: AgentService Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: AgentService/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: AgentService
+
+      - name: Build AgentService
+        run: npm run build
+        working-directory: AgentService
+
+      - name: Test AgentService
+        run: npm test
+        working-directory: AgentService
+
   docker:
     name: Docker Compose Validation
     runs-on: ubuntu-latest
