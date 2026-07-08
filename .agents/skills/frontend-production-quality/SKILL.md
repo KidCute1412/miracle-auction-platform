@@ -1,4 +1,9 @@
-﻿# Frontend Production Quality
+---
+name: frontend-production-quality
+description: Use for React pages, forms, API clients, routing, socket features, dashboards, and responsive UI.
+---
+
+# Frontend Production Quality
 
 ## When to Apply
 - Use for React pages, forms, API clients, routing, socket features, admin dashboards, and responsive UI improvements.

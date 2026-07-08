@@ -1,4 +1,9 @@
-﻿# CI/CD & Observability
+---
+name: ci-cd-observability
+description: Use for CI/CD, Docker, logging, request IDs, health checks, metrics, and graceful shutdown.
+---
+
+# CI/CD & Observability
 
 ## When to Apply
 - Use when adding GitHub Actions, Docker changes, logging, request IDs, health checks, metrics, or graceful shutdown.
@@ -8,13 +13,15 @@
 ## Repo Context
 - Backend Dockerfile exists under `Backend/Dockerfile`.
 - Docker Compose starts PostgreSQL, Redis, Kafka, and the Node worker.
+- `.github/workflows/ci.yml` already has separate backend, frontend, and Docker Compose validation jobs.
+- Current CI builds the backend, lints/builds the frontend, and runs `docker compose config`; it does not run backend tests because test scripts are not committed yet.
 - Backend scripts include build, dev, worker, and watch.
 - Frontend scripts include lint and build.
 - Current logging uses `console.log` in several places; structured logging is a target improvement.
 
 ## Implementation Checklist
-- Create separate CI jobs for backend and frontend.
-- Backend CI should install dependencies, build TypeScript, and run tests once scripts exist.
+- Keep separate CI jobs for backend and frontend.
+- Backend CI should install dependencies, build TypeScript, and add test commands only after scripts exist.
 - Frontend CI should install dependencies, run lint, and build.
 - Add a Docker build job for backend image validation.
 - Use dependency caching based on `package-lock.json`.
@@ -30,6 +37,7 @@
 - CI fails on backend TypeScript build errors.
 - CI fails on frontend lint or build errors.
 - Docker image builds from a clean checkout.
+- Test gates are added only when commands exist locally and can run from a clean checkout.
 - Health and readiness checks return stable machine-readable JSON.
 - Logs include timestamp, level, message, requestId or jobId, and safe context.
 - SIGTERM shutdown stops accepting work and closes dependencies.

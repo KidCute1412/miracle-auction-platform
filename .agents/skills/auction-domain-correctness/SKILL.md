@@ -1,4 +1,9 @@
-﻿# Auction Domain Correctness
+---
+name: auction-domain-correctness
+description: Use for auction domain rules, bidding correctness, timing, winner selection, and seller or bidder permissions.
+---
+
+# Auction Domain Correctness
 
 ## When to Apply
 - Use for bids, products, auction timing, winner selection, orders, seller/bidder permissions, and auction close jobs.

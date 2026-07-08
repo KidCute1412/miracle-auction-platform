@@ -1,4 +1,9 @@
-﻿# Automated Testing Methodology
+---
+name: automated-testing-methodology
+description: Use for backend, frontend, bug fix, regression, and CI-ready testing methodology.
+---
+
+# Automated Testing Methodology
 
 ## When to Apply
 - Use for any backend behavior change, frontend build-risk change, bug fix, or portfolio-readiness task.

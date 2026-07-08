@@ -1,4 +1,9 @@
-﻿# Event-Driven Resiliency
+---
+name: event-driven-resiliency
+description: Use for event-driven producers, consumers, worker jobs, notifications, and resilient side effects.
+---
+
+# Event-Driven Resiliency
 
 ## When to Apply
 - Use for Kafka/RabbitMQ producer or consumer changes, worker jobs, dashboard updates, emails, notifications, and bid side effects.

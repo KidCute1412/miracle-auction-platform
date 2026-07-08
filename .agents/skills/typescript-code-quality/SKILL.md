@@ -1,4 +1,9 @@
-﻿# TypeScript Code Quality
+---
+name: typescript-code-quality
+description: Use for TypeScript code quality across backend, frontend, services, controllers, hooks, workers, and API clients.
+---
+
+# TypeScript Code Quality
 
 ## When to Apply
 - Use for any TypeScript code change in Backend or Frontend.

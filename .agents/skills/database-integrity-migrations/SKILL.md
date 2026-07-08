@@ -1,4 +1,9 @@
-﻿# Database Integrity & Migrations
+---
+name: database-integrity-migrations
+description: Use for schema changes, indexes, constraints, seed data, query optimization, and Knex model changes.
+---
+
+# Database Integrity & Migrations
 
 ## When to Apply
 - Use for schema changes, indexes, constraints, seed data, query optimization, and Knex model changes.

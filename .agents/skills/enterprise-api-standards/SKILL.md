@@ -1,4 +1,9 @@
-﻿# Enterprise API Standards
+---
+name: enterprise-api-standards
+description: Use for Express routes, controllers, validation, API clients, response contracts, and error handling.
+---
+
+# Enterprise API Standards
 
 ## When to Apply
 - Use when adding or changing Express routes, controllers, validation, API clients, or error handling.

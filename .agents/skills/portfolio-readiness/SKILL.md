@@ -1,4 +1,9 @@
-﻿# Portfolio Readiness
+---
+name: portfolio-readiness
+description: Use for preparing the project for internship applications, demos, GitHub review, and deployment handoff.
+---
+
+# Portfolio Readiness
 
 ## When to Apply
 - Use when preparing the project for internship applications, demos, GitHub review, or deployment handoff.

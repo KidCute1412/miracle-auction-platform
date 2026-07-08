@@ -1,4 +1,9 @@
-﻿# Intelligent Cache Strategy
+---
+name: intelligent-cache-strategy
+description: Use for Redis caching, rate limiting, hot reads, bid throttling, and cache invalidation.
+---
+
+# Intelligent Cache Strategy
 
 ## When to Apply
 - Use for Redis caching, rate limiting, hot auction reads, product detail reads, bid throttling, and cache invalidation.

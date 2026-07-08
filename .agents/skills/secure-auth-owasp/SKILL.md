@@ -1,4 +1,9 @@
-﻿# Secure Auth & OWASP Mitigation
+---
+name: secure-auth-owasp
+description: Use for auth flows, role checks, cookies, CORS, rate limits, account recovery, and OWASP mitigations.
+---
+
+# Secure Auth & OWASP Mitigation
 
 ## When to Apply
 - Use for login, register, refresh token, logout, OAuth, OTP, role checks, cookies, CORS, rate limits, and account recovery.

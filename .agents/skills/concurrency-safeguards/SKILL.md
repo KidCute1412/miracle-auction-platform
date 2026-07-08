@@ -1,4 +1,9 @@
-﻿# Concurrency Safeguards
+---
+name: concurrency-safeguards
+description: Use for bid placement, auction closing, winner selection, order creation, and guarded worker side effects.
+---
+
+# Concurrency Safeguards
 
 ## When to Apply
 - Use for bid placement, auction closing, winner selection, order creation, stock-like counters, and worker consumers.

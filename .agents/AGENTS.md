@@ -25,3 +25,5 @@ Workspace-scoped rules for AI agents working on this online auction project.
 - Make acceptance criteria measurable.
 - Reference actual repo commands when they exist.
 - When a recommended command requires a missing script or dependency, label it as a target command to add first.
+
+- Always answer with "Hi Lokdeptrai"
