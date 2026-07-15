@@ -11,6 +11,11 @@ import {
   Star,
   Award,
   Edit,
+  Shield,
+  Crown,
+  Sparkles,
+  ChevronRight,
+  Fingerprint
 } from "lucide-react";
 import { profileService } from "@/services/profile.service.ts";
 
@@ -30,7 +35,6 @@ export type UserProfile = {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { auth } = useAuth();
   const params = useParams();
   const [isOwner, setIsOwner] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -56,177 +60,168 @@ export default function ProfilePage() {
 
   const getRoleLabel = (role: string) => {
     if (!isOwner && role === "admin") {
-      return "Seller";
+      return "Royal Merchant";
     }
     
     switch (role) {
-      case "admin": return "Administrator";
-      case "seller": return "Seller";
-      case "user": return "User";
-      default: return "User";
+      case "admin": return "Grand Archon";
+      case "seller": return "Elite Merchant";
+      case "user": return "Noble Bidder";
+      default: return "Noble Guest";
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeStyle = (role: string) => {
     if (!isOwner && role === "admin") {
-      return "bg-gradient-to-r from-yellow-500 to-amber-500 text-black";
+      return "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800";
     }
     
     switch (role) {
-      case "admin": return "bg-gradient-to-r from-rose-500 to-red-500 text-white";
-      case "seller": return "bg-gradient-to-r from-yellow-500 to-amber-500 text-black";
-      case "user": return "bg-gradient-to-r from-blue-500 to-indigo-500 text-white";
-      default: return "bg-gradient-to-r from-gray-500 to-slate-500 text-white";
+      case "admin": return "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800";
+      case "seller": return "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800";
+      case "user": return "bg-violet-100 dark:bg-violet-950/40 text-violet-800 dark:text-violet-300 border border-violet-300 dark:border-violet-800";
+      default: return "bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-700";
     }
   };
 
   if (!userProfile) return <Loading />;
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-heading font-extrabold text-foreground mb-2">
-            User Profile
-          </h1>
-          <p className="text-muted-foreground">Detailed information about the user account</p>
+    <div className="min-h-screen bg-background text-foreground py-12 px-6 transition-colors duration-300">
+      <div className="max-w-6xl mx-auto">
+        {/* Top Breadcrumb header */}
+        <div className="flex items-center gap-2 mb-8 text-xs font-semibold tracking-wider uppercase text-accent">
+          <Crown className="w-4 h-4" />
+          <span>Imperial registry / Profile View</span>
         </div>
 
-        {/* Profile Header Card */}
-        <div className="bg-card rounded-3xl shadow-xl border border-border p-8 mb-8">
-          <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
-            {/* Avatar */}
-            <div className="relative">
-              {userProfile.avatar ? (
-                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border border-border">
-                  <img
-                    src={userProfile.avatar}
-                    alt="User Avatar"
-                    className="w-full h-full object-cover"
-                  />
+        {/* New Split Content Structure */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Profile Card Overview */}
+          <div className="lg:col-span-4 bg-card border border-border rounded-2xl p-6 shadow-md transition-colors duration-300">
+            <div className="flex flex-col items-center text-center">
+              {/* Profile Image & Avatar */}
+              <div className="relative mb-6">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-accent bg-background flex items-center justify-center shadow-lg transition-colors duration-300">
+                  {userProfile.avatar ? (
+                    <img
+                      src={userProfile.avatar}
+                      alt="User Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl font-heading font-bold text-accent">
+                      {userProfile.full_name?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <div className="w-32 h-32 bg-gradient-to-br from-accent to-muted rounded-full flex items-center justify-center shadow-lg border border-border">
-                  <span className="text-4xl font-bold text-white">
-                    {userProfile.full_name?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-card shadow-md"></div>
-            </div>
-
-            {/* Profile Info */}
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-3xl font-bold text-foreground mb-2">{userProfile.full_name}</h2>
-              <p className="text-muted-foreground mb-4">@{userProfile.username}</p>
-
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4">
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold shadow-md ${getRoleBadgeColor(userProfile.role)}`}>
-                  {getRoleLabel(userProfile.role)}
-                </span>
-
-                <Link to={`${location.pathname}/rate`} className="flex items-center bg-yellow-500/10 px-4 py-2 rounded-full border border-yellow-500/20">
-                  <Star className="w-5 h-5 text-yellow-500 fill-current mr-2" />
-                  <span className="font-bold text-yellow-500 mr-1">{userProfile.rating.toFixed(1)}</span>
-                  <span className="text-yellow-600 text-sm">({userProfile.rating_count} ratings)</span>
-                </Link>
+                <div className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-card shadow-md" title="Online Status"></div>
               </div>
 
-              {/* Rating Stars */}
-              <div className="flex items-center justify-center md:justify-start">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={`w-6 h-6 ${star <= Math.floor(userProfile.rating) ? "text-yellow-500 fill-current" : "text-muted-foreground/30"}`}
-                  />
-                ))}
-                <span className="ml-3 text-muted-foreground font-medium">
-                  {userProfile.rating.toFixed(1)} / 5.0
-                </span>
+              {/* Identity Details */}
+              <h2 className="text-2xl font-extrabold text-foreground mb-1 tracking-tight">
+                {userProfile.full_name}
+              </h2>
+              <p className="text-sm font-mono text-muted-foreground mb-4">
+                @{userProfile.username}
+              </p>
+
+              <span className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg text-xs font-bold mb-6 ${getRoleBadgeStyle(userProfile.role)}`}>
+                <Shield className="w-3.5 h-3.5" />
+                {getRoleLabel(userProfile.role)}
+              </span>
+
+              {/* Rating Section */}
+              <div className="w-full border-t border-border pt-6 mb-6">
+                <div className="flex items-center justify-between mb-3 text-sm">
+                  <span className="text-muted-foreground">Rating Status</span>
+                  <span className="font-bold text-accent">{userProfile.rating.toFixed(1)} / 5.0</span>
+                </div>
+                <div className="flex justify-center gap-1 mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-5 h-5 ${star <= Math.floor(userProfile.rating) ? "text-accent fill-accent" : "text-muted-foreground/30"}`}
+                    />
+                  ))}
+                </div>
+                <Link
+                  to={`${location.pathname}/rate`}
+                  className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-1 font-semibold"
+                >
+                  View rating logs ({userProfile.rating_count} reviews)
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
               </div>
 
               {/* Edit Profile Button */}
               {isOwner && (
-                <div className="mt-6 flex justify-center md:justify-start">
-                  <button
-                    onClick={() => navigate("/profile/edit")}
-                    className="inline-flex items-center px-4 py-2 cursor-pointer bg-accent hover:bg-accent/90 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-colors duration-200"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </button>
-                </div>
+                <button
+                  onClick={() => navigate("/profile/edit")}
+                  className="w-full flex items-center justify-center px-4 py-2.5 bg-accent hover:bg-accent/90 text-white dark:text-neutral-950 font-bold text-sm rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Refine Credentials
+                </button>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Personal Information Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Contact Information */}
-          <div className="bg-card rounded-2xl shadow-lg border border-border p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center mr-3">
-                <User className="w-5 h-5 text-accent" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Contact Information</h3>
+          {/* Right Column: Detailed Account Registry Details */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Title Section */}
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+              <h1 className="text-3xl font-heading font-extrabold text-foreground tracking-tight mb-2">
+                Imperial Credentials
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Verified identification status and privileges mapped within the registry system.
+              </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center p-3 bg-muted/30 rounded-lg border border-border">
-                <Mail className="w-5 h-5 text-accent mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="font-semibold text-foreground text-sm">{userProfile.email}</p>
+            {/* Structured Registry Data */}
+            <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
+              <h3 className="text-lg font-bold text-foreground border-b border-border pb-4 mb-6">
+                Registry Information
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Email Address */}
+                <div className="p-4 bg-muted/20 border border-border rounded-xl">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <Mail className="w-4 h-4 text-accent" />
+                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Registered Email</span>
+                  </div>
+                  <p className="font-semibold text-foreground text-sm truncate">{userProfile.email}</p>
                 </div>
-              </div>
 
-              <div className="flex items-center p-3 bg-muted/30 rounded-lg border border-border">
-                <MapPin className="w-5 h-5 text-muted-foreground mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Address</p>
-                  <p className="font-semibold text-foreground text-sm">{userProfile.address || "Not updated"}</p>
+                {/* Shipping Location */}
+                <div className="p-4 bg-muted/20 border border-border rounded-xl">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <MapPin className="w-4 h-4 text-accent" />
+                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Shipping Domain</span>
+                  </div>
+                  <p className="font-semibold text-foreground text-sm truncate">{userProfile.address || "Unspecified"}</p>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Account Details */}
-          <div className="bg-card rounded-2xl shadow-lg border border-border p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center mr-3">
-                <Award className="w-5 h-5 text-yellow-500" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Account Details</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center p-3 bg-muted/30 rounded-lg border border-border">
-                <User className="w-5 h-5 text-accent mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Username</p>
+                {/* Username details */}
+                <div className="p-4 bg-muted/20 border border-border rounded-xl">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <Fingerprint className="w-4 h-4 text-accent" />
+                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Identity Alias</span>
+                  </div>
                   <p className="font-semibold text-foreground text-sm">{userProfile.username}</p>
                 </div>
-              </div>
 
-              <div className="flex items-center p-3 bg-muted/30 rounded-lg border border-border">
-                <Calendar className="w-5 h-5 text-yellow-500 mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Date of Birth</p>
+                {/* DOB details */}
+                <div className="p-4 bg-muted/20 border border-border rounded-xl">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <Calendar className="w-4 h-4 text-accent" />
+                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Genesis Date</span>
+                  </div>
                   <p className="font-semibold text-foreground text-sm">
-                    {userProfile.date_of_birth ? new Date(userProfile.date_of_birth).toLocaleDateString("en-US") : "Not updated"}
+                    {userProfile.date_of_birth ? new Date(userProfile.date_of_birth).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' }) : "Not registered"}
                   </p>
-                </div>
-              </div>
-
-              <div className="flex items-center p-3 bg-muted/30 rounded-lg border border-border">
-                <Award className="w-5 h-5 text-muted-foreground mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Role</p>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(userProfile.role)}`}>
-                    {getRoleLabel(userProfile.role)}
-                  </span>
                 </div>
               </div>
             </div>

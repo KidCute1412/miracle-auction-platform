@@ -13,6 +13,10 @@ Workspace-scoped rules for AI agents working on this online auction project.
 - Preserve user-facing product copy unless the task explicitly asks for copy changes.
 
 ## Engineering Rules
+- Before analyzing, planning, or editing an implementation task, identify the smallest relevant set of skills using `.agents/skills/README.md` and read every selected `SKILL.md` in full.
+- Announce the selected skills and why they apply before taking implementation actions. If no project skill applies, state that explicitly and continue with the repository rules.
+- Follow the selected skills throughout the task; do not begin implementation based only on the skill index or roadmap references.
+- When a task spans multiple areas, read every applicable domain skill before changing the affected area (for example, bidding, payments, authentication, database changes, workers, or frontend API behavior).
 - Prefer the repo stack already in use: Express 5, TypeScript, Knex, PostgreSQL, Redis, Kafka/RabbitMQ-style workers, Socket.io, React, Vite, Tailwind, Docker, and k6.
 - Keep implementation changes focused on the requested scope.
 - Do not mix large codebase upgrades with skill or documentation rewrites in the same change.
