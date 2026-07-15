@@ -1,5 +1,5 @@
 import React from "react";
-import { Code, Server, Award, Github, Mail, Zap, Radio, CreditCard, ShoppingBag, CheckCircle2 } from "lucide-react";
+import { Code, Server, Award, Github, Mail, Zap, Radio, CreditCard, ShoppingBag, CheckCircle2, ChevronRight, ShieldCheck, Sparkles } from "lucide-react";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 
 const HeaderSection = () => {
@@ -8,27 +8,32 @@ const HeaderSection = () => {
   return (
     <div
       ref={ref}
-      className={`relative bg-gradient-to-br from-background via-muted/10 to-background py-16 md:py-20 overflow-hidden transition-all duration-1000 ${
-        isIntersecting ? "animate__animated animate__fadeInDown" : "opacity-0"
+      className={`relative bg-gradient-to-b from-background via-accent/5 to-background py-20 md:py-28 overflow-hidden transition-all duration-1000 ease-out ${
+        isIntersecting ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8"
       }`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent"></div>
-      <div className="absolute top-20 right-20 w-72 h-72 bg-accent/5 rounded-full blur-3xl"></div>
+      {/* Background aesthetics */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-accent/10 via-transparent to-transparent"></div>
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-accent/5 rounded-full blur-[120px] animate-pulse"></div>
+      <div className="absolute top-20 right-20 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl"></div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-500/10 rounded-full border border-accent/30 mb-6">
-          <Award className="w-4 h-4 text-accent" />
-          <span className="text-xs font-bold text-accent uppercase tracking-widest">
-            About Us
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-glass border border-accent/30 rounded-full mb-6 shadow-gold-glow">
+          <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
+          <span className="text-[10px] font-bold text-accent font-syne uppercase tracking-[0.25em]">
+            Elite Auction Platform
           </span>
         </div>
 
-        <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-foreground mb-4 leading-tight">
-          Passionate Tech Team
+        <h1 className="text-4xl md:text-6xl font-heading font-extrabold text-foreground mb-6 leading-tight tracking-tight">
+          Crafting The Future of <br className="hidden md:inline" />
+          <span className="animate-text-shimmer bg-gradient-to-r from-accent via-amber-200 to-accent bg-clip-text text-transparent">
+            Digital Luxury Trading
+          </span>
         </h1>
 
-        <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          An online auction platform developed by a talented team, delivering a unique, transparent, and trustworthy trading experience.
+        <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
+          An elite online auction platform meticulously engineered by a visionary team, delivering a highly secure, transparent, and prestigious trading ecosystem.
         </p>
       </div>
     </div>
@@ -41,112 +46,119 @@ const ProjectOverview = () => {
   const features = [
     {
       icon: Zap,
-      title: "Auto Bidding",
-      description: "The system automatically places bids on your behalf when outbid",
-      color: "from-amber-400 to-orange-400",
+      title: "Smart Auto-Bidding",
+      description: "Pre-set maximum bid limits; our system dynamically outbids competitors in real-time.",
+      color: "from-accent via-amber-500 to-amber-600",
     },
     {
       icon: Radio,
-      title: "Real-Time Bids",
-      description: "Instant bid updates driven by Socket.io technology",
-      color: "from-blue-400 to-indigo-400",
+      title: "Real-Time Updates",
+      description: "Sub-millisecond socket connections ensure instant bid notifications and live updates.",
+      color: "from-amber-400 via-amber-500 to-accent",
     },
     {
       icon: CreditCard,
-      title: "Secure Payments",
-      description: "A safe, transparent, and highly protected checkout workflow",
-      color: "from-emerald-400 to-teal-400",
+      title: "Prestigious Checkouts",
+      description: "Seamless and secure transaction gateways protected by enterprise-grade cryptographic layers.",
+      color: "from-accent via-yellow-500 to-amber-500",
     },
     {
       icon: Github,
-      title: "Open Source Project",
-      description: "Source code open on GitHub for community contributions",
-      color: "from-slate-500 to-slate-600",
+      title: "Transparent Source",
+      description: "Our complete architecture is open on GitHub, welcoming security audits and contributions.",
+      color: "from-neutral-400 via-neutral-500 to-neutral-600",
     },
     {
       icon: ShoppingBag,
-      title: "Diverse Selection",
-      description: "Integrated APIs from Tiki and other reputable catalog sources",
-      color: "from-purple-400 to-pink-400",
+      title: "Premium Catalogs",
+      description: "Curated collections and verified items aggregated from the most trusted global catalogs.",
+      color: "from-accent via-amber-300 to-yellow-500",
     },
     {
       icon: CheckCircle2,
-      title: "Verification Workflow",
-      description: "Email verification and professional user profile management",
-      color: "from-rose-400 to-red-400",
+      title: "KYC Verification",
+      description: "Rigorous seller and bidder verification processes ensuring a fraud-free ecosystem.",
+      color: "from-yellow-500 via-amber-500 to-accent",
     },
   ];
 
   return (
     <div
       ref={ref}
-      className={`max-w-5xl mx-auto px-4 py-8 transition-opacity duration-1000 ${
-        isIntersecting ? "animate__animated animate__fadeInUp" : "opacity-0"
+      className={`max-w-5xl mx-auto px-4 py-16 transition-all duration-1000 ease-out ${
+        isIntersecting ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       }`}
     >
-      <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-4xl font-heading font-extrabold text-foreground mb-3">
-          Online Auction (MIRACLE)
+      <div className="text-center mb-16">
+        <h2 className="text-3xl md:text-5xl font-heading font-extrabold text-foreground mb-4 tracking-tight">
+          The MIRACLE Architecture
         </h2>
-        <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          A modern online auction platform with cutting-edge technology, delivering a secure, convenient, and thrilling trading experience for all.
+        <div className="w-16 h-1 bg-gradient-to-r from-transparent via-accent to-transparent mx-auto mb-4"></div>
+        <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
+          An assembly of state-of-the-art features engineered to redefine the excitement and security of real-time online bidding.
         </p>
       </div>
 
-      <div className="relative max-w-3xl mx-auto">
-        <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-border transform -translate-x-1/2"></div>
+      <div className="relative max-w-4xl mx-auto">
+        {/* Glowing Timeline Bar */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-accent/5 via-accent/30 to-accent/5 transform -translate-x-1/2"></div>
 
-        <div className="relative space-y-12">
+        <div className="relative space-y-16">
           {features.map((feature, index) => {
             const isLeft = index % 2 === 0;
             return (
               <div
                 key={index}
-                className={`flex items-center ${isLeft ? "flex-row" : "flex-row-reverse"} gap-4`}
+                className={`flex items-center ${isLeft ? "flex-row" : "flex-row-reverse"} gap-6`}
               >
                 {/* Feature Card */}
                 <div
-                  className={`w-5/12 group relative bg-card rounded-2xl p-5 border border-border/80 hover:border-accent/40 hover:shadow-gold-glow/5 transition-all duration-300 hover:-translate-y-1 ${
-                    isIntersecting ? "animate__animated animate__fadeIn" : "opacity-0"
+                  className={`w-5/12 group relative bg-glass/30 rounded-2xl p-6 border border-border/40 hover:border-accent/40 hover:shadow-gold-glow/10 transition-all duration-500 hover:-translate-y-1.5 ${
+                    isIntersecting ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                   }`}
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  style={{ transitionDelay: `${index * 100}ms` }}
                 >
-                  <div className="relative flex items-start gap-4">
+                  {/* Subtle hover glow backdrop */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-accent/0 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                  
+                  <div className="relative flex flex-col sm:flex-row items-start gap-4">
                     <div className="relative flex-shrink-0">
-                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} rounded-xl blur-md opacity-20`}></div>
-                      <div className={`relative w-10 h-10 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center shadow-md`}>
-                        <feature.icon className="w-5 h-5 text-white" />
+                      <div className="absolute inset-0 bg-accent/20 rounded-xl blur-md opacity-50 group-hover:scale-125 transition-transform duration-500"></div>
+                      <div className={`relative w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center shadow-lg border border-white/10 group-hover:rotate-6 transition-transform duration-300`}>
+                        <feature.icon className="w-5.5 h-5.5 text-black font-bold" />
                       </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-foreground mb-1">
+                      <h3 className="text-base font-bold text-foreground mb-1.5 tracking-tight group-hover:text-accent transition-colors">
                         {feature.title}
                       </h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
+                      <p className="text-xs text-muted-foreground leading-relaxed font-light">
                         {feature.description}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Connector Dot */}
+                {/* Connector Dot with pulses */}
                 <div className="relative z-10 flex-shrink-0">
                   <div
-                    className={`w-3.5 h-3.5 rounded-full bg-gradient-to-br ${feature.color} shadow-md border-2 border-background ${
-                      isIntersecting ? "animate__animated animate__zoomIn" : "opacity-0"
-                    }`}
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  ></div>
+                    className={`w-4 h-4 rounded-full bg-gradient-to-br ${feature.color} shadow-lg border-2 border-background flex items-center justify-center ${
+                      isIntersecting ? "scale-100" : "scale-0"
+                    } transition-all duration-500`}
+                    style={{ transitionDelay: `${index * 100}ms` }}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-background animate-ping"></div>
+                  </div>
                 </div>
 
                 {/* Branch Line */}
                 <div className={`w-5/12 h-[1px] ${isLeft ? "mr-auto" : "ml-auto"}`}>
                   <div
-                    className={`h-full bg-gradient-to-${isLeft ? "r" : "l"} from-border to-transparent ${
-                      isIntersecting ? "animate__animated animate__fadeIn" : "opacity-0"
-                    }`}
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    className={`h-full bg-gradient-to-${isLeft ? "r" : "l"} from-accent/30 to-transparent ${
+                      isIntersecting ? "opacity-100" : "opacity-0"
+                    } transition-opacity duration-700`}
+                    style={{ transitionDelay: `${index * 100}ms` }}
                   ></div>
                 </div>
               </div>
@@ -164,43 +176,51 @@ const TechnologiesSection = () => {
   return (
     <div
       ref={ref}
-      className={`max-w-5xl mx-auto px-4 pb-8 transition-opacity duration-1000 ${
-        isIntersecting ? "animate__animated animate__fadeInLeft" : "opacity-0"
+      className={`max-w-5xl mx-auto px-4 py-12 transition-all duration-1000 ease-out ${
+        isIntersecting ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       }`}
     >
-      <div className="grid md:grid-cols-2 gap-5">
+      <div className="grid md:grid-cols-2 gap-6">
         {/* Frontend Technologies info panel */}
-        <div className="group relative bg-card rounded-2xl border border-border p-6 text-center hover:border-accent/30 hover:shadow-gold-glow/5 transition-all duration-300 hover:-translate-y-1">
-          <div className="relative">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 bg-blue-500 rounded-2xl blur-md opacity-10"></div>
-              <div className="relative w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto shadow-md">
-                <Code className="w-6 h-6 text-white" />
+        <div className="group relative bg-glass/30 rounded-2xl border border-border/40 p-8 text-center hover:border-accent/40 hover:shadow-gold-glow/10 transition-all duration-500 hover:-translate-y-1.5 overflow-hidden">
+          <div className="absolute -right-16 -top-16 w-32 h-32 bg-accent/5 rounded-full blur-2xl group-hover:bg-accent/10 transition-colors"></div>
+          
+          <div className="relative z-10">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-accent/20 rounded-2xl blur-md opacity-30 mx-auto w-14 h-14"></div>
+              <div className="relative w-14 h-14 bg-gradient-to-br from-accent to-amber-500 rounded-2xl flex items-center justify-center mx-auto shadow-md border border-white/10 group-hover:scale-110 transition-transform duration-300">
+                <Code className="w-6 h-6 text-black" />
               </div>
             </div>
 
-            <h3 className="text-base font-bold text-foreground mb-1">Frontend</h3>
-            <p className="text-xs text-muted-foreground mb-4">A modern, responsive user interface</p>
-            <div className="inline-flex items-center px-4 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-              <span className="text-blue-500 font-semibold text-xs">React + TypeScript</span>
+            <h3 className="text-lg font-bold text-foreground mb-1.5 tracking-tight">Vibrant Frontend</h3>
+            <p className="text-xs text-muted-foreground mb-5 leading-relaxed font-light">
+              Crafted using React 19, TypeScript, Tailwind CSS, and optimized with custom high-performance rendering.
+            </p>
+            <div className="inline-flex items-center px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full">
+              <span className="text-accent font-semibold text-xs tracking-wider font-syne">React + TypeScript</span>
             </div>
           </div>
         </div>
 
         {/* Backend Technologies info panel */}
-        <div className="group relative bg-card rounded-2xl border border-border p-6 text-center hover:border-accent/30 hover:shadow-gold-glow/5 transition-all duration-300 hover:-translate-y-1">
-          <div className="relative">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 bg-emerald-500 rounded-2xl blur-md opacity-10"></div>
-              <div className="relative w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto shadow-md">
-                <Server className="w-6 h-6 text-white" />
+        <div className="group relative bg-glass/30 rounded-2xl border border-border/40 p-8 text-center hover:border-accent/40 hover:shadow-gold-glow/10 transition-all duration-500 hover:-translate-y-1.5 overflow-hidden">
+          <div className="absolute -left-16 -top-16 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-colors"></div>
+
+          <div className="relative z-10">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-amber-500/20 rounded-2xl blur-md opacity-30 mx-auto w-14 h-14"></div>
+              <div className="relative w-14 h-14 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl flex items-center justify-center mx-auto shadow-md border border-white/10 group-hover:scale-110 transition-transform duration-300">
+                <Server className="w-6 h-6 text-black" />
               </div>
             </div>
 
-            <h3 className="text-base font-bold text-foreground mb-1">Backend</h3>
-            <p className="text-xs text-muted-foreground mb-4">Powerful APIs with top-tier security standards</p>
-            <div className="inline-flex items-center px-4 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-              <span className="text-emerald-500 font-semibold text-xs">Node.js + Express</span>
+            <h3 className="text-lg font-bold text-foreground mb-1.5 tracking-tight">Robust Backend</h3>
+            <p className="text-xs text-muted-foreground mb-5 leading-relaxed font-light">
+              Powered by Node.js, Express, Knex, PostgreSQL, and Redis to achieve extreme throughput and absolute bid consistency.
+            </p>
+            <div className="inline-flex items-center px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
+              <span className="text-amber-400 font-semibold text-xs tracking-wider font-syne">Node.js + Express</span>
             </div>
           </div>
         </div>
@@ -215,76 +235,99 @@ const TeamSection = () => {
   return (
     <div
       ref={ref}
-      className={`max-w-5xl mx-auto px-4 pb-8 transition-opacity duration-1000 ${
-        isIntersecting ? "animate__animated animate__fadeInUp" : "opacity-0"
+      className={`max-w-5xl mx-auto px-4 py-12 transition-all duration-1000 ease-out ${
+        isIntersecting ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       }`}
     >
-      <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-4xl font-heading font-extrabold text-foreground mb-3">
+      <div className="text-center mb-16">
+        <h2 className="text-3xl md:text-5xl font-heading font-extrabold text-foreground mb-4 tracking-tight">
           Development Team
         </h2>
-        <p className="text-sm text-muted-foreground">The brains behind this platform</p>
+        <div className="w-16 h-1 bg-gradient-to-r from-transparent via-accent to-transparent mx-auto mb-4"></div>
+        <p className="text-sm text-muted-foreground font-light">The visionaries behind MIRACLE</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-8">
         {/* Developer Member 1 */}
-        <div className="group relative bg-card rounded-2xl border border-border p-6 text-center hover:border-accent/30 hover:shadow-gold-glow/5 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          <div className="relative">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-10"></div>
-              <div className="relative w-28 h-28 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-lg border-2 border-border/20">
-                <span className="text-3xl font-extrabold text-white">LT</span>
+        <div className="group relative bg-glass/30 rounded-3xl border border-border/40 p-8 text-center hover:border-accent/40 hover:shadow-gold-glow/15 transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-accent/0 via-accent/0 to-accent/5 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+          
+          <div className="relative z-10">
+            <div className="relative mb-6 inline-block">
+              {/* Spinning borders effect */}
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-accent to-amber-500 rounded-full opacity-30 group-hover:opacity-100 group-hover:animate-spin duration-1000 transition-opacity blur-[2px]"></div>
+              <div className="relative w-28 h-28 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-full flex items-center justify-center mx-auto shadow-xl border-4 border-background">
+                <span className="text-3xl font-extrabold text-accent font-heading">LT</span>
               </div>
-              <div className="absolute bottom-1 right-[38%] w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full border-2 border-background shadow-md flex items-center justify-center">
-                <Award className="w-4 h-4 text-white" />
+              <div className="absolute bottom-1 right-1 w-8 h-8 bg-gradient-to-br from-accent to-amber-500 rounded-full border-2 border-background shadow-md flex items-center justify-center">
+                <Award className="w-4 h-4 text-black font-bold" />
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-foreground mb-2">Lê Tuấn Lộc</h3>
-            <div className="inline-flex items-center px-3.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-4">
-              <span className="text-blue-500 font-semibold text-xs">Full-Stack Developer</span>
+            <h3 className="text-2xl font-bold text-foreground mb-1.5 tracking-tight">Lê Tuấn Lộc</h3>
+            <div className="inline-flex items-center px-4 py-1 bg-accent/10 border border-accent/20 rounded-full mb-5">
+              <span className="text-accent font-semibold text-xs tracking-wider font-syne">Full-Stack Developer</span>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed max-w-sm mx-auto">
-              Web developer with a passion for designing wonderful user experiences.
+            <p className="text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed max-w-sm mx-auto font-light">
+              Specialized in crafting modern, fluid interfaces and ensuring smooth interactive animations.
             </p>
-            <div className="flex justify-center space-x-2.5">
-              <button className="p-2 bg-muted/30 hover:bg-muted border border-border rounded-xl text-muted-foreground hover:text-foreground transition-all cursor-pointer">
+            <div className="flex justify-center space-x-3">
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noreferrer"
+                className="p-2.5 bg-neutral-900/50 hover:bg-accent border border-border/50 hover:border-accent rounded-xl text-muted-foreground hover:text-black transition-all cursor-pointer shadow-sm hover:scale-110"
+              >
                 <Github className="w-4 h-4" />
-              </button>
-              <button className="p-2 bg-muted/30 hover:bg-muted border border-border rounded-xl text-muted-foreground hover:text-foreground transition-all cursor-pointer">
+              </a>
+              <a
+                href="mailto:contact@example.com"
+                className="p-2.5 bg-neutral-900/50 hover:bg-accent border border-border/50 hover:border-accent rounded-xl text-muted-foreground hover:text-black transition-all cursor-pointer shadow-sm hover:scale-110"
+              >
                 <Mail className="w-4 h-4" />
-              </button>
+              </a>
             </div>
           </div>
         </div>
 
         {/* Developer Member 2 */}
-        <div className="group relative bg-card rounded-2xl border border-border p-6 text-center hover:border-accent/30 hover:shadow-gold-glow/5 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          <div className="relative">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-slate-500 rounded-full blur-xl opacity-10"></div>
-              <div className="relative w-28 h-28 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center mx-auto shadow-lg border-2 border-border/20">
-                <span className="text-3xl font-extrabold text-white">NT</span>
+        <div className="group relative bg-glass/30 rounded-3xl border border-border/40 p-8 text-center hover:border-accent/40 hover:shadow-gold-glow/15 transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-500/0 via-amber-500/0 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+
+          <div className="relative z-10">
+            <div className="relative mb-6 inline-block">
+              {/* Spinning borders effect */}
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full opacity-30 group-hover:opacity-100 group-hover:animate-spin duration-1000 transition-opacity blur-[2px]"></div>
+              <div className="relative w-28 h-28 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-full flex items-center justify-center mx-auto shadow-xl border-4 border-background">
+                <span className="text-3xl font-extrabold text-amber-400 font-heading">NT</span>
               </div>
-              <div className="absolute bottom-1 right-[38%] w-8 h-8 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full border-2 border-background shadow-md flex items-center justify-center">
-                <Award className="w-4 h-4 text-white" />
+              <div className="absolute bottom-1 right-1 w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full border-2 border-background shadow-md flex items-center justify-center">
+                <Award className="w-4 h-4 text-black font-bold" />
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-foreground mb-2">Nguyễn Thanh Tiến</h3>
-            <div className="inline-flex items-center px-3.5 py-1 bg-muted border border-border rounded-full mb-4">
-              <span className="text-muted-foreground font-semibold text-xs">Full-Stack Developer</span>
+            <h3 className="text-2xl font-bold text-foreground mb-1.5 tracking-tight">Nguyễn Thanh Tiến</h3>
+            <div className="inline-flex items-center px-4 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full mb-5">
+              <span className="text-amber-400 font-semibold text-xs tracking-wider font-syne">Full-Stack Developer</span>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed max-w-sm mx-auto">
-              Building robust backend solutions and optimizing application performances.
+            <p className="text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed max-w-sm mx-auto font-light">
+              Expert in highly available backend infrastructures, low latency databases, and security standard optimization.
             </p>
-            <div className="flex justify-center space-x-2.5">
-              <button className="p-2 bg-muted/30 hover:bg-muted border border-border rounded-xl text-muted-foreground hover:text-foreground transition-all cursor-pointer">
+            <div className="flex justify-center space-x-3">
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noreferrer"
+                className="p-2.5 bg-neutral-900/50 hover:bg-accent border border-border/50 hover:border-accent rounded-xl text-muted-foreground hover:text-black transition-all cursor-pointer shadow-sm hover:scale-110"
+              >
                 <Github className="w-4 h-4" />
-              </button>
-              <button className="p-2 bg-muted/30 hover:bg-muted border border-border rounded-xl text-muted-foreground hover:text-foreground transition-all cursor-pointer">
+              </a>
+              <a
+                href="mailto:contact@example.com"
+                className="p-2.5 bg-neutral-900/50 hover:bg-accent border border-border/50 hover:border-accent rounded-xl text-muted-foreground hover:text-black transition-all cursor-pointer shadow-sm hover:scale-110"
+              >
                 <Mail className="w-4 h-4" />
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -299,24 +342,28 @@ const MissionSection = () => {
   return (
     <div
       ref={ref}
-      className={`max-w-5xl mx-auto px-4 pb-12 transition-opacity duration-1000 ${
-        isIntersecting ? "animate__animated animate__fadeInUp" : "opacity-0"
+      className={`max-w-5xl mx-auto px-4 py-16 transition-all duration-1000 ease-out ${
+        isIntersecting ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       }`}
     >
-      <div className="mt-8 relative bg-card rounded-2xl p-8 md:p-10 text-center border border-border shadow-sm overflow-hidden transition-colors duration-300">
+      <div className="relative bg-glass/30 rounded-3xl p-8 md:p-14 text-center border border-accent/25 shadow-gold-glow overflow-hidden">
+        {/* Glow rings in backend */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-accent/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
+
         <div className="relative z-10">
-          <div className="relative mb-5">
-            <div className="absolute inset-0 bg-slate-500 rounded-3xl blur-2xl opacity-10"></div>
-            <div className="relative w-16 h-16 bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 rounded-2xl flex items-center justify-center mx-auto shadow-md">
-              <Award className="w-8 h-8 text-white" />
+          <div className="relative mb-6 inline-block">
+            <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl opacity-40 mx-auto w-16 h-16"></div>
+            <div className="relative w-16 h-16 bg-gradient-to-br from-accent to-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg border border-white/10">
+              <ShieldCheck className="w-8 h-8 text-black" />
             </div>
           </div>
 
-          <h3 className="text-2xl md:text-3xl font-heading font-extrabold text-foreground mb-4">
-            Our Mission
+          <h3 className="text-3xl md:text-4xl font-heading font-extrabold text-foreground mb-4 tracking-tight">
+            Our Elite Mission
           </h3>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Creating a trustworthy online auction arena where everyone can trade in a fair, transparent, and safe manner. We continuously innovate to deliver the best experience for our community.
+          <p className="text-xs sm:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
+            To build the world’s most secure and luxurious online bidding arena. Through decentralized transparency, premium styling, and flawless engineering, we strive to make online trading a thrilling and trusted journey.
           </p>
         </div>
       </div>
@@ -326,7 +373,7 @@ const MissionSection = () => {
 
 export default function AboutPage() {
   return (
-    <div className="bg-background text-foreground transition-colors duration-300">
+    <div className="bg-background text-foreground min-h-screen pb-12 transition-colors duration-300">
       <HeaderSection />
       <ProjectOverview />
       <TechnologiesSection />

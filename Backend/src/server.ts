@@ -53,6 +53,12 @@ export const io = new Server(httpServer, {
 const port = 5000;
 
 // Middlewares
+app.use(
+  cors({
+    origin: "http://localhost:5173", //allow send cookie so set specific domain
+    credentials: true, //allow send cookie
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -62,19 +68,12 @@ const limiter = rateLimit({
     sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as Promise<any>,
   }),
   windowMs: 15 * 60 * 1000, // 15 minutes window
-  limit: 100, // Limit each IP to 100 requests per window
+  limit: 2000, // Limit each IP to 2000 requests per window (increased from 100 for local development/testing)
   standardHeaders: true, // Return rate limit info in the headers
   legacyHeaders: false, // Disable legacy rate limit headers
   message: { message: "Too many requests from this IP, please try again later." },
 });
 app.use(limiter);
-
-app.use(
-  cors({
-    origin: "http://localhost:5173", //allow send cookie so set specific domain
-    credentials: true, //allow send cookie
-  })
-);
 
 var pathAdmin: String = variableConfig.pathAdmin; //set global variable for admin routes
 app.use("/", clientRoutes);

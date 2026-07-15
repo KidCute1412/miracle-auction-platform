@@ -6,8 +6,13 @@ import { productService } from "@/services/product.service.ts";
 
 function Section2() {
   return (
-    <div className="relative py-12 px-4 text-foreground bg-background transition-colors duration-300">
-      <div className="space-y-12">
+    <div className="relative py-16 px-4 sm:px-6 lg:px-8 text-foreground bg-background transition-colors duration-300">
+      {/* Background ambient light effects */}
+      <div className="absolute top-1/4 left-10 w-96 h-96 bg-accent/5 dark:bg-accent/[0.01] rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-2/4 right-10 w-96 h-96 bg-accent/5 dark:bg-accent/[0.01] rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 left-20 w-96 h-96 bg-accent/5 dark:bg-accent/[0.01] rounded-full blur-3xl pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto space-y-16">
         <Section21 />
         <Section22 />
         <Section23 />
@@ -45,36 +50,40 @@ function Section21() {
   }, []);
 
   return (
-    <div>
-      {/* Header section with Clock icon */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3.5 mb-3">
-          <div className="relative">
-            <div className="relative bg-gradient-to-r from-orange-500 to-red-500 p-2.5 rounded-2xl shadow-md">
-              <Clock className="w-6 h-6 text-white" />
+    <div className="space-y-6">
+      {/* Premium Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border/60">
+        <div className="flex items-start gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute -inset-1 bg-gradient-to-r from-accent to-accent-foreground/50 rounded-2xl blur opacity-25" />
+            <div className="relative bg-card border border-accent/25 p-3 rounded-2xl shadow-lg shadow-accent/5">
+              <Clock className="w-6 h-6 text-accent animate-pulse" />
             </div>
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-heading font-extrabold text-foreground">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="text-[10px] font-bold tracking-widest text-accent uppercase font-mono">
+                URGENT LISTINGS
+              </span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-heading font-black text-foreground tracking-tight uppercase">
               Ending Soon
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Place your bids before time runs out
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Place your bids before time runs out and lock in your win
             </p>
           </div>
         </div>
-        <div className="h-1 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
       </div>
 
-      {/* Products list HorizontalBar carousel */}
+      {/* Products Carousel */}
       <div className="relative">
-        <HorizontalBar className="h-[400px] rounded-3xl bg-orange-500/5 dark:bg-orange-500/[0.02] border border-orange-500/10">
-          {products &&
-            products.length > 0 &&
+        <HorizontalBar className="h-[490px] rounded-3xl bg-accent/[0.015] dark:bg-accent/[0.003] border border-accent/10 shadow-[0_8px_30px_rgba(226,184,59,0.01)]">
+          {products && products.length > 0 ? (
             products.map((item, index) => (
-              <div key={index} className="flex justify-center">
+              <div key={index} className="flex justify-center px-3 py-4">
                 <ProductCard
-                  className="scale-80 hover:scale-85 shadow-md"
                   product_image={item.product_images ? item.product_images[0] : ""}
                   product_id={item.product_id}
                   product_name={item.product_name}
@@ -87,7 +96,12 @@ function Section21() {
                   bid_turns={item.bid_turns}
                 />
               </div>
-            ))}
+            ))
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-muted-foreground text-sm">
+              No auctions ending soon
+            </div>
+          )}
         </HorizontalBar>
       </div>
     </div>
@@ -110,36 +124,40 @@ function Section22() {
   }, []);
 
   return (
-    <div>
-      {/* Header section with TrendingUp icon */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3.5 mb-3">
-          <div className="relative">
-            <div className="relative bg-gradient-to-r from-emerald-500 to-teal-500 p-2.5 rounded-2xl shadow-md">
-              <TrendingUp className="w-6 h-6 text-white" />
+    <div className="space-y-6">
+      {/* Premium Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border/60">
+        <div className="flex items-start gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute -inset-1 bg-gradient-to-r from-accent to-accent-foreground/50 rounded-2xl blur opacity-25" />
+            <div className="relative bg-card border border-accent/25 p-3 rounded-2xl shadow-lg shadow-accent/5">
+              <TrendingUp className="w-6 h-6 text-accent animate-pulse" />
             </div>
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-heading font-extrabold text-foreground">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="text-[10px] font-bold tracking-widest text-accent uppercase font-mono">
+                HOT DEALS
+              </span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-heading font-black text-foreground tracking-tight uppercase">
               Most Bids
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Most popular items with the highest bid counts
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Most popular items gaining high interaction and intense bidding action
             </p>
           </div>
         </div>
-        <div className="h-1 w-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"></div>
       </div>
 
-      {/* Products list HorizontalBar carousel */}
+      {/* Products Carousel */}
       <div className="relative">
-        <HorizontalBar className="h-[400px] rounded-3xl bg-emerald-500/5 dark:bg-emerald-500/[0.02] border border-emerald-500/10">
-          {products &&
-            products.length > 0 &&
+        <HorizontalBar className="h-[490px] rounded-3xl bg-accent/[0.015] dark:bg-accent/[0.003] border border-accent/10 shadow-[0_8px_30px_rgba(226,184,59,0.01)]">
+          {products && products.length > 0 ? (
             products.map((item, index) => (
-              <div key={index} className="flex justify-center">
+              <div key={index} className="flex justify-center px-3 py-4">
                 <ProductCard
-                  className="scale-80 hover:scale-85 shadow-md"
                   product_image={item.product_images ? item.product_images[0] : ""}
                   product_id={item.product_id}
                   product_name={item.product_name}
@@ -152,7 +170,12 @@ function Section22() {
                   bid_turns={item.bid_turns}
                 />
               </div>
-            ))}
+            ))
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-muted-foreground text-sm">
+              No highly active auctions at this moment
+            </div>
+          )}
         </HorizontalBar>
       </div>
     </div>
@@ -175,36 +198,40 @@ function Section23() {
   }, []);
 
   return (
-    <div>
-      {/* Header section with DollarSign icon */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3.5 mb-3">
-          <div className="relative">
-            <div className="relative bg-gradient-to-r from-violet-500 to-purple-500 p-2.5 rounded-2xl shadow-md">
-              <DollarSign className="w-6 h-6 text-white" />
+    <div className="space-y-6">
+      {/* Premium Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border/60">
+        <div className="flex items-start gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute -inset-1 bg-gradient-to-r from-accent to-accent-foreground/50 rounded-2xl blur opacity-25" />
+            <div className="relative bg-card border border-accent/25 p-3 rounded-2xl shadow-lg shadow-accent/5">
+              <DollarSign className="w-6 h-6 text-accent animate-pulse" />
             </div>
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-heading font-extrabold text-foreground">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="text-[10px] font-bold tracking-widest text-accent uppercase font-mono">
+                EXCLUSIVE MASTERPIECES
+              </span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-heading font-black text-foreground tracking-tight uppercase">
               Highest Price
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              The most valuable items on the market
+            <p className="text-sm text-muted-foreground mt-0.5">
+              The premium, high-value, and luxurious items currently listed on the marketplace
             </p>
           </div>
         </div>
-        <div className="h-1 w-16 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"></div>
       </div>
 
-      {/* Products list HorizontalBar carousel */}
+      {/* Products Carousel */}
       <div className="relative">
-        <HorizontalBar className="h-[400px] rounded-3xl bg-violet-500/5 dark:bg-violet-500/[0.02] border border-violet-500/10">
-          {products &&
-            products.length > 0 &&
+        <HorizontalBar className="h-[490px] rounded-3xl bg-accent/[0.015] dark:bg-accent/[0.003] border border-accent/10 shadow-[0_8px_30px_rgba(226,184,59,0.01)]">
+          {products && products.length > 0 ? (
             products.map((item, index) => (
-              <div key={index} className="flex justify-center">
+              <div key={index} className="flex justify-center px-3 py-4">
                 <ProductCard
-                  className="scale-80 hover:scale-85 shadow-md"
                   product_image={item.product_images ? item.product_images[0] : ""}
                   product_id={item.product_id}
                   product_name={item.product_name}
@@ -217,7 +244,12 @@ function Section23() {
                   bid_turns={item.bid_turns}
                 />
               </div>
-            ))}
+            ))
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-muted-foreground text-sm">
+              No high value items listed yet
+            </div>
+          )}
         </HorizontalBar>
       </div>
     </div>

@@ -70,3 +70,11 @@ cd Frontend; npm run test:e2e
 
 ## Portfolio Signal
 - The UI feels production-ready: resilient API handling, accessible forms, clean sockets, responsive layouts, and reliable build gates.
+
+## Vanguard Elite Design Guidelines
+When working on Frontend user interfaces, you MUST align with the **Vanguard Elite** styling philosophy:
+- **Obsidian Dark Mode & Ivory Light Mode**: Deep obsidian slate background `oklch(0.08 0.005 240)` for dark mode, titanium alabaster white `oklch(0.98 0.003 60)` for light mode.
+- **Champagne Gold Accents**: High-class champagne gold `oklch(0.78 0.09 75)` for VIP focus details, borders, primary action highlights.
+- **Classic Luxury + Future-Tech Fusion**: Clean serif/sans-serif fonts (Outfit, Syne, Inter) paired with glassmorphism `bg-glass`, thin border glow rays, and polished metallic hover animations.
+- **Prestige Bidding indicators**: Active states must feel premium (e.g., emerald green heartbeat pulse, luxury typography for numbers).
+

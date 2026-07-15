@@ -102,6 +102,10 @@ export default function MyProductsPage() {
   const [isLoading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     const getData = async() => {
       try {
         setLoading(true);
@@ -125,7 +129,7 @@ export default function MyProductsPage() {
     };
 
     getData();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, auth]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
