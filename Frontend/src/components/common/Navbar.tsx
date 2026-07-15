@@ -1,5 +1,4 @@
 import { useState } from "react";
-import auction from "@/assets/logos/auction-logo.svg";
 import { Link } from "react-router-dom";
 import CatagoriseButton from "@/components/common/CategoriesMenu";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +21,7 @@ function Navbar() {
           onClick={() => navigate("/")}
         >
           <img
-            src={auction}
+            src="/favicon.png"
             alt="logo"
             className="h-10 w-10 object-cover rounded-full hover:rotate-12 transition-transform duration-300"
           />

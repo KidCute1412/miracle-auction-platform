@@ -11,7 +11,6 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import bidding from "@/assets/icons/bid_turn.svg";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function AuthLayout() {
