@@ -64,6 +64,12 @@ create table if not exists agent_runs (
   updated_at timestamptz not null default now()
 );
 
+alter table agent_runs add column if not exists project_config jsonb;
+alter table agent_runs add column if not exists workflow_state text;
+alter table agent_runs add column if not exists iteration integer not null default 0 check (iteration >= 0);
+alter table agent_runs add column if not exists workspace_path text;
+alter table agent_runs add column if not exists active_pid integer;
+
 create table if not exists agent_steps (
   id uuid primary key default gen_random_uuid(),
   run_id uuid not null references agent_runs(id) on delete cascade,
@@ -111,7 +117,37 @@ create table if not exists agent_approvals (
   created_at timestamptz not null default now()
 );
 
+create table if not exists agent_messages (
+  id uuid primary key default gen_random_uuid(),
+  run_id uuid not null references agent_runs(id) on delete cascade,
+  iteration integer not null check (iteration >= 0),
+  from_agent text not null,
+  to_agent text,
+  message_type text not null,
+  content text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create sequence if not exists agent_events_sequence;
+
+create table if not exists agent_events (
+  id uuid primary key default gen_random_uuid(),
+  run_id uuid not null references agent_runs(id) on delete cascade,
+  sequence bigint not null default nextval('agent_events_sequence'),
+  event_type text not null,
+  channel text not null,
+  agent_id text,
+  step_id uuid references agent_steps(id) on delete set null,
+  content text not null default '',
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  unique (run_id, sequence)
+);
+
 create index if not exists idx_agent_runs_status_created_at on agent_runs(status, created_at);
 create index if not exists idx_agent_steps_run_id_created_at on agent_steps(run_id, created_at);
 create index if not exists idx_agent_artifacts_run_id_created_at on agent_artifacts(run_id, created_at);
 create index if not exists idx_agent_command_audits_run_id_created_at on agent_command_audits(run_id, created_at);
+create index if not exists idx_agent_messages_run_id_created_at on agent_messages(run_id, created_at);
+create index if not exists idx_agent_events_run_id_sequence on agent_events(run_id, sequence);

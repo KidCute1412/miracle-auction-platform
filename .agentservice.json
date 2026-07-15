@@ -1,0 +1,19 @@
+{
+  "projectName": "Online Auction",
+  "repoRoot": ".",
+  "workspaceRoot": "AgentService/.agent-workspaces",
+  "maxIterations": 3,
+  "maxChangedFiles": 80,
+  "providers": {
+    "antigravity": {
+      "command": "antigravity",
+      "args": ["run", "--stdin"],
+      "capabilities": ["planner"]
+    },
+    "codex": {
+      "command": "codex",
+      "args": ["exec", "--skip-git-repo-check", "-"],
+      "capabilities": ["coder", "tester", "reviewer"]
+    }
+  }
+}

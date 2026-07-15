@@ -1,11 +1,71 @@
-Frontend/node_modules/
-Backend/node_modules/
-AgentService/node_modules/
+# ============================================================
+# node_modules — all workspaces
+# ============================================================
+node_modules/
+**/node_modules/
+
+# ============================================================
+# Environment files — all workspaces
+# ============================================================
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# ============================================================
+# Build outputs
+# ============================================================
+Backend/dist/
 AgentService/dist/
+Frontend/dist/
+Frontend/dist-ssr/
+PerformanceTests/dist/
+
+# ============================================================
+# Uploads / user-generated content
+# ============================================================
+Backend/uploads/
+
+# ============================================================
+# AgentService runtime artefacts
+# ============================================================
 AgentService/.agent-workspaces/
-Backend/.env
-AgentService/.env
+AgentService/.logs/
+
+# ============================================================
+# Python virtual environments
+# ============================================================
 Python/.venv/
-data/.venv
-data/.env
+data/.venv/
+**/.venv/
+
+# ============================================================
+# Logs
+# ============================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================================
+# Editor / OS artefacts
+# ============================================================
 .vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================================================
+# k6 / PerformanceTests generated files
+# ============================================================
+PerformanceTests/tokens.json

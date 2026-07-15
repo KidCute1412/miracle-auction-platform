@@ -2,9 +2,7 @@ import knex from "knex";
 import dotenv from "dotenv";
 dotenv.config();
 
-let db: any;
-try {
-  db = knex({
+const db = knex({
     client: process.env.DB_CLIENT,
     connection: {
       user: process.env.DB_USER,
@@ -18,10 +16,17 @@ try {
       max: 10,
       idleTimeoutMillis: 30000 // Close idle connections after 30 seconds to prevent leaks
     },
-  });
-  console.log("Connect to database successfully!");
-} catch (error) {
-  console.log("ERROR when connecting to database!!!!");
+});
+
+export async function checkDatabaseConnection(): Promise<boolean> {
+  try {
+    await db.raw("select 1");
+    return true;
+  } catch (error) {
+    console.error("[DATABASE] Connection check failed:", error);
+    return false;
+  }
 }
+
 export default db;
 

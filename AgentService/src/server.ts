@@ -5,7 +5,7 @@ import { logger } from "./shared/logger.js";
 
 const config = loadConfig();
 const pool = createPool(config);
-const app = createApp(pool, config.nodeEnv);
+const app = createApp(pool, config);
 
 const server = app.listen(config.port, () => {
   logger.info("agent service listening", { port: config.port });

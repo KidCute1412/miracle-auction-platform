@@ -12,6 +12,7 @@ class FakeRunner implements CommandExecutor {
       executable: input.executable,
       args: input.args,
       cwd: input.cwd,
+      pid: 123,
       exitCode: 0,
       stdout: "ok",
       stderr: "",
@@ -27,7 +28,7 @@ test("CliProviderAdapter constructs a stdin-based command", async () => {
     {
       name: "codex",
       executable: "codex",
-      capabilities: ["implementer"],
+      capabilities: ["coder"],
       baseArgs: ["exec", "--stdin"],
     },
     runner,
@@ -36,7 +37,9 @@ test("CliProviderAdapter constructs a stdin-based command", async () => {
   const result = await adapter.run({
     runId: "run-1",
     stepId: "step-1",
-    step: "implementer",
+    step: "coder",
+    agentId: "coder",
+    displayChannel: "Codex",
     prompt: "do work",
     workspacePath: process.cwd(),
     tokenBudget: 1000,

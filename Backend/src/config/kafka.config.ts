@@ -19,14 +19,29 @@ export const kafka = new Kafka({
 
 // Create singleton producer instance
 const producer = kafka.producer();
+let producerConnected = false;
 
 // Initialize connection to Kafka
-export async function initKafka() {
+export async function initKafka(): Promise<boolean> {
   try {
     await producer.connect();
+    producerConnected = true;
     console.log("[KAFKA] Producer connected successfully!");
+    return true;
   } catch (error) {
     console.error("[KAFKA] Failed to connect producer:", error);
+    return false;
+  }
+}
+
+export async function checkKafkaConnection(): Promise<boolean> {
+  return producerConnected || initKafka();
+}
+
+export async function closeKafkaConnection(): Promise<void> {
+  if (producerConnected) {
+    await producer.disconnect();
+    producerConnected = false;
   }
 }
 

@@ -12,6 +12,22 @@ From the repository root:
 
 The script starts local Postgres through Docker Compose, installs AgentService dependencies if needed, applies the AgentService migration, and opens separate terminals for the API and worker.
 
+When Windows Terminal (`wt`) is available, the API and worker are opened in one `Online Auction - Agents` tab with split panes. Otherwise, the script falls back to two separate command windows.
+
+Submit a task from the repository root:
+
+```powershell
+.\agent-task.bat
+```
+
+This prompts for a task, creates an agent run, prints the status/artifact URLs, and polls the run until it reaches a terminal or approval state.
+
+If migration fails with `password authentication failed for user "postgres"`, `AgentService/.env` is pointing at the wrong Postgres. This project maps its Docker Postgres to host port `15432` to avoid conflicts with other projects, so the default local URL is:
+
+```env
+DATABASE_URL=postgresql://postgres:my_local_password@localhost:15432/online_auction_agents
+```
+
 ## Runtime
 
 - API server: `npm run dev` or `npm start`

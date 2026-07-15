@@ -5,7 +5,42 @@ import { loadConfig } from "../config/env.js";
 import { createPool } from "../storage/database.js";
 import { logger } from "../shared/logger.js";
 
+const maxAttempts = 30;
+const retryDelayMs = 2000;
+
 const quoteIdentifier = (value: string): string => `"${value.replaceAll('"', '""')}"`;
+
+const sleep = async (durationMs: number): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, durationMs));
+};
+
+const withRetry = async (label: string, action: () => Promise<void>): Promise<void> => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await action();
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      if (message.toLowerCase().includes("password authentication failed")) {
+        throw new Error(
+          `${label} failed because DATABASE_URL credentials were rejected. ` +
+            "Update AgentService/.env DATABASE_URL to match the Postgres running on localhost:5432, " +
+            "or stop that Postgres so Docker Compose can start the project Postgres.",
+        );
+      }
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+      logger.warn(`${label} not ready, retrying`, {
+        attempt,
+        maxAttempts,
+        retryDelayMs,
+        message,
+      });
+      await sleep(retryDelayMs);
+    }
+  }
+};
 
 const ensureDatabaseExists = async (databaseUrl: string): Promise<void> => {
   const parsed = new URL(databaseUrl);
@@ -35,17 +70,22 @@ const ensureDatabaseExists = async (databaseUrl: string): Promise<void> => {
 
 const run = async (): Promise<void> => {
   const config = loadConfig();
-  await ensureDatabaseExists(config.databaseUrl);
-  const pool = createPool(config);
   const migrationPath = path.resolve("migrations", "001_agent_service_schema.sql");
   const sql = await fs.readFile(migrationPath, "utf8");
 
-  try {
-    await pool.query(sql);
-    logger.info("agent service migration applied", { migrationPath });
-  } finally {
-    await pool.end();
-  }
+  await withRetry("postgres maintenance connection", async () => {
+    await ensureDatabaseExists(config.databaseUrl);
+  });
+
+  await withRetry("agent database migration", async () => {
+    const pool = createPool(config);
+    try {
+      await pool.query(sql);
+      logger.info("agent service migration applied", { migrationPath });
+    } finally {
+      await pool.end();
+    }
+  });
 };
 
 void run().catch((error: unknown) => {

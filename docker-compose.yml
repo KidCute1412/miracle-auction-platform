@@ -2,13 +2,13 @@ services:
   # Local Postgres database for development and testing
   postgres:
     image: postgres:15-alpine
-    container_name: local-postgres-testing
+    container_name: online-auction-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: my_local_password
       POSTGRES_DB: online_auction_test
     ports:
-      - "5432:5432"
+      - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./data/database.sql:/docker-entrypoint-initdb.d/01-database.sql
@@ -19,24 +19,24 @@ services:
   # Local Redis cache and rate limiting service
   redis:
     image: redis:7-alpine
-    container_name: local-redis-testing
+    container_name: online-auction-redis
     ports:
-      - "6379:6379"
+      - "16379:6379"
     volumes:
       - redis_data:/data
 
   # Local Kafka event streaming broker in KRaft mode
   kafka:
     image: apache/kafka:3.7.0
-    container_name: local-kafka-testing
+    container_name: online-auction-kafka
     ports:
-      - "9092:9092"
-      - "9094:9094"
+      - "19092:9092"
+      - "19094:9094"
     environment:
       - KAFKA_NODE_ID=1
       - KAFKA_PROCESS_ROLES=broker,controller
       - KAFKA_LISTENERS=INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
-      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:19094
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
@@ -49,7 +49,7 @@ services:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-    container_name: local-node-worker
+    container_name: online-auction-node-worker
     command: npm run worker
     volumes:
       - ./Backend:/app
@@ -68,10 +68,12 @@ services:
 
   # Multi-agent development automation service
   agent-service:
+    profiles:
+      - agents
     build:
       context: ./AgentService
       dockerfile: Dockerfile
-    container_name: local-agent-service
+    container_name: online-auction-agent-service
     command: npm start
     ports:
       - "8010:8010"
@@ -82,19 +84,21 @@ services:
       - /app/node_modules
     environment:
       - AGENT_SERVICE_PORT=8010
-      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test
+      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_agents
       - AGENT_REPO_ROOT=/workspace/source
       - AGENT_WORKSPACE_ROOT=/app/.agent-workspaces
       - CODEX_CLI_PATH=codex
-      - ANTIGRAVITY_CLI_PATH=
+      - ANTIGRAVITY_CLI_PATH=antigravity
     depends_on:
       - postgres
 
   agent-worker:
+    profiles:
+      - agents
     build:
       context: ./AgentService
       dockerfile: Dockerfile
-    container_name: local-agent-worker
+    container_name: online-auction-agent-worker
     command: npm run start:worker
     volumes:
       - ./AgentService:/app
@@ -102,11 +106,11 @@ services:
       - agent_workspaces:/app/.agent-workspaces
       - /app/node_modules
     environment:
-      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test
+      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_agents
       - AGENT_REPO_ROOT=/workspace/source
       - AGENT_WORKSPACE_ROOT=/app/.agent-workspaces
       - CODEX_CLI_PATH=codex
-      - ANTIGRAVITY_CLI_PATH=
+      - ANTIGRAVITY_CLI_PATH=antigravity
     depends_on:
       - postgres
 

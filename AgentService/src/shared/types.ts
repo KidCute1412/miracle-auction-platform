@@ -21,7 +21,13 @@ export type AgentStepName =
 
 export type AgentStepStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled" | "timed_out";
 
-export type AgentCapability = "planner" | "implementer" | "tester" | "reviewer";
+export type AgentCapability = "planner" | "coder" | "implementer" | "tester" | "reviewer";
+
+export type WorkflowAgentId = "planner" | "coder" | "tester" | "reviewer" | "orchestrator";
+
+export type AgentMessageType = "instruction" | "result" | "feedback" | "decision";
+
+export type AgentEventType = "status" | "stdout" | "stderr" | "message" | "artifact" | "decision" | "error";
 
 export type AgentArtifactType =
   | "context_pack"
@@ -45,16 +51,33 @@ export type AgentErrorCode =
 
 export interface ProviderMapping {
   planner: string;
-  implementer: string;
+  coder: string;
+  implementer?: string;
   tester: string;
   reviewer: string;
 }
 
 export interface TokenBudgets {
   planner: number;
-  implementer: number;
+  coder: number;
+  implementer?: number;
   tester: number;
   reviewer: number;
+}
+
+export interface ProjectProviderConfig {
+  command: string;
+  args: string[];
+  capabilities: AgentCapability[];
+}
+
+export interface ProjectConfig {
+  projectName: string;
+  repoRoot: string;
+  workspaceRoot: string;
+  maxIterations: number;
+  providers: Record<string, ProjectProviderConfig>;
+  maxChangedFiles?: number;
 }
 
 export interface AgentRun {
@@ -64,6 +87,11 @@ export interface AgentRun {
   currentStep: AgentStepName | null;
   providerMapping: ProviderMapping;
   tokenBudgets: TokenBudgets;
+  projectConfig: ProjectConfig | null;
+  workflowState: string | null;
+  iteration: number;
+  workspacePath: string | null;
+  activePid: number | null;
   errorCode: AgentErrorCode | null;
   errorMessage: string | null;
   createdAt: Date;
@@ -94,10 +122,36 @@ export interface AgentArtifact {
   createdAt: Date;
 }
 
+export interface AgentMessage {
+  id: string;
+  runId: string;
+  iteration: number;
+  fromAgent: WorkflowAgentId;
+  toAgent: WorkflowAgentId | null;
+  messageType: AgentMessageType;
+  content: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface AgentEvent {
+  id: string;
+  runId: string;
+  sequence: number;
+  eventType: AgentEventType;
+  channel: string;
+  agentId: WorkflowAgentId | null;
+  stepId: string | null;
+  content: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
 export interface CreateRunInput {
   task: string;
   providerMapping?: Partial<ProviderMapping>;
   tokenBudgets?: Partial<TokenBudgets>;
+  projectConfigPath?: string;
 }
 
 export interface CreateRunData {

@@ -4,6 +4,8 @@ export interface AgentProviderInput {
   runId: string;
   stepId: string;
   step: AgentCapability;
+  agentId: string;
+  displayChannel: string;
   prompt: string;
   workspacePath: string;
   tokenBudget: number;

@@ -47,6 +47,12 @@ Responsibilities:
 
 V1 uses Postgres as the durable source of truth for the agent queue and lifecycle. The recommended local database is separate from the product database, for example `online_auction_agents`. Even when the same Postgres server is reused, agent data lives in `agent_*` tables and should not be mixed with auction business tables.
 
+This project maps local infrastructure to non-default host ports to avoid conflicts with other Docker projects:
+
+- Postgres: `localhost:15432`
+- Redis: `localhost:16379`
+- Kafka external listener: `localhost:19094`
+
 Main tables:
 
 - `agent_runs`: task, status, current step, provider mapping, token budgets.
@@ -83,6 +89,12 @@ The developer creates a run through the API. The service validates the request a
 Endpoint:
 
 - `POST /api/agent-runs`
+
+Local helper:
+
+- `.\agent-task.bat`
+
+The helper prompts for a task, creates a run, prints status and artifact URLs, and polls progress from the terminal.
 
 ### 2. Context Indexing
 

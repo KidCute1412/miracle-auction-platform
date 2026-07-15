@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 dotenv.config();
 
@@ -36,6 +38,12 @@ const readOptional = (name: string): string | null => {
   return value ? value : null;
 };
 
+const serviceRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
+
+const resolveFromServiceRoot = (value: string): string => {
+  return path.isAbsolute(value) ? value : path.resolve(serviceRoot, value);
+};
+
 export const loadConfig = (): AgentServiceConfig => {
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) {
@@ -46,8 +54,8 @@ export const loadConfig = (): AgentServiceConfig => {
     nodeEnv: process.env.NODE_ENV ?? "development",
     port: readNumber("AGENT_SERVICE_PORT", 8010),
     databaseUrl,
-    workspaceRoot: process.env.AGENT_WORKSPACE_ROOT?.trim() || ".agent-workspaces",
-    repoRoot: process.env.AGENT_REPO_ROOT?.trim() || "..",
+    workspaceRoot: resolveFromServiceRoot(process.env.AGENT_WORKSPACE_ROOT?.trim() || ".agent-workspaces"),
+    repoRoot: resolveFromServiceRoot(process.env.AGENT_REPO_ROOT?.trim() || ".."),
     pollIntervalMs: readNumber("AGENT_POLL_INTERVAL_MS", 2500),
     commandTimeoutMs: readNumber("AGENT_COMMAND_TIMEOUT_MS", 120000),
     maxOutputBytes: readNumber("AGENT_MAX_OUTPUT_BYTES", 65536),

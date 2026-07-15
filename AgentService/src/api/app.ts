@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import type { AgentServiceConfig } from "../config/env.js";
 import type { Queryable } from "../storage/database.js";
 import { checkDatabase } from "../storage/database.js";
 import { AgentRepository } from "../storage/agent.repository.js";
@@ -9,10 +10,17 @@ import { createErrorMiddleware } from "./error.middleware.js";
 import { requestIdMiddleware } from "./requestId.middleware.js";
 import { sendSuccess } from "./response.js";
 
-export const createApp = (db: Queryable, nodeEnv = "development"): express.Express => {
+export const createApp = (
+  db: Queryable,
+  nodeEnvOrConfig: string | AgentServiceConfig = "development",
+): express.Express => {
   const app = express();
   const repository = new AgentRepository(db);
-  const service = new AgentRunService(repository);
+  const nodeEnv = typeof nodeEnvOrConfig === "string" ? nodeEnvOrConfig : nodeEnvOrConfig.nodeEnv;
+  const service =
+    typeof nodeEnvOrConfig === "string"
+      ? new AgentRunService(repository)
+      : new AgentRunService(repository, nodeEnvOrConfig.repoRoot, nodeEnvOrConfig.maxChangedFiles);
 
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));

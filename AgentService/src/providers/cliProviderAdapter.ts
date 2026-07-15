@@ -2,12 +2,14 @@ import { AppError } from "../shared/errors.js";
 import type { CommandExecutor, CommandResult } from "../sandbox/commandRunner.js";
 import type { AgentCapability } from "../shared/types.js";
 import type { AgentProviderAdapter, AgentProviderInput, AgentProviderResult } from "./provider.types.js";
+import { logger } from "../shared/logger.js";
 
 export interface CliProviderConfig {
   name: string;
   executable: string | null;
   capabilities: readonly AgentCapability[];
   baseArgs: readonly string[];
+  displayChannel?: string;
 }
 
 export type CommandAuditHook = (input: AgentProviderInput, result: CommandResult) => Promise<void>;
@@ -37,7 +39,7 @@ export class CliProviderAdapter implements AgentProviderAdapter {
     });
 
     if (result.exitCode !== 0) {
-      throw new AppError(503, "PROVIDER_UNAVAILABLE", `${this.name} CLI is not available`);
+      throw new AppError(502, "PROVIDER_UNAVAILABLE", `${this.name} CLI is not available`);
     }
   }
 
@@ -49,14 +51,27 @@ export class CliProviderAdapter implements AgentProviderAdapter {
       throw new AppError(503, "PROVIDER_UNAVAILABLE", `${this.name} cannot run ${input.step}`);
     }
 
+    logger.info(`starting provider command: ${this.name} (${input.step})`, {
+      runId: input.runId,
+      step: input.step,
+      executable: this.config.executable,
+      args: this.config.baseArgs,
+    });
+
     const result = await this.runner.run({
       executable: this.config.executable,
       args: [...this.config.baseArgs],
       cwd: input.workspacePath,
       stdin: input.prompt,
+      runId: input.runId,
+      stepId: input.stepId,
+      agentId: input.agentId,
+      channel: input.displayChannel || this.config.displayChannel || this.name,
       env: {
         AGENT_RUN_ID: input.runId,
         AGENT_STEP: input.step,
+        AGENT_ID: input.agentId,
+        AGENT_DISPLAY_CHANNEL: input.displayChannel || this.config.displayChannel || this.name,
         AGENT_TOKEN_BUDGET: String(input.tokenBudget),
       },
     });

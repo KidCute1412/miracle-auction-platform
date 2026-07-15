@@ -18,6 +18,7 @@ export const createRunSchema = Joi.object({
   task: Joi.string().trim().min(10).max(20000).required(),
   providerMapping: providerSchema,
   tokenBudgets: tokenBudgetsSchema,
+  projectConfigPath: Joi.string().trim().max(500).optional(),
 });
 
 export const runIdParamSchema = Joi.object({

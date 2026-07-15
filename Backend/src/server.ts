@@ -17,10 +17,21 @@ import { startAuctionEndEmailJob } from "./jobs/auction-end.job.ts";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import { redisClient } from "./config/redis.config.ts";
+import { checkDatabaseConnection } from "./config/database.config.ts";
+import { checkRedisConnection } from "./config/redis.config.ts";
+import { checkKafkaConnection } from "./config/kafka.config.ts";
 
 const app = express(); // Create express app
 app.set("trust proxy", 1); // Trust first proxy header
 const httpServer = createServer(app); // Create HTTP server
+
+app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
+app.get("/ready", async (_req, res) => {
+  const values = await Promise.all([checkDatabaseConnection(), checkRedisConnection(), checkKafkaConnection()]);
+  const dependencies = { database: values[0], redis: values[1], kafka: values[2] };
+  const ready = Object.values(dependencies).every(Boolean);
+  res.status(ready ? 200 : 503).json({ status: ready ? "ready" : "not_ready", dependencies });
+});
 
 // Create Socket.io server
 export const io = new Server(httpServer, {
@@ -48,7 +59,7 @@ app.use(cookieParser());
 // Configure Redis store rate limiting middleware
 const limiter = rateLimit({
   store: new RedisStore({
-    sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)),
+    sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as Promise<any>,
   }),
   windowMs: 15 * 60 * 1000, // 15 minutes window
   limit: 100, // Limit each IP to 100 requests per window
