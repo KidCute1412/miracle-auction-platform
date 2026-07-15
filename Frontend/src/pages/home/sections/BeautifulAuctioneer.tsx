@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // A stunning, beautiful interactive female auctioneer
 const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; containerRef: React.RefObject<HTMLDivElement | null> }) => {
@@ -6,6 +6,16 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
   const [isHovered, setIsHovered] = useState(false);
   const [isBlinking, setIsBlinking] = useState(false);
   const [isStriking, setIsStriking] = useState(false);
+
+  // Dark mode detection via MutationObserver on <html> class
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Interactive additions
   const [winkEye, setWinkEye] = useState<'left' | 'right' | null>(null);
@@ -16,34 +26,61 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
   // Idle state variables
   const [idleMouth, setIdleMouth] = useState<string | null>(null);
   const [idleEyeOffset, setIdleEyeOffset] = useState<{ x: number; y: number } | null>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isGlancingRef = useRef(false);
+  // Keep latest interaction state available to the global idle handler without re-registering
+  const isHoveredRef = useRef(isHovered);
+  const isCheeksHoveredRef = useRef(isCheeksHovered);
+  const winkEyeRef = useRef(winkEye);
+  useEffect(() => { isHoveredRef.current = isHovered; }, [isHovered]);
+  useEffect(() => { isCheeksHoveredRef.current = isCheeksHovered; }, [isCheeksHovered]);
+  useEffect(() => { winkEyeRef.current = winkEye; }, [winkEye]);
 
-  // Periodic random glance and expression shift when idle (every 7 seconds)
+  // Debounce-based idle glance: fires 3s after any mouse movement stops globally
   useEffect(() => {
-    const idleInterval = setInterval(() => {
-      if (!isHovered && !isCheeksHovered && !winkEye) {
-        // Random look direction: left, right, or slightly up/down
-        const rx = (Math.random() * 2 - 1) * 1.8;
-        const ry = (Math.random() * 2 - 1) * 1.0;
-        setIdleEyeOffset({ x: rx, y: ry });
-        
-        // Random mouth expression: whistle O shape or smug smile
-        const mouthShapes = [
-          "M 48.5 59 A 1.5 1.5 0 1 1 51.5 59 A 1.5 1.5 0 1 1 48.5 59", // O shape
-          "M 45 58 Q 50 55 55 58" // Smug smile
-        ];
-        const randMouth = mouthShapes[Math.floor(Math.random() * mouthShapes.length)];
-        setIdleMouth(randMouth);
-
-        // Reset to center/normal after 1.8 seconds
-        setTimeout(() => {
-          setIdleEyeOffset(null);
-          setIdleMouth(null);
-        }, 1800);
+    const triggerGlance = () => {
+      if (isGlancingRef.current) return;
+      if (isHoveredRef.current || isCheeksHoveredRef.current || winkEyeRef.current) {
+        // Card is being interacted with, reschedule
+        scheduleIdleGlance();
+        return;
       }
-    }, 7000);
+      isGlancingRef.current = true;
+      const rx = (Math.random() * 2 - 1) * 1.8;
+      const ry = (Math.random() * 2 - 1) * 1.0;
+      setIdleEyeOffset({ x: rx, y: ry });
+      const mouthShapes = [
+        "M 48.5 59 A 1.5 1.5 0 1 1 51.5 59 A 1.5 1.5 0 1 1 48.5 59", // O shape
+        "M 45 58 Q 50 55 55 58" // Smug smile
+      ];
+      setIdleMouth(mouthShapes[Math.floor(Math.random() * mouthShapes.length)]);
+      setTimeout(() => {
+        setIdleEyeOffset(null);
+        setIdleMouth(null);
+        isGlancingRef.current = false;
+        scheduleIdleGlance(); // Re-arm for next cycle
+      }, 1800);
+    };
 
-    return () => clearInterval(idleInterval);
-  }, [isHovered, isCheeksHovered, winkEye]);
+    const scheduleIdleGlance = () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(triggerGlance, 3000);
+    };
+
+    // Any global mouse movement resets the idle countdown (but never interrupts active glance)
+    const handleGlobalMouseMove = () => {
+      if (isGlancingRef.current) return;
+      scheduleIdleGlance();
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    scheduleIdleGlance(); // Arm on mount
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, []);
 
   const dialogues = [
     "Welcome to Miracle Auction. Shall we begin? :D",
@@ -175,6 +212,8 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
     let currentY = 0;
     let animationFrameId: number;
 
+    let hasMoved = false;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
@@ -184,19 +223,23 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
       const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
       targetX = clamp(x, -1, 1) * 2.0;
       targetY = clamp(y, -1, 1) * 1.5;
+      hasMoved = true;
     };
 
     const updatePosition = () => {
       let tx = 0;
       let ty = 0;
       
-      if (isHovered) {
+      if (hasMoved) {
+        // Mouse has moved somewhere on page: always follow it globally
         tx = targetX;
         ty = targetY;
-      } else if (idleEyeOffset) {
+      } else if (isGlancingRef.current && idleEyeOffset) {
+        // No mouse movement detected: use idle glance target
         tx = idleEyeOffset.x;
         ty = idleEyeOffset.y;
       }
+      // Otherwise return smoothly to center (tx=0, ty=0)
       
       const dx = tx - currentX;
       const dy = ty - currentY;
@@ -216,7 +259,7 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
       window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [containerRef, isHovered, idleEyeOffset]);
+  }, [containerRef, idleEyeOffset]);
 
   const mouthPath = idleMouth
     ? idleMouth
@@ -233,11 +276,26 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
       onMouseLeave={handleMouseLeave}
       onClick={handleCharacterClick}
     >
-      <div className="absolute w-[220px] h-[220px] bg-gradient-to-tr from-amber-500/20 to-yellow-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
+      {/* Layered halo effect: pink/purple in light mode, yellow/white in dark mode */}
+      {/* Outer soft diffusion */}
+      <div className="absolute w-[380px] h-[380px] rounded-full -z-10 animate-pulse" style={isDark
+        ? { background: 'radial-gradient(circle, rgba(255, 255, 255, 0.74) 0%, rgba(255,253,120,0.08) 55%, transparent 80%)', filter: 'blur(32px)' }
+        : { background: 'radial-gradient(circle, rgba(255, 200, 230, 0.73) 0%, rgba(216, 180, 254, 0.23) 55%, transparent 80%)', filter: 'blur(32px)' }
+      } />
+      {/* Mid fade */}
+      <div className="absolute w-[250px] h-[250px] rounded-full -z-10" style={isDark
+        ? { background: 'radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(249, 242, 42, 1) 60%, transparent 90%)', filter: 'blur(20px)' }
+        : { background: 'radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(250, 159, 209, 0.84) 60%, transparent 90%)', filter: 'blur(20px)' }
+      } />
+      {/* Inner bright core */}
+      <div className="absolute w-[160px] h-[160px] rounded-full -z-10 animate-pulse" style={{ animationDelay: '0.5s', ...(isDark
+        ? { background: 'radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(252, 233, 156, 1) 55%, transparent 85%)', filter: 'blur(10px)' }
+        : { background: 'radial-gradient(circle, rgba(239, 84, 84, 0.92) 0%, rgba(240, 171, 252, 1) 55%, transparent 85%)', filter: 'blur(10px)' }
+      ) }} />
 
       <svg
         viewBox="0 0 100 120"
-        className="w-full h-full drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:scale-[1.03]"
+        className={`w-full h-full transition-transform duration-500 hover:scale-[1.03] ${isDark ? 'drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)]' : 'drop-shadow-[0_8px_20px_rgba(0,0,0,0.15)]'}`}
       >
         <defs>
           <style>{`
@@ -315,8 +373,8 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
             <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.2" />
             <stop offset="30%" stopColor="#a78bfa" stopOpacity="0.2" />
             <stop offset="50%" stopColor="#ffffff" stopOpacity="0.95" />
-            <stop offset="70%" stopColor="#f59e0b" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.2" />
+            <stop offset="70%" stopColor={isDark ? "#f59e0b" : "#f472b6"} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={isDark ? "#f59e0b" : "#f472b6"} stopOpacity="0.2" />
             <animate attributeName="x1" from="-100%" to="100%" dur="4s" repeatCount="indefinite" />
             <animate attributeName="x2" from="0%" to="200%" dur="4s" repeatCount="indefinite" />
           </linearGradient>
