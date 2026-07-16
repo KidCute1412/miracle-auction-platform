@@ -22,6 +22,14 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
   const [isRippling, setIsRippling] = useState(false);
   const [isCheeksHovered, setIsCheeksHovered] = useState(false);
   const [isAutoShowing, setIsAutoShowing] = useState(false);
+  const [isAppearing, setIsAppearing] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsAppearing(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Idle state variables
   const [idleMouth, setIdleMouth] = useState<string | null>(null);
@@ -117,7 +125,7 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
     return () => clearInterval(strikeInterval);
   }, []);
 
-  // Periodic idle auto-pop-up dialogue (every 15 seconds, displays for 4 seconds)
+  // Periodic idle auto-pop-up dialogue (every 7 seconds, displays for 4 seconds)
   useEffect(() => {
     const autoShowInterval = setInterval(() => {
       if (!isHovered && !isCheeksHovered && !winkEye) {
@@ -128,7 +136,7 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
           setIsAutoShowing(false);
         }, 4000);
       }
-    }, 15000);
+    }, 7000);
 
     return () => clearInterval(autoShowInterval);
   }, [isHovered, isCheeksHovered, winkEye]);
@@ -271,7 +279,7 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
 
   return (
     <div 
-      className="relative w-full max-w-[420px] aspect-[4/5] mx-auto flex items-center justify-center select-none cursor-pointer"
+      className={`relative w-full max-w-[420px] aspect-[4/5] mx-auto flex items-center justify-center select-none cursor-pointer ${isAppearing ? "holo-container" : ""}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleCharacterClick}
@@ -349,6 +357,58 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
               animation: heartWinkFlyRight 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
               transform-origin: 58.5px 46.5px;
             }
+            @keyframes holoBootContainer {
+              0% {
+                opacity: 0;
+                transform: scale(0.95) translateY(35px);
+              }
+              100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+              }
+            }
+            .holo-container {
+              animation: holoBootContainer 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+            @keyframes scanlineSweep {
+              0% { transform: translateY(-15px); opacity: 0; }
+              10% { opacity: 1; }
+              90% { opacity: 1; }
+              100% { transform: translateY(135px); opacity: 0; }
+            }
+            .holo-scanline-bar {
+              animation: scanlineSweep 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+            }
+            @keyframes raySweep {
+              0% {
+                transform: translateY(-20px);
+                opacity: 0;
+              }
+              15% {
+                opacity: 1;
+              }
+              85% {
+                opacity: 1;
+              }
+              100% {
+                transform: translateY(140px);
+                opacity: 0;
+              }
+            }
+            .light-ray-sweep {
+              animation: raySweep 2.0s cubic-bezier(0.25, 1, 0.5, 1) 0.8s forwards;
+            }
+            @keyframes revealHeight {
+              0% {
+                height: 0;
+              }
+              100% {
+                height: 150px;
+              }
+            }
+            .reveal-rect-animation {
+              animation: revealHeight 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+            }
           `}</style>
           <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#312221" />
@@ -413,8 +473,61 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
             <stop offset="85%" stopColor="#f1f5f9" />
             <stop offset="100%" stopColor="#e2e8f0" />
           </radialGradient>
+          <linearGradient id="scanTrail" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
+          </linearGradient>
+          <pattern id="scanGrid" width="100" height="2" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="100" y2="0" stroke="#06b6d4" strokeWidth="0.25" opacity="0.3" />
+          </pattern>
+          <filter id="laserGlow">
+            <feGaussianBlur stdDeviation="1.2" result="coloredBlur1"/>
+            <feGaussianBlur stdDeviation="0.4" result="coloredBlur2"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur1"/>
+              <feMergeNode in="coloredBlur2"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="holoRefraction" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.06 0.15" numOctaves="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          <linearGradient id="lightRayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0" />
+            <stop offset="45%" stopColor="#22d3ee" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#ffffff" stopOpacity="0.95" />
+            <stop offset="55%" stopColor="#22d3ee" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+          </linearGradient>
+          <clipPath id="characterClip">
+            {/* Hair back */}
+            <path d="M 34 44 C 34 53, 38 57, 50 57 C 62 57, 66 53, 66 44 Z" />
+            {/* Bun */}
+            <path d="M 62 47 C 69 43, 75 49, 74 56 C 73 62, 66 63, 61 57 Z" />
+            {/* Body blazer */}
+            <path d="M 32 76 C 32 82, 35 106, 35 114 L 65 114 C 65 106, 68 82, 68 76 C 68 72, 64 69, 50 69 C 36 69, 32 72, 32 76 Z" />
+            {/* Head/face */}
+            <path d="M 34 44 C 34 54, 40 64, 50 64 C 60 64, 66 54, 66 44 C 66 35, 61 31, 50 31 C 39 31, 34 35, 34 44 Z" />
+            {/* Left sleeve & hand */}
+            <path d="M 28 76 C 27 82, 29 90, 31 100 L 44 100 L 44 97 C 34 97, 31 91, 32 76 Z" />
+            <path d="M 44 97 L 51 97 C 52.5 97, 53 98, 53 98.5 C 53 99.2, 52 100, 44 100 Z" />
+            {/* Right sleeve & hand */}
+            <path d="M 72 76 C 73 82, 71 90, 69 100 L 56 100 L 56 97 C 66 97, 69 91, 68 76 Z" />
+            <path d="M 56 97 L 49 97 C 47.5 97, 47 98, 47 98.5 C 47 99.2, 48 100, 56 100 Z" />
+          </clipPath>
+          <mask id="revealMask">
+            <rect x="-10" y="-20" width="120" height="150" fill="#000000" />
+            <rect x="-10" y="-20" width="120" height="10" fill="#ffffff" className="reveal-rect-animation" />
+          </mask>
+          <mask id="wireframeMask">
+            <rect x="-10" y="-20" width="120" height="150" fill="#ffffff" />
+            <rect x="-10" y="-20" width="120" height="10" fill="#000000" className="reveal-rect-animation" />
+          </mask>
          </defs>
 
+        {/* Cyber-Chic Holographic Scanline Character Wrapper with Materialization Reveal Mask */}
+        <g className={isAppearing ? "holo-character-boot" : ""} mask={isAppearing ? "url(#revealMask)" : undefined}>
         {/* Extremely bright, yet tight outline glow wrapping only the character shape */}
         <g style={{
           filter: isDark
@@ -736,7 +849,40 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
             )}
           </g>
         </g>
+        {isAppearing && (
+          <rect
+            x="0"
+            y="-15"
+            width="100"
+            height="35"
+            fill="url(#lightRayGrad)"
+            clipPath="url(#characterClip)"
+            filter="url(#holoRefraction)"
+            className="light-ray-sweep pointer-events-none"
+          />
+        )}
         </g>
+        </g>
+
+        {/* Glowing wireframe/outline representing the digital materialization phase */}
+        {isAppearing && (
+          <g fill="none" stroke="#22d3ee" strokeWidth="0.8" filter="url(#laserGlow)" mask="url(#wireframeMask)" opacity="0.85" className="pointer-events-none">
+            {/* Hair back */}
+            <path d="M 34 44 C 34 53, 38 57, 50 57 C 62 57, 66 53, 66 44 Z" />
+            {/* Bun */}
+            <path d="M 62 47 C 69 43, 75 49, 74 56 C 73 62, 66 63, 61 57 Z" />
+            {/* Body blazer */}
+            <path d="M 32 76 C 32 82, 35 106, 35 114 L 65 114 C 65 106, 68 82, 68 76 C 68 72, 64 69, 50 69 C 36 69, 32 72, 32 76 Z" />
+            {/* Head/face */}
+            <path d="M 34 44 C 34 54, 40 64, 50 64 C 60 64, 66 54, 66 44 C 66 35, 61 31, 50 31 C 39 31, 34 35, 34 44 Z" />
+            {/* Left sleeve & hand */}
+            <path d="M 28 76 C 27 82, 29 90, 31 100 L 44 100 L 44 97 C 34 97, 31 91, 32 76 Z" />
+            <path d="M 44 97 L 51 97 C 52.5 97, 53 98, 53 98.5 C 53 99.2, 52 100, 44 100 Z" />
+            {/* Right sleeve & hand */}
+            <path d="M 72 76 C 73 82, 71 90, 69 100 L 56 100 L 56 97 C 66 97, 69 91, 68 76 Z" />
+            <path d="M 56 97 L 49 97 C 47.5 97, 47 98, 47 98.5 C 47 99.2, 48 100, 56 100 Z" />
+          </g>
+        )}
 
         <g className="transition-transform duration-300">
           <polygon points="5,100 95,100 85,118 15,118" fill="url(#glassGrad)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.7" />
@@ -790,6 +936,17 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
             )}
           </g>
         </g>
+
+        {/* Cyber-Chic Holographic Scan Line (laser + trailing glow + edge tracker lights) */}
+        {isAppearing && (
+          <g className="holo-scanline-bar pointer-events-none">
+            <rect x="0" y="-10" width="100" height="10" fill="url(#scanTrail)" />
+            <line x1="0" y1="0" x2="100" y2="0" stroke="#22d3ee" strokeWidth="0.8" filter="url(#laserGlow)" />
+            {/* Edge Glare Tracker Sparks */}
+            <circle cx="15" cy="0" r="1.2" fill="#22d3ee" filter="url(#laserGlow)" opacity="0.8" />
+            <circle cx="85" cy="0" r="1.2" fill="#22d3ee" filter="url(#laserGlow)" opacity="0.8" />
+          </g>
+        )}
       </svg>
 
       <div className={`absolute top-2 right-2 bg-popover/90 border border-accent/50 text-popover-foreground px-4 py-2.5 rounded-2xl shadow-[0_0_15px_rgba(245,158,11,0.25)] text-xs font-semibold tracking-wider transition-all duration-300 origin-bottom-left ${
