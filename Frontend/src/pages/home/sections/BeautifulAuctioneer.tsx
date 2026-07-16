@@ -276,22 +276,7 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
       onMouseLeave={handleMouseLeave}
       onClick={handleCharacterClick}
     >
-      {/* Layered halo effect: pink/purple in light mode, yellow/white in dark mode */}
-      {/* Outer soft diffusion */}
-      <div className="absolute w-[380px] h-[380px] rounded-full -z-10 animate-pulse" style={isDark
-        ? { background: 'radial-gradient(circle, rgba(255, 255, 255, 0.74) 0%, rgba(255,253,120,0.08) 55%, transparent 80%)', filter: 'blur(32px)' }
-        : { background: 'radial-gradient(circle, rgba(255, 200, 230, 0.73) 0%, rgba(216, 180, 254, 0.23) 55%, transparent 80%)', filter: 'blur(32px)' }
-      } />
-      {/* Mid fade */}
-      <div className="absolute w-[250px] h-[250px] rounded-full -z-10" style={isDark
-        ? { background: 'radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(249, 242, 42, 1) 60%, transparent 90%)', filter: 'blur(20px)' }
-        : { background: 'radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(250, 159, 209, 0.84) 60%, transparent 90%)', filter: 'blur(20px)' }
-      } />
-      {/* Inner bright core */}
-      <div className="absolute w-[160px] h-[160px] rounded-full -z-10 animate-pulse" style={{ animationDelay: '0.5s', ...(isDark
-        ? { background: 'radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(252, 233, 156, 1) 55%, transparent 85%)', filter: 'blur(10px)' }
-        : { background: 'radial-gradient(circle, rgba(239, 84, 84, 0.92) 0%, rgba(240, 171, 252, 1) 55%, transparent 85%)', filter: 'blur(10px)' }
-      ) }} />
+      {/* No background glow divs to ensure the glow only hugs the character outline */}
 
       <svg
         viewBox="0 0 100 120"
@@ -430,8 +415,12 @@ const BeautifulAuctioneer = ({ isSmiling, containerRef }: { isSmiling: boolean; 
           </radialGradient>
          </defs>
 
-        {/* Golden outline glow wrapping only the character shape */}
-        <g className="drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">
+        {/* Extremely bright, yet tight outline glow wrapping only the character shape */}
+        <g style={{
+          filter: isDark
+            ? "drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 2px rgba(253, 224, 71, 0.9)) drop-shadow(0 0 4px rgba(245, 158, 11, 0.85))"
+            : "drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 2px rgba(244, 114, 182, 0.9)) drop-shadow(0 0 4px rgba(236, 72, 153, 0.85))"
+        }}>
           {/* Gathered back hair (scalp back) */}
           <path 
             d="M 34 44 C 34 53, 38 57, 50 57 C 62 57, 66 53, 66 44 Z" 
