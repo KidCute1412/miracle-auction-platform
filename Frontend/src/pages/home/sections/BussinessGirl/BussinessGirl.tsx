@@ -200,7 +200,7 @@ const BussinessGirl = ({ isSmiling, containerRef }: { isSmiling: boolean; contai
       onClick={handleCharacterClick}
     >
       <svg
-        viewBox="0 0 90 120"
+        viewBox="0 0 100 120"
         className={`w-full h-full transition-transform duration-500 ${
           isScreenShaking ? "animate-svg-shake" : ""
         } ${isDark ? "drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)]" : "drop-shadow-[0_8px_20px_rgba(0,0,0,0.15)]"}`}

@@ -268,13 +268,13 @@ const Hero = () => {
           animation: elegantFadeInUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .gold-glow-text {
-          background: linear-gradient(to right, var(--color-accent), color-mix(in srgb, var(--color-accent) 60%, transparent));
+          background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           display: inline-block;
           cursor: default;
-          filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+          filter: drop-shadow(0 1px 2px rgba(99, 102, 241, 0.15));
         }
         .dark .gold-glow-text {
           background: linear-gradient(135deg, #e2b83b 0%, #fff6d6 50%, #e2b83b 100%);
