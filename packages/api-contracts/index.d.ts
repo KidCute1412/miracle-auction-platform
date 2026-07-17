@@ -118,3 +118,28 @@ export interface SellerOrderRecord extends OrderRecord {
 }
 export interface OrderDetailResponse<T extends OrderRecord = OrderRecord> { status: LegacySuccessStatus | LegacyErrorStatus; message: string; data: T | null; }
 export interface OrderStatusResponse extends LegacyStatusSuccess { message: string; }
+
+// Profiles, settings and users.
+export interface ProfileRecord {
+  user_id: number;
+  username: string;
+  full_name: string;
+  email: string;
+  role: string;
+  rating: number | null;
+  rating_count: number | null;
+  address: string | null;
+  date_of_birth: string | null;
+  avatar: string | null;
+  [key: string]: unknown;
+}
+export interface ProfileMeResponse { data: ProfileRecord; }
+export interface ProfileDetailQuery { user_id: number; username: string; }
+export interface ProfileDetailResponse { status: LegacySuccessStatus | LegacyErrorStatus; data?: ProfileRecord; is_owner?: boolean; message?: string; }
+export interface ProfileUpdateResponse extends LegacyStatusSuccess { message: string; data: ProfileRecord; }
+export interface AutoExtendTimeSetting { extend_time_minutes: number; threshold_minutes: number; }
+export interface AutoExtendTimeResponse { status: LegacySuccessStatus | LegacyErrorStatus; data?: AutoExtendTimeSetting | null; message?: string; }
+export interface SellerRegistrationRequest { reason: string; }
+export interface UserRatingRequest { user_id: number; score: number; comment: string; }
+export interface UserRatingQuery { user_id: number; username: string; page?: number; limit?: number; }
+export interface LegacyUserStatusResponse { status: LegacySuccessStatus | LegacyErrorStatus; message: string; }

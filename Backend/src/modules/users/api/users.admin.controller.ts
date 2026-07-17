@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as UsersService from "./users.service.ts";
+import * as UsersService from "../application/user.use-case.ts";
 
 // Fetch paginated user listing
 export async function list(req: Request, res: Response) {

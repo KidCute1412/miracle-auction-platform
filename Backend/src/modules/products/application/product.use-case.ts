@@ -1,5 +1,5 @@
 import * as ProductsModel from "../infrastructure/product.repository.ts";
-import * as usersModel from "@/modules/users/users.model.ts";
+import * as usersModel from "@/modules/users/infrastructure/user.repository.ts";
 import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
 import fs from "fs";

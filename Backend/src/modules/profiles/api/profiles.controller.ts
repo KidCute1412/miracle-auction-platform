@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as ProfilesService from "./profiles.service.ts";
+import * as profileUseCase from "../application/profile.use-case.ts";
 import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
 // Handle user profile edit requests
@@ -10,7 +10,7 @@ export async function editUserProfile(req: Request, res: Response) {
     data.user_id = user.user_id;
 
     const file = req.file as Express.Multer.File;
-    const results = await ProfilesService.editUserProfile(data, file);
+    const results = await profileUseCase.editUserProfile(data, file);
 
     return res.status(200).json({
       status: "success",
@@ -40,7 +40,7 @@ export async function getUserProfileDetail(req: Request, res: Response) {
       });
     }
 
-    const profileDetail = await ProfilesService.getUserProfileDetail({
+    const profileDetail = await profileUseCase.getUserProfileDetail({
       username,
       user_id: parseInt(user_id),
       current_user_id: user ? user.user_id : null,

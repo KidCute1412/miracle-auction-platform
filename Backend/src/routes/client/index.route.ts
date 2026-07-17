@@ -4,10 +4,10 @@ const route = express.Router();
 import accountRoutes from "@/modules/accounts/api/accounts.routes.ts";
 import { clientCategoryRouter as categoriesRoutes } from "@/modules/categories/api/categories.routes.ts";
 import { clientProductRouter as productsRoutes } from "@/modules/products/api/products.routes.ts";
-import { profileRouter as profileRoutes } from "@/modules/profiles/profiles.routes.ts";
+import { profileRouter as profileRoutes } from "@/modules/profiles/api/profiles.routes.ts";
 import bidRoutes from "@/modules/bids/api/bids.routes.ts";
-import { clientUserRouter as userRoutes } from "@/modules/users/users.routes.ts";
-import settingRoutes from "@/modules/settings/settings.routes.ts";
+import { clientUserRouter as userRoutes } from "@/modules/users/api/users.routes.ts";
+import settingRoutes from "@/modules/settings/api/settings.routes.ts";
 import orderRoutes from "@/modules/orders/api/orders.routes.ts";
 
 import { verifyToken } from "../../middlewares/auth.middleware.ts";

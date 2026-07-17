@@ -192,6 +192,29 @@ export const forgotPasswordVerify = async (req: Request, res: Response) => {
 // Reset account password
 export const resetPassword = async (req: Request, res: Response) => {
   const { email, password } = req.body;
+
+  const verified_otp_token = req.cookies.verified_otp_token;
+  if (!verified_otp_token) {
+    res.json({ code: "error", message: "Session expired or verification token missing." });
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(verified_otp_token, `${process.env.JWT_SECRET}`) as JwtPayload;
+    if (decoded.email !== email) {
+      res.json({ code: "error", message: "Email does not match the verified token." });
+      return;
+    }
+    const existedRecord = await AccountsService.findEmailAndOtp(decoded.email, decoded.otp);
+    if (!existedRecord) {
+      res.json({ code: "error", message: "Invalid or expired OTP session." });
+      return;
+    }
+  } catch (err) {
+    res.json({ code: "error", message: "Session expired or invalid verification token." });
+    return;
+  }
+
   const newPassword = await AccountsService.hashPassword(password);
   await AccountsService.updatePassword(email, newPassword);
   await AccountsService.deletedOTP(email);

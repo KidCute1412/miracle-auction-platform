@@ -12,28 +12,28 @@ route.post("/", accountValidate.registerPost, accountsController.registerPost);
 route.get("/verification", accountsController.verifyAccount);
 
 // Verify registration OTP and finalize account
-route.post("/registration/verification", accountsController.registerVerifyPost);
+route.post("/registration/verification", accountValidate.registerVerifyPost, accountsController.registerVerifyPost);
 
 // Verify forgot password OTP
-route.patch("/password/recovery/verification", accountsController.forgotPasswordVerify);
+route.patch("/password/recovery/verification", accountValidate.forgotPasswordVerify, accountsController.forgotPasswordVerify);
 
 // Initiate password recovery process
-route.post("/password/recovery", accountsController.forgotPassword);
+route.post("/password/recovery", accountValidate.forgotPassword, accountsController.forgotPassword);
 
 // Reset account password (full replacement)
-route.put("/password", accountsController.resetPassword);
+route.put("/password", accountValidate.resetPassword, accountsController.resetPassword);
 
 // Change password with auth validation
-route.patch("/password", verifyToken, accountsController.changePassword);
+route.patch("/password", verifyToken, accountValidate.changePassword, accountsController.changePassword);
 
 // Verify password change OTP
-route.post("/password/verification", verifyToken, accountsController.verifyChangePassword);
+route.post("/password/verification", verifyToken, accountValidate.verifyChangePassword, accountsController.verifyChangePassword);
 
 // Create login session
 route.post("/sessions", accountValidate.loginPost, accountsController.loginPost);
 
 // Create login session via Google OAuth
-route.post("/sessions/google", accountsController.googleLoginPost);
+route.post("/sessions/google", accountValidate.googleLoginPost, accountsController.googleLoginPost);
 
 // Destroy login session (logout)
 route.delete("/sessions", verifyToken, accountsController.logoutPost);

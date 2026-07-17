@@ -104,3 +104,98 @@ export const loginPost = (req: Request, res: Response, next: NextFunction) => {
 
   next();
 };
+
+export const forgotPassword = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    email: Joi.string().email().required().messages({
+      "string.empty": "Vui lòng nhập email của bạn!",
+      "string.email": "Email không đúng định dạng!",
+    }),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.json({ code: "error", message: error.details[0].message });
+  }
+  next();
+};
+
+export const forgotPasswordVerify = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    otp: Joi.string().required().messages({
+      "string.empty": "Vui lòng nhập mã otp!",
+    }),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.json({ code: "error", message: error.details[0].message });
+  }
+  next();
+};
+
+export const resetPassword = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    email: Joi.string().email().required().messages({
+      "string.empty": "Vui lòng nhập email của bạn!",
+      "string.email": "Email không đúng định dạng!",
+    }),
+    password: Joi.string().required().min(8).messages({
+      "string.empty": "Vui lòng nhập mật khẩu!",
+      "string.min": "Mật khẩu phải chứa ít nhất 8 ký tự!",
+    }),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.json({ code: "error", message: error.details[0].message });
+  }
+  next();
+};
+
+export const changePassword = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    currentPassword: Joi.string().required().messages({
+      "string.empty": "Mật khẩu hiện tại không được để trống!",
+    }),
+    newPassword: Joi.string().required().min(8).messages({
+      "string.empty": "Mật khẩu mới không được để trống!",
+      "string.min": "Mật khẩu mới phải chứa ít nhất 8 ký tự!",
+    }),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.json({ code: "error", message: error.details[0].message });
+  }
+  next();
+};
+
+export const verifyChangePassword = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    otp: Joi.string().required().messages({
+      "string.empty": "Vui lòng nhập mã otp!",
+    }),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.json({ code: "error", message: error.details[0].message });
+  }
+  next();
+};
+
+export const googleLoginPost = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    credential: Joi.string().required().messages({
+      "string.empty": "Google credential token is required!",
+    }),
+    rememberMe: Joi.boolean().allow(""),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.json({ code: "error", message: error.details[0].message });
+  }
+  next();
+};

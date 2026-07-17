@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as UsersService from "./users.service.ts";
+import * as UsersService from "../application/user.use-case.ts";
 
 // Handle user seller request submission
 export async function registerSellerRequest(req: Request, res: Response) {

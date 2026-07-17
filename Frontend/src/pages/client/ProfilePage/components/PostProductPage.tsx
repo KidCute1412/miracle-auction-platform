@@ -58,7 +58,7 @@ function PostProductPage() {
   useEffect(() => {
     settingService.getAutoExtendTime()
       .then((data) => {
-        if (data.status === "success") {
+        if (data.status === "success" && data.data) {
           setExtendTime(data.data);
         } else {
           toast.error("Failed to fetch auto-extension settings!");

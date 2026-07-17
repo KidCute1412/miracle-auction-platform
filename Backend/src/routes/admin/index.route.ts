@@ -3,7 +3,7 @@ import { adminCategoryRouter as categoryRoute } from "@/modules/categories/api/c
 import {
   adminApplicationRouter as applicationFormRoute,
   adminUserRouter as userRoute,
-} from "@/modules/users/users.routes.ts";
+} from "@/modules/users/api/users.routes.ts";
 import { adminProductRouter as productRoute } from "@/modules/products/api/products.routes.ts";
 import { adminDashboardRouter as dashboardRoute } from "@/modules/dashboard/api/dashboard.routes.ts";
 import * as authMiddleware from "../../middlewares/auth.middleware.ts";

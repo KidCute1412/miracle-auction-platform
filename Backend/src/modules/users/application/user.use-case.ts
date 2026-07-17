@@ -1,4 +1,4 @@
-import * as UsersModel from "./users.model.ts";
+import * as UsersModel from "../infrastructure/user.repository.ts";
 import { sendMail } from "@/helpers/mail.helper.ts";
 import bcrypt from "bcryptjs";
 
