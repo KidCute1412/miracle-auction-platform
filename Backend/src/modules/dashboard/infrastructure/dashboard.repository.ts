@@ -1,25 +1,31 @@
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import db from "@/config/database.config.ts";
 
 // Fetch key performance metrics for the admin dashboard
 export async function getDashboardMetrics() {
-  const gmvQuery = await db.raw(
-    `select coalesce(sum(current_price), 0) as total_gmv from products where end_time <= now() and price_owner_id is not null and is_removed = false`
+  const gmvQuery = await prisma.$queryRaw<Array<{ total_gmv: number }>>(
+    Prisma.raw(
+      `select coalesce(sum(current_price), 0) as total_gmv from products where end_time <= now() and price_owner_id is not null and is_removed = false`,
+    ),
   );
-  const usersQuery = await db.raw(
-    `select count(*) as total_users from users where status = 'active'`
+  const usersQuery = await prisma.$queryRaw<Array<{ total_users: bigint }>>(
+    Prisma.raw(`select count(*) as total_users from users where status = 'active'`),
   );
-  const auctionsQuery = await db.raw(
-    `select count(*) as active_auctions from products where start_time <= now() and end_time >= now() and is_removed = false`
+  const auctionsQuery = await prisma.$queryRaw<Array<{ active_auctions: bigint }>>(
+    Prisma.raw(
+      `select count(*) as active_auctions from products where start_time <= now() and end_time >= now() and is_removed = false`,
+    ),
   );
-  const verificationsQuery = await db.raw(
-    `select count(*) as pending_verifications from upgrade_to_sellers where status = 'pending'`
+  const verificationsQuery = await prisma.$queryRaw<Array<{ pending_verifications: bigint }>>(
+    Prisma.raw(`select count(*) as pending_verifications from upgrade_to_sellers where status = 'pending'`),
   );
 
   return {
-    gmv: Number(gmvQuery.rows[0].total_gmv),
-    activeUsers: Number(usersQuery.rows[0].total_users),
-    activeAuctions: Number(auctionsQuery.rows[0].active_auctions),
-    pendingVerifications: Number(verificationsQuery.rows[0].pending_verifications),
+    gmv: Number(gmvQuery[0].total_gmv),
+    activeUsers: Number(usersQuery[0].total_users),
+    activeAuctions: Number(auctionsQuery[0].active_auctions),
+    pendingVerifications: Number(verificationsQuery[0].pending_verifications),
   };
 }
 
@@ -60,7 +66,7 @@ export async function getDashboardChartData(range: string = "6m") {
      where created_at >= now() - ?::interval 
      group by to_char(created_at, '${format}'), date_trunc('${dateTrunc}', created_at) 
      order by trunc_date`,
-    [interval]
+    [interval],
   );
 
   const revenueQuery = await db.raw(
@@ -69,7 +75,7 @@ export async function getDashboardChartData(range: string = "6m") {
      where end_time <= now() and price_owner_id is not null and is_removed = false and end_time >= now() - ?::interval 
      group by to_char(end_time, '${format}'), date_trunc('${dateTrunc}', end_time) 
      order by trunc_date`,
-    [interval]
+    [interval],
   );
 
   const bidsQuery = await db.raw(
@@ -78,7 +84,7 @@ export async function getDashboardChartData(range: string = "6m") {
      where created_at >= now() - ?::interval 
      group by to_char(created_at, '${format}'), date_trunc('${dateTrunc}', created_at) 
      order by trunc_date`,
-    [interval]
+    [interval],
   );
 
   return {
@@ -95,20 +101,20 @@ export async function getDashboardActivities() {
      from bidding_history bh
      join users u on bh.user_id = u.user_id
      join products p on bh.product_id = p.product_id
-     order by bh.created_at desc limit 5`
+     order by bh.created_at desc limit 5`,
   );
   const orders = await db.raw(
     `select o.created_at, u.username, u.full_name as user, 'completed purchase' as action, p.product_name as item, p.current_price as value, 'text-emerald-500' as color
      from orders o
      join users u on o.user_id = u.user_id
      join products p on o.product_id = p.product_id
-     order by o.created_at desc limit 5`
+     order by o.created_at desc limit 5`,
   );
   const upgrades = await db.raw(
     `select uts.created_at, u.username, u.full_name as user, 'requested seller upgrade' as action, uts.reason as item, uts.status as value, 'text-amber-500' as color
      from upgrade_to_sellers uts
      join users u on uts.user_id = u.user_id
-     order by uts.created_at desc limit 5`
+     order by uts.created_at desc limit 5`,
   );
 
   return [...bids.rows, ...orders.rows, ...upgrades.rows]

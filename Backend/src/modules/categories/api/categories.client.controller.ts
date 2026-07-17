@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as CategoriesService from "./categories.service.ts";
+import * as CategoriesService from "../application/categories.use-case.ts";
 
 // Fetch all level 1 categories
 export async function getAllCategoriesLv1(_: Request, res: Response) {

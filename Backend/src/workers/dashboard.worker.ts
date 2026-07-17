@@ -1,6 +1,6 @@
 import db from "@/config/database.config.ts";
 import { kafka } from "@/config/kafka.config.ts";
-import * as DashboardModel from "../modules/dashboard/dashboard.model.ts";
+import * as DashboardModel from "../modules/dashboard/infrastructure/dashboard.repository.ts";
 
 let dashboardConsumer: ReturnType<typeof kafka.consumer> | undefined;
 let dashboardInterval: NodeJS.Timeout | undefined;
@@ -20,7 +20,7 @@ async function ensureCacheTable() {
 async function refreshDashboardCache() {
   try {
     await ensureCacheTable();
-    
+
     // Fetch live metrics and activities
     const metrics = await DashboardModel.getDashboardMetrics();
     const activities = await DashboardModel.getDashboardActivities();
@@ -38,16 +38,19 @@ async function refreshDashboardCache() {
       metrics,
       chartData,
       activities,
-      updated_at: new Date()
+      updated_at: new Date(),
     };
 
     // Store in Postgres jsonb cache table
-    await db.raw(`
+    await db.raw(
+      `
       insert into dashboard_stats (key, value, updated_at)
       values ('summary', ?::jsonb, now())
       on conflict (key) do update 
       set value = excluded.value, updated_at = now()
-    `, [JSON.stringify(payload)]);
+    `,
+      [JSON.stringify(payload)],
+    );
 
     console.log(`[WORKER] Dashboard stats pre-calculated and cached successfully:
       - GMV: $${metrics.gmv.toLocaleString()}

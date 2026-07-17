@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as CategoriesService from "./categories.service.ts";
+import * as CategoriesService from "../application/categories.use-case.ts";
 import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
 // Build hierarchical category tree mapping starting from root node
@@ -67,12 +67,7 @@ export async function list(req: AccountRequest, res: Response) {
     Object.assign(filter, { search: req.query.search as string });
   }
 
-  const resultList = await CategoriesService.getCategoryListDetailed(
-    page,
-    limit,
-    filter,
-    deleted
-  );
+  const resultList = await CategoriesService.getCategoryListDetailed(page, limit, filter, deleted);
   res.json({
     code: "success",
     message: "Success",

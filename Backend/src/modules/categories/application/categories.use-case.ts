@@ -1,4 +1,4 @@
-import * as CategoriesModel from "./categories.model.ts";
+import * as CategoriesModel from "../infrastructure/category.repository.ts";
 import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 import * as productsModel from "@/modules/products/products.model.ts";
 import { buildTree, Category, CategoryNode } from "@/helpers/category.helper.ts";

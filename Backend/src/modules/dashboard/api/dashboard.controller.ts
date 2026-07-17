@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as DashboardService from "./dashboard.service.ts";
+import * as DashboardService from "../application/dashboard-summary.use-case.ts";
 
 // Handle request to retrieve all dashboard summary intelligence data
 export async function getSummary(req: Request, res: Response) {

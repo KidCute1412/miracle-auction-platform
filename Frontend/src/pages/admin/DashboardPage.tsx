@@ -17,12 +17,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { dashboardService } from "@/services/dashboard.service";
+import type { DashboardRange } from "api-contracts";
 
 export default function DashboardPage() {
   const [time, setTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState("overview");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [range, setRange] = useState("6m");
+  const [range, setRange] = useState<DashboardRange>("6m");
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
 
   const rangeLabels: Record<string, string> = {
@@ -50,7 +51,7 @@ export default function DashboardPage() {
   });
   const [activities, setActivities] = useState<any[]>([]);
 
-  const fetchDashboardData = async (selectedRange: string) => {
+  const fetchDashboardData = async (selectedRange: DashboardRange) => {
     try {
       setIsRefreshing(true);
       const res = await dashboardService.getSummary({ range: selectedRange });
@@ -241,7 +242,7 @@ export default function DashboardPage() {
                           <button
                             key={key}
                             onClick={() => {
-                              setRange(key);
+                              setRange(key as DashboardRange);
                               setIsTimeframeOpen(false);
                             }}
                             className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all duration-150 first:rounded-t-lg last:rounded-b-lg ${

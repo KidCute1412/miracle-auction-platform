@@ -39,7 +39,7 @@ export const getCategoryLv2ById = async (cat2_id: number) => {
      from categories c2 
      left join categories c1 on c2.parent_id = c1.id
      where c2.id = ?`,
-    [cat2_id]
+    [cat2_id],
   );
   return result.rows[0] || null;
 };
@@ -48,7 +48,7 @@ export const getCategoryLv2ById = async (cat2_id: number) => {
 export const getAllCategories = async () => {
   const result = await db.raw(
     `select * from categories
-     where status = 'active' and deleted = false`
+     where status = 'active' and deleted = false`,
   );
   return result.rows || null;
 };
@@ -73,7 +73,7 @@ export const getCategoryWithOffsetLimit = async (
   offset: number,
   limit: number,
   filter: any,
-  deleted: boolean = false
+  deleted: boolean = false,
 ) => {
   const q = db("categories")
     .select("categories.*")
@@ -86,14 +86,10 @@ export const getCategoryWithOffsetLimit = async (
     q.andWhere("categories.status", filter.status);
   }
   if (filter?.creator) {
-    q.join("users", "categories.created_by", "users.user_id")
-      .andWhereILike("users.full_name", `%${filter.creator}%`);
+    q.join("users", "categories.created_by", "users.user_id").andWhereILike("users.full_name", `%${filter.creator}%`);
   }
   if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
-    q.andWhereBetween("categories.created_at", [
-      `${filter.dateFrom} 00:00:00`,
-      `${filter.dateTo} 23:59:59`,
-    ]);
+    q.andWhereBetween("categories.created_at", [`${filter.dateFrom} 00:00:00`, `${filter.dateTo} 23:59:59`]);
   } else if (filter?.dateFrom?.trim()) {
     q.andWhere("categories.created_at", ">=", `${filter.dateFrom} 00:00:00`);
   } else if (filter?.dateTo?.trim()) {
@@ -113,14 +109,10 @@ export const calTotalCategories = async (filter: any = {}, deleted: boolean = fa
     q.andWhere("categories.status", filter.status);
   }
   if (filter?.creator) {
-    q.join("users", "categories.created_by", "users.user_id")
-      .andWhereILike("users.full_name", `%${filter.creator}%`);
+    q.join("users", "categories.created_by", "users.user_id").andWhereILike("users.full_name", `%${filter.creator}%`);
   }
   if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
-    q.andWhereBetween("categories.created_at", [
-      `${filter.dateFrom} 00:00:00`,
-      `${filter.dateTo} 23:59:59`,
-    ]);
+    q.andWhereBetween("categories.created_at", [`${filter.dateFrom} 00:00:00`, `${filter.dateTo} 23:59:59`]);
   } else if (filter?.dateFrom?.trim()) {
     q.andWhere("categories.created_at", ">=", `${filter.dateFrom} 00:00:00`);
   } else if (filter?.dateTo?.trim()) {

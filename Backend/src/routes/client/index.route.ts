@@ -2,7 +2,7 @@ import express from "express";
 const route = express.Router();
 
 import accountRoutes from "@/modules/accounts/api/accounts.routes.ts";
-import { clientCategoryRouter as categoriesRoutes } from "@/modules/categories/categories.routes.ts";
+import { clientCategoryRouter as categoriesRoutes } from "@/modules/categories/api/categories.routes.ts";
 import { clientProductRouter as productsRoutes } from "@/modules/products/products.routes.ts";
 import { profileRouter as profileRoutes } from "@/modules/profiles/profiles.routes.ts";
 import bidRoutes from "@/modules/bids/api/bids.routes.ts";

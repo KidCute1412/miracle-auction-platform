@@ -89,6 +89,10 @@ function ResetPassword() {
           // Get email from search parameters
           const params = new URLSearchParams(window.location.search);
           const email = params.get("email");
+          if (!email) {
+            toast.error("Missing account email");
+            return;
+          }
 
           const dataFinal = {
             email,
