@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as ProductsService from "./products.service.ts";
+import * as ProductsService from "../application/product.use-case.ts";
 import { AccountRequest } from "@/interfaces/request.interface.ts";
 
 // Calculate total product listing matching filter parameters

@@ -4,17 +4,16 @@ import db from "@/config/database.config.ts";
 export async function isProductInBiddingTime(product_id: number): Promise<boolean> {
   const resultQuery = await db.raw(
     `select * from products where product_id = ? and start_time <= now() and end_time >= now()`,
-    [product_id]
+    [product_id],
   );
   return resultQuery.rows[0] ? true : false;
 }
 
 // Check if product is extended time
 export async function getProductForExtension(product_id: number) {
-  const productQuery = await db.raw(
-    `select * from products where auto_extended = true and product_id = ?`,
-    [product_id]
-  );
+  const productQuery = await db.raw(`select * from products where auto_extended = true and product_id = ?`, [
+    product_id,
+  ]);
   return productQuery.rows[0] || null;
 }
 
@@ -36,7 +35,7 @@ export async function getSellerOfProduct(product_id: number) {
      from products p 
      join users u on p.seller_id = u.user_id
      where p.product_id = ?`,
-    [product_id]
+    [product_id],
   );
   return query.rows[0] || null;
 }
@@ -53,7 +52,7 @@ export async function getProductById(product_id: number) {
      LEFT JOIN users u1 ON p.price_owner_id = u1.user_id
      LEFT JOIN users u2 on p.seller_id = u2.user_id
      WHERE p.product_id = ?`,
-    [product_id]
+    [product_id],
   );
   return query.rows[0] || null;
 }
@@ -64,7 +63,7 @@ export async function getProductsPageList(
   limit: number,
   offset: number,
   orderBy: string[],
-  searchKeyword: string
+  searchKeyword: string,
 ) {
   let searchCondition = "";
   const bindings: any = [cat2_id];
@@ -82,7 +81,7 @@ export async function getProductsPageList(
      ${searchCondition}  
      ORDER BY ${orderBy.length > 0 ? orderBy.join(", ") : "p.product_id DESC"}
      LIMIT ? OFFSET ?`,
-    bindings
+    bindings,
   );
   return query.rows;
 }
@@ -97,7 +96,7 @@ export async function getMyFavoriteProducts(user_id: string, limit: number, offs
      where lp.user_id = ?
      order by p.created_at desc
      limit ? offset ?`,
-    [user_id, limit, offset]
+    [user_id, limit, offset],
   );
   return query.rows;
 }
@@ -111,7 +110,7 @@ export async function getMySellingProducts(user_id: string, limit: number, offse
      where p.seller_id = ? and p.end_time > now()
      order by p.created_at desc
      limit ? offset ?`,
-    [user_id, limit, offset]
+    [user_id, limit, offset],
   );
   return query.rows;
 }
@@ -125,7 +124,7 @@ export async function getMySoldProducts(user_id: string, limit: number, offset: 
      where p.seller_id = ? and p.end_time < now() and p.price_owner_id is not null
      order by p.created_at desc
      limit ? offset ?`,
-    [user_id, limit, offset]
+    [user_id, limit, offset],
   );
   return query.rows;
 }
@@ -139,7 +138,7 @@ export async function getMyWonProducts(user_id: string, limit: number, offset: n
      where p.price_owner_id = ? and p.end_time < now()
      order by p.created_at desc
      limit ? offset ?`,
-    [user_id, limit, offset]
+    [user_id, limit, offset],
   );
   return query.rows;
 }
@@ -158,7 +157,7 @@ export async function getMyBiddingProducts(user_id: string, limit: number, offse
        )
      ORDER BY p.created_at DESC
      LIMIT ? OFFSET ?`,
-    [user_id, limit, offset]
+    [user_id, limit, offset],
   );
   return query.rows;
 }
@@ -172,7 +171,7 @@ export async function getMyInventoryProducts(user_id: string, limit: number, off
      where p.seller_id = ? and p.end_time < now() and p.price_owner_id is null
      order by p.created_at desc
      limit ? offset ?`,
-    [user_id, limit, offset]
+    [user_id, limit, offset],
   );
   return query.rows;
 }
@@ -197,7 +196,7 @@ export async function searchProducts(query: string, limit: number, offset: numbe
      WHERE fts @@ websearch_to_tsquery('english', remove_accents(?))
      ORDER BY p.product_id DESC
      LIMIT ? OFFSET ?`,
-    [query, limit, offset]
+    [query, limit, offset],
   );
   return productsQuery.rows;
 }
@@ -211,7 +210,7 @@ export async function getLoveStatus(user_id: number | null, product_id: number) 
          SELECT 1 FROM love_products 
          WHERE user_id = ? AND product_id = ?
        ) as is_loved`,
-    [product_id, user_id, product_id]
+    [product_id, user_id, product_id],
   );
   return query.rows[0];
 }
@@ -224,7 +223,7 @@ export async function checkProductIsLoved(user_id: number, product_id: number): 
        from love_products 
        where user_id = ? and product_id = ?
      ) as is_loved`,
-    [user_id, product_id]
+    [user_id, product_id],
   );
   return currentStatusQuery.rows[0].is_loved;
 }
@@ -268,7 +267,7 @@ export async function getProductQuestions(product_id: number, limit: number, off
      ) res
      CROSS JOIN TotalCount tc
      ORDER BY res.created_at DESC;`,
-    [product_id, limit, offset, product_id]
+    [product_id, limit, offset, product_id],
   );
   return query.rows;
 }
@@ -282,7 +281,7 @@ export async function postProductQuestion(insertData: any) {
      FROM product_questions pq
      LEFT JOIN users u ON pq.user_id = u.user_id
      WHERE pq.question_id = ?`,
-    [newQuestion.question_id]
+    [newQuestion.question_id],
   );
   return query.rows[0];
 }
@@ -294,7 +293,7 @@ export async function getUserInParentQuestion(question_parent_id: number) {
      FROM product_questions pq
      LEFT JOIN users u ON pq.user_id = u.user_id
      WHERE pq.question_id = ?`,
-    [question_parent_id]
+    [question_parent_id],
   );
   return query.rows[0] || null;
 }
@@ -310,17 +309,17 @@ export async function getRelatedProducts(category_id: number, product_id: number
          AND p.is_removed = FALSE
      ORDER BY RANDOM()
      LIMIT ?`,
-    [category_id, product_id, limit]
+    [category_id, product_id, limit],
   );
   return query.rows;
 }
 
 // Check if user is the seller of the product
 export async function verifyProductSeller(product_id: number, seller_id: string): Promise<boolean> {
-  const productQuery = await db.raw(
-    `SELECT 1 FROM products WHERE product_id = ? AND seller_id = ?`,
-    [product_id, seller_id]
-  );
+  const productQuery = await db.raw(`SELECT 1 FROM products WHERE product_id = ? AND seller_id = ?`, [
+    product_id,
+    seller_id,
+  ]);
   return productQuery.rows.length > 0;
 }
 
@@ -334,7 +333,7 @@ export const getProductWithOffsetLimit = async (
   offset: number,
   limit: number,
   filter: any,
-  is_removed: boolean = false
+  is_removed: boolean = false,
 ) => {
   const q = db("products")
     .select("*")
@@ -347,10 +346,7 @@ export const getProductWithOffsetLimit = async (
     q.andWhereILike("seller_id", `%${filter.creator}%`);
   }
   if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
-    q.andWhereRaw("start_time::date >= ? and start_time::date <= ?", [
-      filter.dateFrom,
-      filter.dateTo,
-    ]);
+    q.andWhereRaw("start_time::date >= ? and start_time::date <= ?", [filter.dateFrom, filter.dateTo]);
   } else if (filter?.dateFrom?.trim()) {
     q.andWhereRaw("start_time::date >= ?", [filter.dateFrom]);
   } else if (filter?.dateTo?.trim()) {
@@ -373,10 +369,7 @@ export const calTotalProducts = async (filter: any = {}, is_removed: boolean = f
     q.andWhereILike("seller_id", `%${filter.creator}%`);
   }
   if (filter?.dateFrom?.trim() && filter?.dateTo?.trim()) {
-    q.andWhereRaw("start_time::date >= ? and start_time::date <= ?", [
-      filter.dateFrom,
-      filter.dateTo,
-    ]);
+    q.andWhereRaw("start_time::date >= ? and start_time::date <= ?", [filter.dateFrom, filter.dateTo]);
   } else if (filter?.dateFrom?.trim()) {
     q.andWhereRaw("start_time::date >= ?", [filter.dateFrom]);
   } else if (filter?.dateTo?.trim()) {
@@ -426,7 +419,7 @@ export async function fetchTopHighestPriceProducts(limit: number) {
      where p.is_removed = false
      ORDER BY p.current_price DESC
      LIMIT ?`,
-    [limit]
+    [limit],
   );
   return query.rows;
 }
@@ -445,7 +438,7 @@ export async function fetchTopMostBidProducts(limit: number) {
      where p.is_removed = false
      ORDER BY COALESCE(p.bid_turns, 0) DESC
      LIMIT ?`,
-    [limit]
+    [limit],
   );
   return query.rows;
 }
@@ -464,7 +457,7 @@ export async function fetchTopEndingSoonProducts(limit: number) {
      where p.is_removed = false and p.end_time > NOW()
      ORDER BY p.end_time ASC
      LIMIT ?`,
-    [limit]
+    [limit],
   );
   return query.rows;
 }
@@ -472,9 +465,6 @@ export async function fetchTopEndingSoonProducts(limit: number) {
 // Count products under a list of category IDs
 export async function countProductsByCategories(categoryIds: number[]): Promise<number> {
   if (categoryIds.length === 0) return 0;
-  const query = await db.raw(
-    `SELECT COUNT(*) as count FROM products WHERE cat2_id = ANY(?)`,
-    [categoryIds]
-  );
+  const query = await db.raw(`SELECT COUNT(*) as count FROM products WHERE cat2_id = ANY(?)`, [categoryIds]);
   return Number(query.rows[0].count);
 }

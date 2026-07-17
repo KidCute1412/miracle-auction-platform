@@ -4,7 +4,7 @@ import {
   adminApplicationRouter as applicationFormRoute,
   adminUserRouter as userRoute,
 } from "@/modules/users/users.routes.ts";
-import { adminProductRouter as productRoute } from "@/modules/products/products.routes.ts";
+import { adminProductRouter as productRoute } from "@/modules/products/api/products.routes.ts";
 import { adminDashboardRouter as dashboardRoute } from "@/modules/dashboard/api/dashboard.routes.ts";
 import * as authMiddleware from "../../middlewares/auth.middleware.ts";
 

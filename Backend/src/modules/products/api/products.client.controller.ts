@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as ProductsService from "./products.service.ts";
+import * as ProductsService from "../application/product.use-case.ts";
 
 // Fetch paginated products list under category
 export async function getProductsPageList(req: Request, res: Response) {
@@ -18,7 +18,7 @@ export async function getProductsPageList(req: Request, res: Response) {
     page,
     priceFilter,
     timeFilter,
-    searchKeyword
+    searchKeyword,
   );
 
   if (result === null) {
@@ -137,10 +137,7 @@ export async function getLoveStatus(req: Request, res: Response) {
     const user = (req as any).user;
     const product_id = req.params.id as string;
 
-    const loveStatus = await ProductsService.getLoveStatus(
-      user ? user.user_id : null,
-      parseInt(product_id)
-    );
+    const loveStatus = await ProductsService.getLoveStatus(user ? user.user_id : null, parseInt(product_id));
 
     return res.status(200).json({
       status: "success",
@@ -198,9 +195,7 @@ export async function postProductQuestion(req: Request, res: Response) {
   const user = (req as any).user;
   const product_id = req.params.id as string;
   const content = req.body.content as string;
-  const question_parent_id = req.body.question_parent_id
-    ? parseInt(req.body.question_parent_id as string)
-    : null;
+  const question_parent_id = req.body.question_parent_id ? parseInt(req.body.question_parent_id as string) : null;
 
   if (!product_id || !content) {
     return res.status(400).json({
@@ -213,7 +208,7 @@ export async function postProductQuestion(req: Request, res: Response) {
     parseInt(product_id),
     user.user_id,
     content,
-    question_parent_id
+    question_parent_id,
   );
 
   return res.status(201).json({
@@ -238,7 +233,7 @@ export async function getRelatedProducts(req: Request, res: Response) {
     const products = await ProductsService.getRelatedProducts(
       parseInt(category_id),
       product_id ? parseInt(product_id) : null,
-      limit
+      limit,
     );
     return res.status(200).json({
       status: "success",

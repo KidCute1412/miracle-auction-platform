@@ -29,11 +29,21 @@ clientProductRouter.get("/search", clientController.searchProducts);
 clientProductRouter.get("/:id", justDecodeToken, clientController.getProductDetailBySlugId);
 
 // Create a new product listing
-clientProductRouter.post("/", verifyToken, verifyRole("seller", "admin"), upload.array("product_images", 10), clientController.postNewProduct);
+clientProductRouter.post(
+  "/",
+  verifyToken,
+  verifyRole("seller", "admin"),
+  upload.array("product_images", 10),
+  clientController.postNewProduct,
+);
 
 // Update product description by ID
-clientProductRouter.patch("/:id/description", verifyToken, verifyRole("seller", "admin"), clientController.updateProductDescription);
-
+clientProductRouter.patch(
+  "/:id/description",
+  verifyToken,
+  verifyRole("seller", "admin"),
+  clientController.updateProductDescription,
+);
 
 // Get like status for a product
 clientProductRouter.get("/:id/likes", justDecodeToken, clientController.getLoveStatus);

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as OrdersService from "./orders.service.ts";
+import * as orderUseCase from "../application/order.use-case.ts";
 
 // Handle order creation
 export async function createOrder(req: Request, res: Response) {
@@ -8,7 +8,7 @@ export async function createOrder(req: Request, res: Response) {
     const file = req.file as Express.Multer.File;
     data.user_id = (req as any).user.user_id;
 
-    await OrdersService.createOrder(data, file);
+    await orderUseCase.createOrder(data, file);
     return res.status(200).json({
       status: "success",
       message: "Invoice created successfully",
@@ -26,7 +26,7 @@ export async function getOrderDetail(req: Request, res: Response) {
   try {
     const user_id = (req as any).user.user_id;
     const product_id = req.query.product_id as string;
-    const orderDetail = await OrdersService.getOrderDetail(user_id, Number(product_id));
+    const orderDetail = await orderUseCase.getOrderDetail(user_id, Number(product_id));
     return res.status(200).json({
       status: "success",
       message: "Successfully retrieved order details",
@@ -44,7 +44,7 @@ export async function getOrderDetail(req: Request, res: Response) {
 export async function getSellerOrderView(req: Request, res: Response) {
   try {
     const product_id = req.query.product_id as string;
-    const orderDetail = await OrdersService.getSellerOrderView(Number(product_id));
+    const orderDetail = await orderUseCase.getSellerOrderView(Number(product_id));
     return res.status(200).json({
       status: "success",
       message: "Successfully retrieved seller order details",
@@ -62,7 +62,7 @@ export async function getSellerOrderView(req: Request, res: Response) {
 export async function rejectOrder(req: Request, res: Response) {
   try {
     const product_id = req.query.product_id as string;
-    const result = await OrdersService.rejectOrder(Number(product_id));
+    const result = await orderUseCase.rejectOrder(Number(product_id));
     if (!result.success) {
       return res.status(result.message.includes("exist") ? 404 : 400).json({
         status: "error",
@@ -86,7 +86,7 @@ export async function approveOrder(req: Request, res: Response) {
   try {
     const product_id = req.query.product_id as string;
     const file = req.file as Express.Multer.File;
-    const result = await OrdersService.approveOrder(Number(product_id), file);
+    const result = await orderUseCase.approveOrder(Number(product_id), file);
     if (!result.success) {
       return res.status(result.message.includes("exist") ? 404 : 400).json({
         status: "error",

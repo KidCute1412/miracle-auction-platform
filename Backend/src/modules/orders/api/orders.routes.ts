@@ -18,6 +18,11 @@ route.get("/seller", authMiddleware.verifyToken, ordersController.getSellerOrder
 route.patch("/:id/rejection", authMiddleware.verifyToken, ordersController.rejectOrder);
 
 // Approve an existing order and upload shipping label
-route.patch("/:id/approval", authMiddleware.verifyToken, upload.single("shipping_label"), ordersController.approveOrder);
+route.patch(
+  "/:id/approval",
+  authMiddleware.verifyToken,
+  upload.single("shipping_label"),
+  ordersController.approveOrder,
+);
 
 export default route;

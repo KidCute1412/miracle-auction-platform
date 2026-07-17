@@ -65,3 +65,56 @@ export interface DashboardChartPoint { month: string; count: string | number; }
 export interface DashboardActivity { created_at: string; username: string; user: string; action: string; item: string; value: string | number; color: string; }
 export interface DashboardSummary { metrics: DashboardMetrics; chartData: { overview: DashboardChartPoint[]; revenue: DashboardChartPoint[]; bids: DashboardChartPoint[] }; activities: DashboardActivity[]; }
 export interface DashboardSummaryResponse { code: "success"; message: string; data: DashboardSummary; }
+
+// Products and orders: legacy HTTP envelopes retained while their backend modules move to Prisma.
+export interface ProductListQuery { cat2_id?: number; page?: number; price?: "asc" | "desc"; time?: "asc" | "desc"; search?: string; }
+export interface ProductSearchQuery { query?: string | null; page?: number; }
+export interface ProductQuestionQuery { page?: number; limit?: number; }
+export interface ProductLoveRequest { love_status: boolean; }
+export interface ProductQuestionRequest { content: string; question_parent_id?: number | null; }
+export interface ProductDescriptionRequest { description: string; }
+export interface ProductRecord { product_id: number | string; product_name?: string; product_images?: string[]; current_price?: number; [key: string]: unknown; }
+export interface ProductListResponse { message?: string; status?: "success"; data: ProductRecord[]; numberOfPages?: number; quantity?: number; }
+export interface ProductDetailResponse extends LegacyStatusSuccess { data: ProductRecord; }
+export interface ProductStatusResponse extends LegacyStatusSuccess { message?: string; }
+
+export interface CreateOrderRequest { product_id: number; shipping_address?: string; phone_number?: string; }
+export interface OrderQuery { product_id: number; }
+export type OrderStatus = "pending" | "finished" | "rejected";
+export interface OrderRecord {
+  order_id: number | string;
+  product_id: number | string;
+  order_status?: OrderStatus;
+  product_name?: string;
+  product_images?: string[];
+  buy_now_price?: number;
+  end_time?: string;
+  payment_proof_image_url?: string;
+  payment_proof_image?: string;
+  shipping_label_image_url?: string;
+  shipping_label_image?: string;
+  phone_number?: string;
+  shipping_address?: string;
+  winner_id?: number;
+  winner_name?: string;
+  winner_email?: string;
+  winner_avatar?: string;
+}
+export interface SellerOrderRecord extends OrderRecord {
+  order_id: number;
+  product_id: number;
+  product_name: string;
+  product_images: string[];
+  buy_now_price: number;
+  end_time: string;
+  payment_proof_image_url: string;
+  phone_number: string;
+  shipping_address: string;
+  order_status: OrderStatus;
+  winner_id: number;
+  winner_name: string;
+  winner_username: string;
+  winner_email: string;
+}
+export interface OrderDetailResponse<T extends OrderRecord = OrderRecord> { status: LegacySuccessStatus | LegacyErrorStatus; message: string; data: T | null; }
+export interface OrderStatusResponse extends LegacyStatusSuccess { message: string; }

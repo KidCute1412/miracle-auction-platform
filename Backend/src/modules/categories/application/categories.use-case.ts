@@ -1,6 +1,6 @@
 import * as CategoriesModel from "../infrastructure/category.repository.ts";
 import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
-import * as productsModel from "@/modules/products/products.model.ts";
+import * as productsModel from "@/modules/products/infrastructure/product.repository.ts";
 import { buildTree, Category, CategoryNode } from "@/helpers/category.helper.ts";
 
 // Fetch all level 1 categories
