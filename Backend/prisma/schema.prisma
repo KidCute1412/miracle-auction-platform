@@ -208,6 +208,7 @@ model users {
   created_at                              DateTime?                @default(now()) @db.Timestamptz(6)
   avatar                                  String?
   status                                  String                   @default("active")
+  auth_version                            Int                      @default(0)
   fts                                     Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, ((remove_accents((COALESCE(full_name, ''::character varying))::text) || ' '::text) || remove_accents((COALESCE(email, ''::character varying))::text)))"))
   bidding_ban_user                        bidding_ban_user[]
   bidding_history                         bidding_history[]

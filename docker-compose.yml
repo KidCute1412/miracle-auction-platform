@@ -11,10 +11,6 @@ services:
       - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./data/database.sql:/docker-entrypoint-initdb.d/01-database.sql
-      - ./data/category/category.insert.sql:/docker-entrypoint-initdb.d/02-category.insert.sql
-      - ./data/user/user.insert.sql:/docker-entrypoint-initdb.d/03-user.insert.sql
-      - ./data/product/tikiAPI/product.insert.sql:/docker-entrypoint-initdb.d/04-product.insert.sql
 
   # Local Redis cache and rate limiting service
   redis:
@@ -55,11 +51,8 @@ services:
       - ./Backend:/app
       - /app/node_modules
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=my_local_password
-      - DB_NAME=online_auction_test
+      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      - DIRECT_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=kafka:9092
     depends_on:

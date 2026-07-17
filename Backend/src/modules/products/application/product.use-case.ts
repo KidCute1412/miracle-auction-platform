@@ -4,7 +4,7 @@ import { accountRepository } from "@/modules/accounts/infrastructure/account.rep
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
 import fs from "fs";
 import { slugify } from "@/helpers/slug.helper.ts";
-import { io } from "@/server.ts";
+import { emitBidUpdate } from "@/socket.ts";
 import {
   sendBidderQuestionTemplate,
   sendSellerAnswerTemplate,
@@ -38,11 +38,11 @@ export async function getProductsPageList(
 
   const results = await ProductsModel.getProductsPageList(cat2_id, ITEMS_PER_PAGE, offset, orderBy, searchKeyword);
 
-  const numberOfPages = results.length > 0 ? Math.ceil(results[0].total_count / ITEMS_PER_PAGE) : 0;
+  const numberOfPages = results.length > 0 ? Math.ceil(Number(results[0].total_count) / ITEMS_PER_PAGE) : 0;
   return {
     data: results,
     numberOfPages,
-    quantity: results.length > 0 ? results[0].total_count : 0,
+    quantity: results.length > 0 ? Number(results[0].total_count) : 0,
   };
 }
 
@@ -118,11 +118,11 @@ export async function getMyProductsList(user_id: string, type: string, page: num
       return null;
   }
 
-  const numberOfPages = results.length > 0 ? Math.ceil(results[0].total_count / DASHBOARD_ITEMS_PER_PAGE) : 0;
+  const numberOfPages = results.length > 0 ? Math.ceil(Number(results[0].total_count) / DASHBOARD_ITEMS_PER_PAGE) : 0;
   return {
     data: results,
     numberOfPages,
-    quantity: results.length > 0 ? results[0].total_count : 0,
+    quantity: results.length > 0 ? Number(results[0].total_count) : 0,
   };
 }
 
@@ -133,8 +133,8 @@ export async function searchProducts(query: string, page: number) {
   const results = await ProductsModel.searchProducts(query.trim(), limit, offset);
   return {
     data: results,
-    numberOfPages: results.length > 0 ? Math.ceil(results[0].total_count / limit) : 0,
-    quantity: results.length > 0 ? results[0].total_count : 0,
+    numberOfPages: results.length > 0 ? Math.ceil(Number(results[0].total_count) / limit) : 0,
+    quantity: results.length > 0 ? Number(results[0].total_count) : 0,
   };
 }
 
@@ -163,7 +163,7 @@ export async function getProductQuestions(product_id: number, page: number, limi
   const allQuestions = await ProductsModel.getProductQuestions(product_id, limit, offset);
   return {
     data: allQuestions,
-    total_questions: allQuestions.length > 0 ? allQuestions[0].total_count : 0,
+    total_questions: allQuestions.length > 0 ? Number(allQuestions[0].total_count) : 0,
   };
 }
 
@@ -263,7 +263,7 @@ export async function getProductDetailForWinner(product_id: number, winner_id: s
   if (!productDetail) {
     return null;
   }
-  const infoSeller = await usersModel.getUserById(productDetail.seller_id);
+  const infoSeller = await usersModel.getUserById(Number(productDetail.seller_id));
   return { productDetail, infoSeller };
 }
 
@@ -346,9 +346,7 @@ export async function extendBiddingTimeIfNeeded(product_id: number): Promise<voi
     await ProductsModel.updateProductEndTime(product_id, newEndTime);
 
     const productInfo = await ProductsModel.getProductById(product_id);
-    io.to(`bidding_room_${product_id}`).emit("new_bid", {
-      data: productInfo,
-    });
+    emitBidUpdate(product_id, { data: productInfo });
   }
 }
 

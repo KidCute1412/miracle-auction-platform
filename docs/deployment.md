@@ -40,13 +40,8 @@ PORT=5000
 API_DOMAIN=api.example.com
 CLIENT_URL=https://app.example.com
 
-DB_CLIENT=pg
-DB_HOST=...
-DB_PORT=5432
-DB_USER=...
-DB_PASSWORD=...
-DB_NAME=postgres
-DB_SSL=true
+DATABASE_URL=postgresql://...pooled-host.../postgres?pgbouncer=true&schema=public
+DIRECT_URL=postgresql://...direct-host.../postgres?schema=public
 REDIS_URL=rediss://...
 KAFKA_BROKERS=...
 KAFKA_USERNAME=...
@@ -67,14 +62,15 @@ These are backend-only values: database, Redis, Kafka, JWT, CAPTCHA secret, Gmai
 
 ## Managed dependency bootstrap
 
-Create the Supabase project, then import SQL in this exact initial-demo order:
+Create the Supabase project, set the two database URLs, then deploy the repository:
 
-1. `data/database.sql`
-2. `data/category/category.insert.sql`
-3. `data/user/user.insert.sql`
-4. `data/product/tikiAPI/product.insert.sql`
+1. Set `DATABASE_URL` và `DIRECT_URL` trong file môi trường production.
+2. Chạy `docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build`.
+3. Service `migrate` chạy `prisma migrate deploy` trước API và worker. Production không nạp demo seed SQL.
 
-There is no formal migration system in this release. Before any future schema change, take a database backup and commit a SQL migration file with explicit manual apply and rollback notes. Apply it manually to Supabase only after testing it.
+Prisma migrations are the only schema source of truth. Before a schema change, back up Supabase, create and review a Prisma migration in version control, then let the `migrate` service apply it. Never apply application schema DDL manually in Supabase SQL Editor.
+
+This release assumes a new, empty Supabase database. Set `DIRECT_URL` to the direct PostgreSQL endpoint for the migrate service; the API and worker retain the pooled `DATABASE_URL`. Do not run demo seeds in production.
 
 Create Upstash Redis and Kafka instances and copy their TLS endpoints/credentials into the VM environment file. Ensure Kafka provides the `bidding_events` and `dashboard_updates` topics used by the application.
 

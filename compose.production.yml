@@ -1,21 +1,29 @@
 services:
+  migrate:
+    build:
+      context: ./Backend
+    image: online-auction-backend:latest
+    command: npx prisma migrate deploy
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
+
   api:
     build:
       context: ./Backend
     image: online-auction-backend:latest
     command: npm run start:prod
     restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: ${NODE_ENV}
       PORT: ${PORT}
       CLIENT_URL: ${CLIENT_URL}
-      DB_CLIENT: ${DB_CLIENT}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_SSL: ${DB_SSL}
-      DB_NAME: ${DB_NAME}
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
       REDIS_URL: ${REDIS_URL}
       KAFKA_BROKERS: ${KAFKA_BROKERS}
       KAFKA_USERNAME: ${KAFKA_USERNAME}
@@ -34,15 +42,13 @@ services:
     image: online-auction-backend:latest
     command: npm run worker:prod
     restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: ${NODE_ENV}
-      DB_CLIENT: ${DB_CLIENT}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_SSL: ${DB_SSL}
-      DB_NAME: ${DB_NAME}
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
       REDIS_URL: ${REDIS_URL}
       KAFKA_BROKERS: ${KAFKA_BROKERS}
       KAFKA_USERNAME: ${KAFKA_USERNAME}

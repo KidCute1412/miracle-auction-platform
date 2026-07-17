@@ -13,7 +13,7 @@
 
 **Công nghệ sử dụng**:
 
-- **Backend**: Node.js, TypeScript, Express.js, Socket.io, Knex.js, PostgreSQL (Supabase)
+- **Backend**: Node.js, TypeScript, Express.js, Socket.io, Prisma, PostgreSQL (Supabase)
 - **Frontend**: React, Vite, TailwindCSS, Socket.io-client
 - **Bảo mật**: JWT, bcrypt
 - **Email**: Nodemailer với Gmail SMTP
@@ -37,15 +37,11 @@ Dự án này sử dụng PostgreSQL thông qua dịch vụ đám mây Supabase 
 2. Tạo một project mới trên Supabase.
 3. Trong dashboard của project, vào phần "Settings" > "Database" để lấy thông tin kết nối.
 
-### 1.2 Chạy Scripts Khởi Tạo Dữ Liệu
+### 1.2 Database schema and demo data
 
-1. Trong Supabase dashboard, vào phần "SQL Editor".
-2. Chạy các file Jupyter Notebook hoặc SQL theo thứ tự:
-   - Chạy file `data/database.sql` để khởi tạo database.
-   - Chạy nội dung của `data/category/category.ipynb`, file này tạo nội dung `data/category/category.insert.sql` phù hợp để thêm dữ liệu categories.
-   - Chạy nội dung của `data/product/tikiAPI/product.ipynb`, file này cho phép tạo products phù hợp mỗi categories, kết quả mỗi bộ products sẽ ghi đè lên file `data/product/tikiAPI/product.insert.sql` để thêm dữ liệu products.
+Schema is managed only by Prisma migrations. For local development, run `start.bat`; it starts infrastructure, applies migrations, and seeds demo data only when the database is empty.
 
-Bạn có thể copy-paste nội dung các file SQL vào SQL Editor của Supabase và chạy.
+For Supabase, configure `DATABASE_URL` and `DIRECT_URL`, then run `npx prisma migrate deploy` from the backend release. Do not paste application schema SQL into Supabase SQL Editor.
 
 ## 2. Thiết Lập Backend
 
@@ -61,7 +57,7 @@ Bạn có thể copy-paste nội dung các file SQL vào SQL Editor của Supaba
 
 1. Copy file `.env.example` trong thư mục `Backend` thành `.env`.
 2. Chỉnh sửa file `.env` với thông tin thực tế của bạn:
-   - Nếu sử dụng Supabase: Thay `DB_HOST`, `DB_USER`, `DB_PASSWORD` bằng thông tin từ Supabase dashboard ("Settings" > "Database").
+   - Nếu sử dụng Supabase: đặt `DATABASE_URL` (pooled URL) và `DIRECT_URL` (direct URL) từ Supabase dashboard ("Settings" > "Database").
    - Cập nhật các biến khác như `JWT_SECRET`, `GMAIL_ADDRESS`, `CLOUDINARY_*`, v.v. với thông tin thực tế.
 
 ### 2.3 Chạy Backend
@@ -132,7 +128,7 @@ Bạn có thể copy-paste nội dung các file SQL vào SQL Editor của Supaba
 
 ## 7. Cấu Trúc Dự Án
 
-- `Backend/`: Code backend với Express.js, Socket.io, Knex.js
+- `Backend/`: Code backend với Express.js, Socket.io, Prisma
 - `Frontend/`: Code frontend với React, Vite, TailwindCSS
 
 Chúc bạn thành công trong việc thiết lập dự án!

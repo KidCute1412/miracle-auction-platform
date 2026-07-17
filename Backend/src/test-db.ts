@@ -1,23 +1,15 @@
-import db from "./config/database.config.ts";
+import { prisma } from "./infrastructure/database/prisma.client.ts";
 
 async function run() {
   try {
-    const categories = await db("categories").select("*");
-    console.log("Categories in database:", categories.map((c: any) => ({ id: c.id, name: c.name, created_by: c.created_by })));
-    
-    const users = await db("users").select("*");
-    console.log("Users in database:", users.map((u: any) => ({ user_id: u.user_id, full_name: u.full_name })));
-
-    // Test query with join
-    const filtered = await db("categories")
-      .select("categories.*")
-      .join("users", "categories.created_by", "users.user_id")
-      .andWhereILike("users.full_name", "%Anh Vũ Dương%");
-    console.log("Filtered categories:", filtered);
+    const [categories, users] = await Promise.all([prisma.categories.findMany(), prisma.users.findMany()]);
+    console.log("Categories in database:", categories.map((category) => ({ id: category.id, name: category.name, created_by: category.created_by })));
+    console.log("Users in database:", users.map((user) => ({ user_id: user.user_id, full_name: user.full_name })));
   } catch (error) {
     console.error("Error executing database query:", error);
   } finally {
-    process.exit(0);
+    await prisma.$disconnect();
   }
 }
-run();
+
+void run();

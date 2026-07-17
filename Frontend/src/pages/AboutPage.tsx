@@ -217,7 +217,7 @@ const TechnologiesSection = () => {
 
             <h3 className="text-lg font-bold text-foreground mb-1.5 tracking-tight">Robust Backend</h3>
             <p className="text-xs text-muted-foreground mb-5 leading-relaxed font-light">
-              Powered by Node.js, Express, Knex, PostgreSQL, and Redis to achieve extreme throughput and absolute bid consistency.
+              Powered by Node.js, Express, Prisma, PostgreSQL, and Redis to achieve extreme throughput and absolute bid consistency.
             </p>
             <div className="inline-flex items-center px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
               <span className="text-amber-400 font-semibold text-xs tracking-wider font-syne">Node.js + Express</span>

@@ -41,25 +41,31 @@ export async function verifyCaptcha(token: string): Promise<boolean> {
 
 type UserPayload = {
   user_id: number;
-  role: string;
+  auth_version: number;
 };
 
+const accessJwtOptions = { algorithm: "HS256" as const, issuer: "online-auction", audience: "online-auction-api" };
+
 export function generateAccessToken(user: UserPayload): string {
-  const payload = { user_id: user.user_id, role: user.role };
+  const payload = { user_id: user.user_id, auth_version: user.auth_version };
   return jwt.sign(payload, process.env.JWT_SECRET as string, {
     expiresIn: "15m",
+    ...accessJwtOptions,
   });
 }
 
 // Generate refresh JWT token with expiry
-export function generateRefreshToken(user: UserPayload, rememberMe: boolean): string {
+export function generateRefreshToken(user: UserPayload, rememberMe: boolean, sessionId: string, tokenId: string): string {
   const payload = {
-    id: user.user_id,
-    role: user.role,
+    user_id: user.user_id,
+    auth_version: user.auth_version,
+    sid: sessionId,
+    jti: tokenId,
     section: rememberMe ? SECTION_TYPES[0] : SECTION_TYPES[1],
   };
   return jwt.sign(payload, process.env.JWT_REFRESH_SECRET as string, {
     expiresIn: rememberMe ? "7d" : "1d",
+    ...accessJwtOptions,
   });
 }
 
@@ -106,4 +112,8 @@ export async function updatePassword(email: string, newPassword: string): Promis
 // Retrieve detailed account data for password changes
 export async function findAccountByIdDetailed(user_id: number) {
   return accountRepository.findDetailedById(user_id);
+}
+
+export async function findAccountById(user_id: number) {
+  return accountRepository.findById(user_id);
 }

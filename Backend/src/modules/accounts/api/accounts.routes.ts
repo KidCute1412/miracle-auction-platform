@@ -2,8 +2,22 @@ import { Router } from "express";
 import * as accountsController from "./accounts.controller.ts";
 import * as accountValidate from "./accounts.schemas.ts";
 import { verifyToken } from "@/middlewares/auth.middleware.ts";
+import { issueCsrfToken } from "@/middlewares/csrf.middleware.ts";
+import rateLimit from "express-rate-limit";
+import RedisStore from "rate-limit-redis";
+import { redisClient } from "@/config/redis.config.ts";
 
 const route = Router();
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({ sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as never }),
+  message: { code: "error", message: "Too many authentication attempts. Please try again later." },
+});
+
+route.get("/csrf", (req, res) => res.json({ code: "success", token: issueCsrfToken(req, res) }));
 
 // Create a new account (register)
 route.post("/", accountValidate.registerPost, accountsController.registerPost);
@@ -18,7 +32,7 @@ route.post("/registration/verification", accountValidate.registerVerifyPost, acc
 route.patch("/password/recovery/verification", accountValidate.forgotPasswordVerify, accountsController.forgotPasswordVerify);
 
 // Initiate password recovery process
-route.post("/password/recovery", accountValidate.forgotPassword, accountsController.forgotPassword);
+route.post("/password/recovery", authLimiter, accountValidate.forgotPassword, accountsController.forgotPassword);
 
 // Reset account password (full replacement)
 route.put("/password", accountValidate.resetPassword, accountsController.resetPassword);
@@ -30,15 +44,15 @@ route.patch("/password", verifyToken, accountValidate.changePassword, accountsCo
 route.post("/password/verification", verifyToken, accountValidate.verifyChangePassword, accountsController.verifyChangePassword);
 
 // Create login session
-route.post("/sessions", accountValidate.loginPost, accountsController.loginPost);
+route.post("/sessions", authLimiter, accountValidate.loginPost, accountsController.loginPost);
 
 // Create login session via Google OAuth
-route.post("/sessions/google", accountValidate.googleLoginPost, accountsController.googleLoginPost);
+route.post("/sessions/google", authLimiter, accountValidate.googleLoginPost, accountsController.googleLoginPost);
 
 // Refresh login session
-route.post("/sessions/refresh", accountsController.refreshSession);
+route.post("/sessions/refresh", authLimiter, accountsController.refreshSession);
 
 // Destroy login session (logout)
-route.delete("/sessions", verifyToken, accountsController.logoutPost);
+route.delete("/sessions", accountsController.logoutPost);
 
 export default route;

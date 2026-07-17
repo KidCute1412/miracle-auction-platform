@@ -1,6 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
-import db from "@/config/database.config.ts";
+
+async function raw<T = any>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
+  let placeholderIndex = 0;
+  const parameterizedSql = sql.replace(/\?/g, () => `$${++placeholderIndex}`);
+  return { rows: await prisma.$queryRawUnsafe<T[]>(parameterizedSql, ...params) };
+}
 
 // Fetch key performance metrics for the admin dashboard
 export async function getDashboardMetrics() {
@@ -60,7 +65,7 @@ function getRangeConfig(range: string) {
 export async function getDashboardChartData(range: string = "6m") {
   const { interval, format, dateTrunc } = getRangeConfig(range);
 
-  const overviewQuery = await db.raw(
+  const overviewQuery = await raw(
     `select to_char(created_at, '${format}') as month, count(*) as count, date_trunc('${dateTrunc}', created_at) as trunc_date
      from products 
      where created_at >= now() - ?::interval 
@@ -69,7 +74,7 @@ export async function getDashboardChartData(range: string = "6m") {
     [interval],
   );
 
-  const revenueQuery = await db.raw(
+  const revenueQuery = await raw(
     `select to_char(end_time, '${format}') as month, sum(current_price) as count, date_trunc('${dateTrunc}', end_time) as trunc_date
      from products 
      where end_time <= now() and price_owner_id is not null and is_removed = false and end_time >= now() - ?::interval 
@@ -78,7 +83,7 @@ export async function getDashboardChartData(range: string = "6m") {
     [interval],
   );
 
-  const bidsQuery = await db.raw(
+  const bidsQuery = await raw(
     `select to_char(created_at, '${format}') as month, count(*) as count, date_trunc('${dateTrunc}', created_at) as trunc_date
      from bidding_history 
      where created_at >= now() - ?::interval 
@@ -96,21 +101,21 @@ export async function getDashboardChartData(range: string = "6m") {
 
 // Fetch recently logged platform events
 export async function getDashboardActivities() {
-  const bids = await db.raw(
+  const bids = await raw<{ created_at: Date }>(
     `select bh.created_at, u.username, u.full_name as user, 'placed new bid' as action, p.product_name as item, bh.max_price as value, 'text-primary' as color
      from bidding_history bh
      join users u on bh.user_id = u.user_id
      join products p on bh.product_id = p.product_id
      order by bh.created_at desc limit 5`,
   );
-  const orders = await db.raw(
+  const orders = await raw<{ created_at: Date }>(
     `select o.created_at, u.username, u.full_name as user, 'completed purchase' as action, p.product_name as item, p.current_price as value, 'text-emerald-500' as color
      from orders o
      join users u on o.user_id = u.user_id
      join products p on o.product_id = p.product_id
      order by o.created_at desc limit 5`,
   );
-  const upgrades = await db.raw(
+  const upgrades = await raw<{ created_at: Date }>(
     `select uts.created_at, u.username, u.full_name as user, 'requested seller upgrade' as action, uts.reason as item, uts.status as value, 'text-amber-500' as color
      from upgrade_to_sellers uts
      join users u on uts.user_id = u.user_id

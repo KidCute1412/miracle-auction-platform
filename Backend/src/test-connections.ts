@@ -1,9 +1,9 @@
-import { checkDatabaseConnection } from "./config/database.config.ts";
+import { checkPrismaConnection } from "./infrastructure/database/prisma.client.ts";
 import { checkRedisConnection, redisClient } from "./config/redis.config.ts";
 import { checkKafkaConnection, closeKafkaConnection } from "./config/kafka.config.ts";
 
 async function main() {
-  const checks = [["PostgreSQL", checkDatabaseConnection], ["Redis", checkRedisConnection], ["Kafka", checkKafkaConnection]] as const;
+  const checks = [["PostgreSQL", checkPrismaConnection], ["Redis", checkRedisConnection], ["Kafka", checkKafkaConnection]] as const;
   let healthy = true;
   for (const [name, check] of checks) { const result = await check(); healthy &&= result; console.log(`${result ? "PASS" : "FAIL"} ${name}`); }
   redisClient.disconnect();

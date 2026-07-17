@@ -1,4 +1,5 @@
-import db from "@/config/database.config.ts";
+import { prisma } from "@/infrastructure/database/prisma.client.ts";
+import { Prisma } from "@prisma/client";
 import { kafka } from "@/config/kafka.config.ts";
 import * as DashboardModel from "../modules/dashboard/infrastructure/dashboard.repository.ts";
 
@@ -7,13 +8,9 @@ let dashboardInterval: NodeJS.Timeout | undefined;
 
 // Create cache table if it does not exist
 async function ensureCacheTable() {
-  await db.raw(`
-    create table if not exists dashboard_stats (
-      key varchar(50) primary key,
-      value jsonb not null,
-      updated_at timestamp default now()
-    )
-  `);
+  // The table belongs to the Prisma migration history.  This lightweight read
+  // keeps worker startup from silently recreating schema outside migrations.
+  await prisma.dashboard_stats.findFirst({ select: { key: true } });
 }
 
 // Recalculate dashboard metrics and write to DB cache
@@ -42,15 +39,12 @@ async function refreshDashboardCache() {
     };
 
     // Store in Postgres jsonb cache table
-    await db.raw(
-      `
-      insert into dashboard_stats (key, value, updated_at)
-      values ('summary', ?::jsonb, now())
-      on conflict (key) do update 
-      set value = excluded.value, updated_at = now()
-    `,
-      [JSON.stringify(payload)],
-    );
+    const value = JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue;
+    await prisma.dashboard_stats.upsert({
+      where: { key: "summary" },
+      create: { key: "summary", value },
+      update: { value, updated_at: new Date() },
+    });
 
     console.log(`[WORKER] Dashboard stats pre-calculated and cached successfully:
       - GMV: $${metrics.gmv.toLocaleString()}

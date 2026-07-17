@@ -18,6 +18,22 @@ let failedQueue: Array<{
   path: string;
   options: any;
 }> = [];
+let csrfToken: string | undefined;
+let csrfRequest: Promise<string> | undefined;
+
+async function getCsrfToken(): Promise<string> {
+  if (csrfToken) return csrfToken;
+  csrfRequest ??= fetch(`${API_BASE_URL}/accounts/csrf`, { credentials: "include" })
+    .then(async (response) => {
+      if (!response.ok) throw new Error("Could not initialize CSRF protection");
+      const body = await response.json() as { token?: string };
+      if (!body.token) throw new Error("Could not initialize CSRF protection");
+      csrfToken = body.token;
+      return csrfToken;
+    })
+    .finally(() => { csrfRequest = undefined; });
+  return csrfRequest;
+}
 
 const processQueue = (error: any, success: boolean = false) => {
   failedQueue.forEach((prom) => {
@@ -55,6 +71,9 @@ export async function apiRequest<TResponse, TBody = unknown>(
 
   if (!(body instanceof FormData) && body !== undefined) {
     defaultHeaders["Content-Type"] = "application/json";
+  }
+  if (["POST", "PUT", "PATCH", "DELETE"].includes((restOptions.method || "GET").toUpperCase())) {
+    defaultHeaders["X-CSRF-Token"] = await getCsrfToken();
   }
 
   const response = await fetch(url, {

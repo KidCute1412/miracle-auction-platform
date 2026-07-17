@@ -6,7 +6,6 @@ import { setSocketServer } from "./socket.ts";
 import { startAuctionEndEmailJob } from "./jobs/auction-end.job.ts";
 import { initKafka, closeKafkaConnection } from "./config/kafka.config.ts";
 import { closeRedisConnection } from "./config/redis.config.ts";
-import db from "./config/database.config.ts";
 import { prisma } from "./infrastructure/database/prisma.client.ts";
 import { dispatchBidOutbox } from "./modules/bids/infrastructure/bid-outbox.dispatcher.ts";
 
@@ -37,7 +36,7 @@ async function gracefulShutdown(signal: string) {
   console.log(`[SYSTEM] Received ${signal}. Starting graceful shutdown...`);
   await new Promise<void>((resolve) => io.close(() => resolve()));
   await new Promise<void>((resolve) => httpServer.close(() => resolve()));
-  await Promise.allSettled([db.destroy(), prisma.$disconnect(), closeRedisConnection(), closeKafkaConnection()]);
+  await Promise.allSettled([prisma.$disconnect(), closeRedisConnection(), closeKafkaConnection()]);
   process.exit(0);
 }
 process.on("SIGINT", () => void gracefulShutdown("SIGINT"));

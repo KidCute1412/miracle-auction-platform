@@ -1,24 +1,29 @@
 import { Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
-import crypto from "crypto";
-import { redisClient } from "@/config/redis.config.ts";
 import * as AccountsService from "../application/account-auth.use-case.ts";
+import { consumeRefreshSession, createRefreshSession, persistRefreshSession, revokeRefreshSession } from "../application/auth-session.service.ts";
 import { generateOTP } from "@/helpers/generate.helper.ts";
 import { sendMail } from "@/helpers/mail.helper.ts";
 import type { AccountRequest } from "@/interfaces/request.interface.ts";
 
 const googleClient = new OAuth2Client();
 
-const hashToken = (token: string) => {
-  return crypto.createHash("sha256").update(token).digest("hex");
+const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
+const clearSessionCookies = (res: Response) => {
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 };
 
-const saveRefreshTokenToRedis = async (userId: number, token: string, rememberMe: boolean) => {
-  const hashed = hashToken(token);
-  const ttl = rememberMe ? 7 * 24 * 60 * 60 : 24 * 60 * 60; // in seconds
-  await redisClient.set(`rt:${hashed}`, String(userId), "EX", ttl);
-};
+async function issueSession(res: Response, account: { user_id: number; role: string; auth_version: number }, rememberMe: boolean, sessionId?: string) {
+  const session = createRefreshSession(account.user_id, account.auth_version, rememberMe, sessionId);
+  const user = { user_id: account.user_id, auth_version: account.auth_version };
+  const accessToken = AccountsService.generateAccessToken(user);
+  const refreshToken = AccountsService.generateRefreshToken(user, rememberMe, session.sessionId, session.tokenId);
+  await persistRefreshSession(session);
+  res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+  res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000 });
+}
 
 type GoogleAccountData = {
   full_name: string;
@@ -137,25 +142,7 @@ export const loginPost = async (req: Request, res: Response) => {
     return;
   }
   const rememberMe = !!req.body.rememberPassword;
-  const userPayload = { user_id: existedAccount.user_id, role: existedAccount.role };
-  const accessToken = AccountsService.generateAccessToken(userPayload);
-  const refreshToken = AccountsService.generateRefreshToken(userPayload, rememberMe);
-
-  await saveRefreshTokenToRedis(userPayload.user_id, refreshToken, rememberMe);
-
-  res.cookie("accessToken", accessToken, {
-    maxAge: 15 * 60 * 1000, // 15 mins
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-  });
-
-  res.cookie("refreshToken", refreshToken, {
-    maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-  });
+  await issueSession(res, existedAccount, rememberMe);
 
   res.json({
     code: "success",
@@ -249,14 +236,11 @@ export const logoutPost = async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken;
   if (refreshToken) {
     try {
-      const hashed = crypto.createHash("sha256").update(refreshToken).digest("hex");
-      await redisClient.del(`rt:${hashed}`);
-    } catch (e) {
-      // Ignore errors during logout redis deletion
-    }
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
+      if (typeof decoded.sid === "string" && typeof decoded.jti === "string") await revokeRefreshSession(decoded.sid, decoded.jti);
+    } catch { /* cookies are still cleared for expired or invalid tokens */ }
   }
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
+  clearSessionCookies(res);
   res.json({ code: "success", message: "Logged out successfully", data: null });
 };
 
@@ -286,25 +270,7 @@ export const googleLoginPost = async (req: Request, res: Response) => {
         return;
       }
       const rememberMe = !!req.body.rememberMe;
-      const userPayload = { user_id: existedAccount.user_id, role: existedAccount.role };
-      const accessToken = AccountsService.generateAccessToken(userPayload);
-      const refreshToken = AccountsService.generateRefreshToken(userPayload, rememberMe);
-
-      await saveRefreshTokenToRedis(userPayload.user_id, refreshToken, rememberMe);
-
-      res.cookie("accessToken", accessToken, {
-        maxAge: 15 * 60 * 1000, // 15 mins
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-      });
+      await issueSession(res, existedAccount, rememberMe);
 
       res.json({
         code: "success",
@@ -325,25 +291,7 @@ export const googleLoginPost = async (req: Request, res: Response) => {
         return;
       }
       const rememberMe = !!req.body.rememberMe;
-      const userPayload = { user_id: newAccount.user_id, role: newAccount.role };
-      const accessToken = AccountsService.generateAccessToken(userPayload);
-      const refreshToken = AccountsService.generateRefreshToken(userPayload, rememberMe);
-
-      await saveRefreshTokenToRedis(userPayload.user_id, refreshToken, rememberMe);
-
-      res.cookie("accessToken", accessToken, {
-        maxAge: 15 * 60 * 1000, // 15 mins
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-      });
+      await issueSession(res, newAccount, rememberMe);
 
       res.json({
         code: "success",
@@ -449,39 +397,23 @@ export const refreshSession = async (req: Request, res: Response) => {
     return;
   }
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string) as JwtPayload;
-    const hashed = hashToken(refreshToken);
-    const userId = await redisClient.get(`rt:${hashed}`);
-    if (!userId) {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
+    if (typeof decoded.user_id !== "number" || typeof decoded.auth_version !== "number" || typeof decoded.sid !== "string" || typeof decoded.jti !== "string") {
       res.status(401).json({ code: "error", message: "Refresh token has been revoked or is invalid" });
       return;
     }
-    // Rotate token: delete old one
-    await redisClient.del(`rt:${hashed}`);
-
-    const user = { user_id: Number(userId), role: decoded.role };
+    const account = await AccountsService.findAccountById(decoded.user_id);
+    if (!account || account.status === "inactive" || account.auth_version !== decoded.auth_version) {
+      res.status(401).json({ code: "error", message: "Refresh token has been revoked or is invalid" });
+      return;
+    }
+    if (await consumeRefreshSession(decoded.sid, decoded.jti) !== "active") {
+      res.status(401).json({ code: "error", message: "Refresh token has been revoked or is invalid" });
+      return;
+    }
     const rememberMe = decoded.section === "long";
-
-    const newAccessToken = AccountsService.generateAccessToken(user);
-    const newRefreshToken = AccountsService.generateRefreshToken(user, rememberMe);
-
-    await saveRefreshTokenToRedis(user.user_id, newRefreshToken, rememberMe);
-
-    res.cookie("accessToken", newAccessToken, {
-      maxAge: 15 * 60 * 1000, // 15 mins
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
-
-    res.cookie("refreshToken", newRefreshToken, {
-      maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
-
-    res.json({ code: "success", role: user.role, message: "Session refreshed successfully" });
+    await issueSession(res, account, rememberMe, decoded.sid);
+    res.json({ code: "success", role: account.role, message: "Session refreshed successfully" });
   } catch (error) {
     res.status(401).json({ code: "error", message: "Invalid refresh token" });
   }

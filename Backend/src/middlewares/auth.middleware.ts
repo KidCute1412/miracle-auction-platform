@@ -9,15 +9,17 @@ export async function verifyToken(req: AccountRequest, res: Response, next: Next
     return res.status(401).json({ message: "Access token is missing" });
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
-  const account = await accountRepository.findById(decoded?.user_id);
-
-  if (!account) {
-    return res.status(403).json({ message: "Invalid access token" });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
+    const account = await accountRepository.findById(decoded?.user_id);
+    if (!account || account.status === "inactive" || account.auth_version !== decoded.auth_version) {
+      return res.status(401).json({ message: "Invalid access token" });
+    }
+    req.user = account;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid access token" });
   }
-
-  req.user = account;
-  next();
 }
 
 export function verifyRole(...allowedRoles: string[]) {
@@ -41,9 +43,9 @@ export async function justDecodeToken(req: Request, _: Response, next: NextFunct
     return next();
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
     const account = await accountRepository.findById(decoded?.user_id);
-    if (account) {
+    if (account && account.status !== "inactive" && account.auth_version === decoded.auth_version) {
       (req as AccountRequest).user = account;
     }
     next();

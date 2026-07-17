@@ -36,7 +36,7 @@ export class AccountRepository {
   }
 
   async updatePassword(email: string, password: string): Promise<void> {
-    await prisma.users.update({ where: { email }, data: { password } });
+    await prisma.users.update({ where: { email }, data: { password, auth_version: { increment: 1 } } });
   }
 
   async createOtp(email: string, otp: string): Promise<void> {
