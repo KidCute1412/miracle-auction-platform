@@ -1,26 +1,27 @@
+import type { BanBidderRequest, BanBidderResponse, BidHistoryQuery, BidHistoryResponse, BidRequest, BidSuccessResponse, BuyNowRequest, BuyNowSuccessResponse } from "api-contracts";
 import { apiRequest } from "./api.client.ts";
 
 export const bidService = {
-  play: async (body: { product_id: number; bid_price: number; max_price?: number }): Promise<any> => {
-    return apiRequest(`/bids`, {
+  play: async (body: BidRequest): Promise<BidSuccessResponse> => {
+    return apiRequest<BidSuccessResponse, BidRequest>(`/bids`, {
       method: "POST",
       body,
     });
   },
 
-  getHistory: async (params: { product_id: number }): Promise<any> => {
-    return apiRequest(`/bids`, { params });
+  getHistory: async (params: BidHistoryQuery): Promise<BidHistoryResponse> => {
+    return apiRequest<BidHistoryResponse>(`/bids`, { params: { product_id: params.product_id } });
   },
 
-  buyNow: async (body: { product_id: number; buy_price: number }): Promise<any> => {
-    return apiRequest(`/bids/purchase`, {
+  buyNow: async (body: BuyNowRequest): Promise<BuyNowSuccessResponse> => {
+    return apiRequest<BuyNowSuccessResponse, BuyNowRequest>(`/bids/purchase`, {
       method: "POST",
       body,
     });
   },
 
-  banBidder: async (body: { product_id: number; banned_user_id: number; reason: string }): Promise<any> => {
-    return apiRequest(`/bids/bans`, {
+  banBidder: async (body: BanBidderRequest): Promise<BanBidderResponse> => {
+    return apiRequest<BanBidderResponse, BanBidderRequest>(`/bids/bans`, {
       method: "POST",
       body,
     });

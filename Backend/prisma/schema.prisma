@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model bidding_ban_user {
+  id         BigInt    @id @default(autoincrement())
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  product_id BigInt?
+  user_id    Int?
+  reason     String?
+  products   products? @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model bidding_history {
+  bidding_id     BigInt   @id @default(autoincrement())
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  product_id     BigInt
+  user_id        Int
+  max_price      Float?
+  product_price  Float?
+  price_owner_id BigInt?
+  status         String?
+  products       products @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction)
+  users          users    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model categories {
+  id               Int          @id @default(autoincrement())
+  name             String       @db.VarChar(50)
+  parent_id        Int?
+  status           String       @default("active") @db.VarChar(10)
+  deleted          Boolean      @default(false)
+  description      String?      @db.VarChar(1000)
+  created_by       Int?
+  updated_by       Int?
+  created_at       DateTime     @default(now()) @db.Timestamp(6)
+  updated_at       DateTime     @default(now()) @db.Timestamp(6)
+  slug             String?      @unique @db.VarChar(100)
+  cat_image        String?
+  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_categories_parent")
+  other_categories categories[] @relation("categoriesTocategories")
+}
+
+model dashboard_stats {
+  key        String    @id @db.VarChar(50)
+  value      Json
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model extend_bidding_time {
+  id             BigInt   @id(map: "extendbiddingtime_pkey") @default(autoincrement())
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  extend_time    BigInt?  @default(10)
+  threshold_time BigInt?  @default(5)
+}
+
+model love_products {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  user_id    Int
+  product_id BigInt
+  products   products @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model orders {
+  order_id                 BigInt    @id @default(autoincrement())
+  created_at               DateTime  @default(now()) @db.Timestamptz(6)
+  user_id                  Int
+  product_id               BigInt?
+  order_status             String?   @default("pending")
+  shipping_address         String?
+  phone_number             String?
+  payment_proof_image_url  String?
+  shipping_label_image_url String?
+  products                 products? @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
+  users                    users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model otp_codes {
+  id         Int       @id @default(autoincrement())
+  email      String    @unique @db.VarChar(255)
+  otp        String    @db.VarChar(10)
+  otp_expiry DateTime? @default(dbgenerated("(now() + '00:02:00'::interval)")) @db.Timestamp(6)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model product_questions {
+  question_id             BigInt              @id @default(autoincrement())
+  created_at              DateTime            @default(now()) @db.Timestamptz(6)
+  product_id              BigInt
+  user_id                 Int
+  content                 String?
+  question_parent_id      BigInt?
+  products                products            @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction)
+  product_questions       product_questions?  @relation("product_questionsToproduct_questions", fields: [question_parent_id], references: [question_id], onDelete: NoAction, onUpdate: NoAction)
+  other_product_questions product_questions[] @relation("product_questionsToproduct_questions")
+  users                   users               @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model products {
+  product_id             BigInt                   @id @default(autoincrement())
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  product_name           String?                  @db.VarChar
+  seller_id              BigInt
+  step_price             Float?
+  start_price            Float?
+  current_price          Float?
+  buy_now_price          Float?
+  price_owner_id         BigInt?
+  bid_turns              BigInt?                  @default(0)
+  start_time             DateTime?                @db.Timestamptz(6)
+  end_time               DateTime?                @db.Timestamptz(6)
+  cat2_id                BigInt?
+  is_removed             Boolean?                 @default(false)
+  description            String?
+  product_images         String[]                 @db.VarChar
+  auto_extended          Boolean?                 @default(false)
+  edited_at              DateTime?                @db.Timestamptz(6)
+  fts                    Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, remove_accents((product_name)::text))"))
+  auction_end_email_sent Boolean?                 @default(false)
+  bidding_ban_user       bidding_ban_user[]
+  bidding_history        bidding_history[]
+  love_products          love_products[]
+  orders                 orders[]
+  product_questions      product_questions[]
+  // Kept scalar because PostgreSQL permits the legacy bigint -> integer FK,
+  // while Prisma requires both sides of a relation to use the same type.
+
+  @@index([fts], map: "products_fts", type: Gin)
+}
+
+model bid_idempotency {
+  id                  BigInt   @id @default(autoincrement())
+  operation           String   @db.VarChar(40)
+  user_id             Int
+  idempotency_key     String   @db.VarChar(255)
+  request_fingerprint String   @db.VarChar(128)
+  response_body       Json
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  users               users    @relation(fields: [user_id], references: [user_id])
+
+  @@unique([operation, user_id, idempotency_key], map: "bid_idempotency_operation_user_key_unique")
+}
+
+model auction_outbox {
+  id            BigInt    @id @default(autoincrement())
+  event_type    String    @db.VarChar(100)
+  event_version Int
+  aggregate_id  String    @db.VarChar(64)
+  payload       Json
+  attempts      Int       @default(0)
+  available_at  DateTime  @default(now()) @db.Timestamptz(6)
+  delivered_at  DateTime? @db.Timestamptz(6)
+  last_error    String?
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([delivered_at, available_at, id], map: "auction_outbox_pending_idx")
+}
+
+model upgrade_to_sellers {
+  id          BigInt    @id @default(autoincrement())
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  user_id     Int
+  expiry_time DateTime? @db.Timestamptz(6)
+  reason      String?
+  status      String?   @default("pending")
+  users       users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_blacklist {
+  id         BigInt   @id @default(autoincrement())
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  user_id    Int
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_rating {
+  id                                BigInt   @id @default(autoincrement())
+  created_at                        DateTime @default(now()) @db.Timestamptz(6)
+  user_id                           Int
+  rater_id                          Int
+  score                             BigInt
+  comment                           String?
+  users_user_rating_rater_idTousers users    @relation("user_rating_rater_idTousers", fields: [rater_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_user_rating_user_idTousers  users    @relation("user_rating_user_idTousers", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  user_id                                 Int                      @id @default(autoincrement())
+  username                                String                   @db.VarChar(50)
+  full_name                               String                   @db.VarChar(50)
+  email                                   String                   @unique @db.VarChar(50)
+  password                                String?                  @db.VarChar(100)
+  address                                 String?                  @db.VarChar(100)
+  role                                    String?                  @default("user") @db.VarChar(10)
+  date_of_birth                           DateTime?                @db.Date
+  rating                                  Float?                   @default(0.0)
+  rating_count                            Int?                     @default(0)
+  created_at                              DateTime?                @default(now()) @db.Timestamptz(6)
+  avatar                                  String?
+  status                                  String                   @default("active")
+  fts                                     Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, ((remove_accents((COALESCE(full_name, ''::character varying))::text) || ' '::text) || remove_accents((COALESCE(email, ''::character varying))::text)))"))
+  bidding_ban_user                        bidding_ban_user[]
+  bidding_history                         bidding_history[]
+  bid_idempotency                         bid_idempotency[]
+  love_products                           love_products[]
+  orders                                  orders[]
+  product_questions                       product_questions[]
+  upgrade_to_sellers                      upgrade_to_sellers[]
+  user_blacklist                          user_blacklist[]
+  user_rating_user_rating_rater_idTousers user_rating[]            @relation("user_rating_rater_idTousers")
+  user_rating_user_rating_user_idTousers  user_rating[]            @relation("user_rating_user_idTousers")
+
+  @@index([fts], map: "users_fts", type: Gin)
+}

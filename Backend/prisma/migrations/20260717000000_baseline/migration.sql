@@ -1,0 +1,7 @@
+-- Baseline marker for the pre-existing PostgreSQL schema.
+--
+-- Existing environments: load data/database.sql first, then record this migration
+-- with `npx prisma migrate resolve --applied 20260717000000_baseline`.
+-- New Supabase environments: apply the reviewed schema dump at
+-- ../../data/database.sql before `prisma migrate deploy`. This marker is kept
+-- intentionally non-destructive: it never drops or resets application data.

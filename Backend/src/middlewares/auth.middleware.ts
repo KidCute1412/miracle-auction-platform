@@ -29,10 +29,10 @@ export async function verifyToken(
 
 export function verifyRole(...allowedRoles: string[]) {
   return (req: AccountRequest, res: Response, next: NextFunction) => {
-    if (!(req as any).user) {
+    if (!req.user) {
       return res.status(401).json({ message: "User not authenticated" });
     }
-    if (!allowedRoles.includes((req as any).user.role)) {
+    if (!allowedRoles.includes(req.user.role)) {
       // Format return message with allowed roles
       return res
         .status(403)
@@ -56,7 +56,7 @@ export async function justDecodeToken(req: Request, _: Response, next: NextFunct
     ) as JwtPayload;
     const account = await AccountsModel.findAccountById(decoded?.user_id);
     if (account) {
-      (req as any).user = account;
+      (req as AccountRequest).user = account;
     }
     next();
   }

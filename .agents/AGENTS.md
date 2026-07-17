@@ -1,4 +1,4 @@
-﻿# Agent Rules & Guidelines
+# Agent Rules & Guidelines
 
 Workspace-scoped rules for AI agents working on this online auction project.
 
@@ -31,3 +31,4 @@ Workspace-scoped rules for AI agents working on this online auction project.
 - When a recommended command requires a missing script or dependency, label it as a target command to add first.
 
 - Always answer with "Hi Lokdeptrai"
+- Always git add and git commit with a standard message (e.g., using Conventional Commits format like "feat: ..." or "fix: ...") after my approval for a task. 

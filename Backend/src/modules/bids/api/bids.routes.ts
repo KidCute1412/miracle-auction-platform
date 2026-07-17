@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { validate } from "@/middlewares/validate.middleware.ts";
+import * as controller from "./bids.controller.ts";
+import { banBidderBodySchema, bidBodySchema, bidHistoryQuerySchema, buyNowBodySchema } from "./bids.schemas.ts";
+const route = Router();
+route.post("/", validate(bidBodySchema, "body"), controller.playBid);
+route.get("/", validate(bidHistoryQuerySchema, "query"), controller.getBidHistoryByProductId);
+route.post("/purchase", validate(buyNowBodySchema, "body"), controller.buyNowProduct);
+route.post("/bans", validate(banBidderBodySchema, "body"), controller.banBidder);
+export default route;

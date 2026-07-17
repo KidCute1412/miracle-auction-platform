@@ -2,10 +2,13 @@ import { apiRequest } from "./api.client.ts";
 import type { CategoryNode, CategoryEditItem } from "@/hooks/useCategory.ts";
 
 const ADMIN_PATH = import.meta.env.VITE_PATH_ADMIN;
+type TreeResponse = { tree: CategoryNode[] };
+type CreatorsResponse = { list: string[] };
+type CategoryResponse = { item: { id: number; name: string; status: CategoryEditItem["status"]; parent_id?: number | null; description?: string | null } };
 
 export const categoryService = {
   buildTree: async (): Promise<CategoryNode[]> => {
-    const data = await apiRequest(`/${ADMIN_PATH}/categories/tree`);
+    const data = await apiRequest<TreeResponse>(`/${ADMIN_PATH}/categories/tree`);
     return data.tree;
   },
 
@@ -24,12 +27,12 @@ export const categoryService = {
   },
 
   getCreators: async (): Promise<string[]> => {
-    const data = await apiRequest(`/${ADMIN_PATH}/categories/creators`);
+    const data = await apiRequest<CreatorsResponse>(`/${ADMIN_PATH}/categories/creators`);
     return data.list;
   },
 
   getById: async (id: number): Promise<CategoryEditItem> => {
-    const data = await apiRequest(`/${ADMIN_PATH}/categories/${id}`);
+    const data = await apiRequest<CategoryResponse>(`/${ADMIN_PATH}/categories/${id}`);
     const it = data.item;
     return {
       id: it.id,

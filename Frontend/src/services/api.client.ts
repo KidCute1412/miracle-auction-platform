@@ -1,14 +1,20 @@
+import type { ApiClientErrorBody } from "api-contracts";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-interface RequestOptions extends Omit<RequestInit, "body"> {
+export interface RequestOptions<TBody = unknown> extends Omit<RequestInit, "body"> {
   params?: Record<string, string | number | boolean | undefined>;
-  body?: any;
+  body?: TBody;
 }
 
-export async function apiRequest<T = any>(
+export class ApiClientError<TBody extends ApiClientErrorBody = ApiClientErrorBody> extends Error {
+  constructor(readonly status: number, readonly body: TBody, message: string) { super(message); this.name = "ApiClientError"; }
+}
+
+export async function apiRequest<TResponse, TBody = unknown>(
   path: string,
-  options: RequestOptions = {}
-): Promise<T> {
+  options: RequestOptions<TBody> = {}
+): Promise<TResponse> {
   const { params, headers, body, ...restOptions } = options;
 
   let url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
@@ -43,9 +49,9 @@ export async function apiRequest<T = any>(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    const errorData = await response.json().catch(() => ({})) as ApiClientErrorBody;
+    throw new ApiClientError(response.status, errorData, typeof errorData.message === "string" ? errorData.message : `HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  return response.json() as Promise<TResponse>;
 }

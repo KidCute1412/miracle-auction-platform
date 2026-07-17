@@ -7,6 +7,7 @@ import { stopDashboardConsumer } from "./workers/dashboard.worker.ts";
 import { closeKafkaConnection } from "./config/kafka.config.ts";
 import { closeRedisConnection } from "./config/redis.config.ts";
 import db from "./config/database.config.ts";
+import { prisma } from "./infrastructure/database/prisma.client.ts";
 
 // Initialize Kafka and start all background worker consumers
 async function run() {
@@ -25,6 +26,7 @@ const shutdown = async (signal: string): Promise<void> => {
     closeKafkaConnection(),
     closeRedisConnection(),
     db.destroy(),
+    prisma.$disconnect(),
   ]);
   process.exit(0);
 };

@@ -27,7 +27,8 @@
     // Short paths 
     "baseUrl" : ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "api-contracts": ["../packages/api-contracts/index.d.ts"]
     },
   },
   "include": ["src", "src/types"]

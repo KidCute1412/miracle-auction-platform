@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as CategoriesService from "./categories.service.ts";
-import { AccountRequest } from "@/interfaces/request.interface.ts";
+import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
 // Build hierarchical category tree mapping starting from root node
 export async function buildTree(_: Request, res: Response) {
@@ -11,8 +11,9 @@ export async function buildTree(_: Request, res: Response) {
 // Create and register a new category
 export async function createPost(req: AccountRequest, res: Response) {
   try {
-    req.body.created_by = req.user.user_id;
-    req.body.updated_by = req.user.user_id;
+    const account = requireAuthenticatedUser(req);
+    req.body.created_by = account.user_id;
+    req.body.updated_by = account.user_id;
     await CategoriesService.insertCategory(req.body);
     res.json({ code: "success", message: "Created new category successfully" });
   } catch (error) {

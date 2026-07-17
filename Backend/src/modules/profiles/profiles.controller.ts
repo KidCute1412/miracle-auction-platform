@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as ProfilesService from "./profiles.service.ts";
-import { AccountRequest } from "@/interfaces/request.interface.ts";
+import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
 // Handle user profile edit requests
 export async function editUserProfile(req: Request, res: Response) {
@@ -68,18 +68,19 @@ export async function getUserProfileDetail(req: Request, res: Response) {
 
 // Retrieve private profile metadata for the authenticated user
 export function getMeInfo(req: AccountRequest, res: Response) {
+  const user = requireAuthenticatedUser(req);
   res.json({
     data: {
-      user_id: req.user.user_id,
-      role: req.user.role,
-      email: req.user.email,
-      full_name: req.user.full_name,
-      username: req.user.username,
-      rating: req.user.rating,
-      rating_count: req.user.rating_count,
-      address: req.user.address,
-      date_of_birth: req.user.date_of_birth,
-      avatar: req.user.avatar,
+      user_id: user.user_id,
+      role: user.role,
+      email: user.email,
+      full_name: user.full_name,
+      username: user.username,
+      rating: user.rating,
+      rating_count: user.rating_count,
+      address: user.address,
+      date_of_birth: user.date_of_birth,
+      avatar: user.avatar,
     },
   });
 }

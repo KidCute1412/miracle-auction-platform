@@ -6,6 +6,8 @@ import JustValidate from "just-validate";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { bidService } from "@/services/bid.service";
+import { ApiClientError } from "@/services/api.client";
+import type { BidRequest } from "api-contracts";
 
 export default function PlayBidSection({ product_id, current_price, step_price, buy_now_price }: { product_id?: number; current_price?: number; step_price?: number; buy_now_price?: number }) {
   const [isSubmit, setIsSubmit] = useState(false);
@@ -14,7 +16,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const [successBidAmount, setSuccessBidAmount] = useState<number>(0);
-  const [pendingBidData, setPendingBidData] = useState<any>(null);
+  const [pendingBidData, setPendingBidData] = useState<BidRequest | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -66,7 +68,6 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
       
       setPendingBidData({
         product_id: product_id,
-        price: current_price,
         max_price: parseFloat(maxPriceSubmit)
       });
       setShowConfirmModal(true);
@@ -84,11 +85,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
     setIsSubmit(true);
     
     try {
-      const data = await bidService.play({
-        product_id: pendingBidData.product_id,
-        bid_price: pendingBidData.price,
-        max_price: pendingBidData.max_price,
-      });
+      const data = await bidService.play(pendingBidData);
 
       if (data.status === "success") {
         setSuccessBidAmount(pendingBidData.max_price);
@@ -97,10 +94,11 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
       } else {
         toast.error(`Failed to place bid`);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.log(e);
-      if (e.message !== "Not logged in") {
-        toast.error(e.message || "Error connecting to server to place bid!");
+      const message = e instanceof ApiClientError ? e.message : "Error connecting to server to place bid!";
+      if (message !== "Not logged in") {
+        toast.error(message);
       }
     } finally {
       setIsSubmit(false);

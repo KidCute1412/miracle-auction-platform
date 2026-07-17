@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { cn } from "@/lib/utils";
 import { bidService } from "@/services/bid.service.ts";
+import { ApiClientError } from "@/services/api.client.ts";
 
 interface BuyNowSectionProps {
   product_id?: number;
@@ -39,14 +40,10 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name 
         buy_price: buy_now_price,
       });
 
-      if (data.status === "success") {
-        setShowSuccessOverlay(true);
-      } else {
-        toast.error(data.message || "Purchase failed!");
-      }
-    } catch (error: any) {
+      if (data.status === "success") setShowSuccessOverlay(true);
+    } catch (error: unknown) {
       console.error(error);
-      toast.error(error.message || "Error connecting to server!");
+      toast.error(error instanceof ApiClientError ? error.message : "Error connecting to server!");
     } finally {
       setIsSubmitting(false);
     }

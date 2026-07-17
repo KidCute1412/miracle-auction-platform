@@ -48,18 +48,15 @@ export async function closeKafkaConnection(): Promise<void> {
 // Publish event to topic with product-level partitioning key
 export async function publishBidEvent(productId: string, bidData: object) {
   try {
-    await producer.send({
-      topic: "bidding_events",
-      messages: [
-        {
-          key: productId, // Ensures sequential processing of bids for the same product
-          value: JSON.stringify(bidData),
-        },
-      ],
-    });
+    await publishBidEventStrict(productId, bidData);
   } catch (error) {
     console.error("[KAFKA] Failed to publish event:", error);
   }
+}
+
+/** Outbox dispatchers need failures to escape so an event remains retryable. */
+export async function publishBidEventStrict(productId: string, bidData: object): Promise<void> {
+  await producer.send({ topic: "bidding_events", messages: [{ key: productId, value: JSON.stringify(bidData) }] });
 }
 
 // Publish manual synchronization trigger to dashboard topic
