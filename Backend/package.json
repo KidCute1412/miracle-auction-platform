@@ -22,6 +22,7 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:integration && npm run test:concurrency",
+    "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run tests --exclude tests/integration/** --exclude tests/concurrency/**",
     "test:integration": "vitest run tests/integration",
     "test:concurrency": "vitest run tests/concurrency"
@@ -82,6 +83,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.10"
   }
 }

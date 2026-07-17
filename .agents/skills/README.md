@@ -1,4 +1,4 @@
-﻿# Skill Index
+# Skill Index
 
 Use this index to select the smallest set of skills needed for a task.
 
@@ -20,9 +20,11 @@ Use this index to select the smallest set of skills needed for a task.
 | Add CI pipeline | `ci-cd-observability`, `automated-testing-methodology`, `typescript-code-quality` |
 | Improve TypeScript quality | `typescript-code-quality`, plus the domain skill for the touched area |
 | Run load tests | `systematic-load-testing`, `concurrency-safeguards`, `intelligent-cache-strategy`, `portfolio-readiness` |
+| Modify or add backend features | `mandatory-test-enforcement`, `automated-testing-methodology`, plus relevant domain skill |
 
 ## Skill Set
 
+- `mandatory-test-enforcement`: Enforce writing unit and integration tests for every code change or new API feature.
 - `automated-testing-methodology`: backend unit/integration/concurrency tests, frontend lint/build gates, CI-ready commands.
 - `enterprise-api-standards`: Joi validation, standard envelopes, centralized errors, request IDs, sanitized production errors.
 - `secure-auth-owasp`: cookie auth, refresh rotation, CSRF, CORS, RBAC, secrets, headers, rate limits, audit.

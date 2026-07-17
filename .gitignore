@@ -18,6 +18,7 @@ node_modules/
 # Build outputs
 # ============================================================
 Backend/dist/
+Backend/coverage/
 AgentService/dist/
 Frontend/dist/
 Frontend/dist-ssr/

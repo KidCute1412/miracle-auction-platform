@@ -20,7 +20,7 @@ Workspace-scoped rules for AI agents working on this online auction project.
 - Prefer the repo stack already in use: Express 5, TypeScript, Knex, PostgreSQL, Redis, Kafka/RabbitMQ-style workers, Socket.io, React, Vite, Tailwind, Docker, and k6.
 - Keep implementation changes focused on the requested scope.
 - Do not mix large codebase upgrades with skill or documentation rewrites in the same change.
-- Add or update tests when changing behavior, especially for auction bidding, auth, payments/orders, cache invalidation, workers, or API contracts.
+- Add or update tests when changing behavior, especially for auction bidding, auth, payments/orders, cache invalidation, workers, or API contracts. Follow the `mandatory-test-enforcement` skill guidelines strictly for all backend features.
 - Every implementation response must include verification commands that were run or should be run.
 - Every implementation response must include a short risk note covering the most likely remaining failure mode.
 
