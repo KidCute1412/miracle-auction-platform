@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import routers from "./routes/AppRouter.tsx";
+import "animate.css";
 import "@/assets/styles/global.css";
 import { Toaster } from "sonner";
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import CatagoriseButton from "@/components/common/CategoriesMenu";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { LucideSearch, Heart, Plus, UserPlus, Sun, Moon } from "lucide-react";
 import ProfileDropdown from "@/components/common/ProfileDropdown";
@@ -9,8 +8,17 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { auth } = useAuth();
   const { theme, toggleTheme } = useTheme();
+
+  const isHomePage = location.pathname === "/";
+
+  const handleHover = (action: string) => {
+    if (isHomePage) {
+      window.dispatchEvent(new CustomEvent("miracle:navbar-hover", { detail: { action } }));
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border transition-all duration-300">
@@ -53,12 +61,16 @@ function Navbar() {
               <div className="flex items-center gap-4">
                 <Link
                   to="/accounts/login"
+                  onMouseEnter={() => handleHover("signin")}
+                  onMouseLeave={() => handleHover("leave")}
                   className="text-sm font-semibold hover:text-accent transition-colors duration-200"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/accounts/register"
+                  onMouseEnter={() => handleHover("signup")}
+                  onMouseLeave={() => handleHover("leave")}
                   className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-all duration-200 shadow-sm"
                 >
                   Sign up
@@ -68,6 +80,8 @@ function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   to="/my-products"
+                  onMouseEnter={() => handleHover("heart")}
+                  onMouseLeave={() => handleHover("leave")}
                   title="Favorites"
                   className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
                 >
@@ -85,13 +99,20 @@ function Navbar() {
                 ) : (
                   <Link
                     to="/products/post"
+                    onMouseEnter={() => handleHover("plus")}
+                    onMouseLeave={() => handleHover("leave")}
                     title="Add new product"
                     className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
                   >
                     <Plus size={20} />
                   </Link>
                 )}
-                <ProfileDropdown />
+                <div
+                  onMouseEnter={() => handleHover("profile")}
+                  onMouseLeave={() => handleHover("leave")}
+                >
+                  <ProfileDropdown />
+                </div>
               </div>
             )}
           </div>

@@ -1,253 +1,106 @@
-# Production Deployment Plan (AWS + Serverless Cloud Services)
+# Kế hoạch deploy demo / portfolio
 
-This document outlines the step-by-step procedure for deploying the Online Auction platform to a production-ready environment. 
+Mục tiêu: chi phí thấp, có Docker + AWS để thể hiện kỹ thuật, nhưng không cam kết uptime production vì dùng free tier.
 
-To maximize portfolio impact while keeping monthly costs at ~**$3.60/month** (just the AWS public IPv4 fee), we host the heavy databases/brokers on free-tier cloud services and deploy the core application components on AWS.
+## Deploy ở đâu?
 
----
+| Thành phần | Nơi deploy | Lý do |
+| --- | --- | --- |
+| Frontend Vite | Vercel | Có CDN, HTTPS, deploy từ Git nhanh và miễn phí cho portfolio. |
+| Backend API + Socket.IO | Một AWS EC2 Ubuntu | Cần tiến trình Node chạy liên tục cho API, cookie auth và Socket.IO. |
+| Worker | Cùng EC2, container riêng | Xử lý event/đấu giá độc lập với API, không cần thuê thêm máy. |
+| PostgreSQL | Supabase Free | Không phải tự vận hành database. |
+| Redis | Upstash Redis Free | Có endpoint TLS, phù hợp cache/rate limit. |
+| Kafka | Upstash Kafka Free | Không phải tự vận hành Kafka trên EC2 nhỏ. |
 
-## 1. Target Architecture
+Luồng truy cập:
 
-```mermaid
-graph TD
-    Client[Client Browser] -->|HTTPS / WSS| CF["AWS CloudFront (CDN)"]
-    CF -->|Static Assets| S3["AWS S3 Bucket (Vite Frontend)"]
-    Client -->|API / Socket.io| EC2["AWS EC2 / Lightsail Instance (API Server)"]
-    
-    subgraph EC2Instance ["AWS EC2 Container Stack"]
-        EC2 -->|Reverse Proxy| Nginx["Nginx Reverse Proxy & SSL (Certbot)"]
-        Nginx -->|Port 5000| APIContainer["Backend API Container"]
-        Nginx -.->|WebSocket Upgrade| APIContainer
-        WorkerContainer["Node Worker Container"]
-    end
-    
-    subgraph ManagedServices ["External Managed Services"]
-        APIContainer -->|Queries| Supabase[("Supabase PostgreSQL")]
-        APIContainer -->|Cache & Rate Limit| UpstashRedis[("Upstash Redis")]
-        APIContainer -->|Events| UpstashKafka[("Upstash Kafka")]
-        WorkerContainer -->|Events| UpstashKafka
-        WorkerContainer -->|Writes| Supabase
-    end
+```text
+Người dùng → app.example.com (Vercel)
+Người dùng → api.example.com (EC2 + Nginx → API + Socket.IO)
+API/Worker → Supabase + Upstash Redis + Upstash Kafka
 ```
 
----
+## Checklist trước khi deploy
 
-## 2. Environment Variables & Credentials
+- [ ] Sửa Docker để build được JavaScript production. Hiện `tsconfig.json` đang có `noEmit: true` và Dockerfile chưa tạo `dist`, nên chưa thể chạy `node dist/server.js` / `node dist/worker.js`.
+- [ ] Tách hai service Docker: `api` và `worker`; đặt `restart: unless-stopped`.
+- [ ] Sửa backend lấy `PORT` từ biến môi trường.
+- [ ] Sửa CORS của Express và Socket.IO dùng `CLIENT_URL=https://app.example.com`, không hard-code localhost và không dùng `*` khi có cookie.
+- [ ] Cookie production phải có `Secure`, `HttpOnly`, `SameSite=Lax`; giữ `trust proxy` vì API đứng sau Nginx.
+- [ ] Thống nhất Kafka theo code hiện tại: `KAFKA_USERNAME`, `KAFKA_PASSWORD`; topics `bidding_events`, `dashboard_updates`.
+- [ ] Chạy kiểm tra: `npm run build` ở Backend, `npm run lint` + `npm run build` ở Frontend, `docker compose config`, `docker build Backend`.
 
-Create a secure `.env` file on the production EC2 host. **Never commit this file to Git.**
+## Cấu hình từng nơi
 
-### Backend API & Worker Settings
-* `NODE_ENV=production`
-* `PORT=5000`
-* `JWT_SECRET=your_production_jwt_secret`
-* `CORS_ORIGIN=https://your-frontend-domain.com`
-* `COOKIE_DOMAIN=your-backend-domain.com`
+### 1. Supabase, Upstash
 
-### Database (Supabase PostgreSQL)
-* `DB_HOST=your-supabase-db-host.supabase.co`
-* `DB_PORT=5432`
-* `DB_USER=postgres`
-* `DB_PASSWORD=your_supabase_db_password`
-* `DB_NAME=postgres`
+- [ ] Tạo Supabase project, chạy schema/seed; lấy `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+- [ ] Tạo Upstash Redis; lấy `REDIS_URL` dạng `rediss://...`.
+- [ ] Tạo Upstash Kafka và các topics cần thiết; lấy `KAFKA_BROKERS`, `KAFKA_USERNAME`, `KAFKA_PASSWORD`.
+- [ ] Bật cảnh báo quota. Free tier chỉ dùng cho demo; Supabase có thể pause khi ít hoạt động.
 
-### Cache & Rate Limiting (Upstash Redis)
-* `REDIS_URL=rediss://default:your_upstash_redis_password@your-upstash-redis-endpoint.upstash.io:6379`
+### 2. AWS EC2
 
-### Messaging Queue (Upstash Kafka or Confluent Cloud)
-* `KAFKA_BROKERS=your-kafka-broker-endpoint.upstash.io:9092`
-* `KAFKA_SASL_USERNAME=your_sasl_username`
-* `KAFKA_SASL_PASSWORD=your_sasl_password`
+- [ ] Tạo Ubuntu EC2, thử `t3.micro` cho demo nhẹ; nếu API + worker thiếu RAM, nâng `t3.small`.
+- [ ] Security group chỉ mở `80`, `443`; mở `22` cho IP của người deploy. Không public port `5000`, database, Redis hay Kafka.
+- [ ] Cài Docker, Docker Compose plugin và Nginx.
+- [ ] Trỏ `api.example.com` về EC2; Nginx proxy vào API container và bật WebSocket upgrade.
+- [ ] Dùng Certbot cấp HTTPS cho `api.example.com`.
+- [ ] Lưu `.env` chỉ trên EC2, không commit Git. Tạo AWS Budget alert ở $5 và $15.
 
----
+Biến môi trường backend/worker cần có:
 
-## 3. Step-by-Step Deployment Instructions
-
-### Phase 1: Deploy Frontend (AWS S3 + CloudFront)
-
-Vite compiles the frontend into static assets (`HTML`, `JS`, `CSS`). We serve these via a content delivery network (CDN) to ensure fast load times worldwide.
-
-1. **Build Frontend**:
-   Build the Vite app locally or in CI:
-   ```bash
-   cd Frontend
-   npm install
-   VITE_API_URL=https://api.yourdomain.com npm run build
-   ```
-2. **Provision S3 Bucket**:
-   * Create an S3 bucket named `online-auction-frontend`.
-   * Enable static website hosting. Set the index document to `index.html`.
-   * Upload the contents of your `dist/` directory directly to the bucket.
-3. **Provision CloudFront CDN**:
-   * Create a CloudFront Distribution with the S3 bucket static website endpoint as the **Origin**.
-   * **Crucial for Single Page Apps (React Router)**: Create a custom error response rule:
-     * **Error Code**: `403` and `404`.
-     * **Response Page Path**: `/index.html`.
-     * **HTTP Status Code**: `200` (Redirects client-side routing back to React).
-   * Link your domain (e.g., `yourdomain.com`) using AWS Route 53 or your DNS provider.
-
----
-
-### Phase 2: Set Up External Cloud Services
-
-1. **Supabase (PostgreSQL)**:
-   * Create a project on Supabase.
-   * Run the SQL migration scripts located in your project's `/data` directory in the Supabase SQL editor to initialize tables and seed initial category data.
-2. **Upstash Redis**:
-   * Create a Redis database. Enable SSL/TLS encryption.
-   * Copy the connection string (`REDIS_URL`).
-3. **Upstash Kafka**:
-   * Create a Kafka cluster.
-   * Create the required topics: `bid-placed`, `auction-ended`, and `email-notifications`.
-   * Copy the SASL credentials and Broker connection string.
-
----
-
-### Phase 3: Setup EC2 Host (Ubuntu Server)
-
-1. **Launch Instance**:
-   * Select `t3.micro` (Free Tier) or `t2.micro` running **Ubuntu Server 22.04 LTS**.
-   * Assign a **Security Group** allowing incoming traffic on:
-     * Port `22` (SSH - restrict access to your IP)
-     * Port `80` (HTTP - required for Certbot challenge)
-     * Port `443` (HTTPS - secure web traffic)
-2. **Install Docker Engine**:
-   Execute the following on the EC2 host:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y docker.io docker-compose
-   sudo usermod -aG docker ubuntu
-   ```
-   *Log out and log back in to apply Docker group permissions.*
-
----
-
-### Phase 4: Deploy Backend Containers
-
-Instead of compiling code on the EC2 instance, use a Docker Compose profile configured for production. Create a [docker-compose.prod.yml](file:///D:/HCMUS/Third%20Year/Ultra%20Web%20Skills/ReflourishedOnlineAuction/Online-Auction/docs/deployment.md) file:
-
-```yaml
-version: '3.8'
-
-services:
-  api:
-    build:
-      context: ../Backend
-      dockerfile: Dockerfile
-    container_name: production-api
-    command: node dist/server.js
-    ports:
-      - "5000:5000"
-    restart: always
-    environment:
-      - NODE_ENV=production
-      - PORT=5000
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - REDIS_URL=${REDIS_URL}
-      - KAFKA_BROKERS=${KAFKA_BROKERS}
-      - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
-      - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
-
-  worker:
-    build:
-      context: ../Backend
-      dockerfile: Dockerfile
-    container_name: production-worker
-    command: node dist/worker.js
-    restart: always
-    environment:
-      - NODE_ENV=production
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - REDIS_URL=${REDIS_URL}
-      - KAFKA_BROKERS=${KAFKA_BROKERS}
-      - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
-      - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+```text
+NODE_ENV=production
+PORT=5000
+CLIENT_URL=https://app.example.com
+JWT_SECRET, JWT_REFRESH_SECRET
+DB_CLIENT=pg, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+REDIS_URL
+KAFKA_BROKERS, KAFKA_USERNAME, KAFKA_PASSWORD
+GMAIL_ADDRESS, GMAIL_APP_PASSWORD       # nếu bật email
+CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET  # nếu dùng upload
+CAPTCHA_SECRET_KEY                       # nếu bật captcha
 ```
 
-Start the containers on the EC2 host:
-```bash
-docker-compose -f docker-compose.prod.yml --env-file .env up -d --build
+### 3. Vercel
+
+- [ ] Import repository, chọn **Root Directory** là `Frontend`.
+- [ ] Build command: `npm run build`; Output directory: `dist`.
+- [ ] Gắn domain `app.example.com`.
+- [ ] Khai báo:
+
+```text
+VITE_API_URL=https://api.example.com
+VITE_PATH_ADMIN=admin
+VITE_TINY_MCE=...             # chỉ public key
+VITE_CAPTCHA_SITE_KEY=...     # chỉ site key public
+VITE_GOOGLE_CLIENT_ID=...     # chỉ client ID public
 ```
 
----
+- [ ] Không đặt secret trong `VITE_*`; giá trị này sẽ xuất hiện trong JavaScript của trình duyệt.
+- [ ] Cập nhật OAuth redirect URI và reCAPTCHA allowed domain thành `app.example.com`.
 
-### Phase 5: Nginx Reverse Proxy & SSL (Let's Encrypt)
+## Kiểm tra sau deploy
 
-1. **Install Nginx**:
-   ```bash
-   sudo apt install -y nginx
-   ```
-2. **Configure Nginx**:
-   Edit `/etc/nginx/sites-available/default` to forward incoming traffic and upgrade Socket.io connections:
-   ```nginx
-   server {
-       listen 80;
-       server_name api.yourdomain.com;
+- [ ] `https://api.example.com/health` trả `200`.
+- [ ] `https://api.example.com/ready` báo database, Redis, Kafka đều sẵn sàng.
+- [ ] Frontend gọi đúng `https://api.example.com`; Socket.IO kết nối WebSocket.
+- [ ] Đăng nhập tạo cookie `Secure`, `HttpOnly`, `SameSite=Lax`.
+- [ ] Test luồng: đăng nhập → xem sản phẩm → đặt giá → worker nhận event → kết quả mong đợi.
+- [ ] Lưu image tag cũ và backup database trước migration để có thể rollback.
 
-       location / {
-           proxy_pass http://localhost:5000;
-           proxy_http_version 1.1;
-           
-           # Crucial headers for WebSockets / Socket.io
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection "upgrade";
-           
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-       }
-   }
-   ```
-   Restart Nginx:
-   ```bash
-   sudo systemctl restart nginx
-   ```
-3. **Acquire SSL Certificate**:
-   Use Certbot to automatically configure Let's Encrypt HTTPS support:
-   ```bash
-   sudo apt install -y certbot python3-certbot-nginx
-   sudo certbot --nginx -d api.yourdomain.com
-   ```
-   *Certbot will automatically modify the Nginx configuration to support SSL on port 443 and auto-renew the certificates.*
+## Chi phí dự kiến (USD/tháng)
 
----
+| Hạng mục | Khi còn AWS credit/free plan | Sau khi hết credit | Ghi chú |
+| --- | ---: | ---: | --- |
+| Vercel frontend | $0 | $0 | Trong giới hạn Hobby, dùng cho portfolio. |
+| EC2 `t3.micro` | $0 nếu đủ credit | ~$8–10 | Phụ thuộc region. |
+| EBS 10 GB | $0 nếu đủ credit | ~$1 | Phụ thuộc region. |
+| Public IPv4 AWS | $0 nếu đủ credit | ~$3.60 | $0.005/giờ × khoảng 720 giờ. |
+| Supabase / Upstash | $0 | $0 | Chỉ khi còn trong free quota. |
+| Domain | ~$1–2 | ~$1–2 | Thường trả $12–24/năm. |
+| **Tổng** | **~$1–2** | **~$14–17** | Có thể tăng nếu vượt quota, data transfer hoặc phải nâng EC2. |
 
-## 4. Release Smoke Test & Verification Checklist
-
-Once deployed, execute the following smoke checks to verify system health:
-
-* **Basic Connection Check**:
-  ```bash
-  curl -i https://api.yourdomain.com/health
-  curl -i https://api.yourdomain.com/ready
-  ```
-  Expected: `/ready` returns `200 OK` with all databases, cache, and broker connections marked true.
-* **WebSocket Connection Test**:
-  Open the browser console on the frontend website. Verify that Socket.io successfully establishes a WebSocket transport connection rather than falling back to HTTP long polling.
-* **Cookie Auth Verification**:
-  Ensure login tokens are securely set with `Secure`, `HttpOnly`, and `SameSite=Lax` headers.
-* **Worker Logs Check**:
-  SSH into the EC2 instance and inspect worker processes to ensure active consumption of Kafka topics:
-  ```bash
-  docker logs production-worker --tail 100
-  ```
-
----
-
-## 5. Degradation & Rollback Plan
-
-* **Redis Cache/Rate Limit Outage**:
-  If Redis goes down, `express-rate-limit` will gracefully degrade to memory-based local rate-limiting, and key read paths should fall back directly to database queries.
-* **Database Rollback Plan**:
-  Keep full backups via Supabase before running any schema migrations. If a migration fails, run down-migrations or restore the DB snapshot.
-* **API/Worker Rollback**:
-  To roll back code to a previous version on the server, update the Docker image tags or pull the previous stable git commit on the host machine and run:
-  ```bash
-  docker-compose -f docker-compose.prod.yml up -d --build
-  ```
+Ghi chú: AWS credit/free tier chỉ có thời hạn; free tier của Supabase/Upstash cũng có quota. Theo dõi usage và không để server/IP không dùng vẫn chạy.

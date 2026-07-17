@@ -3,7 +3,7 @@ import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { productService } from "@/services/product.service.ts";
-import BeautifulAuctioneer from "./BeautifulAuctioneer";
+import BussinessGirl from "./BussinessGirl/BussinessGirl";
 import { slugify } from "@/utils/make_slug";
 
 // Scenic cosmic/nebula background with orbiting rings and floating stars/particles
@@ -268,7 +268,7 @@ const Hero = () => {
           animation: elegantFadeInUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .gold-glow-text {
-          background: #e2b83b;
+          background: linear-gradient(to right, var(--color-accent), color-mix(in srgb, var(--color-accent) 60%, transparent));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -283,7 +283,6 @@ const Hero = () => {
           filter: none;
         }
         .gold-glow-text:hover {
-          transform: translateY(-3px) scale(1.05);
           filter: drop-shadow(0 0 10px rgba(226, 184, 59, 0.7));
         }
         .animate-shimmer-button {
@@ -391,7 +390,7 @@ const Hero = () => {
           </div>
 
           <div className={`lg:col-span-5 flex justify-center items-center relative ${hasIntersected ? "animate-elegant-reveal delay-500" : "opacity-0"}`}>
-            <BeautifulAuctioneer isSmiling={isSmiling} containerRef={heroRef} />
+            <BussinessGirl isSmiling={isSmiling} containerRef={heroRef} />
           </div>
 
         </div>
