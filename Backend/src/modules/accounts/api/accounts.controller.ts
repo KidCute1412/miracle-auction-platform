@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
-import * as AccountsService from "./accounts.service.ts";
+import * as AccountsService from "../application/account-auth.use-case.ts";
 import { generateOTP } from "@/helpers/generate.helper.ts";
 import { sendMail } from "@/helpers/mail.helper.ts";
+import type { AccountRequest } from "@/interfaces/request.interface.ts";
 
 const googleClient = new OAuth2Client();
 
@@ -57,7 +58,7 @@ export const registerPost = async (req: Request, res: Response) => {
       password: req.body.password,
     },
     `${process.env.JWT_SECRET}`,
-    { expiresIn: "5m" }
+    { expiresIn: "5m" },
   );
   const title = "Registration OTP Confirmation";
   const content = `Your OTP is <b>${otp}</b>. It is valid for 5 minutes. Do not share it.`;
@@ -111,7 +112,7 @@ export const loginPost = async (req: Request, res: Response) => {
     res.json({ code: "error", message: "Email does not exist in the system" });
     return;
   }
-  const isPasswordValidate = await AccountsService.comparePassword(req.body.password, existedAccount.password);
+  const isPasswordValidate = await AccountsService.comparePassword(req.body.password, existedAccount.password ?? "");
   if (!isPasswordValidate) {
     res.json({ code: "error", message: "Incorrect password" });
     return;
@@ -125,7 +126,7 @@ export const loginPost = async (req: Request, res: Response) => {
   }
   const accessToken = AccountsService.generateAccessToken(
     { user_id: existedAccount.user_id, role: existedAccount.role },
-    req.body.rememberMe
+    req.body.rememberMe,
   );
   res.cookie("accessToken", accessToken, {
     maxAge: req.body.rememberMe ? 3 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
@@ -156,11 +157,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
   const length = 6;
   const otp = generateOTP(length);
   await AccountsService.insertOtpAndEmail(req.body.email, otp);
-  const verified_otp_token = jwt.sign(
-    { otp: otp, email: req.body.email },
-    `${process.env.JWT_SECRET}`,
-    { expiresIn: "5m" }
-  );
+  const verified_otp_token = jwt.sign({ otp: otp, email: req.body.email }, `${process.env.JWT_SECRET}`, {
+    expiresIn: "5m",
+  });
   const title = "OTP for password recovery";
   const content = `Your OTP is <b>${otp}</b>. It is valid for 5 minutes. Do not share it.`;
   sendMail(req.body.email, title, content);
@@ -233,7 +232,7 @@ export const googleLoginPost = async (req: Request, res: Response) => {
       }
       const accessToken = AccountsService.generateAccessToken(
         { user_id: existedAccount.user_id, role: existedAccount.role },
-        req.body.rememberMe
+        req.body.rememberMe,
       );
       res.cookie("accessToken", accessToken, {
         maxAge: req.body.rememberMe ? 3 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
@@ -255,9 +254,13 @@ export const googleLoginPost = async (req: Request, res: Response) => {
       };
       await AccountsService.insertAccount(finalData);
       const newAccount = await AccountsService.findEmail(infoUser.email);
+      if (!newAccount) {
+        res.status(500).json({ code: "error", message: "Account could not be created." });
+        return;
+      }
       const accessToken = AccountsService.generateAccessToken(
         { user_id: newAccount.user_id, role: newAccount.role },
-        req.body.rememberMe
+        req.body.rememberMe,
       );
       res.cookie("accessToken", accessToken, {
         maxAge: req.body.rememberMe ? 3 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
@@ -272,27 +275,34 @@ export const googleLoginPost = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    console.error("[AUTH] Google ID token verification failed:", error instanceof Error ? error.message : "unknown error");
+    console.error(
+      "[AUTH] Google ID token verification failed:",
+      error instanceof Error ? error.message : "unknown error",
+    );
     res.status(401).json({ code: "error", message: "Google sign-in could not be verified." });
   }
 };
 
 // Start password change workflow
-export const changePassword = async (req: Request, res: Response) => {
+export const changePassword = async (req: AccountRequest, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const user_id = (req as any).user.user_id;
+    const user_id = req.user?.user_id;
+    if (!user_id) {
+      res.status(401).json({ code: "error", message: "User not authenticated" });
+      return;
+    }
     const existedAccount = await AccountsService.findAccountByIdDetailed(user_id);
     if (!existedAccount) {
       res.json({ code: "error", message: "Account does not exist" });
       return;
     }
-    const isPasswordValid = await AccountsService.comparePassword(currentPassword, existedAccount.password);
+    const isPasswordValid = await AccountsService.comparePassword(currentPassword, existedAccount.password ?? "");
     if (!isPasswordValid) {
       res.json({ code: "error", message: "Current password is incorrect" });
       return;
     }
-    const isSamePassword = await AccountsService.comparePassword(newPassword, existedAccount.password);
+    const isSamePassword = await AccountsService.comparePassword(newPassword, existedAccount.password ?? "");
     if (isSamePassword) {
       res.json({ code: "error", message: "New password must be different from current password" });
       return;
@@ -311,7 +321,7 @@ export const changePassword = async (req: Request, res: Response) => {
         newPassword: newPassword,
       },
       `${process.env.JWT_SECRET}`,
-      { expiresIn: "5m" }
+      { expiresIn: "5m" },
     );
     const title = "Change Password OTP Confirmation";
     const content = `Your OTP is <b>${otp}</b>. It is valid for 5 minutes. Do not share it.`;

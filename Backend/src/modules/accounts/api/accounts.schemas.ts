@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import Joi from "joi";
 
-
-export const registerPost = (req: Request,  res: Response,  next: NextFunction) => {
+export const registerPost = (req: Request, res: Response, next: NextFunction) => {
   const schema = Joi.object({
     full_name: Joi.string().min(5).max(50).required().messages({
       "string.empty": "Vui lòng nhập họ tên!",
@@ -39,8 +38,7 @@ export const registerPost = (req: Request,  res: Response,  next: NextFunction) 
         "password.uppercase": "Mật khẩu phải chứa ít nhất một chữ cái in hoa!",
         "password.lowercase": "Mật khẩu phải chứa ít nhất một chữ cái thường!",
         "password.digital": "Mật khẩu phải chứa ít nhất một chữ số!",
-        "password.specialCharacter":
-          "Mật khẩu phải chứa ít nhất một ký tự đặc biệt!",
+        "password.specialCharacter": "Mật khẩu phải chứa ít nhất một ký tự đặc biệt!",
       }),
 
     agree: Joi.boolean().valid(true).messages({
@@ -60,11 +58,7 @@ export const registerPost = (req: Request,  res: Response,  next: NextFunction) 
   next();
 };
 
-export const registerVerifyPost = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const registerVerifyPost = (req: Request, res: Response, next: NextFunction) => {
   const schema = Joi.object({
     otp: Joi.string().required().messages({
       "string.empty": "Vui lòng nhập mã otp!",

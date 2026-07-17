@@ -1,6 +1,6 @@
 import * as ProductsModel from "./products.model.ts";
 import * as usersModel from "@/modules/users/users.model.ts";
-import * as AccountsModel from "@/modules/accounts/accounts.model.ts";
+import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
 import fs from "fs";
 import { slugify } from "@/helpers/slug.helper.ts";
@@ -21,7 +21,7 @@ export async function getProductsPageList(
   page: number,
   priceFilter: string,
   timeFilter: string,
-  searchKeyword: string
+  searchKeyword: string,
 ) {
   const offset = (page - 1) * ITEMS_PER_PAGE;
   const orderBy: string[] = [];
@@ -36,13 +36,7 @@ export async function getProductsPageList(
     orderBy.push("p.end_time DESC");
   }
 
-  const results = await ProductsModel.getProductsPageList(
-    cat2_id,
-    ITEMS_PER_PAGE,
-    offset,
-    orderBy,
-    searchKeyword
-  );
+  const results = await ProductsModel.getProductsPageList(cat2_id, ITEMS_PER_PAGE, offset, orderBy, searchKeyword);
 
   const numberOfPages = results.length > 0 ? Math.ceil(results[0].total_count / ITEMS_PER_PAGE) : 0;
   return {
@@ -69,11 +63,7 @@ export async function getProductDetailBySlugId(product_id: string, product_slug:
 }
 
 // Handle posting a new product along with multiple image uploads to Cloudinary
-export async function postNewProduct(
-  reqBody: any,
-  files: Express.Multer.File[],
-  user_id: number
-): Promise<void> {
+export async function postNewProduct(reqBody: any, files: Express.Multer.File[], user_id: number): Promise<void> {
   const imageUrls: string[] = [];
   for (const file of files) {
     const uploadResult = await uploadToCloudinary(file.path, "product_images");
@@ -182,7 +172,7 @@ export async function postProductQuestion(
   product_id: number,
   user_id: number,
   content: string,
-  question_parent_id: number | null
+  question_parent_id: number | null,
 ) {
   const insertData: any = { product_id, user_id, content };
   if (question_parent_id) {
@@ -208,11 +198,7 @@ export async function postProductQuestion(
   if (question_parent_id) {
     userInParentQuestion = await ProductsModel.getUserInParentQuestion(question_parent_id);
   }
-  if (
-    userInParentQuestion &&
-    userInParentQuestion.user_id !== sellerInfo.user_id &&
-    user_id === sellerInfo.user_id
-  ) {
+  if (userInParentQuestion && userInParentQuestion.user_id !== sellerInfo.user_id && user_id === sellerInfo.user_id) {
     const product_name = sellerInfo.product_name;
     const product_name_slug = slugify(product_name);
     const productUrl = `${process.env.CLIENT_URL}/product/${product_name_slug}-${product_id}`;
@@ -239,7 +225,7 @@ export async function getRelatedProducts(category_id: number, product_id: number
 export async function updateProductDescription(
   product_id: number,
   seller_id: string,
-  newDescription: string
+  newDescription: string,
 ): Promise<{ status: string; message: string }> {
   const isAuthorized = await ProductsModel.verifyProductSeller(product_id, seller_id);
   if (!isAuthorized) {
@@ -303,15 +289,10 @@ export async function calTotalProducts(filter: any, is_removed: boolean) {
 
 // Fetch admin paginated products list with detailed creator names
 export async function getAdminProductList(page: number, limit: number, filter: any, is_removed: boolean) {
-  const list = await ProductsModel.getProductWithOffsetLimit(
-    (page - 1) * limit,
-    limit,
-    filter,
-    is_removed
-  );
+  const list = await ProductsModel.getProductWithOffsetLimit((page - 1) * limit, limit, filter, is_removed);
 
   for (const product of list) {
-    const creator = await AccountsModel.findAccountByIdDetailed(product.seller_id);
+    const creator = await accountRepository.findDetailedById(product.seller_id);
     product.creator_name = creator ? creator.full_name : "Unknown";
   }
 
@@ -322,7 +303,7 @@ export async function getAdminProductList(page: number, limit: number, filter: a
 export async function getProductById(id: number) {
   const product = await ProductsModel.getProductById(id);
   if (!product) return null;
-  const seller = await AccountsModel.findAccountByIdDetailed(product.seller_id);
+  const seller = await accountRepository.findDetailedById(product.seller_id);
   if (seller) {
     product.seller_name = seller.full_name;
   }

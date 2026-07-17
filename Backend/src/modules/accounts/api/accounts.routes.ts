@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as accountsController from "./accounts.controller.ts";
-import * as accountValidate from "@/validates/client/account.validate.ts";
+import * as accountValidate from "./accounts.schemas.ts";
 import { verifyToken } from "@/middlewares/auth.middleware.ts";
 
 const route = Router();

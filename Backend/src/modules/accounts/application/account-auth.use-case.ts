@@ -1,6 +1,7 @@
+// Authentication application operations: no Express or database query code lives here.
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import * as AccountsModel from "./accounts.model.ts";
+import { accountRepository, type NewAccount } from "../infrastructure/account.repository.ts";
 
 const SALT_ROUNDS = 10;
 const SECTION_TYPES = ["long", "short"];
@@ -30,8 +31,8 @@ export async function verifyCaptcha(token: string): Promise<boolean> {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
     });
-    const data = await response.json();
-    return (data as any).success === true;
+    const data: unknown = await response.json();
+    return typeof data === "object" && data !== null && "success" in data && data.success === true;
   } catch (error) {
     console.error("Error validating CAPTCHA:", error);
     return false;
@@ -65,45 +66,45 @@ export function generateRefreshToken(user: UserPayload, rememberMe: boolean): st
 
 // Delete expired OTP verification entries
 export async function deleteExpiredOTP(): Promise<void> {
-  await AccountsModel.deleteExpiredOTP();
+  await accountRepository.deleteExpiredOtps();
 }
 
 // Verify email and OTP match in database
 export async function findEmailAndOtp(email: string, otp: string) {
-  return await AccountsModel.findEmailAndOtp(email, otp);
+  return accountRepository.findOtp(email, otp);
 }
 
 // Delete OTP verification record
 export async function deletedOTP(email: string): Promise<void> {
-  await AccountsModel.deletedOTP(email);
+  await accountRepository.deleteOtp(email);
 }
 
 // Find user account details by email
 export async function findEmail(email: string) {
-  return await AccountsModel.findEmail(email);
+  return accountRepository.findByEmail(email);
 }
 
 // Find user OTP entry by email
 export async function findOtpByEmail(email: string) {
-  return await AccountsModel.findOtpByEmail(email);
+  return accountRepository.findOtpByEmail(email);
 }
 
 // Insert OTP code record into database
 export async function insertOtpAndEmail(email: string, otp: string): Promise<void> {
-  await AccountsModel.insertOtpAndEmail(email, otp);
+  await accountRepository.createOtp(email, otp);
 }
 
 // Create new user account registration entry
-export async function insertAccount(data: any): Promise<void> {
-  await AccountsModel.insertAccount(data);
+export async function insertAccount(data: NewAccount): Promise<void> {
+  await accountRepository.create(data);
 }
 
 // Update user account password
 export async function updatePassword(email: string, newPassword: string): Promise<void> {
-  await AccountsModel.updatePassword(email, newPassword);
+  await accountRepository.updatePassword(email, newPassword);
 }
 
 // Retrieve detailed account data for password changes
 export async function findAccountByIdDetailed(user_id: number) {
-  return await AccountsModel.findAccountByIdDetailed(user_id);
+  return accountRepository.findDetailedById(user_id);
 }

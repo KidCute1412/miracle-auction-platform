@@ -1,5 +1,5 @@
 import * as CategoriesModel from "./categories.model.ts";
-import * as AccountsModel from "@/modules/accounts/accounts.model.ts";
+import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 import * as productsModel from "@/modules/products/products.model.ts";
 import { buildTree, Category, CategoryNode } from "@/helpers/category.helper.ts";
 
@@ -25,7 +25,7 @@ export async function getCategoryLv2ById(cat2_id: number) {
 
 // Retrieve all categories formatted into tree structure
 export async function getAllCategoriesTree(): Promise<CategoryNode[] | null> {
-  const categories = await CategoriesModel.getAllCategories() as Category[] | null;
+  const categories = (await CategoriesModel.getAllCategories()) as Category[] | null;
   if (!categories) {
     return null;
   }
@@ -34,7 +34,7 @@ export async function getAllCategoriesTree(): Promise<CategoryNode[] | null> {
 
 // Build hierarchical category tree mapping starting from root node
 export async function buildCategoryTreeAdmin(): Promise<CategoryNode[]> {
-  const categories = await CategoriesModel.getAllCategory() as Category[];
+  const categories = (await CategoriesModel.getAllCategory()) as Category[];
   return buildTree(categories, null);
 }
 
@@ -49,24 +49,14 @@ export async function calTotalCategories(filter: any, deleted: boolean) {
 }
 
 // Fetch detailed list of categories with creator information
-export async function getCategoryListDetailed(
-  page: number,
-  limit: number,
-  filter: any,
-  deleted: boolean
-) {
-  const list = await CategoriesModel.getCategoryWithOffsetLimit(
-    (page - 1) * limit,
-    limit,
-    filter,
-    deleted
-  );
+export async function getCategoryListDetailed(page: number, limit: number, filter: any, deleted: boolean) {
+  const list = await CategoriesModel.getCategoryWithOffsetLimit((page - 1) * limit, limit, filter, deleted);
 
   for (const category of list) {
-    const detailedAccount = await AccountsModel.findAccountByIdDetailed(category.created_by);
+    const detailedAccount = await accountRepository.findDetailedById(category.created_by);
     category.created_by = detailedAccount ? detailedAccount.full_name : "Unknown";
 
-    const detailedAccountUpdated = await AccountsModel.findAccountByIdDetailed(category.updated_by);
+    const detailedAccountUpdated = await accountRepository.findDetailedById(category.updated_by);
     category.updated_by = detailedAccountUpdated ? detailedAccountUpdated.full_name : "Unknown";
   }
 
