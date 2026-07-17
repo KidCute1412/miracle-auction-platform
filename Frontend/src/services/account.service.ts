@@ -69,6 +69,12 @@ export const accountService = {
     });
   },
 
+  refreshSession: async (): Promise<LegacyCodeResponse> => {
+    return apiRequest(`/accounts/sessions/refresh`, {
+      method: "POST",
+    });
+  },
+
   logout: async (): Promise<LegacyCodeResponse> => {
     return apiRequest(`/accounts/sessions`, {
       method: "DELETE",

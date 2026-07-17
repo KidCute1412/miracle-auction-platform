@@ -35,6 +35,9 @@ route.post("/sessions", accountValidate.loginPost, accountsController.loginPost)
 // Create login session via Google OAuth
 route.post("/sessions/google", accountValidate.googleLoginPost, accountsController.googleLoginPost);
 
+// Refresh login session
+route.post("/sessions/refresh", accountsController.refreshSession);
+
 // Destroy login session (logout)
 route.delete("/sessions", verifyToken, accountsController.logoutPost);
 

@@ -11,6 +11,25 @@ export class ApiClientError<TBody extends ApiClientErrorBody = ApiClientErrorBod
   constructor(readonly status: number, readonly body: TBody, message: string) { super(message); this.name = "ApiClientError"; }
 }
 
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value: any) => void;
+  reject: (reason: any) => void;
+  path: string;
+  options: any;
+}> = [];
+
+const processQueue = (error: any, success: boolean = false) => {
+  failedQueue.forEach((prom) => {
+    if (success) {
+      prom.resolve(apiRequest(prom.path, prom.options));
+    } else {
+      prom.reject(error);
+    }
+  });
+  failedQueue = [];
+};
+
 export async function apiRequest<TResponse, TBody = unknown>(
   path: string,
   options: RequestOptions<TBody> = {}
@@ -50,6 +69,28 @@ export async function apiRequest<TResponse, TBody = unknown>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({})) as ApiClientErrorBody;
+
+    if (response.status === 401 && path !== "/accounts/sessions/refresh") {
+      if (isRefreshing) {
+        return new Promise<TResponse>((resolve, reject) => {
+          failedQueue.push({ resolve, reject, path, options });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        await apiRequest("/accounts/sessions/refresh", { method: "POST" });
+        isRefreshing = false;
+        processQueue(null, true);
+        return await apiRequest<TResponse, TBody>(path, options);
+      } catch (refreshError) {
+        isRefreshing = false;
+        processQueue(refreshError, false);
+        throw new ApiClientError(response.status, errorData, typeof errorData.message === "string" ? errorData.message : `HTTP error! status: ${response.status}`);
+      }
+    }
+
     throw new ApiClientError(response.status, errorData, typeof errorData.message === "string" ? errorData.message : `HTTP error! status: ${response.status}`);
   }
 

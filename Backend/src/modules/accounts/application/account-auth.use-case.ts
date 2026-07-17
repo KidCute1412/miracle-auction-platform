@@ -44,11 +44,10 @@ type UserPayload = {
   role: string;
 };
 
-// Generate access JWT token with expiry
-export function generateAccessToken(user: UserPayload, rememberMe?: boolean): string {
+export function generateAccessToken(user: UserPayload): string {
   const payload = { user_id: user.user_id, role: user.role };
   return jwt.sign(payload, process.env.JWT_SECRET as string, {
-    expiresIn: rememberMe ? "3d" : "1d",
+    expiresIn: "15m",
   });
 }
 
