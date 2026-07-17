@@ -6,7 +6,7 @@ const isProd = process.env.NODE_ENV === "production";
 // Create Kafka client instance
 export const kafka = new Kafka({
   clientId: "auction-platform",
-  brokers: [process.env.KAFKA_BROKERS || "localhost:9092"],
+  brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(",").map((broker) => broker.trim()),
   ssl: isProd,
   sasl: isProd
     ? {

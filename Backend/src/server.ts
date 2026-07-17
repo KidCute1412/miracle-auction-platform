@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
 
 dotenv.config();
 
@@ -16,10 +17,10 @@ import { startAuctionEndEmailJob } from "./jobs/auction-end.job.ts";
 
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
-import { redisClient } from "./config/redis.config.ts";
+import { closeRedisConnection, redisClient } from "./config/redis.config.ts";
 import { checkDatabaseConnection } from "./config/database.config.ts";
 import { checkRedisConnection } from "./config/redis.config.ts";
-import { checkKafkaConnection } from "./config/kafka.config.ts";
+import { checkKafkaConnection, closeKafkaConnection, initKafka } from "./config/kafka.config.ts";
 
 const app = express(); // Create express app
 app.set("trust proxy", 1); // Trust first proxy header
@@ -44,21 +45,22 @@ export const io = new Server(httpServer, {
     skipMiddlewares: true,
   },
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
-const port = 5000;
+const port = Number(process.env.PORT) || 5000;
 
 // Middlewares
 app.use(
   cors({
-    origin: "http://localhost:5173", //allow send cookie so set specific domain
+    origin: process.env.CLIENT_URL || "http://localhost:5173", //allow send cookie so set specific domain
     credentials: true, //allow send cookie
   })
 );
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 
@@ -92,8 +94,6 @@ io.on("connection", (socket) => {
   });
 });
 
-import { initKafka } from "./config/kafka.config.ts";
-
 // Start the server
 httpServer.listen(port, async () => {
   console.log(`Your website is running at port: http://localhost:${port}`);
@@ -107,17 +107,15 @@ httpServer.listen(port, async () => {
 
 import db from "./config/database.config.ts";
 
-// Handle process termination to close database connections cleanly
+let shuttingDown = false;
 const gracefulShutdown = async (signal: string) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
   console.log(`\n[SYSTEM] Received ${signal}. Starting graceful shutdown...`);
-  try {
-    await db.destroy();
-    console.log("[SYSTEM] Database connection pool closed successfully.");
-  } catch (error) {
-    console.error("[SYSTEM] Error closing database connection pool:", error);
-  } finally {
-    process.exit(0);
-  }
+  await new Promise<void>((resolve) => io.close(() => resolve()));
+  await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  await Promise.allSettled([db.destroy(), closeRedisConnection(), closeKafkaConnection()]);
+  process.exit(0);
 };
 
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));

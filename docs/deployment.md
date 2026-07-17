@@ -1,106 +1,139 @@
-# Kế hoạch deploy demo / portfolio
+# Oracle Always Free portfolio deployment
 
-Mục tiêu: chi phí thấp, có Docker + AWS để thể hiện kỹ thuật, nhưng không cam kết uptime production vì dùng free tier.
+This repository deploys the frontend to Vercel and the API plus background worker to one Oracle Cloud Always Free VM. Supabase provides PostgreSQL and Upstash provides Redis and Kafka. The expected running cost is $0 for compute while all free-tier quotas are respected, plus roughly $12–24/year for a custom domain. Prices and free-tier limits are controlled by their providers and can change.
 
-## Deploy ở đâu?
+Oracle is appropriate for a portfolio and demo, not a business needing an SLA or managed support. If OCI cannot provision Always Free capacity, Koyeb is the fallback only.
 
-| Thành phần | Nơi deploy | Lý do |
-| --- | --- | --- |
-| Frontend Vite | Vercel | Có CDN, HTTPS, deploy từ Git nhanh và miễn phí cho portfolio. |
-| Backend API + Socket.IO | Một AWS EC2 Ubuntu | Cần tiến trình Node chạy liên tục cho API, cookie auth và Socket.IO. |
-| Worker | Cùng EC2, container riêng | Xử lý event/đấu giá độc lập với API, không cần thuê thêm máy. |
-| PostgreSQL | Supabase Free | Không phải tự vận hành database. |
-| Redis | Upstash Redis Free | Có endpoint TLS, phù hợp cache/rate limit. |
-| Kafka | Upstash Kafka Free | Không phải tự vận hành Kafka trên EC2 nhỏ. |
-
-Luồng truy cập:
+## Topology
 
 ```text
-Người dùng → app.example.com (Vercel)
-Người dùng → api.example.com (EC2 + Nginx → API + Socket.IO)
-API/Worker → Supabase + Upstash Redis + Upstash Kafka
+app.example.com  -> Vercel (Frontend)
+api.example.com  -> Oracle VM: Caddy -> api container + Socket.IO
+                                      -> worker container
+api + worker     -> Supabase PostgreSQL, Upstash Redis, Upstash Kafka
 ```
 
-## Checklist trước khi deploy
+`compose.production.yml` is the production entry point. It exposes only Caddy on ports 80 and 443; API and worker ports remain private to the Compose network. Caddy obtains and retains TLS certificates in named Docker volumes.
 
-- [ ] Sửa Docker để build được JavaScript production. Hiện `tsconfig.json` đang có `noEmit: true` và Dockerfile chưa tạo `dist`, nên chưa thể chạy `node dist/server.js` / `node dist/worker.js`.
-- [ ] Tách hai service Docker: `api` và `worker`; đặt `restart: unless-stopped`.
-- [ ] Sửa backend lấy `PORT` từ biến môi trường.
-- [ ] Sửa CORS của Express và Socket.IO dùng `CLIENT_URL=https://app.example.com`, không hard-code localhost và không dùng `*` khi có cookie.
-- [ ] Cookie production phải có `Secure`, `HttpOnly`, `SameSite=Lax`; giữ `trust proxy` vì API đứng sau Nginx.
-- [ ] Thống nhất Kafka theo code hiện tại: `KAFKA_USERNAME`, `KAFKA_PASSWORD`; topics `bidding_events`, `dashboard_updates`.
-- [ ] Chạy kiểm tra: `npm run build` ở Backend, `npm run lint` + `npm run build` ở Frontend, `docker compose config`, `docker build Backend`.
+## First-time Oracle setup
 
-## Cấu hình từng nơi
+1. Create an Ubuntu `VM.Standard.A1.Flex` Always Free instance in your home region. Keep the total allocation within Oracle's current Always Free allowance (for example, 2 OCPUs and 6–8 GB RAM for this portfolio).
+2. Permit inbound TCP 80/443. Restrict SSH 22 to the deployer's IP. Install Docker Engine and the Docker Compose plugin.
+3. Create the restricted `deploy` user and `/opt/online-auction` owned by it. Clone the repository into `/opt/online-auction/repo` using a read-only GitHub deploy key installed for that user.
+4. Point the DNS A record for `api.example.com` at the VM public IP before starting Caddy. Caddy then provisions and renews HTTPS automatically.
+5. Create `/opt/online-auction/.env.production` with permissions readable only by `deploy`. This file stays on the VM and is never committed.
 
-### 1. Supabase, Upstash
+The production start command is:
 
-- [ ] Tạo Supabase project, chạy schema/seed; lấy `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
-- [ ] Tạo Upstash Redis; lấy `REDIS_URL` dạng `rediss://...`.
-- [ ] Tạo Upstash Kafka và các topics cần thiết; lấy `KAFKA_BROKERS`, `KAFKA_USERNAME`, `KAFKA_PASSWORD`.
-- [ ] Bật cảnh báo quota. Free tier chỉ dùng cho demo; Supabase có thể pause khi ít hoạt động.
+```bash
+cd /opt/online-auction/repo
+docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build --remove-orphans
+```
 
-### 2. AWS EC2
+## Production environment file
 
-- [ ] Tạo Ubuntu EC2, thử `t3.micro` cho demo nhẹ; nếu API + worker thiếu RAM, nâng `t3.small`.
-- [ ] Security group chỉ mở `80`, `443`; mở `22` cho IP của người deploy. Không public port `5000`, database, Redis hay Kafka.
-- [ ] Cài Docker, Docker Compose plugin và Nginx.
-- [ ] Trỏ `api.example.com` về EC2; Nginx proxy vào API container và bật WebSocket upgrade.
-- [ ] Dùng Certbot cấp HTTPS cho `api.example.com`.
-- [ ] Lưu `.env` chỉ trên EC2, không commit Git. Tạo AWS Budget alert ở $5 và $15.
-
-Biến môi trường backend/worker cần có:
+Set every value below in `/opt/online-auction/.env.production`; use real secrets, not the placeholders from `Backend/.env.example`.
 
 ```text
 NODE_ENV=production
 PORT=5000
+API_DOMAIN=api.example.com
 CLIENT_URL=https://app.example.com
-JWT_SECRET, JWT_REFRESH_SECRET
-DB_CLIENT=pg, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
-REDIS_URL
-KAFKA_BROKERS, KAFKA_USERNAME, KAFKA_PASSWORD
-GMAIL_ADDRESS, GMAIL_APP_PASSWORD       # nếu bật email
-CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET  # nếu dùng upload
-CAPTCHA_SECRET_KEY                       # nếu bật captcha
+
+DB_CLIENT=pg
+DB_HOST=...
+DB_PORT=5432
+DB_USER=...
+DB_PASSWORD=...
+DB_NAME=postgres
+DB_SSL=true
+REDIS_URL=rediss://...
+KAFKA_BROKERS=...
+KAFKA_USERNAME=...
+KAFKA_PASSWORD=...
+
+JWT_SECRET=...
+JWT_REFRESH_SECRET=...
+CAPTCHA_SECRET_KEY=...
+GOOGLE_CLIENT_ID=...
+GMAIL_ADDRESS=...
+GMAIL_APP_PASSWORD=...
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
 ```
 
-### 3. Vercel
+These are backend-only values: database, Redis, Kafka, JWT, CAPTCHA secret, Gmail app password, Cloudinary secret, and Google client ID. Do not put them in Vercel or in a `VITE_*` variable. Backend `PORT` is honored and defaults to 5000. `/health` reports process health; `/ready` additionally checks PostgreSQL, Redis, and Kafka.
 
-- [ ] Import repository, chọn **Root Directory** là `Frontend`.
-- [ ] Build command: `npm run build`; Output directory: `dist`.
-- [ ] Gắn domain `app.example.com`.
-- [ ] Khai báo:
+## Managed dependency bootstrap
+
+Create the Supabase project, then import SQL in this exact initial-demo order:
+
+1. `data/database.sql`
+2. `data/category/category.insert.sql`
+3. `data/user/user.insert.sql`
+4. `data/product/tikiAPI/product.insert.sql`
+
+There is no formal migration system in this release. Before any future schema change, take a database backup and commit a SQL migration file with explicit manual apply and rollback notes. Apply it manually to Supabase only after testing it.
+
+Create Upstash Redis and Kafka instances and copy their TLS endpoints/credentials into the VM environment file. Ensure Kafka provides the `bidding_events` and `dashboard_updates` topics used by the application.
+
+## Public integration setup
+
+- In Google Cloud OAuth, add `https://app.example.com` to Authorized JavaScript origins. Set the same OAuth web client ID in Vercel as `VITE_GOOGLE_CLIENT_ID` and on the VM as `GOOGLE_CLIENT_ID`. The backend verifies every Google ID token against that client ID.
+- In reCAPTCHA, add `app.example.com` to the allowed domains. Put only its site key in Vercel as `VITE_CAPTCHA_SITE_KEY`; keep the secret on the VM as `CAPTCHA_SECRET_KEY`.
+- Create Cloudinary API credentials and place all Cloudinary values only in the VM environment file.
+- Enable two-step verification for the Gmail sending account, generate a Gmail app password, and place it only in `GMAIL_APP_PASSWORD` on the VM.
+
+## Vercel frontend
+
+Import the repository in Vercel with `Frontend` as the root directory, build command `npm run build`, and output directory `dist`. Attach `app.example.com` and configure:
 
 ```text
 VITE_API_URL=https://api.example.com
 VITE_PATH_ADMIN=admin
-VITE_TINY_MCE=...             # chỉ public key
-VITE_CAPTCHA_SITE_KEY=...     # chỉ site key public
-VITE_GOOGLE_CLIENT_ID=...     # chỉ client ID public
+VITE_TINY_MCE=public_tinymce_key_if_used
+VITE_CAPTCHA_SITE_KEY=public_recaptcha_site_key
+VITE_GOOGLE_CLIENT_ID=google_oauth_client_id
 ```
 
-- [ ] Không đặt secret trong `VITE_*`; giá trị này sẽ xuất hiện trong JavaScript của trình duyệt.
-- [ ] Cập nhật OAuth redirect URI và reCAPTCHA allowed domain thành `app.example.com`.
+All `VITE_*` values are shipped to browsers. Never add `VITE_GOOGLE_SECRET` or any password, token, or provider secret.
 
-## Kiểm tra sau deploy
+## GitHub Actions deployment
 
-- [ ] `https://api.example.com/health` trả `200`.
-- [ ] `https://api.example.com/ready` báo database, Redis, Kafka đều sẵn sàng.
-- [ ] Frontend gọi đúng `https://api.example.com`; Socket.IO kết nối WebSocket.
-- [ ] Đăng nhập tạo cookie `Secure`, `HttpOnly`, `SameSite=Lax`.
-- [ ] Test luồng: đăng nhập → xem sản phẩm → đặt giá → worker nhận event → kết quả mong đợi.
-- [ ] Lưu image tag cũ và backup database trước migration để có thể rollback.
+The CI workflow type-checks the backend, lints/builds the frontend, validates both Compose files, and cleanly builds the production backend image. A deployment runs only for a successful push to `main`; deployments share a single concurrency group.
 
-## Chi phí dự kiến (USD/tháng)
+Set these repository secrets only:
 
-| Hạng mục | Khi còn AWS credit/free plan | Sau khi hết credit | Ghi chú |
-| --- | ---: | ---: | --- |
-| Vercel frontend | $0 | $0 | Trong giới hạn Hobby, dùng cho portfolio. |
-| EC2 `t3.micro` | $0 nếu đủ credit | ~$8–10 | Phụ thuộc region. |
-| EBS 10 GB | $0 nếu đủ credit | ~$1 | Phụ thuộc region. |
-| Public IPv4 AWS | $0 nếu đủ credit | ~$3.60 | $0.005/giờ × khoảng 720 giờ. |
-| Supabase / Upstash | $0 | $0 | Chỉ khi còn trong free quota. |
-| Domain | ~$1–2 | ~$1–2 | Thường trả $12–24/năm. |
-| **Tổng** | **~$1–2** | **~$14–17** | Có thể tăng nếu vượt quota, data transfer hoặc phải nâng EC2. |
+```text
+ORACLE_SSH_HOST
+ORACLE_DEPLOY_USER
+ORACLE_SSH_PRIVATE_KEY
+ORACLE_SSH_KNOWN_HOST
+```
 
-Ghi chú: AWS credit/free tier chỉ có thời hạn; free tier của Supabase/Upstash cũng có quota. Theo dõi usage và không để server/IP không dùng vẫn chạy.
+`ORACLE_SSH_KNOWN_HOST` must be the complete trusted `known_hosts` entry for the VM (not an unchecked `ssh-keyscan` result). Application secrets remain solely in `/opt/online-auction/.env.production`. The VM clone's read-only deploy key is separate from the GitHub Actions SSH key and lets the deployment fetch private repository commits.
+
+The action fetches and checks out the exact pushed commit, then runs the production Compose command above.
+
+## Operations, checks, and rollback
+
+```bash
+curl -fsS https://api.example.com/health
+curl -fsS https://api.example.com/ready
+docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml ps
+docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml logs -f api worker
+```
+
+Smoke-check HTTPS, CORS preflight, Socket.IO, secure login cookies (`Secure`, `HttpOnly`, `SameSite=Lax`), normal and Google login, reCAPTCHA, Cloudinary upload, Gmail delivery, product browsing, valid bidding, worker consumption, auction closing, and winner order creation.
+
+To roll back application code, use a known previous commit without changing the VM environment file:
+
+```bash
+cd /opt/online-auction/repo
+git fetch --prune origin
+git checkout --detach <previous-commit-sha>
+docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build --remove-orphans
+```
+
+Database rollback is manual: restore the backup or run the migration's documented rollback SQL. Do not roll back schema blindly after data-changing releases.

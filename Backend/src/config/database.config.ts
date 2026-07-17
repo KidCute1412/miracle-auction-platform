@@ -10,6 +10,7 @@ const db = knex({
       database: process.env.DB_NAME,
       password: process.env.DB_PASSWORD,
       port: Number(process.env.DB_PORT),
+      ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : undefined,
     },
     pool: { 
       min: 0, 

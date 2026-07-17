@@ -1,13 +1,17 @@
 import { Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { jwtDecode } from "jwt-decode";
+import { OAuth2Client } from "google-auth-library";
 import * as AccountsService from "./accounts.service.ts";
 import { generateOTP } from "@/helpers/generate.helper.ts";
 import { sendMail } from "@/helpers/mail.helper.ts";
 
-type GoogleIdTokenPayload = {
+const googleClient = new OAuth2Client();
+
+type GoogleAccountData = {
+  full_name: string;
   email: string;
-  name: string;
+  username: string;
+  address: null;
 };
 
 // Verify user account with OTP cookie
@@ -61,7 +65,7 @@ export const registerPost = async (req: Request, res: Response) => {
   res.cookie("verified_otp_token", verified_otp_token, {
     maxAge: 5 * 60 * 1000,
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
   });
   res.json({ code: "success", message: "Please enter the OTP" });
@@ -126,7 +130,7 @@ export const loginPost = async (req: Request, res: Response) => {
   res.cookie("accessToken", accessToken, {
     maxAge: req.body.rememberMe ? 3 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
   });
   res.json({
@@ -163,7 +167,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   res.cookie("verified_otp_token", verified_otp_token, {
     maxAge: 5 * 60 * 1000,
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
   });
   res.json({ code: "success", message: "Please enter the OTP" });
@@ -205,8 +209,19 @@ export const logoutPost = async (_: Request, res: Response) => {
 // Sign in or sign up via Google authentication
 export const googleLoginPost = async (req: Request, res: Response) => {
   try {
-    const { credential } = req.body;
-    const infoUser = jwtDecode<GoogleIdTokenPayload>(credential);
+    const credential = typeof req.body.credential === "string" ? req.body.credential : "";
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!credential || !clientId) {
+      res.status(400).json({ code: "error", message: "Google login is not configured correctly." });
+      return;
+    }
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: clientId });
+    const payload = ticket.getPayload();
+    if (!payload?.email || !payload.email_verified) {
+      res.status(401).json({ code: "error", message: "Google account email could not be verified." });
+      return;
+    }
+    const infoUser = { email: payload.email, name: payload.name || payload.email.split("@")[0] };
     const existedAccount = await AccountsService.findEmail(infoUser.email);
     if (existedAccount) {
       if (existedAccount.password) {
@@ -223,7 +238,7 @@ export const googleLoginPost = async (req: Request, res: Response) => {
       res.cookie("accessToken", accessToken, {
         maxAge: req.body.rememberMe ? 3 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: false,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });
       res.json({
@@ -232,7 +247,7 @@ export const googleLoginPost = async (req: Request, res: Response) => {
         message: "Welcome to our website!",
       });
     } else {
-      const finalData: any = {
+      const finalData: GoogleAccountData = {
         full_name: infoUser.name,
         email: infoUser.email,
         username: infoUser.name,
@@ -247,7 +262,7 @@ export const googleLoginPost = async (req: Request, res: Response) => {
       res.cookie("accessToken", accessToken, {
         maxAge: req.body.rememberMe ? 3 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: false,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });
       res.json({
@@ -257,8 +272,8 @@ export const googleLoginPost = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    console.error("googleLoginPost error:", error);
-    res.status(500).json({ code: "error", message: "Internal server error" });
+    console.error("[AUTH] Google ID token verification failed:", error instanceof Error ? error.message : "unknown error");
+    res.status(401).json({ code: "error", message: "Google sign-in could not be verified." });
   }
 };
 
@@ -304,7 +319,7 @@ export const changePassword = async (req: Request, res: Response) => {
     res.cookie("change_password_token", change_password_token, {
       maxAge: 5 * 60 * 1000,
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });
     res.json({ code: "success", message: "OTP sent to your email" });

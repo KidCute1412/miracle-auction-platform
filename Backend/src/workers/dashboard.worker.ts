@@ -2,6 +2,9 @@ import db from "@/config/database.config.ts";
 import { kafka } from "@/config/kafka.config.ts";
 import * as DashboardModel from "../modules/dashboard/dashboard.model.ts";
 
+let dashboardConsumer: ReturnType<typeof kafka.consumer> | undefined;
+let dashboardInterval: NodeJS.Timeout | undefined;
+
 // Create cache table if it does not exist
 async function ensureCacheTable() {
   await db.raw(`
@@ -58,22 +61,22 @@ async function refreshDashboardCache() {
 }
 
 // Start consuming dashboard update jobs from Kafka and run scheduled crons
-export async function startDashboardConsumer() {
+export async function startDashboardConsumer(): Promise<void> {
   // Pre-calculate immediately on startup
   await refreshDashboardCache();
 
   // Schedule background recalculation every 1 minute
-  setInterval(async () => {
+  dashboardInterval = setInterval(async () => {
     console.log("[WORKER] Running scheduled dashboard stats update...");
     await refreshDashboardCache();
   }, 60000);
 
   try {
-    const consumer = kafka.consumer({ groupId: "dashboard-group" });
-    await consumer.connect();
-    await consumer.subscribe({ topic: "dashboard_updates", fromBeginning: false });
+    dashboardConsumer = kafka.consumer({ groupId: "dashboard-group" });
+    await dashboardConsumer.connect();
+    await dashboardConsumer.subscribe({ topic: "dashboard_updates", fromBeginning: false });
 
-    await consumer.run({
+    await dashboardConsumer.run({
       eachMessage: async () => {
         console.log("[WORKER] Received manual sync trigger from Kafka topic...");
         await refreshDashboardCache();
@@ -81,5 +84,16 @@ export async function startDashboardConsumer() {
     });
   } catch (error) {
     console.error("[WORKER] Failed to run Kafka consumer:", error);
+  }
+}
+
+export async function stopDashboardConsumer(): Promise<void> {
+  if (dashboardInterval) {
+    clearInterval(dashboardInterval);
+    dashboardInterval = undefined;
+  }
+  if (dashboardConsumer) {
+    await dashboardConsumer.disconnect();
+    dashboardConsumer = undefined;
   }
 }

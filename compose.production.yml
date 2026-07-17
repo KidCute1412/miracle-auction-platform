@@ -1,0 +1,74 @@
+services:
+  api:
+    build:
+      context: ./Backend
+    image: online-auction-backend:latest
+    command: npm run start:prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      CLIENT_URL: ${CLIENT_URL}
+      DB_CLIENT: ${DB_CLIENT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL: ${DB_SSL}
+      DB_NAME: ${DB_NAME}
+      REDIS_URL: ${REDIS_URL}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      KAFKA_USERNAME: ${KAFKA_USERNAME}
+      KAFKA_PASSWORD: ${KAFKA_PASSWORD}
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+
+  worker:
+    image: online-auction-backend:latest
+    command: npm run worker:prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      DB_CLIENT: ${DB_CLIENT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL: ${DB_SSL}
+      DB_NAME: ${DB_NAME}
+      REDIS_URL: ${REDIS_URL}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      KAFKA_USERNAME: ${KAFKA_USERNAME}
+      KAFKA_PASSWORD: ${KAFKA_PASSWORD}
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
