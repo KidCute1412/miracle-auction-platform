@@ -217,7 +217,7 @@ export async function searchProducts(query: string, limit: number, offset: numbe
     `SELECT p.*, u.username AS price_owner_username, count(*) OVER() AS total_count
      FROM products p
      LEFT JOIN users u ON p.price_owner_id = u.user_id
-     WHERE fts @@ websearch_to_tsquery('english', remove_accents(?))
+     WHERE p.fts @@ websearch_to_tsquery('english', remove_accents(?))
      ORDER BY p.product_id DESC
      LIMIT ? OFFSET ?`,
     [query, limit, offset],

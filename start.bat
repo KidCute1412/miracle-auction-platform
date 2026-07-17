@@ -28,11 +28,20 @@ set "SEED_STATE="
 for /f "usebackq delims=" %%A in (`docker compose exec -T postgres psql -U postgres -d online_auction_test -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM categories) THEN 'seeded' ELSE 'empty' END"`) do set "SEED_STATE=%%A"
 if /i "%SEED_STATE%"=="empty" (
   echo Seeding local demo data...
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d online_auction_test < "%ROOT%data\category\category.insert.sql"
+  rem Copy UTF-8 seed files into the Linux container before importing. CMD input
+  rem redirection (< file.sql) uses the active Windows code page and corrupts
+  rem Vietnamese characters before psql receives them.
+  docker compose cp "%ROOT%data\category\category.insert.sql" postgres:/tmp/category.insert.sql
   if errorlevel 1 exit /b 1
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d online_auction_test < "%ROOT%data\user\user.insert.sql"
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d online_auction_test -f /tmp/category.insert.sql
   if errorlevel 1 exit /b 1
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d online_auction_test < "%ROOT%data\product\tikiAPI\product.insert.sql"
+  docker compose cp "%ROOT%data\user\user.insert.sql" postgres:/tmp/user.insert.sql
+  if errorlevel 1 exit /b 1
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d online_auction_test -f /tmp/user.insert.sql
+  if errorlevel 1 exit /b 1
+  docker compose cp "%ROOT%data\product\tikiAPI\product.insert.sql" postgres:/tmp/product.insert.sql
+  if errorlevel 1 exit /b 1
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d online_auction_test -f /tmp/product.insert.sql
   if errorlevel 1 exit /b 1
 )
 
