@@ -1,8 +1,10 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type upgrade_to_sellers, type users } from "@prisma/client";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 
-type UserFilter = { search?: string; status?: string };
-type ApplicationFilter = { search?: string; status?: string; dateFrom?: string; dateTo?: string };
+export type UserFilter = { search?: string; status?: string };
+export type ApplicationFilter = { search?: string; status?: string; dateFrom?: string; dateTo?: string };
+export type UserListRow = users & { fts: string | null };
+export type SellerApplicationRow = upgrade_to_sellers;
 
 function applicationWhere(filter: ApplicationFilter) {
   const conditions: Prisma.Sql[] = [];
@@ -62,7 +64,7 @@ export async function getUsersWithOffsetLimit(offset: number, limit: number, fil
   const conditions: Prisma.Sql[] = [Prisma.sql`role <> 'admin'`];
   if (filter.search) conditions.push(Prisma.sql`fts @@ websearch_to_tsquery('english', remove_accents(${filter.search}))`);
   if (filter.status && filter.status !== "all") conditions.push(Prisma.sql`role = ${filter.status}`);
-  return prisma.$queryRaw<any[]>(Prisma.sql`SELECT user_id, username, full_name, email, password, address, role, date_of_birth, rating, rating_count, created_at, avatar, status, auth_version, fts::text as fts FROM users WHERE ${Prisma.join(conditions, " AND ")} ORDER BY user_id ASC OFFSET ${offset} LIMIT ${limit}`);
+  return prisma.$queryRaw<UserListRow[]>(Prisma.sql`SELECT user_id, username, full_name, email, password, address, role, date_of_birth, rating, rating_count, created_at, avatar, status, auth_version, fts::text as fts FROM users WHERE ${Prisma.join(conditions, " AND ")} ORDER BY user_id ASC OFFSET ${offset} LIMIT ${limit}`);
 }
 
 export const updateUserRole = (user_id: number, role: string) => prisma.users.update({ where: { user_id }, data: { role } }).then(() => undefined);
@@ -77,7 +79,7 @@ export async function calTotalApplications(filter: ApplicationFilter) {
 }
 
 export function getAllSellerApplications(offset: number, limit: number, filter: ApplicationFilter) {
-  return prisma.$queryRaw<any[]>(Prisma.sql`
+  return prisma.$queryRaw<SellerApplicationRow[]>(Prisma.sql`
     SELECT uts.* FROM upgrade_to_sellers uts LEFT JOIN users u ON uts.user_id = u.user_id
     WHERE ${applicationWhere(filter)} ORDER BY uts.id ASC OFFSET ${offset} LIMIT ${limit}`);
 }

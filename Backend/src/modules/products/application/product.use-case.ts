@@ -11,6 +11,20 @@ import {
   getProductDescriptionChangedTemplate,
   sendMail,
 } from "@/helpers/mail.helper.ts";
+import type { Prisma } from "@prisma/client";
+import type { ProductFilter, ProductRow } from "../infrastructure/product.repository.ts";
+
+export type NewProductRequest = {
+  product_name: string;
+  step_price: string | number;
+  start_price: string | number;
+  buy_now_price: string | number;
+  cat2_id: string | number;
+  start_time: string | Date;
+  end_time: string | Date;
+  description?: string;
+  auto_extended?: string | boolean;
+};
 
 const ITEMS_PER_PAGE = 6;
 const DASHBOARD_ITEMS_PER_PAGE = 4;
@@ -63,7 +77,7 @@ export async function getProductDetailBySlugId(product_id: string, product_slug:
 }
 
 // Handle posting a new product along with multiple image uploads to Cloudinary
-export async function postNewProduct(reqBody: any, files: Express.Multer.File[], user_id: number): Promise<void> {
+export async function postNewProduct(reqBody: NewProductRequest, files: Express.Multer.File[], user_id: number): Promise<void> {
   const imageUrls: string[] = [];
   for (const file of files) {
     const uploadResult = await uploadToCloudinary(file.path, "product_images");
@@ -71,19 +85,19 @@ export async function postNewProduct(reqBody: any, files: Express.Multer.File[],
     imageUrls.push(uploadResult.secure_url);
   }
 
-  const newProductData = {
+  const newProductData: Prisma.productsUncheckedCreateInput = {
     product_name: reqBody.product_name,
-    seller_id: user_id,
-    step_price: parseFloat(reqBody.step_price),
-    start_price: parseFloat(reqBody.start_price),
-    buy_now_price: parseFloat(reqBody.buy_now_price),
-    current_price: parseFloat(reqBody.start_price),
-    cat2_id: parseInt(reqBody.cat2_id),
+    seller_id: BigInt(user_id),
+    step_price: Number(reqBody.step_price),
+    start_price: Number(reqBody.start_price),
+    buy_now_price: Number(reqBody.buy_now_price),
+    current_price: Number(reqBody.start_price),
+    cat2_id: BigInt(reqBody.cat2_id),
     start_time: reqBody.start_time,
     bid_turns: 0,
     end_time: reqBody.end_time,
     description: reqBody.description,
-    auto_extended: reqBody.auto_extended === "true",
+    auto_extended: reqBody.auto_extended === true || reqBody.auto_extended === "true",
     product_images: imageUrls,
   };
 
@@ -91,9 +105,9 @@ export async function postNewProduct(reqBody: any, files: Express.Multer.File[],
 }
 
 // Retrieve dashboard listings by categories (won, sold, selling, inventory)
-export async function getMyProductsList(user_id: string, type: string, page: number) {
+export async function getMyProductsList(user_id: number, type: string, page: number) {
   const offset = (page - 1) * DASHBOARD_ITEMS_PER_PAGE;
-  let results: any[] = [];
+  let results: ProductRow[] = [];
 
   switch (type) {
     case "my-favorites":
@@ -174,14 +188,18 @@ export async function postProductQuestion(
   content: string,
   question_parent_id: number | null,
 ) {
-  const insertData: any = { product_id, user_id, content };
+  const insertData: Prisma.product_questionsUncheckedCreateInput = {
+    product_id: BigInt(product_id),
+    user_id,
+    content,
+  };
   if (question_parent_id) {
-    insertData.question_parent_id = question_parent_id;
+    insertData.question_parent_id = BigInt(question_parent_id);
   }
   const result = await ProductsModel.postProductQuestion(insertData);
 
   const sellerInfo = await ProductsModel.getSellerOfProduct(product_id);
-  if (sellerInfo && sellerInfo.user_id !== user_id) {
+  if (sellerInfo && sellerInfo.user_id !== user_id && sellerInfo.product_name && sellerInfo.username && sellerInfo.email) {
     const product_name = sellerInfo.product_name;
     const product_name_slug = slugify(product_name);
     const productUrl = `${process.env.CLIENT_URL}/product/${product_name_slug}-${product_id}`;
@@ -198,7 +216,17 @@ export async function postProductQuestion(
   if (question_parent_id) {
     userInParentQuestion = await ProductsModel.getUserInParentQuestion(question_parent_id);
   }
-  if (userInParentQuestion && userInParentQuestion.user_id !== sellerInfo.user_id && user_id === sellerInfo.user_id) {
+  if (
+    userInParentQuestion?.user_id !== undefined
+    && sellerInfo?.user_id !== undefined
+    && userInParentQuestion.user_id !== sellerInfo.user_id
+    && user_id === sellerInfo.user_id
+    && sellerInfo.product_name
+    && sellerInfo.username
+    && userInParentQuestion.username
+    && userInParentQuestion.email
+    && userInParentQuestion.content
+  ) {
     const product_name = sellerInfo.product_name;
     const product_name_slug = slugify(product_name);
     const productUrl = `${process.env.CLIENT_URL}/product/${product_name_slug}-${product_id}`;
@@ -224,7 +252,7 @@ export async function getRelatedProducts(category_id: number, product_id: number
 // Modify descriptions and alert the lead bidder by email if necessary
 export async function updateProductDescription(
   product_id: number,
-  seller_id: string,
+  seller_id: number,
   newDescription: string,
 ): Promise<{ status: string; message: string }> {
   const isAuthorized = await ProductsModel.verifyProductSeller(product_id, seller_id);
@@ -237,7 +265,14 @@ export async function updateProductDescription(
   await ProductsModel.updateProductDescription(product_id, newDescription);
 
   const productInfo = await ProductsModel.getProductById(product_id);
-  if (productInfo && productInfo.bid_turns > 0 && productInfo.price_owner_id) {
+  if (
+    productInfo
+    && (productInfo.bid_turns ?? 0n) > 0n
+    && productInfo.price_owner_id
+    && productInfo.product_name
+    && productInfo.price_owner_username
+    && productInfo.current_price !== null
+  ) {
     const emailContent = getProductDescriptionChangedTemplate({
       bidderUsername: productInfo.price_owner_username,
       productName: productInfo.product_name,
@@ -245,7 +280,7 @@ export async function updateProductDescription(
       productUrl: `${process.env.CLIENT_URL}/product/${slugify(productInfo.product_name)}-${productInfo.product_id}`,
       changeDate: new Date().toLocaleString(),
     });
-    const userInfo = await usersModel.getUserById(productInfo.price_owner_id);
+    const userInfo = await usersModel.getUserById(Number(productInfo.price_owner_id));
     if (userInfo) {
       sendMail(userInfo.email, "Product description update alert", emailContent);
     }
@@ -258,7 +293,7 @@ export async function updateProductDescription(
 }
 
 // Fetch auction listing winner details
-export async function getProductDetailForWinner(product_id: number, winner_id: string) {
+export async function getProductDetailForWinner(product_id: number, winner_id: number) {
   const productDetail = await ProductsModel.getProductDetailForWinner(product_id, winner_id);
   if (!productDetail) {
     return null;
@@ -283,16 +318,16 @@ export async function getTopMostBidProducts(limit: number) {
 }
 
 // Calculate total product count matching admin parameters
-export async function calTotalProducts(filter: any, is_removed: boolean) {
+export async function calTotalProducts(filter: ProductFilter, is_removed: boolean) {
   return await ProductsModel.calTotalProducts(filter, is_removed);
 }
 
 // Fetch admin paginated products list with detailed creator names
-export async function getAdminProductList(page: number, limit: number, filter: any, is_removed: boolean) {
+export async function getAdminProductList(page: number, limit: number, filter: ProductFilter, is_removed: boolean) {
   const list = await ProductsModel.getProductWithOffsetLimit((page - 1) * limit, limit, filter, is_removed);
 
   for (const product of list) {
-    const creator = await accountRepository.findDetailedById(product.seller_id);
+    const creator = await accountRepository.findDetailedById(Number(product.seller_id));
     product.creator_name = creator ? creator.full_name : "Unknown";
   }
 
@@ -303,7 +338,7 @@ export async function getAdminProductList(page: number, limit: number, filter: a
 export async function getProductById(id: number) {
   const product = await ProductsModel.getProductById(id);
   if (!product) return null;
-  const seller = await accountRepository.findDetailedById(product.seller_id);
+  const seller = await accountRepository.findDetailedById(Number(product.seller_id));
   if (seller) {
     product.seller_name = seller.full_name;
   }
@@ -335,10 +370,11 @@ export async function extendBiddingTimeIfNeeded(product_id: number): Promise<voi
   if (!setting) {
     return;
   }
-  const extend_time = setting.extend_time;
-  const threshold_time = setting.threshold_time;
+  const extend_time = Number(setting.extend_time ?? 0n);
+  const threshold_time = Number(setting.threshold_time ?? 0n);
 
   const currentTime = new Date();
+  if (!product.end_time) return;
   const endTime = new Date(product.end_time);
   const timeDiff = (endTime.getTime() - currentTime.getTime()) / (1000 * 60);
   if (timeDiff <= threshold_time) {

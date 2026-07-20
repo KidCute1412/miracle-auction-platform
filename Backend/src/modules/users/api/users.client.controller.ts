@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import * as UsersService from "../application/user.use-case.ts";
+import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
 // Handle user seller request submission
-export async function registerSellerRequest(req: Request, res: Response) {
+export async function registerSellerRequest(req: AccountRequest, res: Response) {
   const { reason } = req.body;
-  const user = (req as any).user;
+  const user = requireAuthenticatedUser(req);
   const existingRequest = await UsersService.checkRegisterSellerRequest(user.user_id);
   if (existingRequest) {
     return res.status(400).json({
@@ -20,9 +21,9 @@ export async function registerSellerRequest(req: Request, res: Response) {
 }
 
 // Handle rating and score feedback submission
-export async function rateUser(req: Request, res: Response) {
+export async function rateUser(req: AccountRequest, res: Response) {
   try {
-    const rater_id = (req as any).user.user_id;
+    const rater_id = requireAuthenticatedUser(req).user_id;
     const { user_id, score, comment } = req.body;
     await UsersService.rateUser(user_id, rater_id, score, comment);
     return res.status(200).json({

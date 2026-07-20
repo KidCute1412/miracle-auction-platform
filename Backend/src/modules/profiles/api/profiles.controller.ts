@@ -1,15 +1,15 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import * as profileUseCase from "../application/profile.use-case.ts";
 import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
+import type { EditProfileInput } from "../infrastructure/profile.repository.ts";
 
 // Handle user profile edit requests
-export async function editUserProfile(req: Request, res: Response) {
+export async function editUserProfile(req: AccountRequest, res: Response) {
   try {
-    const user = (req as any).user;
-    const data = req.body;
-    data.user_id = user.user_id;
+    const user = requireAuthenticatedUser(req);
+    const data: EditProfileInput = { ...req.body, user_id: user.user_id };
 
-    const file = req.file as Express.Multer.File;
+    const file = req.file;
     const results = await profileUseCase.editUserProfile(data, file);
 
     return res.status(200).json({
@@ -27,11 +27,11 @@ export async function editUserProfile(req: Request, res: Response) {
 }
 
 // Retrieve public user profile details
-export async function getUserProfileDetail(req: Request, res: Response) {
+export async function getUserProfileDetail(req: AccountRequest, res: Response) {
   try {
     const username = req.query.username as string;
     const user_id = req.query.user_id as string;
-    const user = (req as any).user;
+    const user = req.user;
 
     if (!username || !user_id) {
       return res.status(400).json({

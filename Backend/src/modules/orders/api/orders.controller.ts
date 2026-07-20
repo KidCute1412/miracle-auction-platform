@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import * as orderUseCase from "../application/order.use-case.ts";
+import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
+import type { CreateOrderData } from "../application/order.use-case.ts";
 
 // Handle order creation
-export async function createOrder(req: Request, res: Response) {
+export async function createOrder(req: AccountRequest, res: Response) {
   try {
-    const data = req.body;
-    const file = req.file as Express.Multer.File;
-    data.user_id = (req as any).user.user_id;
+    const data: CreateOrderData = { ...req.body, user_id: requireAuthenticatedUser(req).user_id };
+    const file = req.file;
 
     await orderUseCase.createOrder(data, file);
     return res.status(200).json({
@@ -22,9 +23,9 @@ export async function createOrder(req: Request, res: Response) {
 }
 
 // Fetch order details for the buyer
-export async function getOrderDetail(req: Request, res: Response) {
+export async function getOrderDetail(req: AccountRequest, res: Response) {
   try {
-    const user_id = (req as any).user.user_id;
+    const user_id = requireAuthenticatedUser(req).user_id;
     const product_id = req.query.product_id as string;
     const orderDetail = await orderUseCase.getOrderDetail(user_id, Number(product_id));
     return res.status(200).json({

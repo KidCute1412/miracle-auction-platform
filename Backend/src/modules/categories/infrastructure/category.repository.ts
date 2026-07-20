@@ -1,9 +1,9 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type categories } from "@prisma/client";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { slugify } from "@/helpers/slug.helper.ts";
 
-type CategoryFilter = { status?: string; creator?: string; dateFrom?: string; dateTo?: string; search?: string };
-type CategoryRow = Record<string, any>;
+export type CategoryFilter = { status?: string; creator?: string; dateFrom?: string; dateTo?: string; search?: string };
+type CategoryRow = categories;
 
 function categoryWhere(filter: CategoryFilter, deleted: boolean) {
   const conditions: Prisma.Sql[] = [Prisma.sql`c.deleted = ${deleted}`];

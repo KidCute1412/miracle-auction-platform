@@ -2,6 +2,8 @@ import * as CategoriesModel from "../infrastructure/category.repository.ts";
 import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 import * as productsModel from "@/modules/products/infrastructure/product.repository.ts";
 import { buildTree, Category, CategoryNode } from "@/helpers/category.helper.ts";
+import type { Prisma } from "@prisma/client";
+import type { CategoryFilter } from "../infrastructure/category.repository.ts";
 
 // Fetch all level 1 categories
 export async function getAllCategoriesLv1() {
@@ -39,28 +41,28 @@ export async function buildCategoryTreeAdmin(): Promise<CategoryNode[]> {
 }
 
 // Create and register a new category
-export async function insertCategory(data: any) {
+export async function insertCategory(data: Prisma.categoriesUncheckedCreateInput) {
   await CategoriesModel.insertCategory(data);
 }
 
 // Calculate total category entries matching status and creation parameters
-export async function calTotalCategories(filter: any, deleted: boolean) {
+export async function calTotalCategories(filter: CategoryFilter, deleted: boolean) {
   return await CategoriesModel.calTotalCategories(filter, deleted);
 }
 
 // Fetch detailed list of categories with creator information
-export async function getCategoryListDetailed(page: number, limit: number, filter: any, deleted: boolean) {
+export async function getCategoryListDetailed(page: number, limit: number, filter: CategoryFilter, deleted: boolean) {
   const list = await CategoriesModel.getCategoryWithOffsetLimit((page - 1) * limit, limit, filter, deleted);
 
-  for (const category of list) {
-    const detailedAccount = await accountRepository.findDetailedById(category.created_by);
-    category.created_by = detailedAccount ? detailedAccount.full_name : "Unknown";
-
-    const detailedAccountUpdated = await accountRepository.findDetailedById(category.updated_by);
-    category.updated_by = detailedAccountUpdated ? detailedAccountUpdated.full_name : "Unknown";
-  }
-
-  return list;
+  return Promise.all(list.map(async (category) => {
+    const detailedAccount = category.created_by ? await accountRepository.findDetailedById(category.created_by) : null;
+    const detailedAccountUpdated = category.updated_by ? await accountRepository.findDetailedById(category.updated_by) : null;
+    return {
+      ...category,
+      created_by: detailedAccount?.full_name ?? "Unknown",
+      updated_by: detailedAccountUpdated?.full_name ?? "Unknown",
+    };
+  }));
 }
 
 // Retrieve category list by ID
@@ -69,7 +71,7 @@ export async function getCategoryWithID(id: number) {
 }
 
 // Update category fields by category ID
-export async function updateCategoryWithID(id: number, data: any) {
+export async function updateCategoryWithID(id: number, data: Prisma.categoriesUncheckedUpdateInput) {
   return await CategoriesModel.updateCategoryWithID(id, data);
 }
 

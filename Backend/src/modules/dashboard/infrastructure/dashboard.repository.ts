@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 
-async function raw<T = any>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
+async function raw<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
   let placeholderIndex = 0;
   const parameterizedSql = sql.replace(/\?/g, () => `$${++placeholderIndex}`);
   return { rows: await prisma.$queryRawUnsafe<T[]>(parameterizedSql, ...params) };

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as ProductsService from "../application/product.use-case.ts";
+import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
 // Fetch paginated products list under category
 export async function getProductsPageList(req: Request, res: Response) {
@@ -59,10 +60,10 @@ export async function getProductDetailBySlugId(req: Request, res: Response) {
 }
 
 // Submit a new product listing with uploads
-export async function postNewProduct(req: Request, res: Response) {
+export async function postNewProduct(req: AccountRequest, res: Response) {
   try {
     const files = req.files as Express.Multer.File[];
-    const user = (req as any).user;
+    const user = requireAuthenticatedUser(req);
 
     await ProductsService.postNewProduct(req.body, files, user.user_id);
     return res.status(201).json({
@@ -79,9 +80,9 @@ export async function postNewProduct(req: Request, res: Response) {
 }
 
 // Retrieve active selling / won / sold product collections
-export async function getMyProductsList(req: Request, res: Response) {
+export async function getMyProductsList(req: AccountRequest, res: Response) {
   try {
-    const user = (req as any).user;
+    const user = requireAuthenticatedUser(req);
     const type = req.query.type as string;
     const page = parseInt(req.query.page as string) || 1;
 
@@ -132,9 +133,9 @@ export async function searchProducts(req: Request, res: Response) {
 }
 
 // Retrieve user love preference stats on product
-export async function getLoveStatus(req: Request, res: Response) {
+export async function getLoveStatus(req: AccountRequest, res: Response) {
   try {
-    const user = (req as any).user;
+    const user = req.user;
     const product_id = req.params.id as string;
 
     const loveStatus = await ProductsService.getLoveStatus(user ? user.user_id : null, parseInt(product_id));
@@ -156,9 +157,9 @@ export async function getLoveStatus(req: Request, res: Response) {
 }
 
 // Set or clear favorite loved state on product
-export async function updateLoveStatus(req: Request, res: Response) {
+export async function updateLoveStatus(req: AccountRequest, res: Response) {
   try {
-    const user = (req as any).user;
+    const user = requireAuthenticatedUser(req);
     const product_id = req.params.id as string;
     const love_status = req.body.love_status as boolean;
 
@@ -191,8 +192,8 @@ export async function getProductQuestions(req: Request, res: Response) {
 }
 
 // Post a question or answer reply
-export async function postProductQuestion(req: Request, res: Response) {
-  const user = (req as any).user;
+export async function postProductQuestion(req: AccountRequest, res: Response) {
+  const user = requireAuthenticatedUser(req);
   const product_id = req.params.id as string;
   const content = req.body.content as string;
   const question_parent_id = req.body.question_parent_id ? parseInt(req.body.question_parent_id as string) : null;
@@ -248,10 +249,10 @@ export async function getRelatedProducts(req: Request, res: Response) {
 }
 
 // Modify descriptions and alert the lead bidder by email if necessary
-export async function updateProductDescription(req: Request, res: Response) {
+export async function updateProductDescription(req: AccountRequest, res: Response) {
   try {
-    const user = (req as any).user;
-    const product_id = parseInt(req.params.id) as unknown as number;
+    const user = requireAuthenticatedUser(req);
+    const product_id = parseInt(req.params.id);
     const newDescription = req.body.description as string;
     const promise = await ProductsService.updateProductDescription(product_id, user.user_id, newDescription);
 
@@ -276,10 +277,10 @@ export async function updateProductDescription(req: Request, res: Response) {
 }
 
 // Retrieve general product details for winner checkout view
-export async function getProductDetailForWinner(req: Request, res: Response) {
+export async function getProductDetailForWinner(req: AccountRequest, res: Response) {
   try {
     const product_id = req.params.id as string;
-    const winner_id = (req as any).user.user_id;
+    const winner_id = requireAuthenticatedUser(req).user_id;
     const detailResult = await ProductsService.getProductDetailForWinner(parseInt(product_id), winner_id);
 
     if (!detailResult) {

@@ -1,6 +1,7 @@
 import * as UsersModel from "../infrastructure/user.repository.ts";
 import { sendMail } from "@/helpers/mail.helper.ts";
 import bcrypt from "bcryptjs";
+import type { ApplicationFilter, UserFilter } from "../infrastructure/user.repository.ts";
 
 const NEW_PASSWORD = "OnlineAuction123@";
 const SALT_ROUNDS = 10;
@@ -42,12 +43,12 @@ export async function getUserRatingHistory(user_id: number, username: string, of
 }
 
 // Get count of users
-export async function calTotalUsers(filter: any) {
+export async function calTotalUsers(filter: UserFilter) {
   return await UsersModel.calTotalUsers(filter);
 }
 
 // Fetch users list with pagination
-export async function getUsersWithOffsetLimit(offset: number, limit: number, filter: any) {
+export async function getUsersWithOffsetLimit(offset: number, limit: number, filter: UserFilter) {
   return await UsersModel.getUsersWithOffsetLimit(offset, limit, filter);
 }
 
@@ -72,21 +73,21 @@ export async function resetUserPassword(user_id: number): Promise<boolean> {
 }
 
 // Calculate total application count
-export async function calTotalApplications(filter: any) {
+export async function calTotalApplications(filter: ApplicationFilter) {
   return await UsersModel.calTotalApplications(filter);
 }
 
 // Fetch application listing details with name and email joins
-export async function getSellerApplicationsDetailed(page: number, limit: number, filter: any) {
+export async function getSellerApplicationsDetailed(page: number, limit: number, filter: ApplicationFilter) {
   const list = await UsersModel.getAllSellerApplications((page - 1) * limit, limit, filter);
-  for (const application of list) {
+  return Promise.all(list.map(async (application) => {
     const user = await UsersModel.getUserById(application.user_id);
-    if (user) {
-      application.full_name = user.full_name;
-      application.email = user.email;
-    }
-  }
-  return list;
+    return {
+      ...application,
+      full_name: user?.full_name ?? null,
+      email: user?.email ?? null,
+    };
+  }));
 }
 
 // Fetch detailed single upgrade application details

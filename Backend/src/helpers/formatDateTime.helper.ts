@@ -2,7 +2,7 @@ import {DateTime} from "luxon";
 
 
 
-const normVietNamTime = (rawTime : any) =>{
+const normVietNamTime = (rawTime: Date | string | null | undefined): string | null => {
     if (!rawTime) return "";
     let utcDateTime;
     // const utcDateTime = DateTime.fromISO(rawTime, {zone: 'utc'});

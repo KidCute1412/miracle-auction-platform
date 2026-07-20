@@ -1,11 +1,31 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type product_questions, type products } from "@prisma/client";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
+
+export type ProductFilter = { status?: string; creator?: string; dateFrom?: string; dateTo?: string; search?: string };
+export type ProductRow = products & {
+  fts: string | null;
+  total_count?: bigint;
+  price_owner_username?: string | null;
+  price_owner_avatar?: string | null;
+  price_owner_rating?: number | null;
+  seller_username?: string | null;
+  seller_avatar?: string | null;
+  seller_rating?: number | null;
+  creator_name?: string;
+  seller_name?: string;
+  user_id?: number;
+  username?: string;
+  full_name?: string;
+  email?: string;
+  content?: string | null;
+};
+type ProductQuestionRow = product_questions & { username: string | null; total_count?: bigint };
 
 const PRODUCT_COLS = "product_id, created_at, product_name, seller_id, step_price, start_price, current_price, buy_now_price, price_owner_id, bid_turns, start_time, end_time, cat2_id, is_removed, description, product_images, auto_extended, edited_at, auction_end_email_sent, fts::text as fts";
 const P_COLS = "p.product_id, p.created_at, p.product_name, p.seller_id, p.step_price, p.start_price, p.current_price, p.buy_now_price, p.price_owner_id, p.bid_turns, p.start_time, p.end_time, p.cat2_id, p.is_removed, p.description, p.product_images, p.auto_extended, p.edited_at, p.auction_end_email_sent, p.fts::text as fts";
 const U_COLS = "u.user_id, u.username, u.full_name, u.email, u.password, u.address, u.role, u.date_of_birth, u.rating, u.rating_count, u.created_at, u.avatar, u.status, u.auth_version, u.fts::text as fts";
 
-async function raw<T = any>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
+async function raw<T = ProductRow>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
   let processedSql = sql;
   processedSql = processedSql.replace(/\bu\.\*/gi, U_COLS);
   processedSql = processedSql.replace(/\bp\.\*/gi, P_COLS);
@@ -35,7 +55,7 @@ export async function getProductForExtension(product_id: number) {
 
 // Get extend bidding time setting parameters
 export async function getExtendTimeSetting() {
-  const settingQuery = await raw(`select extend_time, threshold_time from extend_bidding_time limit 1`);
+  const settingQuery = await raw<{ extend_time: bigint | null; threshold_time: bigint | null }>(`select extend_time, threshold_time from extend_bidding_time limit 1`);
   return settingQuery.rows[0] || null;
 }
 
@@ -89,7 +109,7 @@ export async function getProductsPageList(
   };
   const safeOrderBy = orderBy.map((value) => sortExpressions[value]).filter((value): value is string => Boolean(value));
   let searchCondition = "";
-  const bindings: any = [cat2_id];
+  const bindings: unknown[] = [cat2_id];
   if (searchKeyword && searchKeyword.trim() !== "") {
     searchCondition = "AND p.fts @@ websearch_to_tsquery('english', remove_accents(?))";
     bindings.push(searchKeyword);
@@ -110,7 +130,7 @@ export async function getProductsPageList(
 }
 
 // Fetch favorite user love products list
-export async function getMyFavoriteProducts(user_id: string, limit: number, offset: number) {
+export async function getMyFavoriteProducts(user_id: number, limit: number, offset: number) {
   const query = await raw(
     `select p.*, u.username as price_owner_username, count(*) over() as total_count
      from products p
@@ -119,13 +139,13 @@ export async function getMyFavoriteProducts(user_id: string, limit: number, offs
      where lp.user_id = ?
      order by p.created_at desc
      limit ? offset ?`,
-    [Number(user_id), limit, offset],
+    [user_id, limit, offset],
   );
   return query.rows;
 }
 
 // Fetch user active selling products
-export async function getMySellingProducts(user_id: string, limit: number, offset: number) {
+export async function getMySellingProducts(user_id: number, limit: number, offset: number) {
   const query = await raw(
     `select p.*, u.username as price_owner_username, count(*) over() as total_count
      from products p
@@ -133,13 +153,13 @@ export async function getMySellingProducts(user_id: string, limit: number, offse
      where p.seller_id = ? and p.end_time > now()
      order by p.created_at desc
      limit ? offset ?`,
-    [Number(user_id), limit, offset],
+    [user_id, limit, offset],
   );
   return query.rows;
 }
 
 // Fetch user sold product list
-export async function getMySoldProducts(user_id: string, limit: number, offset: number) {
+export async function getMySoldProducts(user_id: number, limit: number, offset: number) {
   const query = await raw(
     `select p.*, u.username as price_owner_username, count(*) over() as total_count
      from products p
@@ -147,13 +167,13 @@ export async function getMySoldProducts(user_id: string, limit: number, offset: 
      where p.seller_id = ? and p.end_time < now() and p.price_owner_id is not null
      order by p.created_at desc
      limit ? offset ?`,
-    [Number(user_id), limit, offset],
+    [user_id, limit, offset],
   );
   return query.rows;
 }
 
 // Fetch user won product list
-export async function getMyWonProducts(user_id: string, limit: number, offset: number) {
+export async function getMyWonProducts(user_id: number, limit: number, offset: number) {
   const query = await raw(
     `select p.*, u.username as price_owner_username, count(*) over() as total_count
      from products p
@@ -161,13 +181,13 @@ export async function getMyWonProducts(user_id: string, limit: number, offset: n
      where p.price_owner_id = ? and p.end_time < now()
      order by p.created_at desc
      limit ? offset ?`,
-    [Number(user_id), limit, offset],
+    [user_id, limit, offset],
   );
   return query.rows;
 }
 
 // Fetch products client is currently bidding on
-export async function getMyBiddingProducts(user_id: string, limit: number, offset: number) {
+export async function getMyBiddingProducts(user_id: number, limit: number, offset: number) {
   const query = await raw(
     `SELECT p.*, u.username AS price_owner_username, count(*) OVER() AS total_count
      FROM products p
@@ -180,13 +200,13 @@ export async function getMyBiddingProducts(user_id: string, limit: number, offse
        )
      ORDER BY p.created_at DESC
      LIMIT ? OFFSET ?`,
-    [Number(user_id), limit, offset],
+    [user_id, limit, offset],
   );
   return query.rows;
 }
 
 // Fetch product inventory of unsold items
-export async function getMyInventoryProducts(user_id: string, limit: number, offset: number) {
+export async function getMyInventoryProducts(user_id: number, limit: number, offset: number) {
   const query = await raw(
     `select p.*, u.username as price_owner_username, count(*) over() as total_count
      from products p
@@ -194,7 +214,7 @@ export async function getMyInventoryProducts(user_id: string, limit: number, off
      where p.seller_id = ? and p.end_time < now() and p.price_owner_id is null
      order by p.created_at desc
      limit ? offset ?`,
-    [Number(user_id), limit, offset],
+    [user_id, limit, offset],
   );
   return query.rows;
 }
@@ -202,12 +222,12 @@ export async function getMyInventoryProducts(user_id: string, limit: number, off
 // Fetch name of product to validate slug matching
 export async function getProductNameById(product_id: string): Promise<string | null> {
   if (!/^\d+$/.test(product_id)) return null;
-  const queryName = await raw(`SELECT product_name FROM products WHERE product_id = ?`, [BigInt(product_id)]);
+  const queryName = await raw<{ product_name: string | null }>(`SELECT product_name FROM products WHERE product_id = ?`, [BigInt(product_id)]);
   return queryName.rows[0]?.product_name || null;
 }
 
 // Insert new product details
-export async function postNewProduct(productData: any) {
+export async function postNewProduct(productData: Prisma.productsUncheckedCreateInput) {
   return prisma.products.create({ data: productData });
 }
 
@@ -227,7 +247,7 @@ export async function searchProducts(query: string, limit: number, offset: numbe
 
 // Fetch love stats details
 export async function getLoveStatus(user_id: number | null, product_id: number) {
-  const query = await raw(
+  const query = await raw<{ total_loves: number; is_loved: boolean }>(
     `SELECT 
        (SELECT COUNT(*)::int FROM love_products WHERE product_id = ?) as total_loves,
        EXISTS(
@@ -241,7 +261,7 @@ export async function getLoveStatus(user_id: number | null, product_id: number) 
 
 // Check if product is loved by user
 export async function checkProductIsLoved(user_id: number, product_id: number): Promise<boolean> {
-  const currentStatusQuery = await raw(
+  const currentStatusQuery = await raw<{ is_loved: boolean }>(
     `select exists (
        select 1 
        from love_products 
@@ -264,7 +284,7 @@ export async function unloveProduct(user_id: number, product_id: number): Promis
 
 // Retrieve QA list for product
 export async function getProductQuestions(product_id: number, limit: number, offset: number) {
-  const query = await raw(
+  const query = await raw<ProductQuestionRow>(
     `WITH ParentQuestions AS (
          SELECT pq.*, u.username, u.user_id
          FROM product_questions pq 
@@ -297,9 +317,9 @@ export async function getProductQuestions(product_id: number, limit: number, off
 }
 
 // Insert product question or answer
-export async function postProductQuestion(insertData: any) {
+export async function postProductQuestion(insertData: Prisma.product_questionsUncheckedCreateInput) {
   const newQuestion = await prisma.product_questions.create({ data: insertData });
-  const query = await raw(
+  const query = await raw<ProductQuestionRow>(
     `SELECT pq.*, u.username, u.user_id
      FROM product_questions pq
      LEFT JOIN users u ON pq.user_id = u.user_id
@@ -338,10 +358,10 @@ export async function getRelatedProducts(category_id: number, product_id: number
 }
 
 // Check if user is the seller of the product
-export async function verifyProductSeller(product_id: number, seller_id: string): Promise<boolean> {
+export async function verifyProductSeller(product_id: number, seller_id: number): Promise<boolean> {
   const productQuery = await raw(`SELECT 1 FROM products WHERE product_id = ? AND seller_id = ?`, [
     product_id,
-    Number(seller_id),
+    seller_id,
   ]);
   return productQuery.rows.length > 0;
 }
@@ -355,7 +375,7 @@ export async function updateProductDescription(product_id: number, new_descripti
 export const getProductWithOffsetLimit = async (
   offset: number,
   limit: number,
-  filter: any,
+  filter: ProductFilter,
   is_removed: boolean = false,
 ) => {
   const conditions: Prisma.Sql[] = [Prisma.sql`is_removed = ${is_removed}`];
@@ -363,11 +383,11 @@ export const getProductWithOffsetLimit = async (
   if (filter?.dateFrom?.trim()) conditions.push(Prisma.sql`start_time::date >= ${filter.dateFrom}::date`);
   if (filter?.dateTo?.trim()) conditions.push(Prisma.sql`start_time::date <= ${filter.dateTo}::date`);
   if (filter?.search) conditions.push(Prisma.sql`fts @@ websearch_to_tsquery('english', remove_accents(${filter.search}))`);
-  return prisma.$queryRaw<any[]>(Prisma.sql`SELECT product_id, created_at, product_name, seller_id, step_price, start_price, current_price, buy_now_price, price_owner_id, bid_turns, start_time, end_time, cat2_id, is_removed, description, product_images, auto_extended, edited_at, auction_end_email_sent, fts::text as fts FROM products WHERE ${Prisma.join(conditions, " AND ")} ORDER BY product_id ASC OFFSET ${offset} LIMIT ${limit}`);
+  return prisma.$queryRaw<ProductRow[]>(Prisma.sql`SELECT product_id, created_at, product_name, seller_id, step_price, start_price, current_price, buy_now_price, price_owner_id, bid_turns, start_time, end_time, cat2_id, is_removed, description, product_images, auto_extended, edited_at, auction_end_email_sent, fts::text as fts FROM products WHERE ${Prisma.join(conditions, " AND ")} ORDER BY product_id ASC OFFSET ${offset} LIMIT ${limit}`);
 };
 
 // Calculate total product listing matching admin parameters
-export const calTotalProducts = async (filter: any = {}, is_removed: boolean = false) => {
+export const calTotalProducts = async (filter: ProductFilter = {}, is_removed: boolean = false) => {
   const conditions: Prisma.Sql[] = [Prisma.sql`is_removed = ${is_removed}`];
   if (filter?.status && filter.status !== "all") conditions.push(Prisma.sql`is_removed = ${filter.status === "true"}`);
   if (filter?.creator) conditions.push(Prisma.sql`CAST(seller_id AS text) ILIKE ${`%${filter.creator}%`}`);
@@ -394,7 +414,7 @@ export async function destroyProductById(product_id: number): Promise<void> {
 }
 
 // Fetch details for winner view
-export async function getProductDetailForWinner(product_id: number, winner_id: string) {
+export async function getProductDetailForWinner(product_id: number, winner_id: number) {
   return prisma.products.findFirst({ where: { product_id: BigInt(product_id), price_owner_id: BigInt(winner_id), end_time: { lt: new Date() } } });
 }
 
@@ -458,6 +478,6 @@ export async function fetchTopEndingSoonProducts(limit: number) {
 // Count products under a list of category IDs
 export async function countProductsByCategories(categoryIds: number[]): Promise<number> {
   if (categoryIds.length === 0) return 0;
-  const query = await raw(`SELECT COUNT(*) as count FROM products WHERE cat2_id = ANY(?)`, [categoryIds]);
+  const query = await raw<{ count: bigint }>(`SELECT COUNT(*) as count FROM products WHERE cat2_id = ANY(?)`, [categoryIds]);
   return Number(query.rows[0].count);
 }
