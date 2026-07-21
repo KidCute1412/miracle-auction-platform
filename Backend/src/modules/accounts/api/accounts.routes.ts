@@ -10,7 +10,7 @@ import { redisClient } from "@/config/redis.config.ts";
 const route = Router();
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  limit: process.env.NODE_ENV === "production" ? 100 : 500,
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({ sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as never }),
