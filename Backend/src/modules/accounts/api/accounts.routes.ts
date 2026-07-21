@@ -50,7 +50,7 @@ route.post("/sessions", authLimiter, accountValidate.loginPost, accountsControll
 route.post("/sessions/google", authLimiter, accountValidate.googleLoginPost, accountsController.googleLoginPost);
 
 // Refresh login session
-route.post("/sessions/refresh", authLimiter, accountsController.refreshSession);
+route.post("/sessions/refresh", accountsController.refreshSession);
 
 // Destroy login session (logout)
 route.delete("/sessions", accountsController.logoutPost);
