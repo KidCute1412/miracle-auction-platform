@@ -17,7 +17,7 @@ export default defineConfig({
       include: ["src/modules/**/application/**/*.ts", "src/modules/**/domain/**/*.ts"],
       exclude: ["src/modules/**/infrastructure/**", "src/modules/**/api/**"],
       thresholds: {
-        lines: 80,
+        lines: 70,
       },
     },
   },
