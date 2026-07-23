@@ -8,7 +8,12 @@ import type { AuctionStreamEvent } from "./redis-auction.types.ts";
 const GROUP = process.env.BID_PROJECTOR_GROUP ?? "postgres-projector-v1";
 let blockingRedisClient: ReturnType<typeof redisClient.duplicate> | undefined;
 const blockingClient = (): ReturnType<typeof redisClient.duplicate> => {
-  blockingRedisClient ??= redisClient.duplicate();
+  if (!blockingRedisClient) {
+    blockingRedisClient = redisClient.duplicate();
+    blockingRedisClient.on("error", (error: Error) => {
+      console.error("[REDIS PROJECTOR] Connection error:", error.message);
+    });
+  }
   return blockingRedisClient;
 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

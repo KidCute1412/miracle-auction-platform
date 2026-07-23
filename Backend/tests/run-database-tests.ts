@@ -63,12 +63,18 @@ function buildDatabaseUrl(container: StartedTestContainer): string {
 
 async function verifyRedisAofRestart(container: StartedTestContainer): Promise<string> {
   const redisUrl = `redis://${container.getHost()}:${container.getMappedPort(redisPort)}`;
-  const beforeRestart = new Redis(redisUrl);
+  const redisOptions = {
+    maxRetriesPerRequest: 3,
+    retryStrategy: (times: number) => (times > 10 ? null : 200),
+  };
+  const beforeRestart = new Redis(redisUrl, redisOptions);
+  beforeRestart.on("error", (error: Error) => console.error("[TEST-REDIS] error before restart:", error.message));
   await beforeRestart.set("test:aof-restart", "preserved");
   await wait(1_100);
   await beforeRestart.quit();
   await container.restart({ timeout: 30_000 });
-  const afterRestart = new Redis(redisUrl);
+  const afterRestart = new Redis(redisUrl, redisOptions);
+  afterRestart.on("error", (error: Error) => console.error("[TEST-REDIS] error after restart:", error.message));
   const value = await afterRestart.get("test:aof-restart");
   await afterRestart.flushdb();
   await afterRestart.quit();
