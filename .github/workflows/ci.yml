@@ -159,35 +159,35 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy Oracle production stack
-    needs: [backend, frontend, agent-service, docker, production-image]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: oracle-production-deploy
-      cancel-in-progress: false
-    steps:
-      - name: Configure SSH
-        env:
-          ORACLE_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
-          ORACLE_SSH_KNOWN_HOST: ${{ secrets.ORACLE_SSH_KNOWN_HOST }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$ORACLE_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$ORACLE_SSH_KNOWN_HOST" > ~/.ssh/known_hosts
-
-      - name: Deploy pushed commit
-        env:
-          ORACLE_SSH_HOST: ${{ secrets.ORACLE_SSH_HOST }}
-          ORACLE_DEPLOY_USER: ${{ secrets.ORACLE_DEPLOY_USER }}
-          DEPLOY_COMMIT: ${{ github.sha }}
-        run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes "$ORACLE_DEPLOY_USER@$ORACLE_SSH_HOST" "DEPLOY_COMMIT='$DEPLOY_COMMIT' bash -s" <<'REMOTE'
-          set -euo pipefail
-          cd /opt/online-auction/repo
-          git fetch --prune origin
-          git checkout --detach "$DEPLOY_COMMIT"
-          docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build --remove-orphans
-          REMOTE
+#  deploy:
+#    name: Deploy Oracle production stack
+#    needs: [backend, frontend, agent-service, docker, production-image]
+#    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+#    runs-on: ubuntu-latest
+#    concurrency:
+#      group: oracle-production-deploy
+#      cancel-in-progress: false
+#    steps:
+#      - name: Configure SSH
+#        env:
+#          ORACLE_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+#          ORACLE_SSH_KNOWN_HOST: ${{ secrets.ORACLE_SSH_KNOWN_HOST }}
+#        run: |
+#          mkdir -p ~/.ssh
+#          printf '%s\n' "$ORACLE_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+#          chmod 600 ~/.ssh/id_ed25519
+#          printf '%s\n' "$ORACLE_SSH_KNOWN_HOST" > ~/.ssh/known_hosts
+#
+#      - name: Deploy pushed commit
+#        env:
+#          ORACLE_SSH_HOST: ${{ secrets.ORACLE_SSH_HOST }}
+#          ORACLE_DEPLOY_USER: ${{ secrets.ORACLE_DEPLOY_USER }}
+#          DEPLOY_COMMIT: ${{ github.sha }}
+#        run: |
+#          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes "$ORACLE_DEPLOY_USER@$ORACLE_SSH_HOST" "DEPLOY_COMMIT='$DEPLOY_COMMIT' bash -s" <<'REMOTE'
+#          set -euo pipefail
+#          cd /opt/online-auction/repo
+#          git fetch --prune origin
+#          git checkout --detach "$DEPLOY_COMMIT"
+#          docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build --remove-orphans
+#          REMOTE
