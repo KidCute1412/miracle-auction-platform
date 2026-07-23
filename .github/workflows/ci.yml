@@ -10,24 +10,10 @@ jobs:
   backend:
     name: Backend Quality Gate
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: online_auction_api_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d online_auction_api_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/online_auction_api_test?schema=public
-      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/online_auction_api_test?schema=public
+      DATABASE_URL: postgresql://validation:validation@127.0.0.1:1/schema_validation_only?schema=public
+      DIRECT_URL: postgresql://validation:validation@127.0.0.1:1/schema_validation_only?schema=public
       JWT_SECRET: ci-access-token-secret
       JWT_REFRESH_SECRET: ci-refresh-token-secret
       CSRF_SECRET: ci-csrf-secret
@@ -43,9 +29,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Backend/package-lock.json
 
-      - name: Create Env File
-        run: cp Backend/.env.example Backend/.env
-
       - name: Install dependencies
         run: npm ci
         working-directory: Backend
@@ -58,24 +41,8 @@ jobs:
         run: npx prisma validate
         working-directory: Backend
 
-      - name: Apply migrations to isolated test database
-        run: npm run prisma:migrate:deploy
-        working-directory: Backend
-
-      - name: Verify migration status
-        run: npx prisma migrate status
-        working-directory: Backend
-
-      - name: Build Backend
-        run: npm run build
-        working-directory: Backend
-
-      - name: Run unit, integration, and concurrency tests
-        run: npm run test
-        working-directory: Backend
-
-      - name: Enforce business-logic coverage
-        run: npm run test:coverage
+      - name: Build and run all backend quality gates
+        run: npm run test:ci
         working-directory: Backend
 
       - name: Upload coverage report
