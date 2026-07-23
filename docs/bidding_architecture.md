@@ -1,118 +1,96 @@
-# High-Throughput & Strongly Consistent Bidding Architecture
+# Bidding Architecture
 
-This document describes the architectural transition from relational pessimistic database locking to an in-memory validation and asynchronous write-behind system for high-concurrency auctions.
+## Authority and data flow
 
----
+Redis Lua is the single writer for every active-auction mutation. PostgreSQL is the durable projection and query store. Kafka carries side effects only after the PostgreSQL projection transaction commits; it never decides a bid.
 
-## 1. The Core Problem: Pessimistic Locking Bottleneck
-
-In the current implementation, every bid triggers:
-1. `SELECT FOR UPDATE` on the `products` table.
-2. `SELECT FOR UPDATE` on the `bidding_history` table.
-3. Database writes (`INSERT` and `UPDATE`) within a serializable transaction block.
-
-### Why this fails under high throughput:
-* **Database I/O Wait**: Relational databases write to disk to maintain ACID guarantees. disk operations are slow.
-* **Row Lock Contention**: If thousands of users bid on the same popular product simultaneously, they queue behind each other on the exact same row lock.
-* **Connection Exhaustion**: Requests hold DB connections open while waiting for locks, leading to timeout errors and system-wide cascades.
-
----
-
-## 2. The Solution: In-Memory Validation + Write-Behind
-
-To achieve both **high throughput (100k+ req/sec)** and **strong consistency**, we split the operation into two phases:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Bidder
-    participant API Gateway
-    participant Redis (Lua)
-    participant Message Queue
-    participant DB Consumer
-    participant DB (PostgreSQL)
-
-    Bidder->>API Gateway: Place Bid (product_id, amount)
-    API Gateway->>Redis (Lua): EVALSHA bid.lua (product_id, user_id, amount)
-    Note over Redis (Lua): Single-threaded atomic evaluation
-    Redis (Lua)-->>API Gateway: Success (Updated Leader State)
-    API Gateway-->>Bidder: Bid Accepted (HTTP 200)
-    
-    API Gateway->>Message Queue: Publish BidAcceptedEvent
-    Message Queue->>DB Consumer: Deliver Event
-    DB Consumer->>DB (PostgreSQL): Persist Bid & Update Product
+```text
+API
+  -> Redis Lua: validate + mutate + XADD atomically
+  -> Redis Stream projector
+  -> PostgreSQL projection + transactional outbox
+  -> Kafka
+  -> notifications, email, analytics, and Socket.IO
 ```
 
-### Phase 1: Synchronous In-Memory Validation (Redis)
-* Active auction details (current highest bid, price owner, step price, end time) are cached in Redis.
-* Validations (checking if the bid is higher than the current price, if the auction is active) are done inside Redis.
-* If valid, Redis updates the cached auction state and returns success to the client immediately.
+If Redis is unavailable, a bidding mutation returns `503 SERVICE_UNAVAILABLE`. It must never fall back to a PostgreSQL write because that would create a second authority and an ordering split.
 
-### Phase 2: Asynchronous Durability (Message Queue + DB)
-* The API Gateway publishes a message to a queue.
-* A background consumer pulls the message and inserts the history into PostgreSQL.
+`BID_ENGINE` controls rollout:
 
----
+- `postgres`: existing PostgreSQL implementation and local benchmark baseline.
+- `redis`: Redis Lua authority and asynchronous PostgreSQL projection.
+- `shadow`: PostgreSQL remains authoritative while the Redis reference decision is recorded and compared without mutating Redis auction state.
 
-## 3. Technology Analysis & Rationale
+## Contracts and authoritative Redis state
 
-### Why Redis?
-* **Single-Threaded Execution**: Redis runs command sequences on a single thread. When logic is wrapped in a **Lua script**, Redis executes it atomically. No two scripts can run concurrently, preventing double-bidding/race conditions.
-* **Sub-millisecond Latency**: Operations run entirely in RAM.
+All VND amounts are non-negative `BIGINT` values. JSON APIs and event payloads represent them as base-10 decimal strings, never JavaScript numbers or floating point values.
 
-### Why Kafka (Over RabbitMQ)?
-The event broker decouples the fast frontend (Redis) from the slower backend database write. We select **Kafka** as the event streaming backbone for three reasons:
+An auction has one explicit status: `PENDING`, `ACTIVE`, `SOLD`, `ENDED`, or `CANCELLED`. Each successful mutation increments a monotonic auction `version` and `sequence`. History transitions and processed events retain both values.
 
-1. **Partition-Key-Based Ordering**: Bids are published to Kafka using the `product_id` as the partition key. Kafka guarantees that all messages with the same partition key are processed sequentially in the exact order they arrive, even when multiple consumer workers are running in parallel. This is extremely difficult to achieve with standard RabbitMQ queues.
-2. **Durability and Replayability**: Kafka appends events to a sequential disk log that can be replayed. If the consumer database service crashes, Kafka retains the logs, allowing workers to resume processing without data loss.
-3. **High Throughput Scaling**: Kafka can handle millions of events per second with low CPU overhead by leveraging zero-copy and sequential OS page cache writes.
+Redis stores only the state needed by the bounded state machine:
 
----
+- auction status, seller, start/end deadlines, pricing, leader, version, and sequence;
+- bidder maxima and deterministic ranking;
+- the auction ban set;
+- idempotency fingerprints and original results;
+- bounded per-bidder rate-limit state;
+- deadline indexes used by the close scheduler;
+- immutable mutation result Streams.
 
-## 4. Lua Script Example (Redis Validation)
+Bid, buy-now, bidder ban, anti-sniping extension, close, and cancel must all pass through Redis Lua. No application code, cron job, or PostgreSQL function may independently perform these transitions.
 
-This script validates and updates the bid state inside Redis:
+Each request supplies a client idempotency key. The stored fingerprint covers the operation, auction, actor, and request values:
 
-```lua
--- Keys: KEYS[1] = product_bids_key (hash)
--- Args: ARGV[1] = user_id, ARGV[2] = bid_amount, ARGV[3] = step_price, ARGV[4] = end_time
+- the same key and fingerprint returns the original result;
+- the same key with a different fingerprint is rejected;
+- a new key can produce at most one state transition and one Stream event.
 
-local current_price = tonumber(redis.call('HGET', KEYS[1], 'current_price') or 0)
-local current_owner = redis.call('HGET', KEYS[1], 'price_owner_id')
-local auction_end = tonumber(redis.call('HGET', KEYS[1], 'end_time') or 0)
-local now = tonumber(ARGV[4])
+Lua validates all input and stored state before its first write. Its mutation phase is bounded and atomically updates state, ranking, deadlines, the idempotent result, and `XADD`s exactly one result event. Business rejections are returned directly and do not use a separate result Stream.
 
--- Validate auction end time
-if now > auction_end then
-    return {err = "Auction ended"}
-end
+Buy-now and close reserve or return a public order UUID. The projector creates exactly one order for that UUID and auction. Winner checkout only updates that projector-created order; it never creates another order or accepts a client-supplied winner or price.
 
--- Validate step increment
-local min_valid_bid = current_price + tonumber(ARGV[3])
-if tonumber(ARGV[2]) < min_valid_bid then
-    return {err = "Bid too low"}
-end
+## PostgreSQL projection and side effects
 
--- Update new leader
-redis.call('HSET', KEYS[1], 'current_price', ARGV[2], 'price_owner_id', ARGV[1])
-return {ok = "Bid accepted", current_price = ARGV[2]}
-```
+The Stream projector uses a consumer group and applies one event in one PostgreSQL transaction:
 
----
+1. Insert the event ID into `auction_processed_events`; its unique key makes redelivery a no-op.
+2. Fence the event using `(auction_id, sequence)` and the stored projection version.
+3. Insert the immutable auction transition and any bid-history row.
+4. Update the auction snapshot only when the incoming version is newer.
+5. Create the unique public order for buy-now or a closed auction with a winner.
+6. Insert transactional outbox records.
+7. Commit PostgreSQL.
+8. Emit committed Socket.IO data and `XACK` the Stream entry.
 
-## 5. Resume & CV Highlights (Standout Features)
+Kafka dispatch reads only committed outbox rows. Kafka or Socket.IO failure never rolls back an accepted auction transition; the outbox remains retryable.
 
-To make this architecture a highlight on your CV, discuss how you solved these real-world edge cases:
+The projector reclaims abandoned pending entries with `XAUTOCLAIM`. Retry counts are bounded. Terminal schema or invariant failures are copied to a dead-letter Stream with the original entry and error before acknowledgement. It does not acknowledge normal work before commit.
 
-1. **Redis Cache-DB Reconciliation / Anti-Entropy**:
-   * What if the database consumer crashes or fails?
-   * *CV Highlight*: "Implemented a reconciliation cron job (outbox pattern) that periodically compares PostgreSQL records against Redis key-states to heal discrepancies."
-2. **Dynamic Auction Extensions ("Sniper Protection")**:
-   * If a bid comes in during the last 30 seconds of an auction, the end time must extend by 2 minutes. Doing this in Redis requires updating the hash fields and returning the new end time in real-time.
-   * *CV Highlight*: "Built a sliding-window bidding deadline manager utilizing Redis Lua scripting to prevent sniping attacks."
-3. **Idempotency Control**:
-   * Network retries might cause duplicate bids.
-   * *CV Highlight*: "Enforced exact-once bid semantics by using Redis hashes to deduplicate incoming bid transactions based on idempotent request tokens."
-4. **Graceful Degradation / Fallbacks**:
-   * If Redis crashes, how does the system recover?
-   * *CV Highlight*: "Implemented a fallback policy routing traffic directly to PostgreSQL read-replicas with rate limiters when cache layers became unavailable."
+A reconciliation job compares Redis version/sequence with the PostgreSQL checkpoint. It replays retained Stream entries for a lagging projection, reports gaps or divergence, and never invents a transition. Stream trimming is permitted only behind the durable projection checkpoint and reconciliation window.
+
+## Deployment contract
+
+Local development and benchmark runs use one Redis container with AOF enabled and one PostgreSQL container. Production uses one managed regional Redis database endpoint. Application code receives a single `REDIS_URL`; topology and recovery are provider concerns rather than application deployment instructions.
+
+The close scheduler reads due auction IDs from the Redis deadline index and invokes the close mutation. A retry is idempotent. An auction with no leader ends without an order; an auction with a leader produces exactly one public order UUID.
+
+## Correctness and local benchmark
+
+Correctness gates cover:
+
+- unit and property tests for proxy bidding and the Lua reference model;
+- real Redis/PostgreSQL integration tests for every mutation;
+- concurrent bids, retries, duplicates, projector crash/redelivery, PostgreSQL outage, Kafka outage, and a local Redis AOF restart;
+- zero duplicate orders, event IDs, or auction sequences;
+- monotonic versions, consistent winner/current price, and eventual projection convergence.
+
+The k6 suite contains smoke, one hot auction, distributed auctions, spike, and soak scenarios. It runs `BID_ENGINE=postgres` and `BID_ENGINE=redis` against the same deterministic seed, service configuration, dataset, and local machine. Each run exports raw JSON plus a Markdown report with machine and container configuration.
+
+The Redis engine passes only when:
+
+- invariant violations are zero;
+- system errors are below 1%;
+- PostgreSQL projection converges after load; and
+- throughput is at least 2x the PostgreSQL baseline **or** p99 latency is at least 50% lower.
+
+One hot auction remains sequential inside Redis. Performance claims are valid only for the measured workload when both the correctness gates and benchmark threshold pass.

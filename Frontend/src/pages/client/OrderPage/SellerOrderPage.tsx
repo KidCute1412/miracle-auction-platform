@@ -22,7 +22,7 @@ type OrderInfo = {
   product_id: number;
   product_name: string;
   product_images: string[];
-  buy_now_price: number;
+  buy_now_price: string;
   end_time: string;
   payment_proof_image_url: string;
   phone_number: string;

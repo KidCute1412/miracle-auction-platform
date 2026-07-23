@@ -1,14 +1,21 @@
+import type { MoneyVnd } from "./money.ts";
+
+export type AuctionStatus = "PENDING" | "ACTIVE" | "SOLD" | "ENDED" | "CANCELLED";
+
 export interface AuctionState {
   productId: number;
   sellerId: number;
-  currentPrice: number;
-  startPrice: number;
-  stepPrice: number;
+  currentPrice: MoneyVnd;
+  startPrice: MoneyVnd;
+  stepPrice: MoneyVnd;
   priceOwnerId: number | null;
-  buyNowPrice: number | null;
+  buyNowPrice: MoneyVnd | null;
   startTime: Date;
   endTime: Date;
   isRemoved: boolean;
+  status: AuctionStatus;
+  version: bigint;
+  sequence: bigint;
 }
 
 export interface BidderEligibility {
@@ -19,5 +26,5 @@ export interface BidderEligibility {
 
 export interface ProxyBid {
   userId: number;
-  maxPrice: number;
+  maxPrice: MoneyVnd;
 }

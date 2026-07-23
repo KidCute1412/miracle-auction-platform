@@ -8,30 +8,37 @@ type Numeric = bigint | number | null;
 type ProductLockRow = {
   product_id: bigint;
   seller_id: bigint;
-  current_price: number | null;
-  start_price: number | null;
-  step_price: number | null;
+  current_price: bigint | null;
+  start_price: bigint | null;
+  step_price: bigint | null;
   price_owner_id: bigint | null;
-  buy_now_price: number | null;
+  buy_now_price: bigint | null;
   start_time: Date | null;
   end_time: Date | null;
   is_removed: boolean | null;
+  auction_status: string;
+  auction_version: bigint;
+  auction_sequence: bigint;
 };
 
 const numberOf = (value: Numeric): number => Number(value ?? 0);
+const moneyOf = (value: bigint | null): bigint => value ?? 0n;
 
 function mapAuctionRow(row: ProductLockRow): AuctionState {
   return {
     productId: numberOf(row.product_id),
     sellerId: numberOf(row.seller_id),
-    currentPrice: numberOf(row.current_price),
-    startPrice: numberOf(row.start_price),
-    stepPrice: numberOf(row.step_price),
+    currentPrice: moneyOf(row.current_price),
+    startPrice: moneyOf(row.start_price),
+    stepPrice: moneyOf(row.step_price),
     priceOwnerId: row.price_owner_id === null ? null : numberOf(row.price_owner_id),
-    buyNowPrice: row.buy_now_price === null ? null : numberOf(row.buy_now_price),
+    buyNowPrice: row.buy_now_price,
     startTime: row.start_time ?? new Date(0),
     endTime: row.end_time ?? new Date(0),
     isRemoved: Boolean(row.is_removed),
+    status: row.auction_status as AuctionState["status"],
+    version: row.auction_version,
+    sequence: row.auction_sequence,
   };
 }
 
@@ -39,7 +46,8 @@ export class BidRepository {
   async lockAuction(tx: Transaction, productId: number): Promise<AuctionState | null> {
     const rows = await tx.$queryRaw<ProductLockRow[]>(Prisma.sql`
       SELECT product_id, seller_id, current_price, start_price, step_price, price_owner_id,
-             buy_now_price, start_time, end_time, is_removed
+             buy_now_price, start_time, end_time, is_removed, auction_status,
+             auction_version, auction_sequence
       FROM products WHERE product_id = ${BigInt(productId)} FOR UPDATE`);
     return rows[0] ? mapAuctionRow(rows[0]) : null;
   }
@@ -47,7 +55,7 @@ export class BidRepository {
   async updateAuction(
     tx: Transaction,
     auction: AuctionState,
-    currentPrice: number,
+    currentPrice: bigint,
     priceOwnerId: number,
     turns: number,
     endTime?: Date,
@@ -59,6 +67,8 @@ export class BidRepository {
         price_owner_id: BigInt(priceOwnerId),
         bid_turns: { increment: BigInt(turns) },
         ...(endTime ? { end_time: endTime } : {}),
+        auction_version: { increment: 1n },
+        auction_sequence: { increment: 1n },
       },
     });
   }
@@ -81,12 +91,12 @@ export class BidRepository {
       orderBy: [{ max_price: "desc" }, { created_at: "desc" }],
       select: { user_id: true, max_price: true },
     });
-    return row ? { userId: row.user_id, maxPrice: Number(row.max_price ?? 0) } : undefined;
+    return row ? { userId: row.user_id, maxPrice: row.max_price ?? 0n } : undefined;
   }
 
   async record(
     tx: Transaction,
-    bid: { userId: number; productId: number; maxPrice: number; productPrice: number; priceOwnerId: number },
+    bid: { userId: number; productId: number; maxPrice: bigint; productPrice: bigint; priceOwnerId: number },
   ): Promise<void> {
     await tx.bidding_history.create({
       data: {
@@ -99,7 +109,7 @@ export class BidRepository {
     });
   }
 
-  async updateLeaderMax(tx: Transaction, productId: number, userId: number, maxPrice: number): Promise<void> {
+  async updateLeaderMax(tx: Transaction, productId: number, userId: number, maxPrice: bigint): Promise<void> {
     await tx.$executeRaw(Prisma.sql`UPDATE bidding_history SET max_price = ${maxPrice}
       WHERE bidding_id = (SELECT bidding_id FROM bidding_history WHERE product_id = ${BigInt(productId)}
         AND user_id = ${userId} AND status IS NULL ORDER BY created_at DESC, bidding_id DESC LIMIT 1)`);
@@ -120,12 +130,12 @@ export class BidRepository {
     return product ? Number(product.seller_id) : undefined;
   }
 
-  async createOrder(tx: Transaction, userId: number, productId: number): Promise<number> {
+  async createOrder(tx: Transaction, userId: number, productId: number): Promise<string> {
     const order = await tx.orders.create({
       data: { user_id: userId, product_id: BigInt(productId) },
-      select: { order_id: true },
+      select: { public_order_id: true },
     });
-    return Number(order.order_id);
+    return order.public_order_id;
   }
 
   async ban(tx: Transaction, productId: number, userId: number, reason: string): Promise<void> {

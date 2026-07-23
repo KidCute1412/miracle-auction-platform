@@ -19,7 +19,7 @@ const authenticatedReads = [
 ] as const;
 
 const csrfProtectedWrites = [
-  { method: "post", path: "/bids", body: { product_id: 1, max_price: 100 } },
+  { method: "post", path: "/bids", body: { product_id: 1, max_price: "100" } },
   { method: "post", path: "/products/1/likes", body: {} },
   { method: "post", path: "/users/ratings", body: { user_id: 1, rating: 1 } },
   { method: "post", path: "/users/seller-registrations", body: {} },

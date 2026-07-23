@@ -28,7 +28,9 @@
     "test:integration": "tsx tests/run-database-tests.ts integration",
     "test:concurrency": "tsx tests/run-database-tests.ts concurrency",
     "test:coverage": "tsx tests/run-database-tests.ts coverage",
-    "test:ci": "npm run build && npm run test:coverage"
+    "test:ci": "npm run build && npm run test:coverage",
+    "benchmark:seed": "tsx src/scripts/seed-bidding-benchmark.ts",
+    "benchmark:invariants": "tsx src/scripts/check-bidding-invariants.ts"
   },
   "author": "",
   "license": "ISC",

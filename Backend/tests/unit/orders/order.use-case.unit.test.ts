@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const repo = vi.hoisted(() => ({ createOrder: vi.fn(), getOrderDetail: vi.fn(), getSellerOrderView: vi.fn(), getOrderByProductId: vi.fn(), updateOrderStatus: vi.fn() }));
+const repo = vi.hoisted(() => ({ updateWinnerOrder: vi.fn(), getPendingWinnerOrder: vi.fn(), getOrderDetail: vi.fn(), getSellerOrderView: vi.fn(), getOrderByProductId: vi.fn(), updateOrderStatus: vi.fn() }));
 const cloud = vi.hoisted(() => vi.fn().mockResolvedValue({ secure_url: "https://image.test/file.png" }));
 const unlinkSync = vi.hoisted(() => vi.fn());
 vi.mock("../../../src/modules/orders/infrastructure/order.repository.ts", () => repo);
@@ -12,12 +12,22 @@ import * as useCase from "../../../src/modules/orders/application/order.use-case
 describe("order use cases", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("creates an order and stores an uploaded payment proof", async () => {
-    const data = { user_id: 1, product_id: 2 };
+  it("updates the projector-created winner order and stores an uploaded payment proof", async () => {
+    repo.getPendingWinnerOrder.mockResolvedValue({ public_order_id: "da74a956-ea91-4553-a04a-4fe915c87951" });
+    const data = { user_id: 1, public_order_id: "da74a956-ea91-4553-a04a-4fe915c87951" };
     await useCase.createOrder(data, { path: "proof.png" } as Express.Multer.File);
     expect(data).toMatchObject({ payment_proof_image_url: "https://image.test/file.png" });
     expect(unlinkSync).toHaveBeenCalledWith("proof.png");
-    expect(repo.createOrder).toHaveBeenCalledWith(data);
+    expect(repo.updateWinnerOrder).toHaveBeenCalledWith(data);
+  });
+
+  it("rejects checkout when the projector-created winner order is absent", async () => {
+    repo.getPendingWinnerOrder.mockResolvedValue(null);
+    await expect(useCase.createOrder({
+      user_id: 1,
+      public_order_id: "da74a956-ea91-4553-a04a-4fe915c87951",
+    })).rejects.toThrow("Winner order was not found");
+    expect(repo.updateWinnerOrder).not.toHaveBeenCalled();
   });
 
   it("delegates order detail reads", async () => {

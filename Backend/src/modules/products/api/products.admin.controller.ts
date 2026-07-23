@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import * as ProductsService from "../application/product.use-case.ts";
-import { AccountRequest } from "@/interfaces/request.interface.ts";
+import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
+import { getBidEngine } from "@/modules/bids/application/bid-engine.ts";
+import { MutateAuctionUseCase } from "@/modules/bids/application/mutate-auction.use-case.ts";
 
 // Calculate total product listing matching filter parameters
 export async function calTotalProducts(req: Request, res: Response) {
@@ -83,10 +85,24 @@ export async function detail(req: Request, res: Response) {
 }
 
 // Soft delete a product
-export async function deleteProduct(req: Request, res: Response) {
+export async function deleteProduct(req: AccountRequest, res: Response) {
   try {
     const { id } = req.params;
-    await ProductsService.deleteProductById(Number(id));
+    if (getBidEngine() === "redis") {
+      const actor = requireAuthenticatedUser(req);
+      const idempotencyKey = req.header("Idempotency-Key")?.trim();
+      if (!idempotencyKey) return res.status(400).json({ code: "IDEMPOTENCY_KEY_REQUIRED", message: "Idempotency-Key is required" });
+      await new MutateAuctionUseCase().cancel({
+        productId: Number(id),
+        actorId: actor.user_id,
+        actorRole: actor.role,
+        idempotencyKey,
+        correlationId: req.header("x-request-id") ?? undefined,
+        reason: "admin soft delete",
+      });
+    } else {
+      await ProductsService.deleteProductById(Number(id));
+    }
     res.json({ code: "success", message: "Deleted product successfully" });
   } catch (error) {
     res.json({ code: "error", message: "An error occurred while deleting product" });

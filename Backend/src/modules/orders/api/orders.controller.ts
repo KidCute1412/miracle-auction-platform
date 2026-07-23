@@ -2,11 +2,14 @@ import { Request, Response } from "express";
 import * as orderUseCase from "../application/order.use-case.ts";
 import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 import type { CreateOrderData } from "../application/order.use-case.ts";
+import type { CreateOrderRequest } from "api-contracts";
+import { OrderDomainError } from "../domain/order.errors.ts";
 
 // Handle order creation
 export async function createOrder(req: AccountRequest, res: Response) {
   try {
-    const data: CreateOrderData = { ...req.body, user_id: requireAuthenticatedUser(req).user_id };
+    const input = res.locals.validated?.body as CreateOrderRequest;
+    const data: CreateOrderData = { ...input, user_id: requireAuthenticatedUser(req).user_id };
     const file = req.file;
 
     await orderUseCase.createOrder(data, file);
@@ -15,9 +18,11 @@ export async function createOrder(req: AccountRequest, res: Response) {
       message: "Invoice created successfully",
     });
   } catch (error) {
-    return res.status(500).json({
+    const status = error instanceof OrderDomainError ? error.statusCode : 500;
+    return res.status(status).json({
       status: "error",
-      message: "Error creating order",
+      code: error instanceof OrderDomainError ? error.code : "INTERNAL_ERROR",
+      message: error instanceof OrderDomainError ? error.message : "Error updating winner order",
     });
   }
 }

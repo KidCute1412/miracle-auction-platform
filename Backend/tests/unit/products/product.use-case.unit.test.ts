@@ -53,7 +53,16 @@ describe("product use cases", () => {
   it("uploads product images and normalizes numeric form fields", async () => {
     await useCase.postNewProduct({ product_name: "Watch", step_price: "10", start_price: "100", buy_now_price: "200", cat2_id: "3", start_time: "start", end_time: "end", description: "desc", auto_extended: "true" }, [{ path: "one.png" }] as Express.Multer.File[], 7);
     expect(unlinkSync).toHaveBeenCalledWith("one.png");
-    expect(repo.postNewProduct).toHaveBeenCalledWith(expect.objectContaining({ seller_id: 7n, step_price: 10, current_price: 100, cat2_id: 3n, auto_extended: true, product_images: ["https://image.test/product.png"] }));
+    expect(repo.postNewProduct).toHaveBeenCalledWith(expect.objectContaining({
+      seller_id: 7n,
+      step_price: 10n,
+      current_price: 100n,
+      cat2_id: 3n,
+      bid_turns: 0n,
+      auto_extended: true,
+      auction_status: "PENDING",
+      product_images: ["https://image.test/product.png"],
+    }));
   });
 
   it("selects each dashboard product list and rejects an unknown type", async () => {

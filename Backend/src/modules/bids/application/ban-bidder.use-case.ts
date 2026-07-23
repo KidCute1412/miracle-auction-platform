@@ -3,6 +3,10 @@ import { assertBanAuthority } from "../domain/auction.policy.ts";
 import { BidDomainError } from "../domain/bid.errors.ts";
 import { addBidOutboxEvent } from "../infrastructure/bid-outbox.repository.ts";
 import { BidRepository } from "../infrastructure/bid.repository.ts";
+import { randomUUID } from "node:crypto";
+import { getBidEngine } from "./bid-engine.ts";
+import { redisAuctionAuthority } from "../infrastructure/redis/redis-auction.authority.ts";
+import type { AuctionMutationData } from "../infrastructure/redis/redis-auction.types.ts";
 const bids = new BidRepository();
 export class BanBidderUseCase {
   async execute(
@@ -10,7 +14,21 @@ export class BanBidderUseCase {
     productId: number,
     bannedUserId: number,
     reason: string,
-  ): Promise<{ status: "success"; data: { product_id: number; banned_user_id: number } }> {
+    idempotencyKey: string,
+    correlationId: string = randomUUID(),
+  ): Promise<{ status: "success"; data: { product_id: number; banned_user_id: number } | AuctionMutationData }> {
+    if (getBidEngine() === "redis") {
+      return redisAuctionAuthority.mutate({
+        operation: "BAN",
+        productId,
+        actorId: actor.userId,
+        actorRole: actor.role,
+        targetUserId: bannedUserId,
+        reason,
+        idempotencyKey,
+        correlationId,
+      });
+    }
     return prisma.$transaction(async (tx) => {
       const auction = await bids.lockAuction(tx, productId);
       if (!auction) throw new BidDomainError("Product not found");

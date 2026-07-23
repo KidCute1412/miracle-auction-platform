@@ -11,29 +11,45 @@ export interface LegacyMessageError { message: string; }
 
 export interface BidRequest {
   product_id: number;
-  max_price: number;
+  max_price: string;
   /** @deprecated Kept for clients released before max_price became canonical. */
-  bid_price?: number;
+  bid_price?: string;
 }
-export interface BuyNowRequest { product_id: number; buy_price: number; }
+export interface BuyNowRequest { product_id: number; buy_price: string; }
 export interface BidHistoryQuery { product_id: number; }
 export interface BanBidderRequest { product_id: number; banned_user_id: number; reason: string; }
+export interface CancelAuctionRequest { reason?: string; }
 
 export interface BidHistoryItem {
   bidding_id: number;
   user_id: number;
   product_id: number;
-  max_price: number;
-  product_price: number;
+  max_price: string;
+  product_price: string;
   price_owner_id: number;
   created_at: string;
   username: string;
   price_owner_username: string;
 }
-export interface BidSuccessResponse extends LegacyStatusSuccess {}
-export interface BuyNowSuccessResponse extends LegacyStatusSuccess { order_id: number | string; end_time: string; }
+export interface AuctionMutationData {
+  event_id: string;
+  product_id: string;
+  current_price: string;
+  leader_id: string | null;
+  end_time_ms: string;
+  sequence: string;
+  version: string;
+  order_id: string | null;
+}
+export interface BidSuccessResponse extends LegacyStatusSuccess { data?: AuctionMutationData; }
+export interface BuyNowSuccessResponse extends LegacyStatusSuccess {
+  order_id?: string;
+  end_time?: string;
+  data?: AuctionMutationData;
+}
 export interface BidHistoryResponse extends LegacyStatusSuccess { data: BidHistoryItem[]; isSeller: boolean; }
 export interface BanBidderResponse extends LegacyStatusSuccess { data: unknown; }
+export interface CancelAuctionResponse extends LegacyStatusSuccess { data: unknown; }
 export type BidSocketEvent = { data: unknown };
 
 export interface PaginationQuery { page?: number; limit?: number; }
@@ -73,21 +89,22 @@ export interface ProductQuestionQuery { page?: number; limit?: number; }
 export interface ProductLoveRequest { love_status: boolean; }
 export interface ProductQuestionRequest { content: string; question_parent_id?: number | null; }
 export interface ProductDescriptionRequest { description: string; }
-export interface ProductRecord { product_id: number | string; product_name?: string; product_images?: string[]; current_price?: number; [key: string]: unknown; }
+export interface ProductRecord { product_id: number | string; product_name?: string; product_images?: string[]; current_price?: string; [key: string]: unknown; }
 export interface ProductListResponse { message?: string; status?: "success"; data: ProductRecord[]; numberOfPages?: number; quantity?: number; }
 export interface ProductDetailResponse extends LegacyStatusSuccess { data: ProductRecord; }
 export interface ProductStatusResponse extends LegacyStatusSuccess { message?: string; }
 
-export interface CreateOrderRequest { product_id: number; shipping_address?: string; phone_number?: string; }
+export interface CreateOrderRequest { public_order_id: string; shipping_address?: string; phone_number?: string; }
 export interface OrderQuery { product_id: number; }
 export type OrderStatus = "pending" | "finished" | "rejected";
 export interface OrderRecord {
   order_id: number | string;
+  public_order_id: string;
   product_id: number | string;
   order_status?: OrderStatus;
   product_name?: string;
   product_images?: string[];
-  buy_now_price?: number;
+  buy_now_price?: string;
   end_time?: string;
   payment_proof_image_url?: string;
   payment_proof_image?: string;
@@ -105,7 +122,7 @@ export interface SellerOrderRecord extends OrderRecord {
   product_id: number;
   product_name: string;
   product_images: string[];
-  buy_now_price: number;
+  buy_now_price: string;
   end_time: string;
   payment_proof_image_url: string;
   phone_number: string;

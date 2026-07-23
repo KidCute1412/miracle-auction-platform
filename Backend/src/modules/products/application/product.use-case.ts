@@ -13,6 +13,9 @@ import {
 } from "@/helpers/mail.helper.ts";
 import type { Prisma } from "@prisma/client";
 import type { ProductFilter, ProductRow } from "../infrastructure/product.repository.ts";
+import { parseMoneyVnd } from "@/modules/bids/domain/money.ts";
+import { getBidEngine } from "@/modules/bids/application/bid-engine.ts";
+import { bootstrapRedisAuction } from "@/modules/bids/infrastructure/redis/redis-auction.bootstrap.ts";
 
 export type NewProductRequest = {
   product_name: string;
@@ -88,20 +91,24 @@ export async function postNewProduct(reqBody: NewProductRequest, files: Express.
   const newProductData: Prisma.productsUncheckedCreateInput = {
     product_name: reqBody.product_name,
     seller_id: BigInt(user_id),
-    step_price: Number(reqBody.step_price),
-    start_price: Number(reqBody.start_price),
-    buy_now_price: Number(reqBody.buy_now_price),
-    current_price: Number(reqBody.start_price),
+    step_price: parseMoneyVnd(String(reqBody.step_price), "step_price"),
+    start_price: parseMoneyVnd(String(reqBody.start_price), "start_price"),
+    buy_now_price: parseMoneyVnd(String(reqBody.buy_now_price), "buy_now_price"),
+    current_price: parseMoneyVnd(String(reqBody.start_price), "start_price"),
     cat2_id: BigInt(reqBody.cat2_id),
     start_time: reqBody.start_time,
-    bid_turns: 0,
+    bid_turns: 0n,
     end_time: reqBody.end_time,
     description: reqBody.description,
     auto_extended: reqBody.auto_extended === true || reqBody.auto_extended === "true",
     product_images: imageUrls,
+    auction_status: new Date(reqBody.start_time).getTime() <= Date.now() ? "ACTIVE" : "PENDING",
   };
 
-  await ProductsModel.postNewProduct(newProductData);
+  const product = await ProductsModel.postNewProduct(newProductData);
+  if (getBidEngine() === "redis" && product?.product_id !== undefined) {
+    await bootstrapRedisAuction(Number(product.product_id));
+  }
 }
 
 // Retrieve dashboard listings by categories (won, sold, selling, inventory)

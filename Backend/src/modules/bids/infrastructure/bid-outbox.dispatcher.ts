@@ -23,10 +23,6 @@ export async function dispatchBidOutbox(limit = 25): Promise<number> {
   for (const event of claimed) {
     try {
       const productId = Number(event.aggregate_id);
-      if (socketEventTypes.has(event.event_type)) {
-        const product = await prisma.products.findUnique({ where: { product_id: BigInt(productId) } });
-        emitBidUpdate(productId, { data: product });
-      }
       await publishBidEventStrict(event.aggregate_id, {
         id: Number(event.id),
         type: event.event_type,
@@ -35,6 +31,10 @@ export async function dispatchBidOutbox(limit = 25): Promise<number> {
         payload: event.payload,
         timestamp: new Date().toISOString(),
       });
+      if (socketEventTypes.has(event.event_type)) {
+        const product = await prisma.products.findUnique({ where: { product_id: BigInt(productId) } });
+        emitBidUpdate(productId, { data: product });
+      }
       await prisma.auction_outbox.updateMany({
         where: { id: event.id, delivered_at: null },
         data: { delivered_at: new Date(), last_error: null },

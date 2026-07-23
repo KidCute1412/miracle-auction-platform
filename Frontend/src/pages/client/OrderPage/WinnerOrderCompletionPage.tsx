@@ -18,6 +18,7 @@ import {
 import { orderService } from "@/services/order.service.ts";
 import { productService } from "@/services/product.service.ts";
 import { useAuth } from "@/routes/ProtectedRouter.tsx";
+import type { OrderRecord } from "api-contracts";
 
 type ProductInfo = {
   product_id: number;
@@ -42,7 +43,7 @@ export default function WinnerOrderCompletionPage() {
   const navigate = useNavigate();
   const [orderInfo, setOrderInfo] = useState<ProductInfo | null>(null);
   const [infoUser, setInfoUser] = useState<any>(null);
-  const [orderData, setOrderData] = useState<any>(null);
+  const [orderData, setOrderData] = useState<OrderRecord | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentProofImage, setPaymentProofImage] = useState<File | null>(null);
   const [paymentProofPreview, setPaymentProofPreview] = useState<string>("");
@@ -77,7 +78,7 @@ export default function WinnerOrderCompletionPage() {
         if (orderDataResult.status === "success" && orderDataResult.data) {
           setOrderData(orderDataResult.data);
           if (orderDataResult.data.order_status === "pending") {
-            setCurrentStep(2);
+            setCurrentStep(orderDataResult.data.payment_proof_image_url ? 2 : 1);
             if (orderDataResult.data.payment_proof_image_url) {
               setPaymentProofPreview(orderDataResult.data.payment_proof_image_url);
             }
@@ -166,7 +167,11 @@ export default function WinnerOrderCompletionPage() {
 
     try {
       const formData = new FormData();
-      formData.append("product_id", product_id!);
+      if (!orderData?.public_order_id) {
+        toast.error("The auction order is not ready yet");
+        return;
+      }
+      formData.append("public_order_id", orderData.public_order_id);
       formData.append("phone_number", phoneNumber.trim());
       formData.append("shipping_address", address.trim());
       formData.append("payment_proof", paymentProofImage);

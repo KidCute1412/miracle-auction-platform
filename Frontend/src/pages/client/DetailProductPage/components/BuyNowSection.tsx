@@ -6,10 +6,11 @@ import { useAuth } from "@/routes/ProtectedRouter";
 import { cn } from "@/lib/utils";
 import { bidService } from "@/services/bid.service.ts";
 import { ApiClientError } from "@/services/api.client.ts";
+import { formatVnd } from "@/lib/money.ts";
 
 interface BuyNowSectionProps {
   product_id?: number;
-  buy_now_price?: number;
+  buy_now_price?: string | number;
   product_name?: string;
   setProduct?: Function;
 }
@@ -37,7 +38,7 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name 
     try {
       const data = await bidService.buyNow({
         product_id: product_id,
-        buy_price: buy_now_price,
+        buy_price: String(buy_now_price),
       });
 
       if (data.status === "success") setShowSuccessOverlay(true);
@@ -77,7 +78,7 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name 
             <span className="text-xs font-semibold text-rose-500">Buy Now Price</span>
           </div>
           <p className="text-xl font-bold text-rose-500 mb-2 font-heading">
-            {buy_now_price.toLocaleString()} VND
+            {formatVnd(buy_now_price)} VND
           </p>
           <div className="space-y-0.5 text-xs text-muted-foreground">
             <p>• No bidding required</p>
@@ -206,7 +207,7 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name 
             </h3>
 
             <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-              Congratulations! You have successfully purchased <strong className="text-foreground">{product_name}</strong> for <strong className="text-rose-500 font-heading">{buy_now_price.toLocaleString()} VND</strong>.
+              Congratulations! You have successfully purchased <strong className="text-foreground">{product_name}</strong> for <strong className="text-rose-500 font-heading">{formatVnd(buy_now_price)} VND</strong>.
             </p>
 
             {/* Asset Details */}

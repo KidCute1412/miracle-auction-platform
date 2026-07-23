@@ -16,6 +16,8 @@ model bidding_ban_user {
   reason     String?
   products   products? @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
   users      users?    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([product_id, user_id], map: "bidding_ban_user_product_user_unique")
 }
 
 model bidding_history {
@@ -23,12 +25,17 @@ model bidding_history {
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   product_id     BigInt
   user_id        Int
-  max_price      Float?
-  product_price  Float?
+  max_price      BigInt?
+  product_price  BigInt?
   price_owner_id BigInt?
   status         String?
+  event_id       String?  @unique @db.Uuid
+  sequence       BigInt?
+  version        BigInt?
   products       products @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction)
   users          users    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([product_id, sequence], map: "bidding_history_product_sequence_unique")
 }
 
 model categories {
@@ -72,9 +79,11 @@ model love_products {
 
 model orders {
   order_id                 BigInt    @id @default(autoincrement())
+  public_order_id          String    @unique @default(uuid()) @db.Uuid
   created_at               DateTime  @default(now()) @db.Timestamptz(6)
   user_id                  Int
   product_id               BigInt?
+  auction_sequence         BigInt?
   order_status             String?   @default("pending")
   shipping_address         String?
   phone_number             String?
@@ -82,6 +91,8 @@ model orders {
   shipping_label_image_url String?
   products                 products? @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
   users                    users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([product_id], map: "orders_one_per_product_unique")
 }
 
 model otp_codes {
@@ -110,10 +121,10 @@ model products {
   created_at             DateTime                 @default(now()) @db.Timestamptz(6)
   product_name           String?                  @db.VarChar
   seller_id              BigInt
-  step_price             Float?
-  start_price            Float?
-  current_price          Float?
-  buy_now_price          Float?
+  step_price             BigInt?
+  start_price            BigInt?
+  current_price          BigInt?
+  buy_now_price          BigInt?
   price_owner_id         BigInt?
   bid_turns              BigInt?                  @default(0)
   start_time             DateTime?                @db.Timestamptz(6)
@@ -126,6 +137,9 @@ model products {
   edited_at              DateTime?                @db.Timestamptz(6)
   fts                    Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, remove_accents((product_name)::text))"))
   auction_end_email_sent Boolean?                 @default(false)
+  auction_status         String                   @default("PENDING") @db.VarChar(16)
+  auction_version        BigInt                   @default(0)
+  auction_sequence       BigInt                   @default(0)
   bidding_ban_user       bidding_ban_user[]
   bidding_history        bidding_history[]
   love_products          love_products[]
@@ -152,6 +166,7 @@ model bid_idempotency {
 
 model auction_outbox {
   id            BigInt    @id @default(autoincrement())
+  event_id      String    @unique @default(uuid()) @db.Uuid
   event_type    String    @db.VarChar(100)
   event_version Int
   aggregate_id  String    @db.VarChar(64)
@@ -163,6 +178,31 @@ model auction_outbox {
   created_at    DateTime  @default(now()) @db.Timestamptz(6)
 
   @@index([delivered_at, available_at, id], map: "auction_outbox_pending_idx")
+}
+
+model auction_processed_events {
+  event_id       String   @id @db.Uuid
+  redis_entry_id String   @unique @db.VarChar(64)
+  product_id     BigInt
+  sequence       BigInt
+  version        BigInt
+  processed_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([product_id, sequence], map: "auction_processed_product_sequence_unique")
+}
+
+model auction_transitions {
+  id         BigInt   @id @default(autoincrement())
+  event_id   String   @unique @db.Uuid
+  product_id BigInt
+  event_type String   @db.VarChar(64)
+  sequence   BigInt
+  version    BigInt
+  payload    Json
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([product_id, sequence], map: "auction_transition_product_sequence_unique")
+  @@index([product_id, version], map: "auction_transition_product_version_idx")
 }
 
 model upgrade_to_sellers {

@@ -3,22 +3,33 @@ import { prisma } from "@/infrastructure/database/prisma.client.ts";
 
 export type CreateOrderInput = {
   user_id: number;
-  product_id: number;
+  public_order_id: string;
   shipping_address?: string;
   phone_number?: string;
   payment_proof_image_url?: string;
 };
 
-// Create a new order in the database
-export async function createOrder(data: CreateOrderInput) {
-  return prisma.orders.create({
-    data: {
+// Checkout enriches the unique order created by the auction projector.
+export async function updateWinnerOrder(data: CreateOrderInput) {
+  const updated = await prisma.orders.updateMany({
+    where: {
+      public_order_id: data.public_order_id,
       user_id: data.user_id,
-      product_id: BigInt(data.product_id),
+      order_status: "pending",
+    },
+    data: {
       shipping_address: data.shipping_address,
       phone_number: data.phone_number,
       payment_proof_image_url: data.payment_proof_image_url,
     },
+  });
+  if (updated.count !== 1) throw new Error("Winner order was not found or is not pending");
+}
+
+export async function getPendingWinnerOrder(publicOrderId: string, userId: number) {
+  return prisma.orders.findFirst({
+    where: { public_order_id: publicOrderId, user_id: userId, order_status: "pending" },
+    select: { public_order_id: true },
   });
 }
 

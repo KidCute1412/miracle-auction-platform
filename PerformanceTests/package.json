@@ -1,14 +1,13 @@
 {
-  "name": "performancetests",
+  "name": "online-auction-performance-tests",
   "version": "1.0.0",
-  "description": "Thư mục này chứa kịch bản kiểm thử tải (Stress Test) và đồng thời (Concurrency Test) cho chức năng đặt giá đấu (`POST /api/bid/play`) để kiểm tra xem hệ thống có bị lag, sập hoặc sai sót dữ liệu khi có hàng nghìn lượt đặt giá hay không.",
-  "main": "bidding_stress_test.js",
+  "private": true,
+  "type": "module",
+  "description": "Repeatable local k6 comparison for PostgreSQL and Redis bidding engines.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "tokens": "node generate_tokens.js",
+    "compare": "node compare-results.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3"

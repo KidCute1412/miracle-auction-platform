@@ -18,6 +18,7 @@ services:
     container_name: online-auction-redis
     ports:
       - "16379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
     volumes:
       - redis_data:/data
 

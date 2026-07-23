@@ -22,13 +22,14 @@ export async function createAuction(sellerId: number, overrides: Partial<{ curre
     data: {
       product_name: "Test auction",
       seller_id: BigInt(sellerId),
-      start_price: overrides.start_price ?? 100,
-      current_price: overrides.current_price ?? 100,
-      step_price: overrides.step_price ?? 10,
-      buy_now_price: overrides.buy_now_price ?? null,
+      start_price: BigInt(overrides.start_price ?? 100),
+      current_price: BigInt(overrides.current_price ?? 100),
+      step_price: BigInt(overrides.step_price ?? 10),
+      buy_now_price: overrides.buy_now_price === null || overrides.buy_now_price === undefined ? null : BigInt(overrides.buy_now_price),
       start_time: new Date(Date.now() - 60_000),
       end_time: new Date(Date.now() + 60 * 60_000),
       product_images: [],
+      auction_status: "ACTIVE",
     },
   });
 }

@@ -53,7 +53,7 @@ describe("auction end mail use cases", () => {
       { product_id: 1n, product_name: "Watch", current_price: 120, price_owner_id: 2n, seller_id: 3n },
       { product_id: 2n, product_name: null, current_price: 10, price_owner_id: null, seller_id: 3n },
     ]);
-    await expect(getExpiredProductsNeedingEmail(10)).resolves.toEqual([{ product_id: 1, product_name: "Watch", current_price: 120, price_owner_id: 2, seller_id: 3 }]);
+    await expect(getExpiredProductsNeedingEmail(10)).resolves.toEqual([{ product_id: 1, product_name: "Watch", current_price: 120n, price_owner_id: 2, seller_id: 3 }]);
   });
 
   it("marks a product as notified and reports database failure", async () => {

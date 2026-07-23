@@ -11,25 +11,23 @@ const __dirname = path.dirname(__filename);
 // Load environment configurations from Backend folder
 dotenv.config({ path: path.join(__dirname, '../Backend/.env') });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'THANHTIEN';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error("Backend JWT_SECRET is required");
 
 // Array of mock user ids for local testing
-const testUsers = [
-  { user_id: 1, role: 'bidder' },
-  { user_id: 2, role: 'bidder' },
-  { user_id: 3, role: 'bidder' },
-  { user_id: 4, role: 'bidder' },
-  { user_id: 5, role: 'bidder' }
-];
+const testUsers = Array.from({ length: 200 }, (_, index) => ({
+  user_id: index + 2,
+  role: "user",
+  auth_version: 0,
+}));
 
-console.log(`Using JWT_SECRET: "${JWT_SECRET}"`);
 console.log('Generating test JWT tokens...');
 
 const tokens = testUsers.map(user => {
   const token = jwt.sign(
-    { user_id: user.user_id, role: user.role },
+    { user_id: user.user_id, role: user.role, auth_version: user.auth_version },
     JWT_SECRET,
-    { expiresIn: '1d' }
+    { algorithm: "HS256", issuer: "online-auction", audience: "online-auction-api", expiresIn: "1d" }
   );
   return {
     user_id: user.user_id,

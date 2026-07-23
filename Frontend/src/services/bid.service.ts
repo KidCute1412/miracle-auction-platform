@@ -6,6 +6,7 @@ export const bidService = {
     return apiRequest<BidSuccessResponse, BidRequest>(`/bids`, {
       method: "POST",
       body,
+      headers: { "Idempotency-Key": crypto.randomUUID() },
     });
   },
 
@@ -17,6 +18,7 @@ export const bidService = {
     return apiRequest<BuyNowSuccessResponse, BuyNowRequest>(`/bids/purchase`, {
       method: "POST",
       body,
+      headers: { "Idempotency-Key": crypto.randomUUID() },
     });
   },
 
@@ -24,6 +26,7 @@ export const bidService = {
     return apiRequest<BanBidderResponse, BanBidderRequest>(`/bids/bans`, {
       method: "POST",
       body,
+      headers: { "Idempotency-Key": crypto.randomUUID() },
     });
   },
 };

@@ -1,23 +1,28 @@
 import * as orderRepository from "../infrastructure/order.repository.ts";
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
 import fs from "fs";
+import { OrderDomainError } from "../domain/order.errors.ts";
 
 // Create order and optionally upload payment proof image to Cloudinary
 export type CreateOrderData = {
   user_id: number;
-  product_id: number;
+  public_order_id: string;
   shipping_address?: string;
   phone_number?: string;
   payment_proof_image_url?: string;
 };
 
 export async function createOrder(data: CreateOrderData, file?: Express.Multer.File): Promise<void> {
+  const winnerOrder = await orderRepository.getPendingWinnerOrder(data.public_order_id, data.user_id);
+  if (!winnerOrder) {
+    throw new OrderDomainError("Winner order was not found or is not pending", 404, "WINNER_ORDER_NOT_FOUND");
+  }
   if (file) {
     const uploadResult = await uploadToCloudinary(file.path, "payment_proof");
     fs.unlinkSync(file.path);
     data.payment_proof_image_url = uploadResult.secure_url;
   }
-  await orderRepository.createOrder(data);
+  await orderRepository.updateWinnerOrder(data);
 }
 
 // Fetch order details

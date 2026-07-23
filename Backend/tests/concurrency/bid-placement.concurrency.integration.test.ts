@@ -15,8 +15,8 @@ describe("bid placement PostgreSQL concurrency integration", () => {
     const productId = Number(auction.product_id);
 
     const results = await Promise.allSettled([
-      new PlaceBidUseCase().execute({ userId: firstBidder.user_id, productId, maxPrice: 110 }),
-      new PlaceBidUseCase().execute({ userId: secondBidder.user_id, productId, maxPrice: 110 }),
+      new PlaceBidUseCase().execute({ userId: firstBidder.user_id, productId, maxPriceVnd: "110", idempotencyKey: "first-bid" }),
+      new PlaceBidUseCase().execute({ userId: secondBidder.user_id, productId, maxPriceVnd: "110", idempotencyKey: "second-bid" }),
     ]);
 
     // PostgreSQL may serialize the equal maxima before or after the competing
@@ -31,13 +31,13 @@ describe("bid placement PostgreSQL concurrency integration", () => {
     const outbox = await prisma.auction_outbox.findMany({ where: { aggregate_id: String(productId) } });
     expect(product.price_owner_id).not.toBeNull();
     expect(history.length).toBeGreaterThanOrEqual(committed.length);
-    expect(product.current_price).toBeGreaterThanOrEqual(100);
-    expect(product.current_price).toBeLessThanOrEqual(110);
+    expect(product.current_price).toBeGreaterThanOrEqual(100n);
+    expect(product.current_price).toBeLessThanOrEqual(110n);
     expect(history.some((entry) => entry.price_owner_id === product.price_owner_id)).toBe(true);
     expect(outbox.filter((event) => event.event_type === "bid.accepted")).toHaveLength(committed.length);
 
     const beforeRejectedAttempt = { history: history.length, outbox: outbox.length, owner: product.price_owner_id };
-    await expect(new PlaceBidUseCase().execute({ userId: firstBidder.user_id, productId, maxPrice: 110 })).rejects.toThrow("Invalid bid price");
+    await expect(new PlaceBidUseCase().execute({ userId: firstBidder.user_id, productId, maxPriceVnd: "110", idempotencyKey: "rejected-bid" })).rejects.toThrow("Invalid bid price");
     await expect(prisma.bidding_history.count({ where: { product_id: auction.product_id } })).resolves.toBe(beforeRejectedAttempt.history);
     await expect(prisma.auction_outbox.count({ where: { aggregate_id: String(productId) } })).resolves.toBe(beforeRejectedAttempt.outbox);
     await expect(prisma.products.findUniqueOrThrow({ where: { product_id: auction.product_id } })).resolves.toMatchObject({ price_owner_id: beforeRejectedAttempt.owner });

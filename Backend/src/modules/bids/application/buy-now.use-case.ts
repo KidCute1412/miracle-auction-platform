@@ -9,10 +9,26 @@ import {
   saveIdempotentResponse,
 } from "../infrastructure/bid-outbox.repository.ts";
 import { BidRepository, lockIdempotencyKey } from "../infrastructure/bid.repository.ts";
+import { parseMoneyVnd } from "../domain/money.ts";
+import { randomUUID } from "node:crypto";
+import { getBidEngine } from "./bid-engine.ts";
+import { redisAuctionAuthority } from "../infrastructure/redis/redis-auction.authority.ts";
 
 const bids = new BidRepository();
-export type BuyNowInput = { userId: number; productId: number; buyPrice: number; idempotencyKey?: string };
-export type BuyNowResult = { status: "success"; order_id: number; end_time: string };
+export type BuyNowInput = {
+  userId: number;
+  productId: number;
+  buyPriceVnd: string;
+  idempotencyKey: string;
+  correlationId?: string;
+  role?: string;
+};
+export type BuyNowResult = {
+  status: "success";
+  order_id?: string;
+  end_time?: string;
+  data?: import("../infrastructure/redis/redis-auction.types.ts").AuctionMutationData;
+};
 
 export class BuyNowUseCase {
   static async complete(
@@ -36,15 +52,27 @@ export class BuyNowUseCase {
       productId: auction.productId,
       buyerId: userId,
       orderId,
-      currentPrice: price,
+      currentPrice: price.toString(),
     });
     return { order_id: orderId, end_time: endTime.toISOString() };
   }
 
   async execute(input: BuyNowInput): Promise<BuyNowResult> {
+    if (getBidEngine() === "redis") {
+      return redisAuctionAuthority.mutate({
+        operation: "BUY_NOW",
+        productId: input.productId,
+        actorId: input.userId,
+        actorRole: input.role ?? "user",
+        amountVnd: input.buyPriceVnd,
+        idempotencyKey: input.idempotencyKey,
+        correlationId: input.correlationId ?? randomUUID(),
+      });
+    }
     return prisma.$transaction(async (tx) => {
       const operation = "buy_now";
-      const fingerprint = `${input.productId}:${input.buyPrice}`;
+      const buyPrice = parseMoneyVnd(input.buyPriceVnd, "buy_price");
+      const fingerprint = `${input.productId}:${input.buyPriceVnd}`;
       await lockIdempotencyKey(tx, operation, input.userId, input.idempotencyKey);
       const replay = await findIdempotentResponse(tx, operation, input.userId, input.idempotencyKey, fingerprint);
       if (replay) return replay as BuyNowResult;
@@ -52,7 +80,7 @@ export class BuyNowUseCase {
       if (!auction) throw new BidDomainError("Product not found");
       assertAuctionAvailable(auction);
       assertBidderCanParticipate(auction, input.userId, await bids.eligibility(tx, input.productId, input.userId));
-      assertBuyNowAvailable(auction, input.userId, input.buyPrice);
+      assertBuyNowAvailable(auction, input.userId, buyPrice);
       const response: BuyNowResult = {
         status: "success",
         ...(await BuyNowUseCase.complete(tx, auction, input.userId)),

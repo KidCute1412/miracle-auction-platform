@@ -6,6 +6,7 @@ import { useAuth } from "@/routes/ProtectedRouter";
 import Loading from "@/components/common/Loading";
 import BanBidderModal from "./BanBidderModal";
 import { bidService } from "@/services/bid.service.ts";
+import { formatVnd } from "@/lib/money.ts";
 
 type ProductType = {
   product_id: number;
@@ -17,8 +18,8 @@ export default function BidHistorySection({ product, isSeller, isExpired }: { pr
     bidding_id: number;
     user_id: number;
     username: string;
-    max_price: number;
-    product_price: number;
+    max_price: string;
+    product_price: string;
     created_at: string;
     price_owner_id: number;
     price_owner_username: string;
@@ -180,7 +181,7 @@ export default function BidHistorySection({ product, isSeller, isExpired }: { pr
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {shouldShowMaxPrice ? (
                         <span className="text-purple-500 font-semibold">
-                          {bid.max_price.toLocaleString("en-US")} VND
+                          {formatVnd(bid.max_price)} VND
                         </span>
                       ) : (
                         <span className="text-muted-foreground italic text-xs">
@@ -190,7 +191,7 @@ export default function BidHistorySection({ product, isSeller, isExpired }: { pr
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-emerald-500">
-                      {shouldShowCurrentPrice && `${bid.product_price.toLocaleString("en-US")} VND`}
+                      {shouldShowCurrentPrice && `${formatVnd(bid.product_price)} VND`}
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">

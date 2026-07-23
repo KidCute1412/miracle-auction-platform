@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 
+const formatVndForEmail = (value: number | bigint | string): string => BigInt(value).toLocaleString("vi-VN");
+
 // Create transporter once and reuse
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -48,7 +50,7 @@ export const sendMail = async (email: string, title: string, content: string): P
 interface EmailTemplateParams {
   productName: string;
   productLink: string;
-  finalPrice: number;
+  finalPrice: number | bigint;
   winnerName?: string;
   sellerName?: string;
 }
@@ -418,7 +420,7 @@ export function getBuyNowSuccessTemplate({
   buyer_username: string;
   product_name: string;
   product_link: string;
-  buy_now_price: number;
+  buy_now_price: number | bigint | string;
 }) {
   return `
     <!DOCTYPE html>
@@ -467,7 +469,7 @@ export function getBuyNowSuccessTemplate({
                                         Giá mua
                                     </p>
                                     <p style="margin: 0; color: #047857; font-size: 32px; font-weight: 700; line-height: 1.2;">
-                                        ${buy_now_price.toLocaleString('vi-VN')} VNĐ
+                                        ${formatVndForEmail(buy_now_price)} VNĐ
                                     </p>
                                 </div>
                                 
@@ -551,8 +553,8 @@ export function getBidSuccessTemplate({
   bidder_username: string;
   product_name: string;
   product_link: string;
-  max_price: number;
-  current_price: number;
+  max_price: number | bigint | string;
+  current_price: number | bigint | string;
 }) {
   return `
     <!DOCTYPE html>
@@ -602,7 +604,7 @@ export function getBidSuccessTemplate({
                                             Giá tối đa của bạn
                                         </p>
                                         <p style="margin: 0; color: #0c4a6e; font-size: 24px; font-weight: 700; line-height: 1.2;">
-                                            ${max_price.toLocaleString('vi-VN')} VNĐ
+                                            ${formatVndForEmail(max_price)} VNĐ
                                         </p>
                                     </div>
                                     
@@ -611,7 +613,7 @@ export function getBidSuccessTemplate({
                                             Giá hiện tại của sản phẩm
                                         </p>
                                         <p style="margin: 0; color: #10b981; font-size: 24px; font-weight: 700; line-height: 1.2;">
-                                            ${current_price.toLocaleString('vi-VN')} VNĐ
+                                            ${formatVndForEmail(current_price)} VNĐ
                                         </p>
                                     </div>
                                 </div>
@@ -950,7 +952,7 @@ export function sendSellerAnswerTemplate ({
 interface ProductDescriptionChangedParams {
   bidderUsername: string;
   productName: string;
-  currentPrice: number;
+  currentPrice: number | bigint;
   productUrl: string;
   changeDate: string;
 }
@@ -1049,8 +1051,8 @@ export function getProductDescriptionChangedTemplate(params: ProductDescriptionC
 interface OutbidNotificationParams {
   bidderUsername: string;
   productName: string;
-  newCurrentPrice: number;
-  yourMaxBid: number;
+  newCurrentPrice: number | bigint | string;
+  yourMaxBid: number | bigint | string;
   productUrl: string;
 }
 
@@ -1105,11 +1107,11 @@ export function getOutbidNotificationTemplate(params: OutbidNotificationParams):
         <div class="product-name">${productName}</div>
         <div class="info-row">
           <span class="info-label">Giá hiện tại</span>
-          <span class="info-value price">${newCurrentPrice.toLocaleString('vi-VN')} VNĐ</span>
+          <span class="info-value price">${formatVndForEmail(newCurrentPrice)} VNĐ</span>
         </div>
         <div class="info-row">
           <span class="info-label">Giá đặt tối đa của bạn</span>
-          <span class="info-value">${yourMaxBid.toLocaleString('vi-VN')} VNĐ</span>
+          <span class="info-value">${formatVndForEmail(yourMaxBid)} VNĐ</span>
         </div>
         <div class="info-row" style="border-bottom: none;">
           <span class="info-label">Trạng thái</span>

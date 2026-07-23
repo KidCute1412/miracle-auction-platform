@@ -3,7 +3,8 @@ import { prisma } from "../../src/infrastructure/database/prisma.client.ts";
 import { assertManagedDatabaseName, validateManagedTestDatabaseEnvironment } from "./database-safety.ts";
 
 const tables = [
-  "auction_outbox", "bid_idempotency", "orders", "bidding_history", "bidding_ban_user",
+  "auction_outbox", "auction_processed_events", "auction_transitions", "bid_idempotency",
+  "orders", "bidding_history", "bidding_ban_user",
   "product_questions", "love_products", "products", "extend_bidding_time", "otp_codes",
   "upgrade_to_sellers", "user_blacklist", "user_rating", "categories", "users",
 ] as const;

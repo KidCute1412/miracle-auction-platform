@@ -8,14 +8,20 @@ import { cn } from "@/lib/utils";
 import { bidService } from "@/services/bid.service";
 import { ApiClientError } from "@/services/api.client";
 import type { BidRequest } from "api-contracts";
+import { formatVnd, moneyBigInt } from "@/lib/money.ts";
 
-export default function PlayBidSection({ product_id, current_price, step_price, buy_now_price }: { product_id?: number; current_price?: number; step_price?: number; buy_now_price?: number }) {
+export default function PlayBidSection({ product_id, current_price, step_price, buy_now_price }: {
+  product_id?: number;
+  current_price?: string | number;
+  step_price?: string | number;
+  buy_now_price?: string | number;
+}) {
   const [isSubmit, setIsSubmit] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [bidValue, setBidValue] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
-  const [successBidAmount, setSuccessBidAmount] = useState<number>(0);
+  const [successBidAmount, setSuccessBidAmount] = useState("0");
   const [pendingBidData, setPendingBidData] = useState<BidRequest | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -47,17 +53,25 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
         {
           validator: (value: string) => {
             const numericValue = value.replace(/,/g, "");
-            return parseFloat(numericValue) >= (current_price ?? 0) + (step_price ?? 0);
+            try {
+              return BigInt(numericValue) >= moneyBigInt(current_price) + moneyBigInt(step_price);
+            } catch {
+              return false;
+            }
           },
-          errorMessage: `Bid price must be at least ${((current_price ?? 0) + (step_price ?? 0)).toLocaleString()} VND!`
+          errorMessage: `Bid price must be at least ${formatVnd(moneyBigInt(current_price) + moneyBigInt(step_price))} VND!`
         },
         {
           validator: (value: string) => {
             const numericValue = value.replace(/,/g, "");
             if (!step_price) return true;
-            return (parseFloat(numericValue) - (current_price ?? 0)) % step_price === 0;
+            try {
+              return (BigInt(numericValue) - moneyBigInt(current_price)) % moneyBigInt(step_price) === 0n;
+            } catch {
+              return false;
+            }
           },
-          errorMessage: `Bid price must be a multiple of the step price (${step_price?.toLocaleString()} VND)!`
+          errorMessage: `Bid price must be a multiple of the step price (${formatVnd(step_price)} VND)!`
         },
       ]  
     )
@@ -68,7 +82,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
       
       setPendingBidData({
         product_id: product_id,
-        max_price: parseFloat(maxPriceSubmit)
+        max_price: maxPriceSubmit,
       });
       setShowConfirmModal(true);
     });
@@ -107,16 +121,17 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
   };
 
   const getSuggestedPrices = () => {
-    const minBid = (current_price ?? 0);
+    const minBid = moneyBigInt(current_price);
+    const step = moneyBigInt(step_price);
     const multipliers = [1, 2, 3, 4, 5, 10, 12, 15, 17, 20, 25, 30, 35, 38, 40];
     return multipliers.map(mult => ({
-      price: minBid + (step_price ?? 0) * mult,
+      price: minBid + step * BigInt(mult),
       multiplier: mult
     }));
   };
 
-  const handleSuggestionClick = (price: number) => {
-    setBidValue(price.toLocaleString("en-US"));
+  const handleSuggestionClick = (price: bigint) => {
+    setBidValue(formatVnd(price));
     setShowSuggestions(false);
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 800);
@@ -146,11 +161,11 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
             <span className="text-sm font-semibold text-yellow-500">Minimum Bid</span>
           </div>
           <p className="text-2xl font-bold text-yellow-500 mb-2">
-            {((current_price ?? 0) + (step_price ?? 0)).toLocaleString()} VND
+            {formatVnd(moneyBigInt(current_price) + moneyBigInt(step_price))} VND
           </p>
           <div className="space-y-1 text-xs text-muted-foreground">
-            <p>• Current price: {current_price?.toLocaleString()} VND</p>
-            <p>• Step price: {step_price?.toLocaleString()} VND</p>
+            <p>• Current price: {formatVnd(current_price)} VND</p>
+            <p>• Step price: {formatVnd(step_price)} VND</p>
           </div>
         </div>
 
@@ -203,7 +218,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
                           className="w-full text-left px-3 py-2.5 hover:bg-muted/50 rounded-md transition-colors flex items-center justify-between group"
                         >
                           <span className="font-semibold text-foreground group-hover:text-accent">
-                            {item.price.toLocaleString("en-US")} VND
+                            {formatVnd(item.price)} VND
                           </span>
                           <div className="flex items-center gap-2">
                             {item.multiplier === 1 && (
@@ -290,11 +305,11 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/5 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out"></div>
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Your Bid Amount</p>
                 <p className="text-3xl font-extrabold text-accent font-heading">
-                  {pendingBidData.max_price.toLocaleString()} VND
+                  {formatVnd(pendingBidData.max_price)} VND
                 </p>
               </div>              
               {/* Warning if bid exceeds buy_now_price */}
-              {buy_now_price && pendingBidData.max_price > buy_now_price && (
+              {buy_now_price && moneyBigInt(pendingBidData.max_price) > moneyBigInt(buy_now_price) && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -303,7 +318,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
                         Bid amount exceeds buy now price!
                       </p>
                       <p className="text-xs text-muted-foreground mb-2">
-                        Your bid amount (<strong>{pendingBidData.max_price.toLocaleString()} VND</strong>) is higher than the buy now price (<strong>{buy_now_price.toLocaleString()} VND</strong>).
+                        Your bid amount (<strong>{formatVnd(pendingBidData.max_price)} VND</strong>) is higher than the buy now price (<strong>{formatVnd(buy_now_price)} VND</strong>).
                       </p>
                       <p className="text-xs text-muted-foreground">
                         You will win this auction and purchase the product at the buy now price.
@@ -368,7 +383,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
             </h3>
 
             <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-              Your maximum bid of <strong className="text-foreground">{successBidAmount.toLocaleString()} VND</strong> has been registered successfully on our platform.
+              Your maximum bid of <strong className="text-foreground">{formatVnd(successBidAmount)} VND</strong> has been registered successfully on our platform.
             </p>
 
             {/* Inner certificate-like box */}

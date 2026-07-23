@@ -11,7 +11,7 @@ import { slugify } from "@/helpers/slug.helper.ts";
 interface Product {
   product_id: number;
   product_name: string;
-  current_price: number;
+  current_price: bigint;
   price_owner_id: number | null;
   seller_id: number;
 }
@@ -234,7 +234,7 @@ export const getExpiredProductsNeedingEmail = async (limit: number = 50): Promis
       .map((product) => ({
         product_id: Number(product.product_id),
         product_name: product.product_name as string,
-        current_price: product.current_price ?? 0,
+        current_price: BigInt(product.current_price ?? 0),
         price_owner_id: product.price_owner_id === null ? null : Number(product.price_owner_id),
         seller_id: Number(product.seller_id),
       }));
