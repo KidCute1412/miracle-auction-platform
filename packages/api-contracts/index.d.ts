@@ -133,6 +133,7 @@ export interface SellerOrderRecord extends OrderRecord {
   winner_username: string;
   winner_email: string;
 }
+
 export interface OrderDetailResponse<T extends OrderRecord = OrderRecord> { status: LegacySuccessStatus | LegacyErrorStatus; message: string; data: T | null; }
 export interface OrderStatusResponse extends LegacyStatusSuccess { message: string; }
 
