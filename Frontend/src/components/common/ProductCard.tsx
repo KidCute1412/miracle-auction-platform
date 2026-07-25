@@ -6,6 +6,7 @@ import { slugify } from "@/utils/make_slug";
 import AddToLove from "@/components/common/AddToLove";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import { useAuth } from "@/routes/ProtectedRouter";
+import { formatVnd } from "@/lib/money";
 
 type Products = {
   product_id?: number;
@@ -170,11 +171,11 @@ function ProductCard({
       <div className="relative flex-1 mx-4 w-[calc(100%-2rem)] pb-4 grid grid-cols-2 gap-2 text-xs">
         <div>
           <div className="font-semibold text-muted-foreground">Current Bid:</div>
-          <span className="text-foreground font-medium">{current_price?.toLocaleString() ?? "0"} VND</span>
+          <span className="text-foreground font-medium">{formatVnd(current_price)} VND</span>
         </div>
         <div>
           <div className="font-semibold text-muted-foreground">Buy Now:</div>
-          <span className="text-foreground font-medium">{buy_now_price?.toLocaleString() ?? "0"} VND</span>
+          <span className="text-foreground font-medium">{formatVnd(buy_now_price)} VND</span>
         </div>
         <div>
           <div className="font-semibold text-muted-foreground">Posted:</div>

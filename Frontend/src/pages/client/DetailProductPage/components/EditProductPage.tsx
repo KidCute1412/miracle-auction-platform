@@ -6,6 +6,7 @@ import { Package, DollarSign, Calendar, Tag, Save, ArrowLeft, Check, X } from "l
 import Loading from "@/components/common/Loading";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { productService } from "@/services/product.service.ts";
+import { formatVnd } from "@/lib/money.ts";
 
 interface ProductDetail {
   product_id: number;
@@ -216,7 +217,7 @@ export default function EditProductPage() {
                   Starting Price
                 </label>
                 <div className="bg-muted px-4 py-2 rounded-lg border border-border">
-                  <p className="text-foreground font-semibold">{product?.start_price?.toLocaleString()} VND</p>
+                  <p className="text-foreground font-semibold">{formatVnd(product?.start_price)} VND</p>
                 </div>
               </div>
               <div>
@@ -224,7 +225,7 @@ export default function EditProductPage() {
                   Current Price
                 </label>
                 <div className="bg-emerald-500/10 px-4 py-2 rounded-lg border-2 border-emerald-500/30">
-                  <p className="text-emerald-500 font-bold text-lg">{product?.current_price?.toLocaleString()} VND</p>
+                  <p className="text-emerald-500 font-bold text-lg">{formatVnd(product?.current_price)} VND</p>
                 </div>
               </div>
               <div>
@@ -232,7 +233,7 @@ export default function EditProductPage() {
                   Step Price
                 </label>
                 <div className="bg-muted px-4 py-2 rounded-lg border border-border">
-                  <p className="text-foreground font-semibold">{product?.step_price?.toLocaleString()} VND</p>
+                  <p className="text-foreground font-semibold">{formatVnd(product?.step_price)} VND</p>
                 </div>
               </div>
               <div>
@@ -240,7 +241,7 @@ export default function EditProductPage() {
                   Buy Now Price
                 </label>
                 <div className="bg-muted px-4 py-2 rounded-lg border border-border">
-                  <p className="text-foreground font-semibold">{product?.buy_now_price?.toLocaleString()} VND</p>
+                  <p className="text-foreground font-semibold">{formatVnd(product?.buy_now_price)} VND</p>
                 </div>
               </div>
             </div>

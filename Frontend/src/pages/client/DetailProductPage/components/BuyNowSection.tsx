@@ -156,7 +156,7 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name 
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-rose-500/5 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out"></div>
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Buy Now Price</p>
                 <p className="text-3xl font-extrabold text-rose-500 font-heading">
-                  {buy_now_price?.toLocaleString()} VND
+                  {formatVnd(buy_now_price)} VND
                 </p>
               </div>
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">

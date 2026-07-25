@@ -18,6 +18,7 @@ import { slugify } from "@/utils/make_slug";
 import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { productService } from "@/services/product.service.ts";
 import { categoryService } from "@/services/category.service.ts";
+import { formatVnd } from "@/lib/money.ts";
 
 type ProductType = {
   product_id: number;
@@ -236,7 +237,7 @@ function DetailProductPage() {
                   Current Price:
                 </span>
                 <span className="text-2xl font-bold text-accent">
-                  {products?.current_price?.toLocaleString()} VND
+                  {formatVnd(products?.current_price)} VND
                 </span>
               </div>
               {products?.buy_now_price && (
@@ -245,7 +246,7 @@ function DetailProductPage() {
                     Buy Now Price:
                   </span>
                   <span className="text-lg font-bold text-rose-500">
-                    {products.buy_now_price?.toLocaleString()} VND
+                    {formatVnd(products.buy_now_price)} VND
                   </span>
                 </div>
               )}
