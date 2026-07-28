@@ -62,24 +62,41 @@ function buildDatabaseUrl(container: StartedTestContainer): string {
 }
 
 async function verifyRedisAofRestart(container: StartedTestContainer): Promise<string> {
-  const redisUrl = `redis://${container.getHost()}:${container.getMappedPort(redisPort)}`;
+  const redisUrlBeforeRestart = `redis://${container.getHost()}:${container.getMappedPort(redisPort)}`;
   const redisOptions = {
     maxRetriesPerRequest: 3,
     retryStrategy: (times: number) => (times > 10 ? null : 200),
   };
-  const beforeRestart = new Redis(redisUrl, redisOptions);
+  const beforeRestart = new Redis(redisUrlBeforeRestart, redisOptions);
   beforeRestart.on("error", (error: Error) => console.error("[TEST-REDIS] error before restart:", error.message));
   await beforeRestart.set("test:aof-restart", "preserved");
   await wait(1_100);
   await beforeRestart.quit();
   await container.restart({ timeout: 30_000 });
-  const afterRestart = new Redis(redisUrl, redisOptions);
-  afterRestart.on("error", (error: Error) => console.error("[TEST-REDIS] error after restart:", error.message));
-  const value = await afterRestart.get("test:aof-restart");
-  await afterRestart.flushdb();
-  await afterRestart.quit();
-  if (value !== "preserved") throw new Error("Redis AOF restart lost an acknowledged write");
-  return redisUrl;
+  let value: string | undefined;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 15; attempt += 1) {
+    try {
+      const ping = await container.exec(["redis-cli", "PING"]);
+      if (ping.exitCode !== 0 || ping.output.trim() !== "PONG") {
+        throw new Error(`Redis readiness command failed: ${ping.output.trim()}`);
+      }
+      const persisted = await container.exec(["redis-cli", "GET", "test:aof-restart"]);
+      if (persisted.exitCode !== 0) {
+        throw new Error(`Redis persistence command failed: ${persisted.output.trim()}`);
+      }
+      value = persisted.output.trim();
+      break;
+    } catch (error: unknown) {
+      lastError = error;
+      if (attempt < 15) await wait(200);
+    }
+  }
+  if (value !== "preserved") {
+    throw new Error("Redis AOF restart lost an acknowledged write", { cause: lastError });
+  }
+  await container.exec(["redis-cli", "FLUSHDB"]);
+  return `redis://${container.getHost()}:${container.getMappedPort(redisPort)}`;
 }
 
 async function printContainerLogTail(container: StartedTestContainer): Promise<void> {

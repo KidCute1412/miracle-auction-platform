@@ -29,7 +29,6 @@ import PostProductPage from "@/pages/client/ProfilePage/components/PostProductPa
 import ProfilePage from "@/pages/client/ProfilePage/ProfilePage";
 import AdminProfilePage from "@/pages/admin/ProfilePage";
 import MyProductsPage from "@/pages/client/ProfilePage/components/MyProductsPage";
-import ListSearchProductPage from "@/pages/client/ListSearchProductPage";
 import RegisterSellerPage from "@/pages/client/ProfilePage/components/RegisterSellerPage";
 import EditProfilePage from "@/pages/client/ProfilePage/components/EditProfilePage";
 import SellerApplicationDetailPage from "@/pages/admin/SellerApplicationDetailPage";
@@ -73,7 +72,7 @@ const routers = createBrowserRouter([
       },
       {
         path: "/products/search",
-        element: <ListSearchProductPage />,
+        element: <ListProductsPage />,
       },
       {
         path: "product/:slugid",

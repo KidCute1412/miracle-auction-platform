@@ -135,7 +135,7 @@ model products {
   product_images         String[]                 @db.VarChar
   auto_extended          Boolean?                 @default(false)
   edited_at              DateTime?                @db.Timestamptz(6)
-  fts                    Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, remove_accents((product_name)::text))"))
+  fts                    Unsupported("tsvector")? @default(dbgenerated("setweight(to_tsvector('simple'::regconfig, remove_accents(COALESCE(product_name, ''::character varying)::text)), 'A'::\"char\") || setweight(to_tsvector('simple'::regconfig, remove_accents(COALESCE(description, ''::text))), 'B'::\"char\")"))
   auction_end_email_sent Boolean?                 @default(false)
   auction_status         String                   @default("PENDING") @db.VarChar(16)
   auction_version        BigInt                   @default(0)

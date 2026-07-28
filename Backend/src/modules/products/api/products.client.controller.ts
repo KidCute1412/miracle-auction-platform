@@ -5,14 +5,15 @@ import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/requ
 // Fetch paginated products catalog list under optional categories, search, price, status, and sorting filters
 export async function getProductsPageList(req: Request, res: Response) {
   try {
+    const search = (req.query.search as string) || (req.query.query as string) || "";
     const filterOptions: ProductsService.ProductCatalogFilterOptions = {
       cat1_id: req.query.cat1_id ? Number(req.query.cat1_id) : undefined,
       cat2_id: req.query.cat2_id ? Number(req.query.cat2_id) : undefined,
-      search: (req.query.search as string) || (req.query.query as string) || "",
+      search,
       min_price: req.query.min_price !== undefined && req.query.min_price !== "" ? Number(req.query.min_price) : undefined,
       max_price: req.query.max_price !== undefined && req.query.max_price !== "" ? Number(req.query.max_price) : undefined,
       status: (req.query.status as string) || "active",
-      sort_by: (req.query.sort_by as string) || "time_asc",
+      sort_by: (req.query.sort_by as string) || (search ? "relevance" : "time_asc"),
       page: req.query.page ? Number(req.query.page) : 1,
       limit: req.query.limit ? Number(req.query.limit) : 6,
       legacy_price: (req.query.price as string) || undefined,
@@ -113,29 +114,6 @@ export async function getMyProductsList(req: AccountRequest, res: Response) {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({
-      status: "error",
-      message: "Server error",
-    });
-  }
-}
-
-// Handle keyword search requests
-export async function searchProducts(req: Request, res: Response) {
-  try {
-    const query = req.query.query as string;
-    const page = parseInt(req.query.page as string) || 1;
-
-    const result = await ProductsService.searchProducts(query, page);
-    return res.status(200).json({
-      status: "success",
-      data: {
-        products: result.data,
-        total_pages: result.numberOfPages,
-        quantity: result.quantity,
-      },
-    });
-  } catch (error) {
     return res.status(500).json({
       status: "error",
       message: "Server error",

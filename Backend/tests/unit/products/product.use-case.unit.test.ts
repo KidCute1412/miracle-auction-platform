@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const repo = vi.hoisted(() => ({
   getProductsCatalogList: vi.fn(), getProductsPageList: vi.fn(), getProductNameById: vi.fn(), getProductById: vi.fn(), postNewProduct: vi.fn(),
   getMyFavoriteProducts: vi.fn(), getMySellingProducts: vi.fn(), getMySoldProducts: vi.fn(), getMyWonProducts: vi.fn(),
-  getMyBiddingProducts: vi.fn(), getMyInventoryProducts: vi.fn(), searchProducts: vi.fn(), getLoveStatus: vi.fn(),
+  getMyBiddingProducts: vi.fn(), getMyInventoryProducts: vi.fn(), getLoveStatus: vi.fn(),
   checkProductIsLoved: vi.fn(), loveProduct: vi.fn(), unloveProduct: vi.fn(), getProductQuestions: vi.fn(),
   postProductQuestion: vi.fn(), getSellerOfProduct: vi.fn(), getUserInParentQuestion: vi.fn(), getRelatedProducts: vi.fn(),
   verifyProductSeller: vi.fn(), updateProductDescription: vi.fn(), getProductDetailForWinner: vi.fn(),
@@ -75,9 +75,8 @@ describe("product use cases", () => {
     await expect(useCase.getMyProductsList("1", "unknown", 1)).resolves.toBeNull();
   });
 
-  it("searches, reports likes, and toggles a favorite only when state changes", async () => {
-    repo.searchProducts.mockResolvedValue([{ total_count: "8" }]); repo.getLoveStatus.mockResolvedValue({ is_loved: true, total_loves: "3" });
-    await expect(useCase.searchProducts(" watch ", 2)).resolves.toMatchObject({ numberOfPages: 2, quantity: 8 });
+  it("reports likes and toggles a favorite only when state changes", async () => {
+    repo.getLoveStatus.mockResolvedValue({ is_loved: true, total_loves: "3" });
     await expect(useCase.getLoveStatus(1, 2)).resolves.toEqual({ is_loved: true, total_loves: 3 });
     repo.checkProductIsLoved.mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce(true);
     await useCase.updateLoveStatus(1, 2, true);

@@ -167,18 +167,6 @@ export async function getMyProductsList(user_id: number, type: string, page: num
   };
 }
 
-// Search products using text matching with pagination
-export async function searchProducts(query: string, page: number) {
-  const limit = 6;
-  const offset = (page - 1) * limit;
-  const results = await ProductsModel.searchProducts(query.trim(), limit, offset);
-  return {
-    data: results,
-    numberOfPages: results.length > 0 ? Math.ceil(Number(results[0].total_count) / limit) : 0,
-    quantity: results.length > 0 ? Number(results[0].total_count) : 0,
-  };
-}
-
 // Retrieve favorite love count status details
 export async function getLoveStatus(user_id: number | null, product_id: number) {
   const status = await ProductsModel.getLoveStatus(user_id, product_id);

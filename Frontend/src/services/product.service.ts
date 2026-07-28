@@ -44,10 +44,6 @@ export const productService = {
     return apiRequest(`/products/me`, { params });
   },
 
-  search: async (params?: Record<string, any>): Promise<any> => {
-    return apiRequest(`/products/search`, { params });
-  },
-
   getLoveStatus: async (productId: number): Promise<any> => {
     return apiRequest(`/products/${productId}/likes`);
   },

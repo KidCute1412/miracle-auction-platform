@@ -8,7 +8,7 @@ export const getProductsQuerySchema = Joi.object({
   min_price: Joi.number().min(0).optional(),
   max_price: Joi.number().min(0).optional(),
   status: Joi.string().valid("active", "buy_now", "ended", "all").default("active").optional(),
-  sort_by: Joi.string().valid("price_asc", "price_desc", "time_asc", "time_desc", "created_desc", "bids_desc").default("time_asc").optional(),
+  sort_by: Joi.string().valid("relevance", "price_asc", "price_desc", "time_asc", "time_desc", "created_desc", "bids_desc").optional(),
   page: Joi.number().integer().min(1).default(1).optional(),
   limit: Joi.number().integer().min(1).max(50).default(6).optional(),
   // Legacy backward compatibility params

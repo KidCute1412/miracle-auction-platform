@@ -9,6 +9,16 @@ import { validateGetProductsQuery } from "./products.validate.ts";
 export const clientProductRouter = Router();
 export const adminProductRouter = Router();
 
+clientProductRouter.param("id", (_req, res, next, id) => {
+  if (!/^\d+$/.test(id)) {
+    return res.status(404).json({
+      status: "error",
+      message: "Product does not exist",
+    });
+  }
+  next();
+});
+
 // Get paginated product list (supports filter, search, and sort via query params)
 clientProductRouter.get("/", validateGetProductsQuery, clientController.getProductsPageList);
 
@@ -23,9 +33,6 @@ clientProductRouter.get("/featured/highest-price", clientController.getTopHighes
 
 // Get current user's product listings
 clientProductRouter.get("/me", verifyToken, clientController.getMyProductsList);
-
-// Search products by keyword
-clientProductRouter.get("/search", clientController.searchProducts);
 
 // Get product detail by ID
 clientProductRouter.get("/:id", justDecodeToken, clientController.getProductDetailBySlugId);

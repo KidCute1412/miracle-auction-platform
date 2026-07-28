@@ -4,7 +4,7 @@ import { callRoute, createRouteContractApp, type RouteContract } from "../suppor
 
 const client = vi.hoisted(() => {
   const ok = (handler: string) => (_req: unknown, res: Response) => res.json({ handler });
-  return { getProductsPageList: ok("getProductsPageList"), getTopEndingSoonProducts: ok("getTopEndingSoonProducts"), getTopMostBidProducts: ok("getTopMostBidProducts"), getTopHighestPriceProducts: ok("getTopHighestPriceProducts"), getMyProductsList: ok("getMyProductsList"), searchProducts: ok("searchProducts"), getProductDetailBySlugId: ok("getProductDetailBySlugId"), postNewProduct: ok("postNewProduct"), updateProductDescription: ok("updateProductDescription"), getLoveStatus: ok("getLoveStatus"), updateLoveStatus: ok("updateLoveStatus"), getProductQuestions: ok("getProductQuestions"), postProductQuestion: ok("postProductQuestion"), getProductDetailForWinner: ok("getProductDetailForWinner"), getRelatedProducts: ok("getRelatedProducts") };
+  return { getProductsPageList: ok("getProductsPageList"), getTopEndingSoonProducts: ok("getTopEndingSoonProducts"), getTopMostBidProducts: ok("getTopMostBidProducts"), getTopHighestPriceProducts: ok("getTopHighestPriceProducts"), getMyProductsList: ok("getMyProductsList"), getProductDetailBySlugId: ok("getProductDetailBySlugId"), postNewProduct: ok("postNewProduct"), updateProductDescription: ok("updateProductDescription"), getLoveStatus: ok("getLoveStatus"), updateLoveStatus: ok("updateLoveStatus"), getProductQuestions: ok("getProductQuestions"), postProductQuestion: ok("postProductQuestion"), getProductDetailForWinner: ok("getProductDetailForWinner"), getRelatedProducts: ok("getRelatedProducts") };
 });
 const admin = vi.hoisted(() => {
   const ok = (handler: string) => (_req: unknown, res: Response) => res.json({ handler });
@@ -25,7 +25,6 @@ const contracts: RouteContract[] = [
   { method: "get", path: "/products/featured/most-bids", handler: "getTopMostBidProducts" },
   { method: "get", path: "/products/featured/highest-price", handler: "getTopHighestPriceProducts" },
   { method: "get", path: "/products/me", handler: "getMyProductsList" },
-  { method: "get", path: "/products/search?q=test", handler: "searchProducts" },
   { method: "get", path: "/products/1", handler: "getProductDetailBySlugId" },
   { method: "post", path: "/products", handler: "postNewProduct", body: { product_name: "Auction" } },
   { method: "patch", path: "/products/1/description", handler: "updateProductDescription", body: { description: "Updated" } },

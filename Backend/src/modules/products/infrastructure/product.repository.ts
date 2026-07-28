@@ -25,7 +25,13 @@ const PRODUCT_COLS = "product_id, created_at, product_name, seller_id, step_pric
 const P_COLS = "p.product_id, p.created_at, p.product_name, p.seller_id, p.step_price, p.start_price, p.current_price, p.buy_now_price, p.price_owner_id, p.bid_turns, p.start_time, p.end_time, p.cat2_id, p.is_removed, p.description, p.product_images, p.auto_extended, p.edited_at, p.auction_end_email_sent, p.fts::text as fts";
 const U_COLS = "u.user_id, u.username, u.full_name, u.email, u.password, u.address, u.role, u.date_of_birth, u.rating, u.rating_count, u.created_at, u.avatar, u.status, u.auth_version, u.fts::text as fts";
 
-async function raw<T = ProductRow>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
+type RawQueryClient = Pick<Prisma.TransactionClient, "$queryRawUnsafe">;
+
+async function raw<T = ProductRow>(
+  sql: string,
+  params: unknown[] = [],
+  client: RawQueryClient = prisma,
+): Promise<{ rows: T[] }> {
   let processedSql = sql;
   processedSql = processedSql.replace(/\bu\.\*/gi, U_COLS);
   processedSql = processedSql.replace(/\bp\.\*/gi, P_COLS);
@@ -33,7 +39,7 @@ async function raw<T = ProductRow>(sql: string, params: unknown[] = []): Promise
 
   let placeholderIndex = 0;
   const parameterizedSql = processedSql.replace(/\?/g, () => `$${++placeholderIndex}`);
-  return { rows: await prisma.$queryRawUnsafe<T[]>(parameterizedSql, ...params) };
+  return { rows: await client.$queryRawUnsafe<T[]>(parameterizedSql, ...params) };
 }
 
 // Check if the product is in bidding duration
@@ -103,6 +109,7 @@ export async function getProductsCatalogList(
 ) {
   const bindings: unknown[] = [];
   const whereClauses: string[] = ["p.is_removed = false"];
+  let searchTerm: string | undefined;
 
   if (options.cat2_id) {
     whereClauses.push("p.cat2_id = ?");
@@ -130,13 +137,38 @@ export async function getProductsCatalogList(
   }
 
   if (options.search && options.search.trim() !== "") {
-    const term = options.search.trim();
-    whereClauses.push("(remove_accents(p.product_name) ILIKE ? OR p.fts @@ websearch_to_tsquery('english', remove_accents(?)))");
-    bindings.push(`%${term}%`, term);
+    searchTerm = options.search.trim();
+    const normalizedName = "remove_accents(COALESCE(p.product_name, ''))";
+    const searchClauses = [
+      "p.fts @@ websearch_to_tsquery('simple', remove_accents(?))",
+      `${normalizedName} ILIKE '%' || remove_accents(?) || '%'`,
+    ];
+    bindings.push(searchTerm, searchTerm);
+
+    // Trigrams are ineffective for one- and two-character input.
+    if (searchTerm.length >= 3) {
+      searchClauses.push(`remove_accents(?) <% ${normalizedName}`);
+      bindings.push(searchTerm);
+    }
+    whereClauses.push(`(${searchClauses.join(" OR ")})`);
   }
 
   let orderByClause = "p.end_time ASC";
-  if (options.sort_by === "price_asc" || options.legacy_price === "asc") {
+  if (searchTerm && options.sort_by === "relevance") {
+    const normalizedName = "remove_accents(COALESCE(p.product_name, ''))";
+    const fuzzyRank = searchTerm.length >= 3
+      ? ` + word_similarity(remove_accents(?), ${normalizedName})`
+      : "";
+    orderByClause = `(
+      CASE WHEN ${normalizedName} = remove_accents(?) THEN 10 ELSE 0 END
+      + CASE WHEN ${normalizedName} ILIKE remove_accents(?) || '%' THEN 5 ELSE 0 END
+      + CASE WHEN ${normalizedName} ILIKE '%' || remove_accents(?) || '%' THEN 2 ELSE 0 END
+      + (4 * ts_rank_cd(p.fts, websearch_to_tsquery('simple', remove_accents(?)), 32))
+      ${fuzzyRank}
+    ) DESC, p.end_time ASC`;
+    bindings.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    if (searchTerm.length >= 3) bindings.push(searchTerm);
+  } else if (options.sort_by === "price_asc" || options.legacy_price === "asc") {
     orderByClause = "p.current_price ASC";
   } else if (options.sort_by === "price_desc" || options.legacy_price === "desc") {
     orderByClause = "p.current_price DESC";
@@ -152,16 +184,21 @@ export async function getProductsCatalogList(
 
   bindings.push(limit, offset);
 
-  const query = await raw(
-    `SELECT p.*, u.username AS price_owner_username, count(*) OVER() AS total_count
-     FROM products p
-     LEFT JOIN users u ON p.price_owner_id = u.user_id
-     WHERE ${whereClauses.join(" AND ")}
-     ORDER BY ${orderByClause}
-     LIMIT ? OFFSET ?`,
-    bindings,
-  );
-  return query.rows;
+  const sql = `SELECT p.*, u.username AS price_owner_username, count(*) OVER() AS total_count
+    FROM products p
+    LEFT JOIN users u ON p.price_owner_id = u.user_id
+    WHERE ${whereClauses.join(" AND ")}
+    ORDER BY ${orderByClause}
+    LIMIT ? OFFSET ?`;
+
+  if (!searchTerm || searchTerm.length < 3) {
+    return (await raw(sql, bindings)).rows;
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    await transaction.$executeRawUnsafe("SET LOCAL pg_trgm.word_similarity_threshold = '0.30'");
+    return (await raw(sql, bindings, transaction)).rows;
+  });
 }
 
 // Query client products page view list (legacy positional wrapper)
@@ -293,20 +330,6 @@ export async function getProductNameById(product_id: string): Promise<string | n
 // Insert new product details
 export async function postNewProduct(productData: Prisma.productsUncheckedCreateInput) {
   return prisma.products.create({ data: productData });
-}
-
-// Search products using text index matching
-export async function searchProducts(query: string, limit: number, offset: number) {
-  const productsQuery = await raw(
-    `SELECT p.*, u.username AS price_owner_username, count(*) OVER() AS total_count
-     FROM products p
-     LEFT JOIN users u ON p.price_owner_id = u.user_id
-     WHERE p.fts @@ websearch_to_tsquery('english', remove_accents(?))
-     ORDER BY p.product_id DESC
-     LIMIT ? OFFSET ?`,
-    [query, limit, offset],
-  );
-  return productsQuery.rows;
 }
 
 // Fetch love stats details
