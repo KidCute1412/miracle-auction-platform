@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const repo = vi.hoisted(() => ({
-  getProductsPageList: vi.fn(), getProductNameById: vi.fn(), getProductById: vi.fn(), postNewProduct: vi.fn(),
+  getProductsCatalogList: vi.fn(), getProductsPageList: vi.fn(), getProductNameById: vi.fn(), getProductById: vi.fn(), postNewProduct: vi.fn(),
   getMyFavoriteProducts: vi.fn(), getMySellingProducts: vi.fn(), getMySoldProducts: vi.fn(), getMyWonProducts: vi.fn(),
   getMyBiddingProducts: vi.fn(), getMyInventoryProducts: vi.fn(), searchProducts: vi.fn(), getLoveStatus: vi.fn(),
   checkProductIsLoved: vi.fn(), loveProduct: vi.fn(), unloveProduct: vi.fn(), getProductQuestions: vi.fn(),
@@ -34,12 +34,13 @@ import * as useCase from "../../../src/modules/products/application/product.use-
 describe("product use cases", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("builds product pagination and sort parameters", async () => {
-    repo.getProductsPageList.mockResolvedValue([{ total_count: "7" }]);
-    await expect(useCase.getProductsPageList(2, 2, "asc", "desc", "watch")).resolves.toMatchObject({ numberOfPages: 2, quantity: 7 });
-    expect(repo.getProductsPageList).toHaveBeenCalledWith(2, 6, 6, ["p.current_price ASC", "p.end_time DESC"], "watch");
-    repo.getProductsPageList.mockResolvedValue([]);
-    await expect(useCase.getProductsPageList(0, 1, "", "", "")).resolves.toEqual({ data: [], numberOfPages: 0, quantity: 0 });
+  it("builds product pagination and sort parameters with catalog filter options", async () => {
+    repo.getProductsCatalogList.mockResolvedValue([{ total_count: "7" }]);
+    const filterOpts = { cat2_id: 2, page: 2, limit: 6, search: "watch", legacy_price: "asc", legacy_time: "desc" };
+    await expect(useCase.getProductsPageList(filterOpts)).resolves.toMatchObject({ numberOfPages: 2, quantity: 7 });
+    expect(repo.getProductsCatalogList).toHaveBeenCalledWith(filterOpts, 6, 6);
+    repo.getProductsCatalogList.mockResolvedValue([]);
+    await expect(useCase.getProductsPageList({ page: 1, limit: 6 })).resolves.toEqual({ data: [], numberOfPages: 0, quantity: 0 });
   });
 
   it("rejects missing products and mismatched slugs", async () => {

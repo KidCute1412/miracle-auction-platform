@@ -2,8 +2,23 @@ import { apiRequest } from "./api.client.ts";
 
 const ADMIN_PATH = import.meta.env.VITE_PATH_ADMIN;
 
+export type ProductFilterParams = {
+  cat1_id?: number | string;
+  cat2_id?: number | string;
+  search?: string;
+  min_price?: number | string;
+  max_price?: number | string;
+  status?: string;
+  sort_by?: string;
+  page?: number | string;
+  limit?: number | string;
+  price?: string;
+  time?: string;
+  query?: string;
+};
+
 export const productService = {
-  getPageList: async (params?: Record<string, any>): Promise<any> => {
+  getPageList: async (params?: ProductFilterParams): Promise<any> => {
     return apiRequest(`/products`, { params });
   },
 

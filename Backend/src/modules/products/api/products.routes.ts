@@ -4,11 +4,13 @@ import * as adminController from "./products.admin.controller.ts";
 import { verifyToken, verifyRole, justDecodeToken } from "@/middlewares/auth.middleware.ts";
 import upload from "@/helpers/uploadImage.helper.ts";
 
+import { validateGetProductsQuery } from "./products.validate.ts";
+
 export const clientProductRouter = Router();
 export const adminProductRouter = Router();
 
-// Get paginated product list (supports search and sort via query params)
-clientProductRouter.get("/", clientController.getProductsPageList);
+// Get paginated product list (supports filter, search, and sort via query params)
+clientProductRouter.get("/", validateGetProductsQuery, clientController.getProductsPageList);
 
 // Get product detail by ID
 clientProductRouter.get("/featured/ending-soon", clientController.getTopEndingSoonProducts);

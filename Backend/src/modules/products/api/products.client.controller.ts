@@ -1,36 +1,47 @@
 import { Request, Response } from "express";
-import * as ProductsService from "../application/product.use-case.ts";
+import * as ProductsService from "@/modules/products/application/product.use-case.ts";
 import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
-// Fetch paginated products list under category
+// Fetch paginated products catalog list under optional categories, search, price, status, and sorting filters
 export async function getProductsPageList(req: Request, res: Response) {
-  const cat2_id = req.query.cat2_id as string;
-  const page = parseInt(req.query.page as string) || 1;
-  const priceFilter = (req.query.price as string) || "";
-  const timeFilter = (req.query.time as string) || "";
-  const searchKeyword = (req.query.search as string) || "";
+  try {
+    const filterOptions: ProductsService.ProductCatalogFilterOptions = {
+      cat1_id: req.query.cat1_id ? Number(req.query.cat1_id) : undefined,
+      cat2_id: req.query.cat2_id ? Number(req.query.cat2_id) : undefined,
+      search: (req.query.search as string) || (req.query.query as string) || "",
+      min_price: req.query.min_price !== undefined && req.query.min_price !== "" ? Number(req.query.min_price) : undefined,
+      max_price: req.query.max_price !== undefined && req.query.max_price !== "" ? Number(req.query.max_price) : undefined,
+      status: (req.query.status as string) || "active",
+      sort_by: (req.query.sort_by as string) || "time_asc",
+      page: req.query.page ? Number(req.query.page) : 1,
+      limit: req.query.limit ? Number(req.query.limit) : 6,
+      legacy_price: (req.query.price as string) || undefined,
+      legacy_time: (req.query.time as string) || undefined,
+    };
 
-  if (!cat2_id) {
-    return res.status(400).json({ message: "cat2_id is required" });
+    const result = await ProductsService.getProductsPageList(filterOptions);
+
+    if (result === null) {
+      return res.status(500).json({ status: "error", message: "Error in fetching products" });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Success",
+      data: result.data,
+      numberOfPages: result.numberOfPages,
+      quantity: result.quantity,
+      meta: {
+        page: filterOptions.page,
+        limit: filterOptions.limit,
+        total: result.quantity,
+        totalPages: result.numberOfPages,
+      },
+    });
+  } catch (error: any) {
+    console.error("CONTROLLER ERROR STACK:", error?.stack || error);
+    return res.status(500).json({ status: "error", message: error?.message || "Server error" });
   }
-
-  const result = await ProductsService.getProductsPageList(
-    parseInt(cat2_id),
-    page,
-    priceFilter,
-    timeFilter,
-    searchKeyword,
-  );
-
-  if (result === null) {
-    return res.status(500).json({ message: "Error in fetching products" });
-  }
-  return res.status(200).json({
-    message: "Success",
-    data: result.data,
-    numberOfPages: result.numberOfPages,
-    quantity: result.quantity,
-  });
 }
 
 // Fetch detailed product row by slug and id

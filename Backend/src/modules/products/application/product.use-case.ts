@@ -1,4 +1,4 @@
-import * as ProductsModel from "../infrastructure/product.repository.ts";
+import * as ProductsModel from "@/modules/products/infrastructure/product.repository.ts";
 import * as usersModel from "@/modules/users/infrastructure/user.repository.ts";
 import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
@@ -29,37 +29,57 @@ export type NewProductRequest = {
   auto_extended?: string | boolean;
 };
 
+export type ProductCatalogFilterOptions = {
+  cat1_id?: number;
+  cat2_id?: number;
+  search?: string;
+  min_price?: number;
+  max_price?: number;
+  status?: string;
+  sort_by?: string;
+  page: number;
+  limit: number;
+  legacy_price?: string;
+  legacy_time?: string;
+};
+
 const ITEMS_PER_PAGE = 6;
 const DASHBOARD_ITEMS_PER_PAGE = 4;
 
-// Retrieve products page list with optional search and sorting filters
+// Retrieve products catalog list with flexible filtering, search, and sorting
 export async function getProductsPageList(
-  cat2_id: number,
-  page: number,
-  priceFilter: string,
-  timeFilter: string,
-  searchKeyword: string,
+  optionsOrCat2Id: number | ProductCatalogFilterOptions,
+  pageNum: number = 1,
+  priceFilter: string = "",
+  timeFilter: string = "",
+  searchKeyword: string = "",
 ) {
-  const offset = (page - 1) * ITEMS_PER_PAGE;
-  const orderBy: string[] = [];
-  if (priceFilter === "asc") {
-    orderBy.push("p.current_price ASC");
-  } else if (priceFilter === "desc") {
-    orderBy.push("p.current_price DESC");
-  }
-  if (timeFilter === "asc") {
-    orderBy.push("p.end_time ASC");
-  } else if (timeFilter === "desc") {
-    orderBy.push("p.end_time DESC");
+  let options: ProductCatalogFilterOptions;
+  if (typeof optionsOrCat2Id === "object" && optionsOrCat2Id !== null) {
+    options = optionsOrCat2Id;
+  } else {
+    options = {
+      cat2_id: optionsOrCat2Id,
+      page: pageNum,
+      limit: ITEMS_PER_PAGE,
+      search: searchKeyword,
+      legacy_price: priceFilter,
+      legacy_time: timeFilter,
+    };
   }
 
-  const results = await ProductsModel.getProductsPageList(cat2_id, ITEMS_PER_PAGE, offset, orderBy, searchKeyword);
+  const limit = options.limit || ITEMS_PER_PAGE;
+  const offset = (options.page - 1) * limit;
 
-  const numberOfPages = results.length > 0 ? Math.ceil(Number(results[0].total_count) / ITEMS_PER_PAGE) : 0;
+  const results = await ProductsModel.getProductsCatalogList(options, limit, offset);
+
+  const totalCount = results.length > 0 ? Number(results[0].total_count) : 0;
+  const numberOfPages = totalCount > 0 ? Math.ceil(totalCount / limit) : 0;
+
   return {
     data: results,
     numberOfPages,
-    quantity: results.length > 0 ? Number(results[0].total_count) : 0,
+    quantity: totalCount,
   };
 }
 

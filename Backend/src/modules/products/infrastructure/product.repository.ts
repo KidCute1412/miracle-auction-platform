@@ -93,7 +93,79 @@ export async function getProductById(product_id: number) {
   return query.rows[0] || null;
 }
 
-// Query client products page view list
+import type { ProductCatalogFilterOptions } from "../application/product.use-case.ts";
+
+// Query products catalog list with dynamic filtering, search, and sorting
+export async function getProductsCatalogList(
+  options: ProductCatalogFilterOptions,
+  limit: number,
+  offset: number,
+) {
+  const bindings: unknown[] = [];
+  const whereClauses: string[] = ["p.is_removed = false"];
+
+  if (options.cat2_id) {
+    whereClauses.push("p.cat2_id = ?");
+    bindings.push(options.cat2_id);
+  } else if (options.cat1_id) {
+    whereClauses.push("p.cat2_id IN (SELECT cat2_id FROM category_level2 WHERE cat1_id = ?)");
+    bindings.push(options.cat1_id);
+  }
+
+  if (options.min_price !== undefined) {
+    whereClauses.push("p.current_price >= ?");
+    bindings.push(options.min_price);
+  }
+  if (options.max_price !== undefined) {
+    whereClauses.push("p.current_price <= ?");
+    bindings.push(options.max_price);
+  }
+
+  if (options.status === "active") {
+    whereClauses.push("p.end_time > NOW()");
+  } else if (options.status === "buy_now") {
+    whereClauses.push("p.buy_now_price IS NOT NULL AND p.buy_now_price > 0 AND p.end_time > NOW()");
+  } else if (options.status === "ended") {
+    whereClauses.push("p.end_time <= NOW()");
+  }
+
+  if (options.search && options.search.trim() !== "") {
+    const term = options.search.trim();
+    // Pure PostgreSQL Trigram Fuzzy Search (pg_trgm + ILIKE with GIN index acceleration)
+    whereClauses.push("(remove_accents(p.product_name) % remove_accents(?) OR remove_accents(p.product_name) ILIKE ? OR p.fts @@ websearch_to_tsquery('english', remove_accents(?)))");
+    bindings.push(term, `%${term}%`, term);
+  }
+
+  let orderByClause = "p.end_time ASC";
+  if (options.sort_by === "price_asc" || options.legacy_price === "asc") {
+    orderByClause = "p.current_price ASC";
+  } else if (options.sort_by === "price_desc" || options.legacy_price === "desc") {
+    orderByClause = "p.current_price DESC";
+  } else if (options.sort_by === "time_asc" || options.legacy_time === "asc") {
+    orderByClause = "p.end_time ASC";
+  } else if (options.sort_by === "time_desc" || options.legacy_time === "desc") {
+    orderByClause = "p.end_time DESC";
+  } else if (options.sort_by === "created_desc") {
+    orderByClause = "p.created_at DESC";
+  } else if (options.sort_by === "bids_desc") {
+    orderByClause = "COALESCE(p.bid_turns, 0) DESC";
+  }
+
+  bindings.push(limit, offset);
+
+  const query = await raw(
+    `SELECT p.*, u.username AS price_owner_username, count(*) OVER() AS total_count
+     FROM products p
+     LEFT JOIN users u ON p.price_owner_id = u.user_id
+     WHERE ${whereClauses.join(" AND ")}
+     ORDER BY ${orderByClause}
+     LIMIT ? OFFSET ?`,
+    bindings,
+  );
+  return query.rows;
+}
+
+// Query client products page view list (legacy positional wrapper)
 export async function getProductsPageList(
   cat2_id: number,
   limit: number,
@@ -101,32 +173,25 @@ export async function getProductsPageList(
   orderBy: string[],
   searchKeyword: string,
 ) {
-  const sortExpressions: Record<string, string> = {
-    "p.current_price ASC": "p.current_price ASC",
-    "p.current_price DESC": "p.current_price DESC",
-    "p.end_time ASC": "p.end_time ASC",
-    "p.end_time DESC": "p.end_time DESC",
-  };
-  const safeOrderBy = orderBy.map((value) => sortExpressions[value]).filter((value): value is string => Boolean(value));
-  let searchCondition = "";
-  const bindings: unknown[] = [cat2_id];
-  if (searchKeyword && searchKeyword.trim() !== "") {
-    searchCondition = "AND p.fts @@ websearch_to_tsquery('english', remove_accents(?))";
-    bindings.push(searchKeyword);
-  }
-  bindings.push(limit, offset);
+  let legacy_price: string | undefined;
+  let legacy_time: string | undefined;
+  if (orderBy.includes("p.current_price ASC")) legacy_price = "asc";
+  else if (orderBy.includes("p.current_price DESC")) legacy_price = "desc";
+  if (orderBy.includes("p.end_time ASC")) legacy_time = "asc";
+  else if (orderBy.includes("p.end_time DESC")) legacy_time = "desc";
 
-  const query = await raw(
-    `SELECT p.*, u.username AS price_owner_username, count(*) OVER() AS total_count
-     FROM products p
-     LEFT JOIN users u ON p.price_owner_id = u.user_id
-     WHERE p.cat2_id = ? AND p.is_removed = false
-     ${searchCondition}  
-     ORDER BY ${safeOrderBy.length > 0 ? safeOrderBy.join(", ") : "p.product_id DESC"}
-     LIMIT ? OFFSET ?`,
-    bindings,
+  return getProductsCatalogList(
+    {
+      cat2_id: cat2_id || undefined,
+      search: searchKeyword,
+      page: offset / limit + 1,
+      limit,
+      legacy_price,
+      legacy_time,
+    },
+    limit,
+    offset,
   );
-  return query.rows;
 }
 
 // Fetch favorite user love products list
