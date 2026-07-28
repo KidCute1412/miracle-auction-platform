@@ -2,7 +2,8 @@ import React from "react";
 import ProductCard from "@/components/common/ProductCard";
 import PaginationComponent from "@/components/common/Pagination";
 import Loading from "@/components/common/Loading";
-import { SearchX } from "lucide-react";
+import { SearchX, RotateCcw } from "lucide-react";
+import type { ViewMode } from "./CatalogFilterBar";
 
 export type ProductItem = {
   product_id: number;
@@ -24,6 +25,7 @@ type ProductGridProps = {
   currentPage: number;
   onPageChange: (page: number) => void;
   onClearFilters?: () => void;
+  viewMode?: ViewMode;
 };
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -33,6 +35,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   currentPage,
   onPageChange,
   onClearFilters,
+  viewMode = "grid-3",
 }) => {
   if (isLoading) {
     return <Loading />;
@@ -55,8 +58,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             <button
               type="button"
               onClick={onClearFilters}
-              className="bg-accent text-accent-foreground hover:opacity-90 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-xs cursor-pointer"
+              className="bg-accent text-accent-foreground hover:opacity-90 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-xs cursor-pointer flex items-center gap-2"
             >
+              <RotateCcw className="w-4 h-4" />
               Reset All Filters
             </button>
           )}
@@ -65,10 +69,17 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     );
   }
 
+  const gridClass =
+    viewMode === "grid-4"
+      ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"
+      : viewMode === "list"
+      ? "flex flex-col gap-4"
+      : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+
   return (
     <div className="space-y-8">
       {/* Product grid container */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className={gridClass}>
         {products.map((item) => (
           <div key={item.product_id} className="flex justify-center">
             <ProductCard

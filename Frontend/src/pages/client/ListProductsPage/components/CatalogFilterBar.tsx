@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, LayoutGrid, Grid3x3, List, DollarSign } from "lucide-react";
 import SelectComponent from "@/components/common/Select";
+import { CascadingCategorySelect } from "./CascadingCategorySelect";
+import { FormattedPriceInput } from "./FormattedPriceInput";
 import type { FilterState } from "./ActiveFilterChips";
 import type { CategoryNode } from "@/hooks/useCategory";
+
+export type ViewMode = "grid-3" | "grid-4" | "list";
 
 type CatalogFilterBarProps = {
   filters: FilterState;
   categoryTree: CategoryNode[];
   onApplyFilters: (newFilters: Partial<FilterState>) => void;
   totalProductsCount: number;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
   onOpenMobileDrawer?: () => void;
 };
 
@@ -17,58 +23,33 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
   categoryTree,
   onApplyFilters,
   totalProductsCount,
+  viewMode,
+  onViewModeChange,
   onOpenMobileDrawer,
 }) => {
   const [search, setSearch] = useState(filters.search || "");
-  const [cat1, setCat1] = useState(filters.cat1_id || "");
-  const [cat2, setCat2] = useState(filters.cat2_id || "");
-  const [minPrice, setMinPrice] = useState(filters.min_price || "");
-  const [maxPrice, setMaxPrice] = useState(filters.max_price || "");
   const [status, setStatus] = useState(filters.status || "active");
   const [sortBy, setSortBy] = useState(filters.sort_by || "time_asc");
+  const [isPricePopoverOpen, setPricePopoverOpen] = useState(false);
 
   useEffect(() => {
     setSearch(filters.search || "");
-    setCat1(filters.cat1_id || "");
-    setCat2(filters.cat2_id || "");
-    setMinPrice(filters.min_price || "");
-    setMaxPrice(filters.max_price || "");
     setStatus(filters.status || "active");
     setSortBy(filters.sort_by || "time_asc");
   }, [filters]);
 
-  const selectedParentNode = cat1
-    ? categoryTree.find((c) => String(c.id) === String(cat1))
-    : undefined;
-
-  const availableSubcategories = selectedParentNode
-    ? selectedParentNode.children || []
-    : categoryTree.flatMap((c) => c.children || []);
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onApplyFilters({
-      search,
-      cat1_id: cat1,
-      cat2_id: cat2,
-      min_price: minPrice,
-      max_price: maxPrice,
-      status,
-      sort_by: sortBy,
-    });
+    onApplyFilters({ search });
   };
 
-  const handleCategory1Change = (val: string) => {
-    const selectedCat1 = val === "all" ? "" : val;
-    setCat1(selectedCat1);
-    setCat2("");
-    onApplyFilters({ cat1_id: selectedCat1, cat2_id: "" });
+  const handleCategorySelect = (cat1Id: string, cat2Id: string) => {
+    onApplyFilters({ cat1_id: cat1Id, cat2_id: cat2Id });
   };
 
-  const handleCategory2Change = (val: string) => {
-    const selectedCat2 = val === "all" ? "" : val;
-    setCat2(selectedCat2);
-    onApplyFilters({ cat2_id: selectedCat2 });
+  const handlePriceApply = (min: string, max: string) => {
+    onApplyFilters({ min_price: min, max_price: max });
+    setPricePopoverOpen(false);
   };
 
   const handleStatusChange = (newStatus: string) => {
@@ -90,22 +71,14 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
     { value: "bids_desc", content: "Most Bids" },
   ];
 
-  const cat1SelectItems = [
-    { value: "all", content: "All Categories" },
-    ...categoryTree.map((c) => ({ value: String(c.id), content: c.name })),
-  ];
-
-  const cat2SelectItems = [
-    { value: "all", content: "All Subcategories" },
-    ...availableSubcategories.map((sc) => ({ value: String(sc.id), content: sc.name })),
-  ];
+  const isPriceActive = filters.min_price !== "" || filters.max_price !== "";
 
   return (
-    <div className="bg-card border border-border/80 rounded-2xl p-4 md:p-6 shadow-sm transition-all duration-300">
+    <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-sm transition-all duration-300">
       <div className="flex flex-col gap-4">
-        {/* Row 1: Search keyword input & sort dropdown */}
+        {/* Row 1: Search keyword input & Sort & View Mode Toggles */}
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
+          <div className="relative flex-1 max-w-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <form onSubmit={handleSearchSubmit}>
               <input
@@ -117,7 +90,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-accent text-accent-foreground hover:opacity-90 cursor-pointer px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-accent text-accent-foreground hover:opacity-90 cursor-pointer px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs"
               >
                 Search
               </button>
@@ -125,7 +98,8 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-full md:w-56">
+            {/* Sort selector */}
+            <div className="w-48 sm:w-52">
               <SelectComponent
                 items={sortItems}
                 placeholder="Sort products"
@@ -134,6 +108,47 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
               />
             </div>
 
+            {/* View Density Switcher */}
+            <div className="hidden sm:flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border">
+              <button
+                type="button"
+                onClick={() => onViewModeChange("grid-3")}
+                title="3-Column Grid"
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  viewMode === "grid-3"
+                    ? "bg-accent text-accent-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewModeChange("grid-4")}
+                title="4-Column Grid"
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  viewMode === "grid-4"
+                    ? "bg-accent text-accent-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewModeChange("list")}
+                title="List View"
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  viewMode === "list"
+                    ? "bg-accent text-accent-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Mobile Filter Sheet Trigger */}
             {onOpenMobileDrawer && (
               <button
                 type="button"
@@ -147,58 +162,45 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Desktop Filter Bar Controls */}
-        <div className="hidden md:flex flex-wrap gap-3 items-center justify-between pt-2 border-t border-border/40">
+        {/* Row 2: Cascading Category Dropdown + Formatted Price Filter + Status Selector */}
+        <div className="hidden md:flex flex-wrap gap-3 items-center justify-between pt-3 border-t border-border/40">
           <div className="flex flex-wrap gap-3 items-center">
-            {/* Parent category selector */}
-            <div className="w-48">
-              <SelectComponent
-                items={cat1SelectItems}
-                placeholder="Parent Category"
-                value={cat1 || "all"}
-                setState={handleCategory1Change}
-              />
-            </div>
+            {/* Cascading Category Selector */}
+            <CascadingCategorySelect
+              categoryTree={categoryTree}
+              activeCat1Id={filters.cat1_id}
+              activeCat2Id={filters.cat2_id}
+              onSelectCategory={handleCategorySelect}
+            />
 
-            {/* Subcategory selector */}
-            <div className="w-48">
-              <SelectComponent
-                items={cat2SelectItems}
-                placeholder="Subcategory"
-                value={cat2 || "all"}
-                setState={handleCategory2Change}
-              />
-            </div>
-
-            {/* Price bounds inputs */}
-            <div className="flex items-center gap-1.5 bg-muted/30 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground">
-              <span className="text-muted-foreground font-medium">Price:</span>
-              <input
-                type="number"
-                placeholder="Min đ"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                className="w-20 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground"
-              />
-              <span className="text-muted-foreground">-</span>
-              <input
-                type="number"
-                placeholder="Max đ"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-20 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground"
-              />
+            {/* Formatted Price Filter Popover / Box */}
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => onApplyFilters({ min_price: minPrice, max_price: maxPrice })}
-                className="text-xs text-accent font-semibold hover:underline ml-1 cursor-pointer"
+                onClick={() => setPricePopoverOpen(!isPricePopoverOpen)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                  isPriceActive
+                    ? "bg-accent/15 border-accent text-accent font-bold"
+                    : "bg-muted/40 border-border text-foreground hover:bg-muted/60"
+                }`}
               >
-                Apply
+                <DollarSign className="w-3.5 h-3.5 text-accent" />
+                Price Filter
               </button>
+
+              {isPricePopoverOpen && (
+                <div className="absolute left-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl p-3 shadow-xl z-30 animate-fadeIn">
+                  <FormattedPriceInput
+                    minPrice={filters.min_price}
+                    maxPrice={filters.max_price}
+                    onApplyPrice={handlePriceApply}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Auction Status Pill Buttons */}
+          {/* Auction Status Pills */}
           <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border">
             {[
               { id: "active", label: "Active" },

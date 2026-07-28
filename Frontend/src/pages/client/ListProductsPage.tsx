@@ -5,8 +5,7 @@ import { usePreventBodyLock } from "@/hooks/usePreventBodyLock";
 import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { categoryService } from "@/services/category.service.ts";
 import { productService, type ProductFilterParams } from "@/services/product.service.ts";
-import { CategoryPillsBar } from "./ListProductsPage/components/CategoryPillsBar";
-import { CatalogFilterBar } from "./ListProductsPage/components/CatalogFilterBar";
+import { CatalogFilterBar, type ViewMode } from "./ListProductsPage/components/CatalogFilterBar";
 import { CatalogFilterDrawer } from "./ListProductsPage/components/CatalogFilterDrawer";
 import { ActiveFilterChips, type FilterState } from "./ListProductsPage/components/ActiveFilterChips";
 import { ProductGrid, type ProductItem } from "./ListProductsPage/components/ProductGrid";
@@ -22,6 +21,7 @@ export default function ListProductsPage() {
   const [products, setProducts] = useState<ProductItem[]>();
   const [isLoading, setLoading] = useState(true);
   const [isMobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid-3");
 
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get("page")) || 1);
   const [numberOfPages, setNumberOfPages] = useState(1);
@@ -169,19 +169,6 @@ export default function ListProductsPage() {
     setSearchParams(params);
   };
 
-  const handleSelectCategoryPills = (cat1Id: string, cat2Id: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("page", "1");
-
-    if (cat1Id) params.set("cat1_id", cat1Id);
-    else params.delete("cat1_id");
-
-    if (cat2Id) params.set("cat2_id", cat2Id);
-    else params.delete("cat2_id");
-
-    setSearchParams(params);
-  };
-
   const handleRemoveSingleFilter = (key: keyof FilterState) => {
     const params = new URLSearchParams(searchParams);
     params.delete(key);
@@ -204,7 +191,7 @@ export default function ListProductsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Title Header */}
+        {/* Header Title */}
         <div className="mb-6">
           <h1 className="text-3xl md:text-4xl font-heading font-extrabold text-foreground tracking-tight mb-2">
             Auction Product Catalog
@@ -214,25 +201,15 @@ export default function ListProductsPage() {
           </p>
         </div>
 
-        {/* 1-Click Category Navigation Pills Bar */}
-        {categoryTree.length > 0 && (
-          <div className="mb-6">
-            <CategoryPillsBar
-              categoryTree={categoryTree}
-              activeCat1Id={resolvedCat1Id}
-              activeCat2Id={resolvedCat2Id}
-              onSelectCategory={handleSelectCategoryPills}
-            />
-          </div>
-        )}
-
-        {/* Filter Bar & Active Filter Badges */}
+        {/* Streamlined Single Filter Bar & Active Filter Badges */}
         <div className="space-y-3 mb-8">
           <CatalogFilterBar
             filters={filterState}
             categoryTree={categoryTree}
             onApplyFilters={handleApplyFilters}
             totalProductsCount={totalQuantity}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
             onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
           />
 
@@ -262,6 +239,7 @@ export default function ListProductsPage() {
           currentPage={currentPage}
           onPageChange={handlePageChange}
           onClearFilters={handleClearAllFilters}
+          viewMode={viewMode}
         />
       </div>
     </div>
