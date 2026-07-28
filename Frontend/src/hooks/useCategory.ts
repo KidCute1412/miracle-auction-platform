@@ -6,6 +6,7 @@ export interface CategoryNode {
   id: number;
   name: string;
   slug: string;
+  cat_image?: string;
   children: CategoryNode[];
 }
 

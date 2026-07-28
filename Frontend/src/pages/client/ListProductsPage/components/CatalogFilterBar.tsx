@@ -2,22 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Search, Filter } from "lucide-react";
 import SelectComponent from "@/components/common/Select";
 import type { FilterState } from "./ActiveFilterChips";
-
-type CategoryItem = {
-  cat_id: number;
-  cat_name: string;
-};
-
-type SubCategoryItem = {
-  cat2_id: number;
-  cat2_name: string;
-  cat1_id: number;
-};
+import type { CategoryNode } from "@/hooks/useCategory";
 
 type CatalogFilterBarProps = {
   filters: FilterState;
-  categories: CategoryItem[];
-  subCategories: SubCategoryItem[];
+  categoryTree: CategoryNode[];
   onApplyFilters: (newFilters: Partial<FilterState>) => void;
   totalProductsCount: number;
   onOpenMobileDrawer?: () => void;
@@ -25,8 +14,7 @@ type CatalogFilterBarProps = {
 
 export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
   filters,
-  categories,
-  subCategories,
+  categoryTree,
   onApplyFilters,
   totalProductsCount,
   onOpenMobileDrawer,
@@ -49,13 +37,25 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
     setSortBy(filters.sort_by || "time_asc");
   }, [filters]);
 
-  const filteredSubCategories = cat1
-    ? subCategories.filter((sub) => String(sub.cat1_id) === String(cat1))
-    : subCategories;
+  const selectedParentNode = cat1
+    ? categoryTree.find((c) => String(c.id) === String(cat1))
+    : undefined;
+
+  const availableSubcategories = selectedParentNode
+    ? selectedParentNode.children || []
+    : categoryTree.flatMap((c) => c.children || []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onApplyFilters({ search, cat1_id: cat1, cat2_id: cat2, min_price: minPrice, max_price: maxPrice, status, sort_by: sortBy });
+    onApplyFilters({
+      search,
+      cat1_id: cat1,
+      cat2_id: cat2,
+      min_price: minPrice,
+      max_price: maxPrice,
+      status,
+      sort_by: sortBy,
+    });
   };
 
   const handleCategory1Change = (val: string) => {
@@ -92,12 +92,12 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
 
   const cat1SelectItems = [
     { value: "all", content: "All Categories" },
-    ...categories.map((c) => ({ value: String(c.cat_id), content: c.cat_name })),
+    ...categoryTree.map((c) => ({ value: String(c.id), content: c.name })),
   ];
 
   const cat2SelectItems = [
     { value: "all", content: "All Subcategories" },
-    ...filteredSubCategories.map((sc) => ({ value: String(sc.cat2_id), content: sc.cat2_name })),
+    ...availableSubcategories.map((sc) => ({ value: String(sc.id), content: sc.name })),
   ];
 
   return (
@@ -151,7 +151,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
         <div className="hidden md:flex flex-wrap gap-3 items-center justify-between pt-2 border-t border-border/40">
           <div className="flex flex-wrap gap-3 items-center">
             {/* Parent category selector */}
-            <div className="w-44">
+            <div className="w-48">
               <SelectComponent
                 items={cat1SelectItems}
                 placeholder="Parent Category"
@@ -161,7 +161,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
             </div>
 
             {/* Subcategory selector */}
-            <div className="w-44">
+            <div className="w-48">
               <SelectComponent
                 items={cat2SelectItems}
                 placeholder="Subcategory"

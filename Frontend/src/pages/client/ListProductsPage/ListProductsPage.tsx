@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { usePreventBodyLock } from "@/hooks/usePreventBodyLock";
 import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { categoryService } from "@/services/category.service.ts";
 import { productService, type ProductFilterParams } from "@/services/product.service.ts";
+import { CategoryPillsBar } from "./components/CategoryPillsBar";
 import { CatalogFilterBar } from "./components/CatalogFilterBar";
 import { CatalogFilterDrawer } from "./components/CatalogFilterDrawer";
 import { ActiveFilterChips, type FilterState } from "./components/ActiveFilterChips";
 import { ProductGrid, type ProductItem } from "./components/ProductGrid";
+import type { CategoryNode } from "@/hooks/useCategory";
 import { slugify } from "@/utils/make_slug";
 
 export default function ListProductsPage() {
@@ -16,8 +18,7 @@ export default function ListProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { setBreadcrumbs } = useBreadcrumb();
 
-  const [categories, setCategories] = useState<{ cat_id: number; cat_name: string }[]>([]);
-  const [subCategories, setSubCategories] = useState<{ cat2_id: number; cat2_name: string; cat1_id: number }[]>([]);
+  const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([]);
   const [products, setProducts] = useState<ProductItem[]>();
   const [isLoading, setLoading] = useState(true);
   const [isMobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -26,72 +27,95 @@ export default function ListProductsPage() {
   const [numberOfPages, setNumberOfPages] = useState(1);
   const [totalQuantity, setTotalQuantity] = useState(0);
 
+  const rawCat1 = searchParams.get("cat1_id") || "";
+  const rawCat2 = searchParams.get("cat2_id") || "";
+
+  // Auto-resolve parent Cat1 ID if URL only has cat2_id
+  let resolvedCat1Id = rawCat1;
+  const resolvedCat2Id = rawCat2;
+
+  if (rawCat2 && categoryTree.length > 0) {
+    for (const parent of categoryTree) {
+      if (parent.children?.some((c) => String(c.id) === String(rawCat2))) {
+        resolvedCat1Id = String(parent.id);
+        break;
+      }
+    }
+  }
+
   const filterState: FilterState = {
     search: searchParams.get("search") || searchParams.get("query") || "",
-    cat1_id: searchParams.get("cat1_id") || "",
-    cat2_id: searchParams.get("cat2_id") || "",
+    cat1_id: resolvedCat1Id,
+    cat2_id: resolvedCat2Id,
     min_price: searchParams.get("min_price") || "",
     max_price: searchParams.get("max_price") || "",
     status: searchParams.get("status") || "active",
     sort_by: searchParams.get("sort_by") || "time_asc",
   };
 
-  // Fetch Category level 1 & 2 definitions for dropdowns
+  // Fetch Category Tree definition
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const [cat1Res, cat2Res] = await Promise.all([
-          categoryService.getLevel1(),
-          categoryService.getLevel2NoSlug(),
-        ]);
-        if (cat1Res?.data) setCategories(cat1Res.data);
-        if (cat2Res?.data) setSubCategories(cat2Res.data);
+        const res = await categoryService.getAllClient();
+        if (res?.data) {
+          setCategoryTree(res.data);
+        }
       } catch (err) {
-        console.error("Error fetching categories:", err);
+        console.error("Error fetching category tree:", err);
       }
     };
     fetchCategories();
   }, []);
 
-  // Update Navigation Breadcrumb based on selection
+  // Sync Navigation Breadcrumb
   useEffect(() => {
-    const cat2_id = searchParams.get("cat2_id");
-    const cat1_id = searchParams.get("cat1_id");
+    if (resolvedCat2Id && categoryTree.length > 0) {
+      let cat2Name = "";
+      let cat1Name = "";
+      let cat1IdNum = 0;
 
-    if (cat2_id) {
-      categoryService.getClientCat2(Number(cat2_id))
-        .then((res) => {
-          if (res?.data) {
-            setBreadcrumbs([
-              { label: "Home", path: "/" },
-              { label: "Categories", path: "/categories" },
-              {
-                label: res.data.cat1_name,
-                path: `/categories/${slugify(res.data.cat1_name)}-${res.data.cat1_id}`,
-              },
-              { label: res.data.cat2_name, path: null },
-            ]);
-            filterState.cat2_name = res.data.cat2_name;
-            filterState.cat1_name = res.data.cat1_name;
-          }
-        })
-        .catch(() => {});
-    } else if (cat1_id && categories.length > 0) {
-      const matchCat1 = categories.find((c) => String(c.cat_id) === String(cat1_id));
+      for (const parent of categoryTree) {
+        const matchSub = parent.children?.find((c) => String(c.id) === String(resolvedCat2Id));
+        if (matchSub) {
+          cat2Name = matchSub.name;
+          cat1Name = parent.name;
+          cat1IdNum = parent.id;
+          break;
+        }
+      }
+
+      if (cat2Name && cat1Name) {
+        setBreadcrumbs([
+          { label: "Home", path: "/" },
+          { label: "Categories", path: "/categories" },
+          {
+            label: cat1Name,
+            path: `/categories/${slugify(cat1Name)}-${cat1IdNum}`,
+          },
+          { label: cat2Name, path: null },
+        ]);
+        return;
+      }
+    }
+
+    if (resolvedCat1Id && categoryTree.length > 0) {
+      const matchCat1 = categoryTree.find((c) => String(c.id) === String(resolvedCat1Id));
       if (matchCat1) {
         setBreadcrumbs([
           { label: "Home", path: "/" },
           { label: "Categories", path: "/categories" },
-          { label: matchCat1.cat_name, path: null },
+          { label: matchCat1.name, path: null },
         ]);
+        return;
       }
-    } else {
-      setBreadcrumbs([
-        { label: "Home", path: "/" },
-        { label: "Products Catalog", path: null },
-      ]);
     }
-  }, [searchParams, categories, setBreadcrumbs]);
+
+    setBreadcrumbs([
+      { label: "Home", path: "/" },
+      { label: "Products Catalog", path: null },
+    ]);
+  }, [resolvedCat1Id, resolvedCat2Id, categoryTree, setBreadcrumbs]);
 
   // Fetch product catalog items matching active filters
   const loadData = useCallback(async () => {
@@ -145,6 +169,19 @@ export default function ListProductsPage() {
     setSearchParams(params);
   };
 
+  const handleSelectCategoryPills = (cat1Id: string, cat2Id: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", "1");
+
+    if (cat1Id) params.set("cat1_id", cat1Id);
+    else params.delete("cat1_id");
+
+    if (cat2Id) params.set("cat2_id", cat2Id);
+    else params.delete("cat2_id");
+
+    setSearchParams(params);
+  };
+
   const handleRemoveSingleFilter = (key: keyof FilterState) => {
     const params = new URLSearchParams(searchParams);
     params.delete(key);
@@ -177,12 +214,23 @@ export default function ListProductsPage() {
           </p>
         </div>
 
+        {/* 1-Click Category Navigation Pills Bar */}
+        {categoryTree.length > 0 && (
+          <div className="mb-6">
+            <CategoryPillsBar
+              categoryTree={categoryTree}
+              activeCat1Id={resolvedCat1Id}
+              activeCat2Id={resolvedCat2Id}
+              onSelectCategory={handleSelectCategoryPills}
+            />
+          </div>
+        )}
+
         {/* Filter Bar & Active Filter Badges */}
         <div className="space-y-3 mb-8">
           <CatalogFilterBar
             filters={filterState}
-            categories={categories}
-            subCategories={subCategories}
+            categoryTree={categoryTree}
             onApplyFilters={handleApplyFilters}
             totalProductsCount={totalQuantity}
             onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
@@ -190,6 +238,7 @@ export default function ListProductsPage() {
 
           <ActiveFilterChips
             filters={filterState}
+            categoryTree={categoryTree}
             onRemoveFilter={handleRemoveSingleFilter}
             onClearAll={handleClearAllFilters}
           />
@@ -200,8 +249,7 @@ export default function ListProductsPage() {
           isOpen={isMobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
           filters={filterState}
-          categories={categories}
-          subCategories={subCategories}
+          categoryTree={categoryTree}
           onApplyFilters={handleApplyFilters}
           onClearAll={handleClearAllFilters}
         />

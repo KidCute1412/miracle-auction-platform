@@ -1,12 +1,11 @@
 import React from "react";
 import { X, RotateCcw } from "lucide-react";
+import type { CategoryNode } from "@/hooks/useCategory";
 
 export type FilterState = {
   search: string;
   cat1_id: string;
   cat2_id: string;
-  cat1_name?: string;
-  cat2_name?: string;
   min_price: string;
   max_price: string;
   status: string;
@@ -15,12 +14,14 @@ export type FilterState = {
 
 type ActiveFilterChipsProps = {
   filters: FilterState;
+  categoryTree: CategoryNode[];
   onRemoveFilter: (key: keyof FilterState) => void;
   onClearAll: () => void;
 };
 
 export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
   filters,
+  categoryTree,
   onRemoveFilter,
   onClearAll,
 }) => {
@@ -29,10 +30,25 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
   if (filters.search) {
     activeChips.push({ key: "search", label: `Search: "${filters.search}"` });
   }
-  if (filters.cat2_name) {
-    activeChips.push({ key: "cat2_id", label: `Subcategory: ${filters.cat2_name}` });
-  } else if (filters.cat1_name) {
-    activeChips.push({ key: "cat1_id", label: `Category: ${filters.cat1_name}` });
+
+  // Resolve Category Names from tree
+  if (filters.cat2_id && categoryTree.length > 0) {
+    let subName = "";
+    for (const parent of categoryTree) {
+      const matchSub = parent.children?.find((c) => String(c.id) === String(filters.cat2_id));
+      if (matchSub) {
+        subName = matchSub.name;
+        break;
+      }
+    }
+    if (subName) {
+      activeChips.push({ key: "cat2_id", label: `Subcategory: ${subName}` });
+    }
+  } else if (filters.cat1_id && categoryTree.length > 0) {
+    const parentNode = categoryTree.find((c) => String(c.id) === String(filters.cat1_id));
+    if (parentNode) {
+      activeChips.push({ key: "cat1_id", label: `Category: ${parentNode.name}` });
+    }
   }
 
   if (filters.min_price || filters.max_price) {
@@ -65,7 +81,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
           <button
             type="button"
             onClick={() => onRemoveFilter(chip.key)}
-            className="hover:bg-accent/20 rounded-full p-0.5 transition-colors focus:outline-none"
+            className="hover:bg-accent/20 rounded-full p-0.5 transition-colors focus:outline-none cursor-pointer"
             aria-label={`Remove filter ${chip.label}`}
           >
             <X className="w-3 h-3 text-accent" />
