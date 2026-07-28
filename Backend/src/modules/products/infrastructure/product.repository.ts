@@ -147,7 +147,7 @@ export async function getProductsCatalogList(
 
     // Trigrams are ineffective for one- and two-character input.
     if (searchTerm.length >= 3) {
-      searchClauses.push(`remove_accents(?) <% ${normalizedName}`);
+      searchClauses.push(`word_similarity(remove_accents(?), ${normalizedName}) > 0.20`);
       bindings.push(searchTerm);
     }
     whereClauses.push(`(${searchClauses.join(" OR ")})`);
