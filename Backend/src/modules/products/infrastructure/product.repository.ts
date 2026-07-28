@@ -108,7 +108,7 @@ export async function getProductsCatalogList(
     whereClauses.push("p.cat2_id = ?");
     bindings.push(options.cat2_id);
   } else if (options.cat1_id) {
-    whereClauses.push("p.cat2_id IN (SELECT cat2_id FROM category_level2 WHERE cat1_id = ?)");
+    whereClauses.push("p.cat2_id IN (SELECT id FROM categories WHERE parent_id = ?)");
     bindings.push(options.cat1_id);
   }
 
