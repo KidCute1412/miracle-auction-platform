@@ -5,7 +5,7 @@ import { usePreventBodyLock } from "@/hooks/usePreventBodyLock";
 import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { categoryService } from "@/services/category.service.ts";
 import { productService, type ProductFilterParams } from "@/services/product.service.ts";
-import { CatalogFilterBar, type ViewMode } from "./ListProductsPage/components/CatalogFilterBar";
+import { CatalogFilterBar } from "./ListProductsPage/components/CatalogFilterBar";
 import { CatalogFilterDrawer } from "./ListProductsPage/components/CatalogFilterDrawer";
 import { ActiveFilterChips, type FilterState } from "./ListProductsPage/components/ActiveFilterChips";
 import { ProductGrid, type ProductItem } from "./ListProductsPage/components/ProductGrid";
@@ -21,7 +21,6 @@ export default function ListProductsPage() {
   const [products, setProducts] = useState<ProductItem[]>();
   const [isLoading, setLoading] = useState(true);
   const [isMobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid-3");
 
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get("page")) || 1);
   const [numberOfPages, setNumberOfPages] = useState(1);
@@ -208,8 +207,6 @@ export default function ListProductsPage() {
             categoryTree={categoryTree}
             onApplyFilters={handleApplyFilters}
             totalProductsCount={totalQuantity}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
             onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
           />
 
@@ -239,7 +236,6 @@ export default function ListProductsPage() {
           currentPage={currentPage}
           onPageChange={handlePageChange}
           onClearFilters={handleClearAllFilters}
-          viewMode={viewMode}
         />
       </div>
     </div>

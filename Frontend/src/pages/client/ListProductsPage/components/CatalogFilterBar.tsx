@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Search, Filter, LayoutGrid, Grid3x3, List, DollarSign } from "lucide-react";
+import { Search, Filter, DollarSign } from "lucide-react";
 import SelectComponent from "@/components/common/Select";
 import { CascadingCategorySelect } from "./CascadingCategorySelect";
 import { FormattedPriceInput } from "./FormattedPriceInput";
 import type { FilterState } from "./ActiveFilterChips";
 import type { CategoryNode } from "@/hooks/useCategory";
 
-export type ViewMode = "grid-3" | "grid-4" | "list";
-
 type CatalogFilterBarProps = {
   filters: FilterState;
   categoryTree: CategoryNode[];
   onApplyFilters: (newFilters: Partial<FilterState>) => void;
   totalProductsCount: number;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
   onOpenMobileDrawer?: () => void;
 };
 
@@ -23,8 +19,6 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
   categoryTree,
   onApplyFilters,
   totalProductsCount,
-  viewMode,
-  onViewModeChange,
   onOpenMobileDrawer,
 }) => {
   const [search, setSearch] = useState(filters.search || "");
@@ -76,7 +70,7 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
   return (
     <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-sm transition-all duration-300">
       <div className="flex flex-col gap-4">
-        {/* Row 1: Search keyword input & Sort & View Mode Toggles */}
+        {/* Row 1: Search keyword input & Sort */}
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           <div className="relative flex-1 max-w-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -99,53 +93,13 @@ export const CatalogFilterBar: React.FC<CatalogFilterBarProps> = ({
 
           <div className="flex items-center gap-3">
             {/* Sort selector */}
-            <div className="w-48 sm:w-52">
+            <div className="w-48 sm:w-56">
               <SelectComponent
                 items={sortItems}
                 placeholder="Sort products"
                 value={sortBy}
                 setState={handleSortChange}
               />
-            </div>
-
-            {/* View Density Switcher */}
-            <div className="hidden sm:flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border">
-              <button
-                type="button"
-                onClick={() => onViewModeChange("grid-3")}
-                title="3-Column Grid"
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  viewMode === "grid-3"
-                    ? "bg-accent text-accent-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Grid3x3 className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onViewModeChange("grid-4")}
-                title="4-Column Grid"
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  viewMode === "grid-4"
-                    ? "bg-accent text-accent-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onViewModeChange("list")}
-                title="List View"
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  viewMode === "list"
-                    ? "bg-accent text-accent-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
             </div>
 
             {/* Mobile Filter Sheet Trigger */}
