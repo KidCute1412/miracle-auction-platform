@@ -131,9 +131,8 @@ export async function getProductsCatalogList(
 
   if (options.search && options.search.trim() !== "") {
     const term = options.search.trim();
-    // Pure PostgreSQL Trigram Fuzzy Search (pg_trgm + ILIKE with GIN index acceleration)
-    whereClauses.push("(remove_accents(p.product_name) % remove_accents(?) OR remove_accents(p.product_name) ILIKE ? OR p.fts @@ websearch_to_tsquery('english', remove_accents(?)))");
-    bindings.push(term, `%${term}%`, term);
+    whereClauses.push("(remove_accents(p.product_name) ILIKE ? OR p.fts @@ websearch_to_tsquery('english', remove_accents(?)))");
+    bindings.push(`%${term}%`, term);
   }
 
   let orderByClause = "p.end_time ASC";
