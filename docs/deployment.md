@@ -1,38 +1,119 @@
-# Oracle Always Free portfolio deployment
+# Oracle Always Free Portfolio Deployment
 
-This repository deploys the frontend to Vercel and the API plus background worker to one Oracle Cloud Always Free VM. Supabase provides PostgreSQL and Upstash provides Redis and Kafka. The expected running cost is $0 for compute while all free-tier quotas are respected, plus roughly $12–24/year for a custom domain. Prices and free-tier limits are controlled by their providers and can change.
+## 1. Deployment Decision
 
-Oracle is appropriate for a portfolio and demo, not a business needing an SLA or managed support. If OCI cannot provision Always Free capacity, Koyeb is the fallback only.
+This portfolio deployment uses:
 
-## Topology
+| Layer | Provider |
+| --- | --- |
+| React frontend | Vercel |
+| API, Socket.IO, worker, HTTPS proxy | Oracle Cloud Always Free VM |
+| PostgreSQL | Supabase |
+| Redis | Upstash Redis |
+| Apache Kafka | Aiven Free Kafka |
+
+Upstash Kafka is not used because that product was discontinued. Aiven currently provides a permanent free Kafka tier for learning, prototypes, and demos. Its limits and availability can change, so verify the current [Aiven Free Kafka documentation](https://aiven.io/docs/products/kafka/free-tier/kafka-free-tier) before deployment.
+
+This topology is suitable for an internship portfolio and public demo. It is not a high-availability business deployment and does not claim an SLA.
+
+## 2. Production Topology
 
 ```text
-app.example.com  -> Vercel (Frontend)
-api.example.com  -> Oracle VM: Caddy -> api container + Socket.IO
-                                      -> worker container
-api + worker     -> Supabase PostgreSQL, Upstash Redis, Upstash Kafka
+app.example.com
+    -> Vercel: React frontend
+
+api.example.com
+    -> Oracle VM
+       -> Caddy HTTPS reverse proxy
+          -> API container: Express + Socket.IO
+          -> Worker container: Kafka consumers + scheduled jobs
+
+API + worker
+    -> Supabase PostgreSQL
+    -> Upstash Redis
+    -> Aiven Kafka
 ```
 
-`compose.production.yml` is the production entry point. It exposes only Caddy on ports 80 and 443; API and worker ports remain private to the Compose network. Caddy obtains and retains TLS certificates in named Docker volumes.
+`compose.production.yml` is the production entry point. Only Caddy exposes ports 80 and 443. API and worker ports remain private inside the Compose network.
 
-## First-time Oracle setup
+Local development continues to use the Apache Kafka, PostgreSQL, and Redis containers in `docker-compose.yml`.
 
-1. Create an Ubuntu `VM.Standard.A1.Flex` Always Free instance in your home region. Keep the total allocation within Oracle's current Always Free allowance (for example, 2 OCPUs and 6–8 GB RAM for this portfolio).
-2. Permit inbound TCP 80/443. Restrict SSH 22 to the deployer's IP. Install Docker Engine and the Docker Compose plugin.
-3. Create the restricted `deploy` user and `/opt/online-auction` owned by it. Clone the repository into `/opt/online-auction/repo` using a read-only GitHub deploy key installed for that user.
-4. Point the DNS A record for `api.example.com` at the VM public IP before starting Caddy. Caddy then provisions and renews HTTPS automatically.
-5. Create `/opt/online-auction/.env.production` with permissions readable only by `deploy`. This file stays on the VM and is never committed.
+## 3. Provider Limits and Expected Degradation
 
-The production start command is:
+The Aiven Free Kafka plan is intended for small workloads:
+
+- up to 250 KiB/s ingress and 250 KiB/s egress
+- up to five topics with two partitions per topic
+- up to three days of retention
+- no Kafka Connect and no production SLA
+- possible automatic shutdown after extended inactivity
+
+These limits are sufficient for small auction and dashboard event messages. The application must remain correct when Kafka is unavailable:
+
+- business transactions commit to PostgreSQL first
+- unpublished events remain in the PostgreSQL transactional outbox
+- the dispatcher retries after Kafka recovers
+- the dashboard keeps serving its last PostgreSQL snapshot
+- a scheduled dashboard refresh repairs missed or delayed events
+- the UI displays snapshot age instead of claiming that stale data is live
+
+Upstash Redis is also non-authoritative. A Redis outage may pause rate limiting, projection features, or live notifications according to the affected module, but it must not corrupt PostgreSQL data.
+
+## 4. First-Time Oracle Setup
+
+1. Create an Ubuntu `VM.Standard.A1.Flex` Always Free instance in the tenancy home region and stay within the current Oracle free allowance.
+2. Allow inbound TCP 80 and 443. Restrict SSH 22 to the deployer's IP.
+3. Install Docker Engine and the Docker Compose plugin.
+4. Create a restricted `deploy` user and `/opt/online-auction` owned by that user.
+5. Clone the repository to `/opt/online-auction/repo` with a read-only GitHub deploy key.
+6. Point the DNS A record for `api.example.com` to the VM before starting Caddy.
+7. Create `/opt/online-auction/.env.production`, readable only by `deploy`. Never commit it.
+
+Production start:
 
 ```bash
 cd /opt/online-auction/repo
 docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build --remove-orphans
 ```
 
-## Production environment file
+## 5. Managed Service Setup
 
-Set every value below in `/opt/online-auction/.env.production`; use real secrets, not the placeholders from `Backend/.env.example`.
+### Supabase PostgreSQL
+
+1. Create a Supabase project.
+2. Use the pooled connection for `DATABASE_URL`.
+3. Use the direct connection for `DIRECT_URL` and Prisma migrations.
+4. Back up the database before data-changing migrations.
+5. Treat versioned Prisma migrations as the only schema source of truth.
+6. Do not run demo seed SQL in production.
+
+The `migrate` Compose service runs `prisma migrate deploy` before API and worker startup.
+
+### Upstash Redis
+
+1. Create an Upstash Redis database near the Oracle and Supabase regions where possible.
+2. Copy its TLS URL into `REDIS_URL`.
+3. Do not expose Redis credentials to Vercel.
+
+Redis is used for time-limited state, rate limiting, coordination, and cross-process notifications. It is not the authoritative store for dashboard analytics.
+
+### Aiven Free Kafka
+
+1. Create one Aiven for Apache Kafka Free service.
+2. Select SASL with SCRAM-SHA-256.
+3. Enable the public Let's Encrypt CA for the SASL endpoint so the current KafkaJS `ssl: true` configuration can use the system trust store.
+4. Create these topics:
+   - `bidding_events`
+   - `dashboard_updates`
+   - `dashboard_updates_dlq` after the dashboard retry/DLQ phase is implemented
+5. Copy the SASL bootstrap server, username, and password into the Oracle environment file.
+6. Keep topic count within the free-plan maximum.
+
+The current backend uses KafkaJS with TLS and SCRAM-SHA-256 in production. If the public CA option is unavailable, add explicit `KAFKA_CA` loading to the backend before deploying; do not disable TLS verification.
+
+## 6. Production Environment File
+
+Set these values in `/opt/online-auction/.env.production`:
 
 ```text
 NODE_ENV=production
@@ -40,10 +121,11 @@ PORT=5000
 API_DOMAIN=api.example.com
 CLIENT_URL=https://app.example.com
 
-DATABASE_URL=postgresql://...pooled-host.../postgres?pgbouncer=true&schema=public
-DIRECT_URL=postgresql://...direct-host.../postgres?schema=public
+DATABASE_URL=postgresql://...pooled-supabase-host.../postgres?pgbouncer=true&schema=public
+DIRECT_URL=postgresql://...direct-supabase-host.../postgres?schema=public
 REDIS_URL=rediss://...
-KAFKA_BROKERS=...
+
+KAFKA_BROKERS=aiven-sasl-host:port
 KAFKA_USERNAME=...
 KAFKA_PASSWORD=...
 
@@ -58,32 +140,21 @@ CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 ```
 
-These are backend-only values: database, Redis, Kafka, JWT, CAPTCHA secret, Gmail app password, Cloudinary secret, and Google client ID. Do not put them in Vercel or in a `VITE_*` variable. Backend `PORT` is honored and defaults to 5000. `/health` reports process health; `/ready` additionally checks PostgreSQL, Redis, and Kafka.
+All database, Redis, Kafka, JWT, CAPTCHA, Gmail, and Cloudinary values are backend secrets. Never expose them through `VITE_*` variables, screenshots, logs, workflows, or committed files.
 
-## Managed dependency bootstrap
+`/health` reports process health. `/ready` checks critical dependencies and should return `503` when a required dependency is unavailable.
 
-Create the Supabase project, set the two database URLs, then deploy the repository:
+## 7. Vercel Frontend
 
-1. Set `DATABASE_URL` và `DIRECT_URL` trong file môi trường production.
-2. Chạy `docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build`.
-3. Service `migrate` chạy `prisma migrate deploy` trước API và worker. Production không nạp demo seed SQL.
+Import the repository with:
 
-Prisma migrations are the only schema source of truth. Before a schema change, back up Supabase, create and review a Prisma migration in version control, then let the `migrate` service apply it. Never apply application schema DDL manually in Supabase SQL Editor.
+```text
+Root directory: Frontend
+Build command: npm run build
+Output directory: dist
+```
 
-This release assumes a new, empty Supabase database. Set `DIRECT_URL` to the direct PostgreSQL endpoint for the migrate service; the API and worker retain the pooled `DATABASE_URL`. Do not run demo seeds in production.
-
-Create Upstash Redis and Kafka instances and copy their TLS endpoints/credentials into the VM environment file. Ensure Kafka provides the `bidding_events` and `dashboard_updates` topics used by the application.
-
-## Public integration setup
-
-- In Google Cloud OAuth, add `https://app.example.com` to Authorized JavaScript origins. Set the same OAuth web client ID in Vercel as `VITE_GOOGLE_CLIENT_ID` and on the VM as `GOOGLE_CLIENT_ID`. The backend verifies every Google ID token against that client ID.
-- In reCAPTCHA, add `app.example.com` to the allowed domains. Put only its site key in Vercel as `VITE_CAPTCHA_SITE_KEY`; keep the secret on the VM as `CAPTCHA_SECRET_KEY`.
-- Create Cloudinary API credentials and place all Cloudinary values only in the VM environment file.
-- Enable two-step verification for the Gmail sending account, generate a Gmail app password, and place it only in `GMAIL_APP_PASSWORD` on the VM.
-
-## Vercel frontend
-
-Import the repository in Vercel with `Frontend` as the root directory, build command `npm run build`, and output directory `dist`. Attach `app.example.com` and configure:
+Configure only public frontend values:
 
 ```text
 VITE_API_URL=https://api.example.com
@@ -93,13 +164,18 @@ VITE_CAPTCHA_SITE_KEY=public_recaptcha_site_key
 VITE_GOOGLE_CLIENT_ID=google_oauth_client_id
 ```
 
-All `VITE_*` values are shipped to browsers. Never add `VITE_GOOGLE_SECRET` or any password, token, or provider secret.
+Also configure:
 
-## GitHub Actions deployment
+- Google OAuth authorized origin: `https://app.example.com`
+- reCAPTCHA allowed domain: `app.example.com`
+- credentialed CORS origin: exactly `https://app.example.com`
+- production cookies: `Secure`, `HttpOnly`, and the chosen `SameSite` policy
 
-The CI workflow type-checks the backend, lints/builds the frontend, validates both Compose files, and cleanly builds the production backend image. A deployment runs only for a successful push to `main`; deployments share a single concurrency group.
+## 8. GitHub Actions Deployment
 
-Set these repository secrets only:
+CI should build the backend, lint/build the frontend, run required tests, validate both Compose files, and build the production image before deployment.
+
+Required GitHub repository secrets:
 
 ```text
 ORACLE_SSH_HOST
@@ -108,11 +184,9 @@ ORACLE_SSH_PRIVATE_KEY
 ORACLE_SSH_KNOWN_HOST
 ```
 
-`ORACLE_SSH_KNOWN_HOST` must be the complete trusted `known_hosts` entry for the VM (not an unchecked `ssh-keyscan` result). Application secrets remain solely in `/opt/online-auction/.env.production`. The VM clone's read-only deploy key is separate from the GitHub Actions SSH key and lets the deployment fetch private repository commits.
+Application secrets remain only in `/opt/online-auction/.env.production`. The deployment checks out the exact successful `main` commit and runs the production Compose command.
 
-The action fetches and checks out the exact pushed commit, then runs the production Compose command above.
-
-## Operations, checks, and rollback
+## 9. Operations and Smoke Checks
 
 ```bash
 curl -fsS https://api.example.com/health
@@ -121,9 +195,25 @@ docker compose --env-file /opt/online-auction/.env.production -f compose.product
 docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml logs -f api worker
 ```
 
-Smoke-check HTTPS, CORS preflight, Socket.IO, secure login cookies (`Secure`, `HttpOnly`, `SameSite=Lax`), normal and Google login, reCAPTCHA, Cloudinary upload, Gmail delivery, product browsing, valid bidding, worker consumption, auction closing, and winner order creation.
+Verify:
 
-To roll back application code, use a known previous commit without changing the VM environment file:
+- HTTPS and CORS preflight
+- secure login and refresh cookies
+- normal login, Google login, and reCAPTCHA
+- product listing and product details
+- valid bid placement and final bid correctness
+- outbox publication to Aiven Kafka
+- worker consumption and graceful restart
+- auction closing and winner order creation
+- admin dashboard snapshot and authenticated Socket.IO refresh
+- recovery behavior during temporary Kafka and Redis outages
+- Cloudinary upload and Gmail delivery, or documented disabled behavior
+
+Worker logs must include event ID, topic, partition, offset, consumer group, attempt, latency, and safe failure details.
+
+## 10. Rollback
+
+Application rollback:
 
 ```bash
 cd /opt/online-auction/repo
@@ -132,4 +222,6 @@ git checkout --detach <previous-commit-sha>
 docker compose --env-file /opt/online-auction/.env.production -f compose.production.yml up -d --build --remove-orphans
 ```
 
-Database rollback is manual: restore the backup or run the migration's documented rollback SQL. Do not roll back schema blindly after data-changing releases.
+Database rollback is separate: restore the verified backup or run reviewed rollback SQL for the migration. Never roll back a data-changing schema blindly.
+
+After rollback, verify API readiness, Kafka connectivity, outbox backlog recovery, worker health, bidding, and the admin dashboard snapshot.

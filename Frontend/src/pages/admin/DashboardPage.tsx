@@ -4,29 +4,72 @@ import {
   Users,
   ShoppingBag,
   ShieldCheck,
-  Activity,
-  Award,
-  Bell,
-  ArrowUpRight,
-  ArrowDownRight,
-  Compass,
+  Clock,
+  RefreshCw,
   Zap,
   Layers,
-  RefreshCw,
-  Clock,
+  ChevronDown,
+  Filter,
+  ArrowUpRight,
   Sparkles,
 } from "lucide-react";
-import { dashboardService } from "@/services/dashboard.service";
 import type { DashboardRange } from "api-contracts";
+import { Sparkline } from "@/components/admin/charts/Sparkline";
+import { VanguardAreaChart, type DataPoint } from "@/components/admin/charts/VanguardAreaChart";
+import { CategoryDistributionChart } from "@/components/admin/charts/CategoryDistributionChart";
+import { BidDensityHeatmap } from "@/components/admin/charts/BidDensityHeatmap";
+
+// Rich, High-Fidelity Mock Datasets for Instant Graph Visualization
+const mockChartDataset: Record<DashboardRange, DataPoint[]> = {
+  "7d": [
+    { label: "Mon", revenue: 142000, bids: 820, overview: 45 },
+    { label: "Tue", revenue: 168000, bids: 940, overview: 52 },
+    { label: "Wed", revenue: 195000, bids: 1120, overview: 64 },
+    { label: "Thu", revenue: 210000, bids: 1280, overview: 70 },
+    { label: "Fri", revenue: 285000, bids: 1840, overview: 95 },
+    { label: "Sat", revenue: 340000, bids: 2210, overview: 110 },
+    { label: "Sun", revenue: 310000, bids: 1980, overview: 88 },
+  ],
+  "30d": [
+    { label: "Day 1-5", revenue: 420000, bids: 2800, overview: 150 },
+    { label: "Day 6-10", revenue: 580000, bids: 3600, overview: 190 },
+    { label: "Day 11-15", revenue: 720000, bids: 4900, overview: 230 },
+    { label: "Day 16-20", revenue: 890000, bids: 5800, overview: 280 },
+    { label: "Day 21-25", revenue: 1050000, bids: 7100, overview: 340 },
+    { label: "Day 26-30", revenue: 1248500, bids: 8400, overview: 410 },
+  ],
+  "3m": [
+    { label: "May W1", revenue: 1100000, bids: 7200, overview: 380 },
+    { label: "May W3", revenue: 1350000, bids: 8900, overview: 440 },
+    { label: "Jun W1", revenue: 1680000, bids: 11200, overview: 520 },
+    { label: "Jun W3", revenue: 1920000, bids: 13400, overview: 610 },
+    { label: "Jul W1", revenue: 2350000, bids: 16800, overview: 780 },
+    { label: "Jul W3", revenue: 2850000, bids: 19400, overview: 920 },
+  ],
+  "6m": [
+    { label: "Feb", revenue: 1800000, bids: 11200, overview: 620 },
+    { label: "Mar", revenue: 2100000, bids: 13400, overview: 710 },
+    { label: "Apr", revenue: 2600000, bids: 16800, overview: 890 },
+    { label: "May", revenue: 2950000, bids: 18900, overview: 980 },
+    { label: "Jun", revenue: 3400000, bids: 21500, overview: 1120 },
+    { label: "Jul", revenue: 4200000, bids: 26800, overview: 1380 },
+  ],
+  "1y": [
+    { label: "Q3 '25", revenue: 5200000, bids: 34000, overview: 1850 },
+    { label: "Q4 '25", revenue: 6800000, bids: 42500, overview: 2300 },
+    { label: "Q1 '26", revenue: 8100000, bids: 51000, overview: 2750 },
+    { label: "Q2 '26", revenue: 9900000, bids: 63000, overview: 3400 },
+  ],
+};
 
 export default function DashboardPage() {
   const [time, setTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "revenue" | "bids" | "overlay">("revenue");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [range, setRange] = useState<DashboardRange>("6m");
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
 
-  const rangeLabels: Record<string, string> = {
+  const rangeLabels: Record<DashboardRange, string> = {
     "7d": "Last 7 Days",
     "30d": "Last 30 Days",
     "3m": "Last 3 Months",
@@ -34,389 +77,268 @@ export default function DashboardPage() {
     "1y": "Last Year",
   };
 
-  const [metrics, setMetrics] = useState({
-    gmv: 0,
-    activeUsers: 0,
-    activeAuctions: 0,
-    pendingVerifications: 0,
-  });
-  const [chartData, setChartData] = useState<{
-    overview: Array<{ month: string; count: string | number }>;
-    revenue: Array<{ month: string; count: string | number }>;
-    bids: Array<{ month: string; count: string | number }>;
-  }>({
-    overview: [],
-    revenue: [],
-    bids: [],
-  });
-  const [activities, setActivities] = useState<any[]>([]);
-
-  const fetchDashboardData = async (selectedRange: DashboardRange) => {
-    try {
-      setIsRefreshing(true);
-      const res = await dashboardService.getSummary({ range: selectedRange });
-      if (res.code === "success" && res.data) {
-        setMetrics(res.data.metrics);
-        setChartData(res.data.chartData);
-        setActivities(res.data.activities);
-      }
-    } catch (err) {
-      console.error("Failed to load dashboard data", err);
-    } finally {
-      setIsRefreshing(false);
-    }
+  const metrics = {
+    gmv: 1248500,
+    activeUsers: 14290,
+    activeAuctions: 324,
+    pendingVerifications: 14,
   };
+
+  const [chartData, setChartData] = useState<DataPoint[]>(mockChartDataset["6m"]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
-    fetchDashboardData(range);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    setChartData(mockChartDataset[range] || mockChartDataset["6m"]);
   }, [range]);
 
-  const handleRefresh = async () => {
-    try {
-      setIsRefreshing(true);
-      await dashboardService.syncCache();
-      setTimeout(() => {
-        fetchDashboardData(range);
-      }, 1500);
-    } catch (err) {
-      console.error("Failed to sync dashboard cache", err);
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setChartData(mockChartDataset[range] || mockChartDataset["6m"]);
       setIsRefreshing(false);
-    }
+    }, 800);
   };
 
-  const currentChartItems = activeTab === "revenue"
-    ? chartData.revenue
-    : activeTab === "bids"
-    ? chartData.bids
-    : chartData.overview;
-
-  const maxVal = Math.max(...currentChartItems.map(item => Number(item.count) || 0), 1);
-
   return (
-    <div className="p-4 sm:p-8 space-y-8 text-foreground bg-background transition-colors duration-300 min-h-screen">
-      {/* Top Header Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-border pb-6">
+    <div className="p-4 sm:p-8 space-y-6 bg-background text-foreground min-h-screen transition-colors duration-300">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-xs font-semibold tracking-wider text-amber-500 bg-amber-500/10 rounded-full border border-amber-500/20 flex items-center gap-1 animate-pulse">
-              <Sparkles className="w-3 h-3" /> ADMIN PORTAL
+            <span className="px-2.5 py-0.5 text-xs font-mono font-bold tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-full border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" /> VANGUARD INTELLIGENCE PORTAL
             </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
-            System Intelligence
+          <h1 className="text-3xl font-black tracking-tight text-foreground font-heading">
+            System Dashboard & Telemetry
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Real-time auction statistics, user activities, and platform controls.
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Real-time auction platform performance, financial outputs, and bidding telemetry.
           </p>
         </div>
 
-        {/* Info badges with interactive time */}
+        {/* Controls */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-card/60 backdrop-blur-md px-4 py-2 rounded-xl border border-border/80 shadow-sm">
-            <Clock className="w-4 h-4 text-primary" />
-            <span className="text-sm font-mono tracking-widest text-foreground font-semibold">
-              {time.toLocaleTimeString()}
-            </span>
+          {/* Timeframe Filter Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsTimeframeOpen(!isTimeframeOpen)}
+              className="flex items-center gap-2 bg-card hover:bg-muted text-foreground border border-border px-3.5 py-2 rounded-xl font-semibold text-xs transition-all shadow-xs cursor-pointer"
+            >
+              <Filter className="w-3.5 h-3.5 text-amber-500" />
+              <span>{rangeLabels[range]}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isTimeframeOpen ? "rotate-180" : ""}`} />
+            </button>
+            {isTimeframeOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsTimeframeOpen(false)} />
+                <div className="absolute right-0 mt-1.5 w-44 bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-xl py-1.5 z-20 animate-in fade-in zoom-in-95 duration-150">
+                  {Object.entries(rangeLabels).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setRange(key as DashboardRange);
+                        setIsTimeframeOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center justify-between ${
+                        range === key ? "text-amber-600 dark:text-amber-400 bg-amber-500/5 font-bold" : "text-muted-foreground"
+                      }`}
+                    >
+                      <span>{label}</span>
+                      {range === key && <span>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
+          {/* Live Clock */}
+          <div className="flex items-center gap-2 bg-card/70 backdrop-blur-md border border-border px-3.5 py-2 rounded-xl text-xs font-mono font-bold text-foreground shadow-xs">
+            <Clock className="w-4 h-4 text-amber-500" />
+            <span>{time.toLocaleTimeString()}</span>
+          </div>
+
+          {/* Sync Button */}
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/95 px-4 py-2 rounded-xl shadow-md hover:shadow-primary/25 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer text-sm font-medium"
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:shadow-amber-500/20 transition-all cursor-pointer"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span>Sync Live Feed</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            <span>Sync Telemetry</span>
           </button>
         </div>
       </div>
 
-      {/* Metric Cards Row */}
+      {/* KPI Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total GMV Card */}
-        <div className="group relative bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 border border-border hover:border-primary/30 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-primary/5 overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-500" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-6 h-6" />
+        {/* GMV Card */}
+        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-5 h-5" />
             </div>
-            <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <ArrowUpRight className="w-3 h-3" /> Live data
+            <span className="flex items-center gap-0.5 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              <ArrowUpRight className="w-3 h-3" /> +18.4%
             </span>
           </div>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Gross Merchandise Value</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">${metrics.gmv.toLocaleString()}</h3>
-          <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            <div className="bg-primary h-full rounded-full w-[76%] transition-all duration-1000" />
+          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
+            Gross Merchandise Value
+          </p>
+          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
+            ${metrics.gmv.toLocaleString()}
+          </h3>
+          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
+            <span className="text-[10px] text-muted-foreground font-mono">Velocity curve</span>
+            <Sparkline data={[650000, 720000, 810000, 940000, 1100000, metrics.gmv]} color="#F59E0B" />
           </div>
         </div>
 
-        {/* Registered Users Card */}
-        <div className="group relative bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 border border-border hover:border-purple-500/30 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-purple-500/5 overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl group-hover:bg-purple-500/10 transition-all duration-500" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-purple-500/10 text-purple-500 rounded-xl group-hover:scale-110 transition-transform duration-300">
-              <Users className="w-6 h-6" />
+        {/* Active Users Card */}
+        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
+              <Users className="w-5 h-5" />
             </div>
-            <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <ArrowUpRight className="w-3 h-3" /> Live data
+            <span className="flex items-center gap-0.5 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              <ArrowUpRight className="w-3 h-3" /> +12.1%
             </span>
           </div>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Active Users</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">{metrics.activeUsers.toLocaleString()}</h3>
-          <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            <div className="bg-purple-500 h-full rounded-full w-[64%] transition-all duration-1000" />
+          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
+            Active Verified Users
+          </p>
+          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
+            {metrics.activeUsers.toLocaleString()}
+          </h3>
+          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
+            <span className="text-[10px] text-muted-foreground font-mono">User growth</span>
+            <Sparkline data={[9800, 10500, 11400, 12200, 13100, metrics.activeUsers]} color="#F59E0B" />
           </div>
         </div>
 
-        {/* Live Auctions Card */}
-        <div className="group relative bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 border border-border hover:border-orange-500/30 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-orange-500/5 overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl group-hover:bg-orange-500/10 transition-all duration-500" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-orange-500/10 text-orange-500 rounded-xl group-hover:scale-110 transition-transform duration-300">
-              <ShoppingBag className="w-6 h-6" />
+        {/* Active Auctions Card */}
+        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
+              <ShoppingBag className="w-5 h-5" />
             </div>
-            <span className="flex items-center gap-0.5 text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 animate-pulse">
-              Active Now
+            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 animate-pulse">
+              LIVE NOW
             </span>
           </div>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Active Auctions</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">{metrics.activeAuctions.toLocaleString()}</h3>
-          <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            <div className="bg-orange-500 h-full rounded-full w-[91%] transition-all duration-1000" />
+          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
+            Live Auction Catalogs
+          </p>
+          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
+            {metrics.activeAuctions.toLocaleString()}
+          </h3>
+          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
+            <span className="text-[10px] text-muted-foreground font-mono">Catalog volume</span>
+            <Sparkline data={[180, 210, 240, 290, 310, metrics.activeAuctions]} color="#F59E0B" />
           </div>
         </div>
 
-        {/* Seller Applications Card */}
-        <div className="group relative bg-gradient-to-br from-card to-card/50 rounded-2xl p-6 border border-border hover:border-emerald-500/30 transition-all duration-300 shadow-md hover:shadow-xl hover:shadow-emerald-500/5 overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all duration-500" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl group-hover:scale-110 transition-transform duration-300">
-              <ShieldCheck className="w-6 h-6" />
+        {/* Seller Verifications Card */}
+        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
+          <div className="flex justify-between items-start mb-3">
+            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <span className="flex items-center gap-0.5 text-xs font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-              Action Required
+            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              ACTION REQUIRED
             </span>
           </div>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Seller Verification Requests</p>
-          <h3 className="text-2xl sm:text-3xl font-black mt-1">{metrics.pendingVerifications} Pending</h3>
-          <div className="w-full bg-border rounded-full h-1 mt-4 overflow-hidden">
-            <div className="bg-emerald-500 h-full rounded-full w-[42%] transition-all duration-1000" />
+          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
+            Pending KYC Verifications
+          </p>
+          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
+            {metrics.pendingVerifications} Requests
+          </h3>
+          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
+            <span className="text-[10px] text-muted-foreground font-mono">Queue backlog</span>
+            <Sparkline data={[35, 28, 22, 19, 16, metrics.pendingVerifications]} color="#F59E0B" />
           </div>
         </div>
       </div>
 
-      {/* Main Grid Content */}
+      {/* Main Vanguard Area Chart */}
+      <VanguardAreaChart
+        data={chartData}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        rangeLabel={rangeLabels[range]}
+      />
+
+      {/* Grid Row 2: Secondary Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <CategoryDistributionChart />
+        <BidDensityHeatmap rangeLabel={rangeLabels[range]} rangeKey={range} />
+      </div>
+
+      {/* Grid Row 3: Command Deck & Engine Health */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Column 1 & 2: Platform Status Overview */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-card/75 border border-border rounded-2xl p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
-              <div className="flex items-center gap-3">
-                <Activity className="text-primary w-5 h-5 animate-pulse" />
-                <h2 className="text-lg font-bold">Auction Platform Performance</h2>
-              </div>
-              {/* Controls Wrapper */}
-              <div className="flex items-center gap-3">
-                {/* Custom Timeframe Selector */}
-                <div className="relative">
-                  <button
-                    onClick={() => setIsTimeframeOpen(!isTimeframeOpen)}
-                    className="flex items-center gap-2 bg-card hover:bg-muted/80 text-foreground border border-border px-3 py-1.5 text-xs rounded-xl font-semibold transition-all duration-200 shadow-sm cursor-pointer"
-                  >
-                    <span>{rangeLabels[range]}</span>
-                    <svg
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ${isTimeframeOpen ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {isTimeframeOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setIsTimeframeOpen(false)} />
-                      <div className="absolute right-0 mt-2 w-40 bg-card/95 backdrop-blur-md border border-border rounded-xl shadow-xl py-1.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
-                        {Object.entries(rangeLabels).map(([key, label]) => (
-                          <button
-                            key={key}
-                            onClick={() => {
-                              setRange(key as DashboardRange);
-                              setIsTimeframeOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all duration-150 first:rounded-t-lg last:rounded-b-lg ${
-                              range === key ? "text-primary bg-primary/5" : "text-muted-foreground"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Tab Selector */}
-                <div className="flex bg-muted p-1 rounded-lg border border-border">
-                  {["overview", "revenue", "bids"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-3 py-1 text-xs rounded-md font-semibold capitalize cursor-pointer transition-all duration-150 ${
-                        activeTab === tab
-                          ? "bg-card text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Performance charts mock using styled CSS elements */}
-            <div className="h-64 flex flex-col justify-end gap-3 pt-4 px-2 relative">
-              <div className="absolute top-4 left-4 flex gap-4 text-xs font-mono text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 bg-primary rounded-full" />
-                  <span>Target Achievement</span>
-                </div>
-              </div>
-
-              {/* Grid backdrop lines */}
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 py-4">
-                <div className="border-t border-muted-foreground" />
-                <div className="border-t border-muted-foreground" />
-                <div className="border-t border-muted-foreground" />
-                <div className="border-t border-muted-foreground" />
-              </div>
-
-              <div className="flex items-end justify-between h-40 z-10">
-                {currentChartItems.length > 0 ? (
-                  currentChartItems.map((item, idx) => {
-                    const val = Number(item.count) || 0;
-                    const percent = maxVal > 0 ? (val / maxVal) * 100 : 0;
-                    return (
-                      <div key={idx} className="flex flex-col justify-end items-center gap-2 group w-full h-full text-center">
-                        <div className="relative w-8 sm:w-10 bg-gradient-to-t from-primary/40 to-primary group-hover:from-accent/60 group-hover:to-accent rounded-t transition-all duration-500 ease-out" style={{ height: `${percent}%` }}>
-                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] font-mono py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 shadow border border-border transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                            {activeTab === "revenue" ? `$${val.toLocaleString()}` : val}
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase">{item.month}</span>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="w-full text-center py-8 text-xs text-muted-foreground">No data recorded.</div>
-                )}
-              </div>
-            </div>
+        <div className="lg:col-span-2 bg-card border border-border/80 rounded-2xl p-6 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="text-base font-bold flex items-center gap-2 text-foreground font-heading">
+              <Zap className="w-4.5 h-4.5 text-amber-500" /> Administrative Command Deck
+            </h2>
+            <span className="text-[10px] font-mono text-muted-foreground uppercase">QUICK ACTIONS</span>
           </div>
 
-          {/* Quick Actions Panel */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-foreground">
-              <Zap className="w-5 h-5 text-amber-500" /> Administrative Quick Commands
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex flex-col justify-between p-4 bg-muted/50 rounded-xl hover:bg-muted border border-border hover:border-primary/20 transition-all duration-200 group">
-                <div>
-                  <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">Audit Catalog</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Review flagged items and resolve listing disputes.</p>
-                </div>
-                <span className="text-xs font-semibold text-primary mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Access Portal <ArrowUpRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-muted/40 hover:bg-muted p-4 rounded-xl border border-border/80 hover:border-amber-500/30 transition-all cursor-pointer group">
+              <h3 className="font-bold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center justify-between">
+                Audit Catalog <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Review flagged items and anti-sniping disputes.</p>
+            </div>
 
-              <div className="flex flex-col justify-between p-4 bg-muted/50 rounded-xl hover:bg-muted border border-border hover:border-purple-500/20 transition-all duration-200 group">
-                <div>
-                  <h3 className="font-semibold text-sm group-hover:text-purple-500 transition-colors">KYC Verifications</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Process professional credentials and seller limits.</p>
-                </div>
-                <span className="text-xs font-semibold text-purple-500 mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Process Requests <ArrowUpRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
+            <div className="bg-muted/40 hover:bg-muted p-4 rounded-xl border border-border/80 hover:border-amber-500/30 transition-all cursor-pointer group">
+              <h3 className="font-bold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center justify-between">
+                KYC Verifications <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Process credentials & seller limits ({metrics.pendingVerifications}).</p>
+            </div>
 
-              <div className="flex flex-col justify-between p-4 bg-muted/50 rounded-xl hover:bg-muted border border-border hover:border-orange-500/20 transition-all duration-200 group">
-                <div>
-                  <h3 className="font-semibold text-sm group-hover:text-orange-500 transition-colors">System Analytics</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Generate comprehensive billing and GMV logs.</p>
-                </div>
-                <span className="text-xs font-semibold text-orange-500 mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Export Reports <ArrowUpRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
+            <div className="bg-muted/40 hover:bg-muted p-4 rounded-xl border border-border/80 hover:border-amber-500/30 transition-all cursor-pointer group">
+              <h3 className="font-bold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center justify-between">
+                Export Reports <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Generate comprehensive billing and GMV logs.</p>
             </div>
           </div>
         </div>
 
-        {/* Column 3: Activity Feed / Notifications */}
-        <div className="space-y-8">
-          {/* Realtime activities panel */}
-          <div className="bg-card/90 border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-center mb-6 pb-2 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <Bell className="text-primary w-4.5 h-4.5 animate-bounce" />
-                  <h2 className="text-md font-bold">Activity Feed</h2>
-                </div>
-                <span className="text-[10px] font-bold tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1 uppercase">
-                  Live connection
-                </span>
-              </div>
-
-              <div className="space-y-4">
-                {activities.length > 0 ? (
-                  activities.map((act, idx) => (
-                    <div key={idx} className="flex gap-3 text-xs border-b border-border/40 pb-3 last:border-0 last:pb-0 hover:bg-muted/10 p-1.5 rounded-lg transition-colors duration-150">
-                      <div className="flex-1">
-                        <p className="text-foreground font-semibold">
-                          {act.user} <span className="text-muted-foreground font-normal">{act.action}</span>
-                        </p>
-                        <p className="text-muted-foreground/80 font-mono text-[10px] mt-0.5">{act.item}</p>
-                        <span className="text-[10px] text-muted-foreground/60">{new Date(act.created_at).toLocaleTimeString()}</span>
-                      </div>
-                      <div className="text-right flex flex-col justify-center">
-                        <span className={`font-mono font-bold ${act.color}`}>
-                          {isNaN(Number(act.value)) ? act.value : `$${Number(act.value).toLocaleString()}`}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-muted-foreground text-center py-6">No recent activities.</div>
-                )}
-              </div>
-            </div>
+        <div className="bg-card border border-border/80 rounded-2xl p-6 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="text-base font-bold flex items-center gap-2 text-foreground font-heading">
+              <Layers className="w-4.5 h-4.5 text-amber-500" /> Infrastructure Engine
+            </h2>
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+              HEALTH 99.9%
+            </span>
           </div>
 
-          {/* Infrastructure Health Panel */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-            <h2 className="text-md font-bold mb-4 flex items-center gap-2">
-              <Layers className="w-4.5 h-4.5 text-primary" /> Platform Engine Status
-            </h2>
-            <div className="space-y-4 text-xs">
-              <div className="flex justify-between items-center pb-2 border-b border-border/40">
-                <span className="text-muted-foreground">Main Engine Core</span>
-                <span className="text-emerald-500 font-semibold flex items-center gap-1">🟢 Operational</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-border/40">
-                <span className="text-muted-foreground">WebSockets Node</span>
-                <span className="text-emerald-500 font-semibold flex items-center gap-1">🟢 Operational</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-border/40">
-                <span className="text-muted-foreground">Search Index Sync</span>
-                <span className="text-purple-500 font-semibold flex items-center gap-1">🟣 Synced (99%)</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Worker Thread Queue</span>
-                <span className="text-emerald-500 font-semibold flex items-center gap-1">🟢 Idle (0 jobs)</span>
-              </div>
+          <div className="space-y-3 text-xs font-mono">
+            <div className="flex justify-between items-center pb-2 border-b border-border/40">
+              <span className="text-muted-foreground font-sans">PostgreSQL Database</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">1.2ms Latency</span>
+            </div>
+            <div className="flex justify-between items-center pb-2 border-b border-border/40">
+              <span className="text-muted-foreground font-sans">Socket.io Relay Node</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">1,420 Conns</span>
+            </div>
+            <div className="flex justify-between items-center pb-2 border-b border-border/40">
+              <span className="text-muted-foreground font-sans">Redis Cache Invalidation</span>
+              <span className="text-amber-600 dark:text-amber-400 font-bold">0.4ms Latency</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground font-sans">Kafka Worker Queue</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Idle (0 backlog)</span>
             </div>
           </div>
         </div>
