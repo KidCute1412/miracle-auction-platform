@@ -55,7 +55,7 @@ async function shutdown(signal: string): Promise<void> {
   console.log("[AUCTION_WORKER] Stopping", { signal });
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   heartbeatTimer = undefined;
-  stopRedisAuctionCloseJob();
+  await stopRedisAuctionCloseJob();
   await stopBidProjector();
   await Promise.allSettled([prisma.$disconnect(), closeRedisConnection()]);
   process.exit(0);

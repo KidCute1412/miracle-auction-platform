@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import type {
   AuditLog,
   DashboardDlqItem,
+  DlqKind,
   DashboardOperations,
   DashboardRange,
   DashboardSummary,
@@ -351,17 +352,20 @@ export async function getAuditLogs(filters: AuditFilters): Promise<{ data: Audit
   };
 }
 
-export async function getDlq(page: number, limit: number): Promise<{ data: DashboardDlqItem[]; total: number }> {
-  const where = { status: "terminal" };
-  const [rows, total] = await prisma.$transaction([
-    prisma.dashboard_event_receipts.findMany({
-      where, orderBy: { terminal_at: "desc" }, skip: (page - 1) * limit, take: limit,
-    }),
-    prisma.dashboard_event_receipts.count({ where }),
+export async function getDlq(
+  page: number,
+  limit: number,
+  kind?: DlqKind,
+): Promise<{ data: DashboardDlqItem[]; total: number }> {
+  const selected = kind ? [kind] : ["dashboard", "notification", "outbox"] as const;
+  const [dashboardRows, notificationRows, outboxRows] = await Promise.all([
+    selected.includes("dashboard") ? prisma.dashboard_event_receipts.findMany({ where: { status: "terminal" } }) : [],
+    selected.includes("notification") ? prisma.notification_event_receipts.findMany({ where: { status: "terminal" } }) : [],
+    selected.includes("outbox") ? prisma.auction_outbox.findMany({ where: { terminal_at: { not: null } } }) : [],
   ]);
-  return {
-    total,
-    data: rows.map((row) => ({
+  const rows: DashboardDlqItem[] = [
+    ...dashboardRows.map((row) => ({
+      kind: "dashboard" as const,
       eventId: row.event_id,
       eventType: row.event_type,
       attempts: row.attempts,
@@ -369,17 +373,58 @@ export async function getDlq(page: number, limit: number): Promise<{ data: Dashb
       correlationId: row.correlation_id,
       terminalAt: row.terminal_at?.toISOString() ?? null,
     })),
-  };
+    ...notificationRows.map((row) => ({
+      kind: "notification" as const,
+      eventId: row.event_id,
+      eventType: row.event_type,
+      attempts: row.attempts,
+      lastError: row.last_error,
+      correlationId: row.correlation_id,
+      terminalAt: row.terminal_at?.toISOString() ?? null,
+    })),
+    ...outboxRows.map((row) => ({
+      kind: "outbox" as const,
+      eventId: row.event_id,
+      eventType: row.event_type,
+      attempts: row.attempts,
+      lastError: row.last_error,
+      correlationId: row.correlation_id,
+      terminalAt: row.terminal_at?.toISOString() ?? null,
+    })),
+  ].sort((left, right) => (right.terminalAt ?? "").localeCompare(left.terminalAt ?? ""));
+  return { total: rows.length, data: rows.slice((page - 1) * limit, page * limit) };
 }
 
-export async function retryDlq(eventId: string, actorId: number, correlationId: string) {
+export async function retryDlq(kind: DlqKind, eventId: string, actorId: number, correlationId: string) {
   return prisma.$transaction(async (tx) => {
-    const receipt = await tx.dashboard_event_receipts.findUnique({ where: { event_id: eventId } });
-    if (!receipt || receipt.status !== "terminal") throw new Error("DLQ event was not found");
-    const existing = await tx.auction_outbox.findFirst({ where: { causation_id: eventId } });
-    const event = existing
-      ? { eventId: existing.event_id, occurredAt: existing.occurred_at }
-      : await addOutboxEvent(tx, {
+    let event: { eventId: string; occurredAt: Date };
+    if (kind === "outbox") {
+      const outbox = await tx.auction_outbox.findUnique({ where: { event_id: eventId } });
+      if (!outbox?.terminal_at) throw new Error("DLQ event was not found");
+      await tx.auction_outbox.update({
+        where: { event_id: eventId },
+        data: { terminal_at: null, attempts: 0, available_at: new Date(), last_error: null },
+      });
+      event = { eventId: outbox.event_id, occurredAt: outbox.occurred_at };
+    } else if (kind === "notification") {
+      const receipt = await tx.notification_event_receipts.findUnique({ where: { event_id: eventId } });
+      if (!receipt || receipt.status !== "terminal") throw new Error("DLQ event was not found");
+      event = await addOutboxEvent(tx, {
+        topic: receipt.topic,
+        eventType: receipt.event_type,
+        aggregateId: receipt.aggregate_id,
+        correlationId,
+        causationId: eventId,
+        payload: receipt.payload as Prisma.InputJsonObject,
+      });
+      await tx.notification_event_receipts.update({
+        where: { event_id: eventId },
+        data: { status: "retrying", terminal_at: null, last_error: null, updated_at: new Date() },
+      });
+    } else {
+      const receipt = await tx.dashboard_event_receipts.findUnique({ where: { event_id: eventId } });
+      if (!receipt || receipt.status !== "terminal") throw new Error("DLQ event was not found");
+      event = await addOutboxEvent(tx, {
         topic: kafkaTopics.dashboard,
         eventType: "dashboard.dlq_retry_requested.v1",
         aggregateId: "dashboard",
@@ -387,11 +432,12 @@ export async function retryDlq(eventId: string, actorId: number, correlationId: 
         causationId: eventId,
         payload: { failedEventId: eventId },
       });
+    }
     await tx.admin_audit_logs.create({
       data: {
         actor_id: actorId,
-        action: "dashboard.dlq.retry",
-        resource_type: "dashboard_event",
+        action: `${kind}.dlq.retry`,
+        resource_type: `${kind}_event`,
         resource_id: eventId,
         result: "success",
         correlation_id: correlationId,

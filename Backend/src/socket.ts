@@ -18,6 +18,15 @@ export function emitBidUpdate(productId: number, event: BidSocketEvent): void {
   socketServer?.to(`bidding_room_${productId}`).emit("new_bid", event);
 }
 
+function isBidSocketEvent(value: unknown): value is BidSocketEvent {
+  if (!value || typeof value !== "object") return false;
+  const event = value as Record<string, unknown>;
+  return ["eventId", "productId", "currentPriceVnd", "endTimeMs", "sequence", "version", "status"]
+    .every((field) => typeof event[field] === "string")
+    && (event.leaderId === null || typeof event.leaderId === "string")
+    && (event.orderId === null || typeof event.orderId === "string");
+}
+
 function cookieValue(header: string | undefined, name: string): string | undefined {
   return header?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))
     ?.slice(name.length + 1);
@@ -77,11 +86,9 @@ export async function startAdminSocket(io: Server): Promise<void> {
   auctionSubscriber.on("message", (channel, value) => {
     if (channel !== "auction:committed:v1") return;
     try {
-      const event = JSON.parse(value) as Partial<BidSocketEvent>;
-      if (!event.eventId || !event.productId || !event.sequence || !event.version || !event.status) {
-        throw new Error("Invalid committed auction event");
-      }
-      emitBidUpdate(Number(event.productId), event as BidSocketEvent);
+      const event: unknown = JSON.parse(value);
+      if (!isBidSocketEvent(event)) throw new Error("Invalid committed auction event");
+      emitBidUpdate(Number(event.productId), event);
     } catch (error) {
       console.warn("[SOCKET] Ignored invalid auction Redis notification", {
         message: error instanceof Error ? error.message : "unknown",

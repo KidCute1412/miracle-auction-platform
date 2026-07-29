@@ -196,6 +196,7 @@ export interface AuditLog {
 export interface PaginationMeta { page: number; limit: number; total: number; totalPages: number; }
 export interface AuditLogResponse extends ApiSuccess<AuditLog[]> { meta: PaginationMeta; }
 export interface DashboardDlqItem {
+  kind: "dashboard" | "notification" | "outbox";
   eventId: string;
   eventType: string;
   attempts: number;
@@ -204,6 +205,7 @@ export interface DashboardDlqItem {
   terminalAt: string | null;
 }
 export interface DashboardDlqResponse extends ApiSuccess<DashboardDlqItem[]> { meta: PaginationMeta; }
+export type DlqKind = DashboardDlqItem["kind"];
 
 // Products and orders: legacy HTTP envelopes retained while their backend modules move to Prisma.
 export interface ProductListQuery { cat2_id?: number; page?: number; price?: "asc" | "desc"; time?: "asc" | "desc"; search?: string; }

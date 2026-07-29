@@ -1,8 +1,10 @@
 import { Crown, Heart, Info } from "lucide-react";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import { Link } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import BussinessGirl from "./BussinessGirl/BussinessGirl";
+import { productService } from "@/services/product.service.ts";
+import { formatVnd } from "@/lib/money";
 
 // Minimalist Vanguard Elite Ambient Background
 export const ScenicBackground = () => {
@@ -20,20 +22,43 @@ export const ScenicBackground = () => {
   );
 };
 
-// Infinite scrolling ledger of prestige bids
+// Real-Time Bids Marquee Ticker
 export const PrestigeLedgerMarquee = () => {
-  const items = [
-    "Patek Philippe Grand Complications bid $185,000",
-    "Rolex Daytona Paul Newman acquired for $142,500",
-    "1888 Imperial Gold Coin Lot #104 bid $120,000",
-    "Royal Sapphire Sceptre listed by Certified Node",
-    "Audemars Piguet Royal Oak Jumbo bid $68,000",
+  const [items, setItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function fetchMarqueeItems() {
+      try {
+        const response = await productService.getMostBids();
+        if (response.data && response.data.length > 0) {
+          const formatted = response.data.slice(0, 6).map((p: any) => {
+            const bidder = p.price_owner_username
+              ? (p.price_owner_username.length > 4 ? p.price_owner_username.substring(0, 3) + "***" : p.price_owner_username)
+              : "Top Bidder";
+            return `${bidder} bid ${formatVnd(p.current_price || 0)} on ${p.product_name}`;
+          });
+          setItems(formatted);
+        }
+      } catch (err) {
+        console.error("Failed to load marquee bids", err);
+      }
+    }
+    fetchMarqueeItems();
+  }, []);
+
+  const defaultTicker = [
+    "Certified Node verified live auction floor",
+    "Multi-signature escrow active across all lots",
+    "Sub-50ms synchronized bid matching engine",
+    "Verified provenance certificates guaranteed",
   ];
+
+  const displayList = items.length > 0 ? items : defaultTicker;
 
   return (
     <div className="relative w-full bg-card/40 backdrop-blur-md py-3 overflow-hidden z-10 my-4 border-y border-border/30">
       <div className="flex whitespace-nowrap gap-16 animate-marquee">
-        {[...items, ...items].map((text, i) => (
+        {[...displayList, ...displayList].map((text, i) => (
           <div key={i} className="flex items-center gap-2.5 text-xs font-semibold tracking-wider text-muted-foreground">
             <Crown className="w-3.5 h-3.5 text-accent animate-pulse" />
             <span>{text}</span>
@@ -139,7 +164,7 @@ const Hero = () => {
             </h1>
 
             <p className={`text-sm text-muted-foreground max-w-lg mb-8 leading-relaxed ${hasIntersected ? "animate-elegant-reveal delay-300" : "opacity-0"}`}>
-              Acquire certified heritage art, precision horology, and estate jewels through a low-latency live bidding network with full escrow protection.
+              Acquire verified heritage art, precision horology, and estate jewels through an elite bidding network. Meet our AI auctioneer, always ready to facilitate your secure bidding escrow.
             </p>
 
             {/* Asymmetric, borderless, premium Website Introduction */}

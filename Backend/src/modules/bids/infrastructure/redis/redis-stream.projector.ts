@@ -30,6 +30,8 @@ const eventTypes = new Set([
   "AUCTION_CLOSED",
   "AUCTION_CANCELLED",
 ]);
+const isMissingGroup = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes("NOGROUP");
 
 export class ProjectionGapError extends Error {}
 export class InvalidAuctionEventError extends Error {}
@@ -249,10 +251,21 @@ function entriesFromRead(raw: unknown): RedisStreamEntry[] {
 }
 
 export async function readNewProjectorEntries(consumer: string, count = 50): Promise<RedisStreamEntry[]> {
-  const raw = await blockingClient().xreadgroup(
-    "GROUP", GROUP, consumer, "COUNT", count, "BLOCK", 1_000,
-    "STREAMS", redisAuctionKeys.results, ">",
-  );
+  let raw: unknown;
+  try {
+    raw = await blockingClient().xreadgroup(
+      "GROUP", GROUP, consumer, "COUNT", count, "BLOCK", 1_000,
+      "STREAMS", redisAuctionKeys.results, ">",
+    );
+  } catch (error) {
+    if (!isMissingGroup(error)) throw error;
+    projectorGroupReady = false;
+    await ensureProjectorGroup();
+    raw = await blockingClient().xreadgroup(
+      "GROUP", GROUP, consumer, "COUNT", count, "BLOCK", 1_000,
+      "STREAMS", redisAuctionKeys.results, ">",
+    );
+  }
   return entriesFromRead(raw);
 }
 
@@ -268,15 +281,23 @@ export async function autoClaimProjectorEntries(
   minIdleMs = 30_000,
   count = 50,
 ): Promise<RedisStreamEntry[]> {
-  const raw = await redisClient.xautoclaim(
-    redisAuctionKeys.results,
-    GROUP,
-    consumer,
-    minIdleMs,
-    "0-0",
-    "COUNT",
-    count,
-  );
+  let raw: unknown;
+  try {
+    raw = await redisClient.xautoclaim(
+      redisAuctionKeys.results,
+      GROUP,
+      consumer,
+      minIdleMs,
+      "0-0",
+      "COUNT",
+      count,
+    );
+  } catch (error) {
+    if (!isMissingGroup(error)) throw error;
+    projectorGroupReady = false;
+    await ensureProjectorGroup();
+    return [];
+  }
   if (!Array.isArray(raw) || !Array.isArray(raw[1])) return [];
   return entriesFromRead([[redisAuctionKeys.results, raw[1]]]);
 }

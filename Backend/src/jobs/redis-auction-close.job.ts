@@ -5,6 +5,7 @@ import { redisAuctionKeys } from "@/modules/bids/infrastructure/redis/redis-auct
 const mutations = new MutateAuctionUseCase();
 let timer: NodeJS.Timeout | undefined;
 let running = false;
+let currentRun: Promise<number> | undefined;
 
 export async function closeDueRedisAuctions(now = new Date(), limit = 100): Promise<number> {
   if (running) return 0;
@@ -38,11 +39,17 @@ export async function closeDueRedisAuctions(now = new Date(), limit = 100): Prom
 
 export function startRedisAuctionCloseJob(intervalMs = 1_000): void {
   if (timer) return;
-  timer = setInterval(() => void closeDueRedisAuctions(), intervalMs);
+  timer = setInterval(() => {
+    if (currentRun) return;
+    currentRun = closeDueRedisAuctions().finally(() => {
+      currentRun = undefined;
+    });
+  }, intervalMs);
   timer.unref();
 }
 
-export function stopRedisAuctionCloseJob(): void {
+export async function stopRedisAuctionCloseJob(): Promise<void> {
   if (timer) clearInterval(timer);
   timer = undefined;
+  await currentRun;
 }

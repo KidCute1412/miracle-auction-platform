@@ -1,11 +1,11 @@
 import type { Response } from "express";
-import type { DashboardRange } from "api-contracts";
+import type { DashboardRange, DlqKind } from "api-contracts";
 import type { AccountRequest } from "@/interfaces/request.interface.ts";
 import { requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 import { getAdminSocketCount } from "@/socket.ts";
 import * as DashboardService from "../application/dashboard-summary.use-case.ts";
 
-interface PaginationQuery { page: number; limit: number; }
+interface PaginationQuery { page: number; limit: number; kind?: DlqKind; }
 interface AuditQuery extends PaginationQuery {
   actorId?: number; action?: string; resourceType?: string; result?: string; from?: Date; to?: Date;
 }
@@ -28,7 +28,8 @@ export async function getOperations(_req: AccountRequest, res: Response): Promis
 
 export async function getDlq(_req: AccountRequest, res: Response): Promise<void> {
   const { page, limit } = query<PaginationQuery>(res);
-  const result = await DashboardService.getDlq(page, limit);
+  const { kind } = query<PaginationQuery>(res);
+  const result = await DashboardService.getDlq(page, limit, kind);
   res.json({
     success: true,
     data: result.data,
@@ -39,8 +40,9 @@ export async function getDlq(_req: AccountRequest, res: Response): Promise<void>
 export async function retryDlq(req: AccountRequest, res: Response): Promise<void> {
   const actor = requireAuthenticatedUser(req);
   const { eventId } = res.locals.validated?.params as { eventId: string };
+  const { kind } = query<{ kind: DlqKind }>(res);
   try {
-    const result = await DashboardService.retryDlq(eventId, actor.user_id, req.header("x-request-id") as string);
+    const result = await DashboardService.retryDlq(kind, eventId, actor.user_id, req.header("x-request-id") as string);
     res.status(202).json({ success: true, data: result });
   } catch (error) {
     res.status(404).json({ success: false, error: { code: "DLQ_EVENT_NOT_FOUND", message: "DLQ event was not found", requestId: req.header("x-request-id") } });

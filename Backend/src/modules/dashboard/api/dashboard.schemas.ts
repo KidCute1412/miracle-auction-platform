@@ -5,6 +5,10 @@ export const summaryQuerySchema = Joi.object({ range: Joi.string().valid(...rang
 export const paginationQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(20),
+  kind: Joi.string().valid("dashboard", "notification", "outbox"),
+});
+export const dlqKindQuerySchema = Joi.object({
+  kind: Joi.string().valid("dashboard", "notification", "outbox").default("dashboard"),
 });
 export const eventIdParamsSchema = Joi.object({ eventId: Joi.string().uuid({ version: ["uuidv4"] }).required() });
 export const auditQuerySchema = paginationQuerySchema.keys({

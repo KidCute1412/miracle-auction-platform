@@ -6,6 +6,7 @@ import type {
   DashboardRange,
   DashboardSummaryResponse,
   DashboardSyncResponse,
+  DlqKind,
 } from "api-contracts";
 
 const ADMIN_PATH = import.meta.env.VITE_PATH_ADMIN || "admin";
@@ -24,10 +25,10 @@ export const dashboardService = {
     apiRequest(`/${ADMIN_PATH}/dashboard/operations`),
   getAuditLogs: (params?: Record<string, string | number | undefined>): Promise<AuditLogResponse> =>
     apiRequest(`/${ADMIN_PATH}/audit-logs`, { params }),
-  getDlq: (params?: { page?: number; limit?: number }): Promise<DashboardDlqResponse> =>
+  getDlq: (params?: { page?: number; limit?: number; kind?: DlqKind }): Promise<DashboardDlqResponse> =>
     apiRequest(`/${ADMIN_PATH}/dashboard/dlq`, { params }),
-  retryDlq: (eventId: string): Promise<DashboardSyncResponse> =>
-    apiRequest(`/${ADMIN_PATH}/dashboard/dlq/${eventId}/retry`, { method: "POST" }),
+  retryDlq: (eventId: string, kind: DlqKind): Promise<DashboardSyncResponse> =>
+    apiRequest(`/${ADMIN_PATH}/dashboard/dlq/${eventId}/retry`, { method: "POST", params: { kind } }),
   exportUrl: (dataset: "analytics" | "audit", range: DashboardRange): string => {
     const base = import.meta.env.VITE_API_URL || "http://localhost:5000";
     return `${base}/${ADMIN_PATH}/dashboard/export.csv?dataset=${dataset}&range=${range}`;
