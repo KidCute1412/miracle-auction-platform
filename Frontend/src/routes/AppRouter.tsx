@@ -11,29 +11,31 @@ import AccountLogin from "@/pages/auth/AccountLoginPage";
 import ForgotPassword from "@/pages/auth/ForgotPasswordPage";
 import AllCategoriesPage from "@/pages/client/CategoriesPage";
 import ListProductsPage from "@/pages/client/ListProductsPage";
-import DashboardPage from "@/pages/admin/DashboardPage";
-import CategoryList from "@/pages/admin/CategoryListPage";
-import CategoryCreate from "@/pages/admin/CategoryCreatePage";
 import DetailProductPage from "@/pages/client/DetailProductPage/DetailProductPage";
 import ResetPassword from "@/pages/auth/ResetPasswordPage";
 import ChangePassword from "@/pages/client/ProfilePage/components/ChangePasswordPage";
-import CategoryEdit from "@/pages/admin/CategoryEditPage";
-import ProductListPage from "@/pages/admin/ProductListPage";
-import ProductDetailPage from "@/pages/admin/ProductDetailPage";
-import UserListPage from "@/pages/admin/UserListPage";
-import BidderFormListPage from "@/pages/admin/SellerApplicationPage";
 import EditProductPage from "@/pages/client/DetailProductPage/components/EditProductPage";
-import UserDetailPage from "@/pages/admin/UserDetailPage";
-import BidderFormDetailPage from "@/pages/admin/SellerApplicationDetailPage";
 import PostProductPage from "@/pages/client/ProfilePage/components/PostProductPage";
 import ProfilePage from "@/pages/client/ProfilePage/ProfilePage";
-import AdminProfilePage from "@/pages/admin/ProfilePage";
 import MyProductsPage from "@/pages/client/ProfilePage/components/MyProductsPage";
 import RegisterSellerPage from "@/pages/client/ProfilePage/components/RegisterSellerPage";
 import EditProfilePage from "@/pages/client/ProfilePage/components/EditProfilePage";
-import SellerApplicationDetailPage from "@/pages/admin/SellerApplicationDetailPage";
-import CategoryTrashPage from "@/pages/admin/CategoryTrashPage";
-import ProductTrashPage from "@/pages/admin/ProductTrashPage";
+import {
+  DashboardPage,
+  CategoryListPage as CategoryList,
+  CategoryCreatePage as CategoryCreate,
+  CategoryEditPage as CategoryEdit,
+  CategoryTrashPage,
+  ProductListPage,
+  ProductDetailPage,
+  ProductTrashPage,
+  UserListPage,
+  UserDetailPage,
+  SellerApplicationPage as BidderFormListPage,
+  SellerApplicationDetailPage as BidderFormDetailPage,
+  SellerApplicationDetailPage,
+  ProfilePage as AdminProfilePage,
+} from "@/pages/admin";
 import RateUserPage from "@/pages/client/RateUserPage";
 import RateHistoryPage from "@/pages/client/ProfilePage/components/RateHistoryPage";
 import { BreadcrumbProvider } from "@/contexts/BreadcrumbContext";
