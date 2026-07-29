@@ -12,11 +12,11 @@ import { toast } from "sonner";
 import { accountService } from "@/services/account.service.ts";
 
 const baseLinkClass =
-  "flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-all duration-200";
+  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200";
 const activeClass =
-  "bg-amber-500/10 text-amber-300 border-l-2 border-amber-400 shadow-[0_0_15px_rgba(212,175,55,0.15)] font-semibold";
+  "bg-accent/15 text-accent font-semibold border-l-2 border-accent shadow-sm";
 const normalClass =
-  "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 hover:border-l-2 hover:border-amber-500/30";
+  "text-muted-foreground hover:text-foreground hover:bg-muted/60";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -43,8 +43,8 @@ export default function Sidebar() {
     );
 
   return (
-    <nav className="p-4 space-y-1.5 bg-[#0F1420]/60 h-full border-r border-amber-500/10 transition-colors duration-300">
-      <div className="px-3 pb-2 text-[10px] font-mono font-semibold uppercase tracking-widest text-slate-500">
+    <nav className="p-3 space-y-1 bg-card h-full transition-colors duration-300">
+      <div className="px-3 pb-1 text-[10px] font-mono font-semibold uppercase tracking-widest text-muted-foreground">
         Navigation
       </div>
 
@@ -56,7 +56,7 @@ export default function Sidebar() {
           `${baseLinkClass} ${isActive ? activeClass : normalClass}`
         }
       >
-        <FiHome className="text-lg text-amber-400/80" />
+        <FiHome className="text-lg opacity-80" />
         <span>Dashboard</span>
       </NavLink>
 
@@ -67,7 +67,7 @@ export default function Sidebar() {
           `${baseLinkClass} ${isCategoryActive ? activeClass : normalClass}`
         }
       >
-        <FiTag className="text-lg text-amber-400/80" />
+        <FiTag className="text-lg opacity-80" />
         <span>Manage Categories</span>
       </NavLink>
 
@@ -78,7 +78,7 @@ export default function Sidebar() {
           `${baseLinkClass} ${isActive ? activeClass : normalClass}`
         }
       >
-        <FiPackage className="text-lg text-amber-400/80" />
+        <FiPackage className="text-lg opacity-80" />
         <span>Manage Products</span>
       </NavLink>
 
@@ -89,7 +89,7 @@ export default function Sidebar() {
           `${baseLinkClass} ${isUserActive ? activeClass : normalClass}`
         }
       >
-        <FiUsers className="text-lg text-amber-400/80" />
+        <FiUsers className="text-lg opacity-80" />
         <span>Manage Users</span>
       </NavLink>
 
@@ -100,13 +100,13 @@ export default function Sidebar() {
           `${baseLinkClass} ${isBidderFormActive ? activeClass : normalClass}`
         }
       >
-        <FiFileText className="text-lg text-amber-400/80" />
+        <FiFileText className="text-lg opacity-80" />
         <span>Manage Applications</span>
       </NavLink>
 
       {/* Separate section for profile and action triggers */}
-      <div className="pt-6 mt-6 border-t border-slate-800/80 space-y-1.5">
-        <div className="px-3 pb-2 text-[10px] font-mono font-semibold uppercase tracking-widest text-slate-500">
+      <div className="pt-4 mt-4 border-t border-border space-y-1">
+        <div className="px-3 pb-1 text-[10px] font-mono font-semibold uppercase tracking-widest text-muted-foreground">
           Account
         </div>
 
@@ -117,13 +117,13 @@ export default function Sidebar() {
             `${baseLinkClass} ${isActive ? activeClass : normalClass}`
           }
         >
-          <FiUserCheck className="text-lg text-amber-400/80" />
+          <FiUserCheck className="text-lg opacity-80" />
           <span>Profile Info</span>
         </NavLink>
 
         {/* Account Logout Button */}
         <div
-          className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 cursor-pointer transition-all duration-200 border border-transparent hover:border-rose-500/20"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 cursor-pointer transition-colors duration-200"
           onClick={() => {
             accountService.logout()
               .then((data) => {

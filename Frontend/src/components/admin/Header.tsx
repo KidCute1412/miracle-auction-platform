@@ -1,6 +1,6 @@
 import { useAuth } from "@/routes/ProtectedRouter";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, ShieldCheck } from "lucide-react";
 import UserAvatar from "@/components/common/UserAvatar";
 
 export default function Header() {
@@ -8,12 +8,14 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="mx-auto flex h-16 items-center justify-between px-6 md:px-10 bg-[#0F1420]/80 text-slate-100 backdrop-blur-xl transition-colors duration-300">
+    <div className="mx-auto flex h-16 items-center justify-between px-6 bg-card text-foreground transition-colors duration-300">
       {/* Brand logo container */}
-      <div className="text-xl font-heading font-bold tracking-widest uppercase">
-        <a href="/admin/dashboard" className="flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 hover:brightness-110 transition-all drop-shadow-[0_0_12px_rgba(212,175,55,0.3)]">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#D4AF37]" />
-          <span>Vanguard Admin</span>
+      <div className="flex items-center gap-2.5 font-heading font-bold text-lg tracking-wide select-none">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/15 text-accent border border-accent/20">
+          <ShieldCheck className="w-5 h-5" />
+        </div>
+        <a href="/admin/dashboard" className="text-foreground hover:text-accent transition-colors">
+          Vanguard <span className="text-accent font-semibold">Admin</span>
         </a>
       </div>
 
@@ -22,15 +24,15 @@ export default function Header() {
         {/* Theme toggle button */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg bg-slate-900/60 border border-amber-500/10 hover:border-amber-500/30 text-amber-300/80 hover:text-amber-300 transition-all duration-200 cursor-pointer shadow-inner"
+          className="p-2 rounded-lg bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200 cursor-pointer border border-border/50"
           aria-label="Toggle theme"
         >
           {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 
         {/* User profile details */}
-        <div className="flex items-center gap-3 pl-3 border-l border-slate-800">
-          <div className="ring-2 ring-amber-500/30 rounded-full p-0.5 shadow-[0_0_10px_rgba(212,175,55,0.2)]">
+        <div className="flex items-center gap-3 pl-3 border-l border-border">
+          <div className="rounded-full ring-2 ring-accent/30 p-0.5">
             <UserAvatar
               src={auth?.avatar}
               name={auth?.full_name || auth?.username || "Admin"}
@@ -39,8 +41,8 @@ export default function Header() {
           </div>
 
           <div className="flex flex-col leading-tight">
-            <span className="font-medium text-sm text-slate-200 max-w-[150px] truncate">{auth?.username || "Admin"}</span>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-amber-400/80 font-semibold">Executive Admin</span>
+            <span className="font-medium text-sm text-foreground max-w-[150px] truncate">{auth?.username || "Admin"}</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-accent font-semibold">Administrator</span>
           </div>
         </div>
       </div>

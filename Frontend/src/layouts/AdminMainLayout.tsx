@@ -32,9 +32,9 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#0B0F17] text-slate-100 selection:bg-amber-500/30 selection:text-amber-200 transition-colors duration-300">
-      {/* Fixed top header with champagne gold subtle border */}
-      <header className="fixed inset-x-0 top-0 z-20 border-b border-amber-500/20 bg-[#0F1420]/80 backdrop-blur-xl shadow-lg shadow-black/40 transition-colors duration-300">
+    <div className="min-h-screen w-full bg-background text-foreground transition-colors duration-300">
+      {/* Fixed top header with theme border */}
+      <header className="fixed inset-x-0 top-0 z-20 border-b border-border bg-card/80 backdrop-blur-xl transition-colors duration-300">
         <Header />
       </header>
 
@@ -43,17 +43,17 @@ export default function MainLayout() {
         className="grid"
         style={{
           gridTemplateRows: "1fr",
-          gridTemplateColumns: "250px 1fr",
+          gridTemplateColumns: "240px 1fr",
         }}
       >
         {/* Sticky sidebar for administration routing */}
-        <aside className="sticky top-16 hidden h-[calc(100vh-64px)] overflow-y-auto border-r border-amber-500/10 bg-[#0F1420]/60 backdrop-blur-xl transition-colors duration-300 md:block">
+        <aside className="sticky top-16 hidden h-[calc(100vh-64px)] overflow-y-auto border-r border-border bg-card transition-colors duration-300 md:block">
           <Sidebar />
         </aside>
 
-        {/* Main viewing area with ambient obsidian backdrop */}
-        <main className="pt-16 bg-[#0B0F17] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(212,175,55,0.05),rgba(255,255,255,0))]">
-          <div className="min-h-[calc(100vh-64px)] overflow-y-auto p-6 md:p-8">
+        {/* Main viewing area with layout background */}
+        <main className="pt-16 bg-muted/20">
+          <div className="min-h-[calc(100vh-64px)] overflow-y-auto p-6">
             <Outlet />
           </div>
         </main>
