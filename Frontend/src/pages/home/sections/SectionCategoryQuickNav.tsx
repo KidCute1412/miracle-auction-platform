@@ -6,9 +6,12 @@ import { categoryService } from "@/services/category.service.ts";
 import { slugify } from "@/utils/make_slug";
 
 interface RealCategory {
-  category_id: number;
-  category_name: string;
+  category_id?: number;
+  id?: number;
+  category_name?: string;
+  name?: string;
   slug?: string;
+  category_slug?: string;
   product_count?: number;
 }
 
@@ -31,8 +34,8 @@ export const SectionCategoryQuickNav: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const getCategoryIcon = (name: string) => {
-    const lower = name.toLowerCase();
+  const getCategoryIcon = (name?: string) => {
+    const lower = (name || "").toLowerCase();
     if (lower.includes("watch") || lower.includes("đồng hồ") || lower.includes("horology")) return Watch;
     if (lower.includes("art") || lower.includes("tranh") || lower.includes("hội họa")) return Palette;
     if (lower.includes("jewel") || lower.includes("trang sức") || lower.includes("gem")) return Gem;
@@ -73,13 +76,15 @@ export const SectionCategoryQuickNav: React.FC = () => {
         </div>
       ) : categories.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {categories.map((cat) => {
-            const Icon = getCategoryIcon(cat.category_name);
-            const slug = cat.slug || slugify(cat.category_name);
-            const targetUrl = `/categories/${slug}-${cat.category_id}`;
+          {categories.map((cat, idx) => {
+            const catName = cat.category_name || cat.name || `Department #${idx + 1}`;
+            const catId = cat.category_id || cat.id || idx + 1;
+            const Icon = getCategoryIcon(catName);
+            const slug = cat.slug || cat.category_slug || slugify(catName);
+            const targetUrl = `/categories/${slug}-${catId}`;
 
             return (
-              <Card3DTilt key={cat.category_id} maxTiltDeg={6} scale={1.02}>
+              <Card3DTilt key={catId} maxTiltDeg={6} scale={1.02}>
                 <Link
                   to={targetUrl}
                   className="group relative flex flex-col justify-between p-5 h-44 rounded-2xl bg-card/40 border border-accent/20 hover:border-accent/50 backdrop-blur-xl transition-all duration-300 hover:shadow-[0_10px_25px_rgba(226,184,59,0.08)] overflow-hidden"
@@ -95,10 +100,10 @@ export const SectionCategoryQuickNav: React.FC = () => {
                       </span>
                     </div>
                     <h3 className="text-sm font-bold text-foreground group-hover:text-accent transition-colors font-heading line-clamp-1">
-                      {cat.category_name}
+                      {catName}
                     </h3>
                     <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1 font-mono">
-                      Department #{cat.category_id}
+                      Department #{catId}
                     </p>
                   </div>
 
