@@ -1,9 +1,6 @@
 {
-  "cleanUrls": true,
-  "rateLimits": {
-    "ip": {
-      "limit": 100,
-      "window": "1m"
-    }
-  }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
+
