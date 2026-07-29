@@ -18,12 +18,21 @@ const upload = vi.hoisted(() => vi.fn().mockResolvedValue({ secure_url: "https:/
 const unlinkSync = vi.hoisted(() => vi.fn());
 const sendMail = vi.hoisted(() => vi.fn());
 const emitBidUpdate = vi.hoisted(() => vi.fn());
+const tx = vi.hoisted(() => ({
+  products: { update: vi.fn(), delete: vi.fn() },
+  admin_audit_logs: { create: vi.fn() },
+}));
+const addOutboxEvent = vi.hoisted(() => vi.fn());
 vi.mock("../../../src/modules/products/infrastructure/product.repository.ts", () => repo);
 vi.mock("@/modules/users/infrastructure/user.repository.ts", () => users);
 vi.mock("@/modules/accounts/infrastructure/account.repository.ts", () => ({ accountRepository: accounts }));
 vi.mock("@/config/cloud.config.ts", () => ({ uploadToCloudinary: upload }));
 vi.mock("fs", () => ({ default: { unlinkSync } }));
 vi.mock("@/socket.ts", () => ({ emitBidUpdate }));
+vi.mock("@/infrastructure/database/prisma.client.ts", () => ({
+  prisma: { $transaction: (operation: (client: typeof tx) => unknown) => operation(tx) },
+}));
+vi.mock("@/infrastructure/events/outbox.repository.ts", () => ({ addOutboxEvent }));
 vi.mock("@/helpers/mail.helper.ts", () => ({
   sendMail, sendBidderQuestionTemplate: vi.fn(() => "question-mail"), sendSellerAnswerTemplate: vi.fn(() => "answer-mail"),
   getProductDescriptionChangedTemplate: vi.fn(() => "description-mail"),
@@ -129,7 +138,9 @@ describe("product use cases", () => {
 
   it("delegates product lifecycle mutations", async () => {
     await useCase.deleteProductById(1); await useCase.restoreProductById(1); await useCase.destroyProductById(1);
-    expect(repo.deleteProductById).toHaveBeenCalledWith(1); expect(repo.restoreProductById).toHaveBeenCalledWith(1); expect(repo.destroyProductById).toHaveBeenCalledWith(1);
+    expect(tx.products.update).toHaveBeenCalledTimes(2);
+    expect(tx.products.delete).toHaveBeenCalledWith({ where: { product_id: 1n } });
+    expect(addOutboxEvent).toHaveBeenCalledTimes(3);
   });
 
   it("extends an auction only inside the configured threshold", async () => {

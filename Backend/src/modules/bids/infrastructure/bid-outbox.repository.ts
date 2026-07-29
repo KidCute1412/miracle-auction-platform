@@ -1,5 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { BidDomainError } from "../domain/bid.errors.ts";
+import { kafkaTopics } from "@/config/kafka.config.ts";
+import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
 
 export async function addBidOutboxEvent(
   tx: Prisma.TransactionClient,
@@ -7,8 +9,11 @@ export async function addBidOutboxEvent(
   aggregateId: number,
   payload: object,
 ): Promise<void> {
-  await tx.auction_outbox.create({
-    data: { event_type: eventType, event_version: 1, aggregate_id: String(aggregateId), payload },
+  await addOutboxEvent(tx, {
+    topic: kafkaTopics.bidding,
+    eventType,
+    aggregateId: String(aggregateId),
+    payload,
   });
 }
 

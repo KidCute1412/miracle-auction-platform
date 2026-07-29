@@ -38,8 +38,24 @@ services:
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
     volumes:
       - kafka_data:/var/lib/kafka/data
+
+  kafka-init:
+    image: apache/kafka:3.7.0
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do sleep 2; done
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic bidding_events --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic dashboard_updates --partitions 1 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic dashboard_updates_dlq --partitions 1 --replication-factor 1
 
   # Node.js Worker (handles bidding writes, dashboard, email)
   node-worker:
@@ -56,9 +72,22 @@ services:
       - DIRECT_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=kafka:9092
+      - KAFKA_SSL=false
+      - KAFKA_BIDDING_TOPIC=bidding_events
+      - KAFKA_DASHBOARD_TOPIC=dashboard_updates
+      - KAFKA_DASHBOARD_DLQ_TOPIC=dashboard_updates_dlq
+      - DASHBOARD_KAFKA_GROUP_ID=dashboard-analytics-v1
+      - DASHBOARD_DEBOUNCE_MS=15000
+      - DASHBOARD_RECOVERY_INTERVAL_MS=60000
+      - DASHBOARD_STALE_THRESHOLD_MS=120000
+      - DASHBOARD_RETRY_LIMIT=5
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      kafka-init:
+        condition: service_completed_successfully
 
   # Multi-agent development automation service
   agent-service:

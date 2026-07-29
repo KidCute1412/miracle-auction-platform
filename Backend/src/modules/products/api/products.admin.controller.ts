@@ -101,7 +101,8 @@ export async function deleteProduct(req: AccountRequest, res: Response) {
         reason: "admin soft delete",
       });
     } else {
-      await ProductsService.deleteProductById(Number(id));
+      const actor = requireAuthenticatedUser(req);
+      await ProductsService.deleteProductById(Number(id), actor.user_id, req.header("x-request-id"));
     }
     res.json({ code: "success", message: "Deleted product successfully" });
   } catch (error) {
@@ -110,10 +111,12 @@ export async function deleteProduct(req: AccountRequest, res: Response) {
 }
 
 // Restore a soft-deleted product
-export async function restoreProduct(req: Request, res: Response) {
+export async function restoreProduct(req: AccountRequest, res: Response) {
   try {
     const { id } = req.params;
-    await ProductsService.restoreProductById(Number(id));
+    await ProductsService.restoreProductById(
+      Number(id), requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
+    );
     res.json({ code: "success", message: "Restored product successfully" });
   } catch (error) {
     res.json({ code: "error", message: "An error occurred while restoring product" });
@@ -121,10 +124,12 @@ export async function restoreProduct(req: Request, res: Response) {
 }
 
 // Permanently destroy a product
-export async function destroyProduct(req: Request, res: Response) {
+export async function destroyProduct(req: AccountRequest, res: Response) {
   try {
     const { id } = req.params;
-    await ProductsService.destroyProductById(Number(id));
+    await ProductsService.destroyProductById(
+      Number(id), requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
+    );
     res.json({ code: "success", message: "Permanently deleted product successfully" });
   } catch (error) {
     res.json({ code: "error", message: "An error occurred while permanently deleting product" });

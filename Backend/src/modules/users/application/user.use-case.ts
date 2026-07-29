@@ -2,6 +2,10 @@ import * as UsersModel from "../infrastructure/user.repository.ts";
 import { sendMail } from "@/helpers/mail.helper.ts";
 import bcrypt from "bcryptjs";
 import type { ApplicationFilter, UserFilter } from "../infrastructure/user.repository.ts";
+import { prisma } from "@/infrastructure/database/prisma.client.ts";
+import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
+import { kafkaTopics } from "@/config/kafka.config.ts";
+import { randomUUID } from "node:crypto";
 
 const NEW_PASSWORD = "OnlineAuction123@";
 const SALT_ROUNDS = 10;
@@ -53,9 +57,37 @@ export async function getUsersWithOffsetLimit(offset: number, limit: number, fil
 }
 
 // Update role and status flags
-export async function editUserRoleAndStatus(user_id: number, role: string, status: string): Promise<void> {
-  await UsersModel.updateUserRole(user_id, role);
-  await UsersModel.updateUserStatus(user_id, status);
+export async function editUserRoleAndStatus(
+  user_id: number,
+  role: string,
+  status: string,
+  actorId?: number,
+  correlationId: string = randomUUID(),
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.users.update({
+      where: { user_id },
+      data: { role, status, auth_version: { increment: 1 } },
+    });
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.dashboard,
+      eventType: "user.access_changed.v1",
+      aggregateId: String(user_id),
+      correlationId,
+      payload: { userId: user_id, role, status },
+    });
+    await tx.admin_audit_logs.create({
+      data: {
+        actor_id: actorId,
+        action: "user.access.change",
+        resource_type: "user",
+        resource_id: String(user_id),
+        result: "success",
+        correlation_id: correlationId,
+        metadata: { role, status },
+      },
+    });
+  });
 }
 
 // Reset password to default value and notify user by email
@@ -105,13 +137,38 @@ export async function getSellerApplicationByIdDetailed(id: number) {
 }
 
 // Confirm or reject application form status and update user role if accepted
-export async function setApplicationStatus(applicationId: number, status: string): Promise<boolean> {
-  await UsersModel.setApplicationStatus(applicationId, status);
-  if (status === "accepted") {
-    const application = await UsersModel.getSellerApplicationById(applicationId);
-    if (application) {
-      await UsersModel.updateUserRole(application.user_id, "seller");
+export async function setApplicationStatus(
+  applicationId: number,
+  status: string,
+  actorId?: number,
+  correlationId: string = randomUUID(),
+): Promise<boolean> {
+  await prisma.$transaction(async (tx) => {
+    const application = await tx.upgrade_to_sellers.update({
+      where: { id: BigInt(applicationId) },
+      data: { status },
+    });
+    if (status === "accepted") {
+      await tx.users.update({ where: { user_id: application.user_id }, data: { role: "seller", auth_version: { increment: 1 } } });
     }
-  }
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.dashboard,
+      eventType: status === "accepted" ? "seller.approved.v1" : "seller.rejected.v1",
+      aggregateId: String(applicationId),
+      correlationId,
+      payload: { applicationId, userId: application.user_id, status },
+    });
+    await tx.admin_audit_logs.create({
+      data: {
+        actor_id: actorId,
+        action: status === "accepted" ? "seller.approve" : "seller.reject",
+        resource_type: "seller_application",
+        resource_id: String(applicationId),
+        result: "success",
+        correlation_id: correlationId,
+        metadata: { userId: application.user_id },
+      },
+    });
+  });
   return true;
 }

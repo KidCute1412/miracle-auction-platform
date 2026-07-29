@@ -2,6 +2,9 @@ import * as orderRepository from "../infrastructure/order.repository.ts";
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
 import fs from "fs";
 import { OrderDomainError } from "../domain/order.errors.ts";
+import { prisma } from "@/infrastructure/database/prisma.client.ts";
+import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
+import { kafkaTopics } from "@/config/kafka.config.ts";
 
 // Create order and optionally upload payment proof image to Cloudinary
 export type CreateOrderData = {
@@ -49,7 +52,18 @@ export async function rejectOrder(product_id: number): Promise<{ success: boolea
   if (existedOrder.order_status !== "pending") {
     return { success: false, message: "Can only reject pending orders" };
   }
-  await orderRepository.updateOrderStatus(existedOrder.order_id, "rejected");
+  await prisma.$transaction(async (tx) => {
+    await tx.orders.update({
+      where: { order_id: existedOrder.order_id },
+      data: { order_status: "rejected" },
+    });
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.dashboard,
+      eventType: "order.rejected.v1",
+      aggregateId: existedOrder.order_id.toString(),
+      payload: { orderId: existedOrder.order_id.toString(), productId: existedOrder.product_id?.toString() ?? null },
+    });
+  });
   return { success: true, message: "Order rejected successfully" };
 }
 
@@ -71,6 +85,29 @@ export async function approveOrder(
     fs.unlinkSync(file.path);
     shipping_label_image_url = uploadResult.secure_url;
   }
-  await orderRepository.updateOrderStatus(existedOrder.order_id, "finished", shipping_label_image_url);
+  await prisma.$transaction(async (tx) => {
+    const product = existedOrder.product_id
+      ? await tx.products.findUnique({ where: { product_id: existedOrder.product_id }, select: { current_price: true } })
+      : null;
+    await tx.orders.update({
+      where: { order_id: existedOrder.order_id },
+      data: {
+        order_status: "finished",
+        completed_at: new Date(),
+        amount_vnd: existedOrder.amount_vnd ?? product?.current_price,
+        ...(shipping_label_image_url ? { shipping_label_image_url } : {}),
+      },
+    });
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.dashboard,
+      eventType: "order.finished.v1",
+      aggregateId: existedOrder.order_id.toString(),
+      payload: {
+        orderId: existedOrder.order_id.toString(),
+        productId: existedOrder.product_id?.toString() ?? null,
+        amountVnd: (existedOrder.amount_vnd ?? product?.current_price)?.toString() ?? null,
+      },
+    });
+  });
   return { success: true, message: "Order approved successfully" };
 }

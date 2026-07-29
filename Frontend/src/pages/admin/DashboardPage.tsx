@@ -1,348 +1,120 @@
-import React, { useState, useEffect } from "react";
-import {
-  TrendingUp,
-  Users,
-  ShoppingBag,
-  ShieldCheck,
-  Clock,
-  RefreshCw,
-  Zap,
-  Layers,
-  ChevronDown,
-  Filter,
-  ArrowUpRight,
-  Sparkles,
-} from "lucide-react";
-import type { DashboardRange } from "api-contracts";
-import { Sparkline } from "@/components/admin/charts/Sparkline";
-import { VanguardAreaChart, type DataPoint } from "@/components/admin/charts/VanguardAreaChart";
-import { CategoryDistributionChart } from "@/components/admin/charts/CategoryDistributionChart";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, AlertTriangle, Database, Download, Radio, RefreshCw, ShieldCheck, ShoppingBag, Users } from "lucide-react";
+import type { AuditLog, DashboardDlqItem, DashboardRange } from "api-contracts";
 import { BidDensityHeatmap } from "@/components/admin/charts/BidDensityHeatmap";
+import { CategoryDistributionChart } from "@/components/admin/charts/CategoryDistributionChart";
+import { VanguardAreaChart, type DataPoint } from "@/components/admin/charts/VanguardAreaChart";
+import { useAdminDashboardSocket } from "@/hooks/useAdminDashboardSocket";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { dashboardService } from "@/services/dashboard.service";
 
-// Rich, High-Fidelity Mock Datasets for Instant Graph Visualization
-const mockChartDataset: Record<DashboardRange, DataPoint[]> = {
-  "7d": [
-    { label: "Mon", revenue: 142000, bids: 820, overview: 45 },
-    { label: "Tue", revenue: 168000, bids: 940, overview: 52 },
-    { label: "Wed", revenue: 195000, bids: 1120, overview: 64 },
-    { label: "Thu", revenue: 210000, bids: 1280, overview: 70 },
-    { label: "Fri", revenue: 285000, bids: 1840, overview: 95 },
-    { label: "Sat", revenue: 340000, bids: 2210, overview: 110 },
-    { label: "Sun", revenue: 310000, bids: 1980, overview: 88 },
-  ],
-  "30d": [
-    { label: "Day 1-5", revenue: 420000, bids: 2800, overview: 150 },
-    { label: "Day 6-10", revenue: 580000, bids: 3600, overview: 190 },
-    { label: "Day 11-15", revenue: 720000, bids: 4900, overview: 230 },
-    { label: "Day 16-20", revenue: 890000, bids: 5800, overview: 280 },
-    { label: "Day 21-25", revenue: 1050000, bids: 7100, overview: 340 },
-    { label: "Day 26-30", revenue: 1248500, bids: 8400, overview: 410 },
-  ],
-  "3m": [
-    { label: "May W1", revenue: 1100000, bids: 7200, overview: 380 },
-    { label: "May W3", revenue: 1350000, bids: 8900, overview: 440 },
-    { label: "Jun W1", revenue: 1680000, bids: 11200, overview: 520 },
-    { label: "Jun W3", revenue: 1920000, bids: 13400, overview: 610 },
-    { label: "Jul W1", revenue: 2350000, bids: 16800, overview: 780 },
-    { label: "Jul W3", revenue: 2850000, bids: 19400, overview: 920 },
-  ],
-  "6m": [
-    { label: "Feb", revenue: 1800000, bids: 11200, overview: 620 },
-    { label: "Mar", revenue: 2100000, bids: 13400, overview: 710 },
-    { label: "Apr", revenue: 2600000, bids: 16800, overview: 890 },
-    { label: "May", revenue: 2950000, bids: 18900, overview: 980 },
-    { label: "Jun", revenue: 3400000, bids: 21500, overview: 1120 },
-    { label: "Jul", revenue: 4200000, bids: 26800, overview: 1380 },
-  ],
-  "1y": [
-    { label: "Q3 '25", revenue: 5200000, bids: 34000, overview: 1850 },
-    { label: "Q4 '25", revenue: 6800000, bids: 42500, overview: 2300 },
-    { label: "Q1 '26", revenue: 8100000, bids: 51000, overview: 2750 },
-    { label: "Q2 '26", revenue: 9900000, bids: 63000, overview: 3400 },
-  ],
+const ranges: Record<DashboardRange, string> = {
+  "7d": "Last 7 days", "30d": "Last 30 days", "3m": "Last 3 months", "6m": "Last 6 months", "1y": "Last year",
 };
+const colors = ["#F59E0B", "#D97706", "#B45309", "#78716C", "#A8A29E", "#FBBF24"];
+const formatVnd = (value: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
 
 export default function DashboardPage() {
-  const [time, setTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState<"overview" | "revenue" | "bids" | "overlay">("revenue");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [range, setRange] = useState<DashboardRange>("6m");
-  const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
-
-  const rangeLabels: Record<DashboardRange, string> = {
-    "7d": "Last 7 Days",
-    "30d": "Last 30 Days",
-    "3m": "Last 3 Months",
-    "6m": "Last 6 Months",
-    "1y": "Last Year",
-  };
-
-  const metrics = {
-    gmv: 1248500,
-    activeUsers: 14290,
-    activeAuctions: 324,
-    pendingVerifications: 14,
-  };
-
-  const [chartData, setChartData] = useState<DataPoint[]>(mockChartDataset["6m"]);
+  const [tab, setTab] = useState<"overview" | "operations" | "audit">("overview");
+  const [chartTab, setChartTab] = useState<"overview" | "revenue" | "bids" | "overlay">("revenue");
+  const [socketVersion, setSocketVersion] = useState(0);
+  const socketState = useAdminDashboardSocket((event) => setSocketVersion(event.version));
+  const { summary, operations, loading, error, refresh } = useDashboardData(range, socketState !== "connected");
+  const [sync, setSync] = useState<{ baseline: number; state: "waiting" | "delayed" } | null>(null);
+  const [audit, setAudit] = useState<AuditLog[]>([]);
+  const [dlq, setDlq] = useState<DashboardDlqItem[]>([]);
+  const [secondaryError, setSecondaryError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
+    if (socketVersion > 0) void refresh(true);
+  }, [socketVersion, refresh]);
   useEffect(() => {
-    setChartData(mockChartDataset[range] || mockChartDataset["6m"]);
-  }, [range]);
+    if (sync && summary && summary.metadata.version > sync.baseline) setSync(null);
+  }, [summary, sync]);
+  useEffect(() => {
+    if (!sync || sync.state !== "waiting") return;
+    const timer = window.setTimeout(() => setSync((current) => current ? { ...current, state: "delayed" } : null), 30_000);
+    return () => window.clearTimeout(timer);
+  }, [sync]);
+  useEffect(() => {
+    if (tab !== "audit") return;
+    Promise.all([dashboardService.getAuditLogs({ page: 1, limit: 50 }), dashboardService.getDlq({ page: 1, limit: 50 })])
+      .then(([auditResponse, dlqResponse]) => { setAudit(auditResponse.data); setDlq(dlqResponse.data); setSecondaryError(null); })
+      .catch((reason: unknown) => setSecondaryError(reason instanceof Error ? reason.message : "Audit data is unavailable"));
+  }, [tab]);
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setChartData(mockChartDataset[range] || mockChartDataset["6m"]);
-      setIsRefreshing(false);
-    }, 800);
-  };
+  const chartData = useMemo<DataPoint[]>(() => summary?.series.map((point) => ({
+    label: point.label, revenue: point.completedOrderGmvVnd, bids: point.bids, overview: point.auctions,
+  })) ?? [], [summary]);
 
-  return (
-    <div className="p-4 sm:p-8 space-y-6 bg-background text-foreground min-h-screen transition-colors duration-300">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-xs font-mono font-bold tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-full border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" /> VANGUARD INTELLIGENCE PORTAL
-            </span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground font-heading">
-            System Dashboard & Telemetry
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Real-time auction platform performance, financial outputs, and bidding telemetry.
-          </p>
-        </div>
+  async function requestSync() {
+    const response = await dashboardService.syncCache();
+    setSync({ baseline: response.data.baselineVersion, state: "waiting" });
+  }
 
-        {/* Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Timeframe Filter Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsTimeframeOpen(!isTimeframeOpen)}
-              className="flex items-center gap-2 bg-card hover:bg-muted text-foreground border border-border px-3.5 py-2 rounded-xl font-semibold text-xs transition-all shadow-xs cursor-pointer"
-            >
-              <Filter className="w-3.5 h-3.5 text-amber-500" />
-              <span>{rangeLabels[range]}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isTimeframeOpen ? "rotate-180" : ""}`} />
-            </button>
-            {isTimeframeOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsTimeframeOpen(false)} />
-                <div className="absolute right-0 mt-1.5 w-44 bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-xl py-1.5 z-20 animate-in fade-in zoom-in-95 duration-150">
-                  {Object.entries(rangeLabels).map(([key, label]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setRange(key as DashboardRange);
-                        setIsTimeframeOpen(false);
-                      }}
-                      className={`w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center justify-between ${
-                        range === key ? "text-amber-600 dark:text-amber-400 bg-amber-500/5 font-bold" : "text-muted-foreground"
-                      }`}
-                    >
-                      <span>{label}</span>
-                      {range === key && <span>✓</span>}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+  if (loading && !summary) return <div className="p-10 text-muted-foreground">Loading measured analytics…</div>;
+  if (error && !summary) return <div className="m-8 p-6 border border-rose-500/30 rounded-2xl text-rose-500"><AlertTriangle className="inline w-4 mr-2" />{error}<button onClick={() => void refresh()} className="ml-4 underline">Retry</button></div>;
+  if (!summary) return null;
 
-          {/* Live Clock */}
-          <div className="flex items-center gap-2 bg-card/70 backdrop-blur-md border border-border px-3.5 py-2 rounded-xl text-xs font-mono font-bold text-foreground shadow-xs">
-            <Clock className="w-4 h-4 text-amber-500" />
-            <span>{time.toLocaleTimeString()}</span>
-          </div>
+  const metrics = summary.metrics;
+  const stale = summary.metadata.state === "stale";
+  const cards = [
+    { label: "Completed-order GMV", value: formatVnd(metrics.completedOrderGmvVnd), icon: Database },
+    { label: "Active bidders", value: metrics.activeBidders.toLocaleString(), icon: Users },
+    { label: "Enabled accounts", value: metrics.enabledAccounts.toLocaleString(), icon: ShieldCheck },
+    { label: "Active auctions", value: metrics.activeAuctions.toLocaleString(), icon: ShoppingBag },
+  ];
 
-          {/* Sync Button */}
-          <button
-            onClick={handleRefresh}
-            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:shadow-amber-500/20 transition-all cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span>Sync Telemetry</span>
-          </button>
+  return <main className="p-4 sm:p-8 space-y-6 bg-background min-h-screen">
+    <header className="flex flex-wrap gap-4 justify-between items-end border-b border-border pb-5">
+      <div>
+        <p className="text-[10px] tracking-[.2em] text-amber-500 font-mono">VANGUARD INTELLIGENCE</p>
+        <h1 className="text-3xl font-black">Admin Analytics</h1>
+        <div className="flex gap-2 mt-2 text-xs">
+          <span className={socketState === "connected" ? "text-emerald-500" : "text-amber-500"}><Radio className="inline w-3 mr-1" />{socketState === "connected" ? "Realtime connected" : "Polling fallback"}</span>
+          <span className={stale ? "text-amber-500" : "text-muted-foreground"}>Snapshot v{summary.metadata.version} · {Math.round(summary.metadata.freshnessMs / 1000)}s old</span>
         </div>
       </div>
-
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* GMV Card */}
-        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <span className="flex items-center gap-0.5 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <ArrowUpRight className="w-3 h-3" /> +18.4%
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
-            Gross Merchandise Value
-          </p>
-          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
-            ${metrics.gmv.toLocaleString()}
-          </h3>
-          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
-            <span className="text-[10px] text-muted-foreground font-mono">Velocity curve</span>
-            <Sparkline data={[650000, 720000, 810000, 940000, 1100000, metrics.gmv]} color="#F59E0B" />
-          </div>
-        </div>
-
-        {/* Active Users Card */}
-        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
-              <Users className="w-5 h-5" />
-            </div>
-            <span className="flex items-center gap-0.5 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <ArrowUpRight className="w-3 h-3" /> +12.1%
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
-            Active Verified Users
-          </p>
-          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
-            {metrics.activeUsers.toLocaleString()}
-          </h3>
-          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
-            <span className="text-[10px] text-muted-foreground font-mono">User growth</span>
-            <Sparkline data={[9800, 10500, 11400, 12200, 13100, metrics.activeUsers]} color="#F59E0B" />
-          </div>
-        </div>
-
-        {/* Active Auctions Card */}
-        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
-              <ShoppingBag className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 animate-pulse">
-              LIVE NOW
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
-            Live Auction Catalogs
-          </p>
-          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
-            {metrics.activeAuctions.toLocaleString()}
-          </h3>
-          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
-            <span className="text-[10px] text-muted-foreground font-mono">Catalog volume</span>
-            <Sparkline data={[180, 210, 240, 290, 310, metrics.activeAuctions]} color="#F59E0B" />
-          </div>
-        </div>
-
-        {/* Seller Verifications Card */}
-        <div className="group relative bg-card/75 border border-border/80 hover:border-amber-500/40 rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <div className="flex justify-between items-start mb-3">
-            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-              ACTION REQUIRED
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground font-mono font-semibold uppercase tracking-wider">
-            Pending KYC Verifications
-          </p>
-          <h3 className="text-2xl sm:text-3xl font-mono font-black mt-1 text-foreground">
-            {metrics.pendingVerifications} Requests
-          </h3>
-          <div className="mt-4 flex items-end justify-between pt-2 border-t border-border">
-            <span className="text-[10px] text-muted-foreground font-mono">Queue backlog</span>
-            <Sparkline data={[35, 28, 22, 19, 16, metrics.pendingVerifications]} color="#F59E0B" />
-          </div>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <select value={range} onChange={(event) => setRange(event.target.value as DashboardRange)} className="bg-card border border-border rounded-xl px-3 py-2 text-xs">{Object.entries(ranges).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+        <a href={dashboardService.exportUrl(tab === "audit" ? "audit" : "analytics", range)} className="border border-border rounded-xl px-3 py-2 text-xs"><Download className="inline w-3 mr-1" />CSV</a>
+        <button onClick={() => void requestSync()} disabled={sync?.state === "waiting"} className="bg-amber-500 text-slate-950 rounded-xl px-4 py-2 text-xs font-bold disabled:opacity-60"><RefreshCw className={`inline w-3 mr-1 ${sync?.state === "waiting" ? "animate-spin" : ""}`} />{sync?.state === "waiting" ? "Waiting for version…" : sync?.state === "delayed" ? "Queued / delayed" : "Sync telemetry"}</button>
       </div>
+    </header>
 
-      {/* Main Vanguard Area Chart */}
-      <VanguardAreaChart
-        data={chartData}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        rangeLabel={rangeLabels[range]}
-      />
+    {stale && <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-3 text-xs text-amber-600"><AlertTriangle className="inline w-4 mr-2" />Data is older than the configured freshness threshold. Scheduled recovery and polling remain active.</div>}
+    {error && <div className="text-xs text-amber-500">Partial refresh failure: {error}</div>}
 
-      {/* Grid Row 2: Secondary Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <CategoryDistributionChart />
-        <BidDensityHeatmap rangeLabel={rangeLabels[range]} rangeKey={range} />
-      </div>
+    <nav className="flex gap-2">{(["overview", "operations", "audit"] as const).map((item) => <button key={item} onClick={() => setTab(item)} className={`px-4 py-2 rounded-xl text-xs capitalize ${tab === item ? "bg-amber-500 text-slate-950 font-bold" : "bg-card border border-border"}`}>{item === "audit" ? "Audit / DLQ" : item}</button>)}</nav>
 
-      {/* Grid Row 3: Command Deck & Engine Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-card border border-border/80 rounded-2xl p-6 shadow-md space-y-4">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h2 className="text-base font-bold flex items-center gap-2 text-foreground font-heading">
-              <Zap className="w-4.5 h-4.5 text-amber-500" /> Administrative Command Deck
-            </h2>
-            <span className="text-[10px] font-mono text-muted-foreground uppercase">QUICK ACTIONS</span>
-          </div>
+    {tab === "overview" && <>
+      <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">{cards.map(({ label, value, icon: Icon }) => <article key={label} className="bg-card border border-border rounded-2xl p-5"><Icon className="w-5 text-amber-500 mb-4" /><p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p><strong className="text-2xl font-mono">{value}</strong></article>)}</section>
+      <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+        {[["Pending orders", metrics.pendingOrders], ["Finished orders", metrics.finishedOrders], ["Rejected orders", metrics.rejectedOrders], ["Seller verifications", metrics.pendingSellerVerifications], ["Sell-through", `${metrics.sellThroughRate}%`]].map(([label, value]) => <div key={label} className="bg-card border border-border rounded-xl p-4"><span className="text-muted-foreground">{label}</span><b className="block text-lg mt-1">{value}</b></div>)}
+      </section>
+      <VanguardAreaChart data={chartData} activeTab={chartTab} setActiveTab={setChartTab} rangeLabel={ranges[range]} />
+      <section className="grid lg:grid-cols-2 gap-6">
+        <CategoryDistributionChart data={summary.categoryDistribution.map((point, index) => ({ name: point.category, value: point.auctions, color: colors[index % colors.length] }))} />
+        <BidDensityHeatmap rangeLabel={ranges[range]} data={summary.bidHeatmap} />
+      </section>
+    </>}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-muted/40 hover:bg-muted p-4 rounded-xl border border-border/80 hover:border-amber-500/30 transition-all cursor-pointer group">
-              <h3 className="font-bold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center justify-between">
-                Audit Catalog <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">Review flagged items and anti-sniping disputes.</p>
-            </div>
+    {tab === "operations" && operations && <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {[
+        ["PostgreSQL", operations.postgres.available, operations.postgres.latencyMs === null ? "Unavailable" : `${operations.postgres.latencyMs} ms`],
+        ["Redis", operations.redis.available, operations.redis.latencyMs === null ? "Unavailable" : `${operations.redis.latencyMs} ms`],
+        ["Kafka", operations.kafka.available, operations.kafka.latencyMs === null ? "Unavailable" : `${operations.kafka.latencyMs} ms`],
+        ["Analytics worker", operations.workerHeartbeat.available, operations.workerHeartbeat.ageMs === null ? "No heartbeat" : `${Math.round(operations.workerHeartbeat.ageMs / 1000)}s ago`],
+        ["Outbox", operations.outboxPending === 0, `${operations.outboxPending} pending · ${operations.outboxRetrying} retrying`],
+        ["DLQ / sockets", operations.dlqCount === 0, `${operations.dlqCount} terminal · ${operations.adminSocketCount} admins`],
+      ].map(([label, ok, value]) => <article key={String(label)} className="bg-card border border-border rounded-2xl p-5"><Activity className={`w-5 mb-4 ${ok ? "text-emerald-500" : "text-amber-500"}`} /><p className="font-bold">{label}</p><p className="text-xs text-muted-foreground mt-1">{value}</p></article>)}
+    </section>}
 
-            <div className="bg-muted/40 hover:bg-muted p-4 rounded-xl border border-border/80 hover:border-amber-500/30 transition-all cursor-pointer group">
-              <h3 className="font-bold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center justify-between">
-                KYC Verifications <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">Process credentials & seller limits ({metrics.pendingVerifications}).</p>
-            </div>
-
-            <div className="bg-muted/40 hover:bg-muted p-4 rounded-xl border border-border/80 hover:border-amber-500/30 transition-all cursor-pointer group">
-              <h3 className="font-bold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center justify-between">
-                Export Reports <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">Generate comprehensive billing and GMV logs.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border/80 rounded-2xl p-6 shadow-md space-y-4">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h2 className="text-base font-bold flex items-center gap-2 text-foreground font-heading">
-              <Layers className="w-4.5 h-4.5 text-amber-500" /> Infrastructure Engine
-            </h2>
-            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              HEALTH 99.9%
-            </span>
-          </div>
-
-          <div className="space-y-3 text-xs font-mono">
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
-              <span className="text-muted-foreground font-sans">PostgreSQL Database</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">1.2ms Latency</span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
-              <span className="text-muted-foreground font-sans">Socket.io Relay Node</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">1,420 Conns</span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
-              <span className="text-muted-foreground font-sans">Redis Cache Invalidation</span>
-              <span className="text-amber-600 dark:text-amber-400 font-bold">0.4ms Latency</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground font-sans">Kafka Worker Queue</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Idle (0 backlog)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    {tab === "audit" && <section className="grid xl:grid-cols-2 gap-6">
+      {secondaryError && <p className="text-rose-500">{secondaryError}</p>}
+      <div className="bg-card border border-border rounded-2xl p-5 overflow-x-auto"><h2 className="font-bold mb-4">Admin audit log</h2>{audit.length === 0 ? <p className="text-sm text-muted-foreground">No matching audit records.</p> : <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground"><th>Time</th><th>Action</th><th>Resource</th><th>Result</th></tr></thead><tbody>{audit.map((item) => <tr key={item.id} className="border-t border-border"><td className="py-3">{new Date(item.createdAt).toLocaleString()}</td><td>{item.action}</td><td>{item.resourceType} {item.resourceId}</td><td>{item.result}</td></tr>)}</tbody></table>}</div>
+      <div className="bg-card border border-border rounded-2xl p-5 overflow-x-auto"><h2 className="font-bold mb-4">Analytics DLQ</h2>{dlq.length === 0 ? <p className="text-sm text-muted-foreground">No terminal analytics events.</p> : <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground"><th>Event</th><th>Attempts</th><th>Error</th><th /></tr></thead><tbody>{dlq.map((item) => <tr key={item.eventId} className="border-t border-border"><td className="py-3">{item.eventType}</td><td>{item.attempts}</td><td className="max-w-48 truncate">{item.lastError}</td><td><button onClick={() => void dashboardService.retryDlq(item.eventId)} className="text-amber-500 underline">Retry</button></td></tr>)}</tbody></table>}</div>
+    </section>}
+  </main>;
 }

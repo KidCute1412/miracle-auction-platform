@@ -20,12 +20,8 @@ const shutdown = async (signal: string): Promise<void> => {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`[WORKER] Received ${signal}; stopping consumers and connections...`);
-  await Promise.allSettled([
-    stopDashboardConsumer(),
-    closeKafkaConnection(),
-    closeRedisConnection(),
-    prisma.$disconnect(),
-  ]);
+  await stopDashboardConsumer();
+  await Promise.allSettled([closeKafkaConnection(), closeRedisConnection(), prisma.$disconnect()]);
   process.exit(0);
 };
 

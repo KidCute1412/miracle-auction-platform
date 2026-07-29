@@ -1,6 +1,6 @@
 import type { ApiClientErrorBody } from "api-contracts";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export interface RequestOptions<TBody = unknown> extends Omit<RequestInit, "body"> {
   params?: Record<string, string | number | boolean | undefined>;

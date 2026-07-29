@@ -16,6 +16,10 @@ import type { ProductFilter, ProductRow } from "../infrastructure/product.reposi
 import { parseMoneyVnd } from "@/modules/bids/domain/money.ts";
 import { getBidEngine } from "@/modules/bids/application/bid-engine.ts";
 import { bootstrapRedisAuction } from "@/modules/bids/infrastructure/redis/redis-auction.bootstrap.ts";
+import { prisma } from "@/infrastructure/database/prisma.client.ts";
+import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
+import { kafkaTopics } from "@/config/kafka.config.ts";
+import { randomUUID } from "node:crypto";
 
 export type NewProductRequest = {
   product_name: string;
@@ -361,18 +365,47 @@ export async function getProductById(id: number) {
 }
 
 // Soft delete a product
-export async function deleteProductById(id: number): Promise<void> {
-  await ProductsModel.deleteProductById(id);
+async function moderateProduct(
+  id: number,
+  action: "remove" | "restore" | "destroy",
+  actorId?: number,
+  correlationId: string = randomUUID(),
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    if (action === "destroy") await tx.products.delete({ where: { product_id: BigInt(id) } });
+    else await tx.products.update({ where: { product_id: BigInt(id) }, data: { is_removed: action === "remove" } });
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.dashboard,
+      eventType: `product.${action}d.v1`,
+      aggregateId: String(id),
+      correlationId,
+      payload: { productId: id, action },
+    });
+    await tx.admin_audit_logs.create({
+      data: {
+        actor_id: actorId,
+        action: `product.${action}`,
+        resource_type: "product",
+        resource_id: String(id),
+        result: "success",
+        correlation_id: correlationId,
+      },
+    });
+  });
+}
+
+export async function deleteProductById(id: number, actorId?: number, correlationId?: string): Promise<void> {
+  await moderateProduct(id, "remove", actorId, correlationId);
 }
 
 // Restore a soft-deleted product
-export async function restoreProductById(id: number): Promise<void> {
-  await ProductsModel.restoreProductById(id);
+export async function restoreProductById(id: number, actorId?: number, correlationId?: string): Promise<void> {
+  await moderateProduct(id, "restore", actorId, correlationId);
 }
 
 // Permanently destroy a product
-export async function destroyProductById(id: number): Promise<void> {
-  await ProductsModel.destroyProductById(id);
+export async function destroyProductById(id: number, actorId?: number, correlationId?: string): Promise<void> {
+  await moderateProduct(id, "destroy", actorId, correlationId);
 }
 
 // Automatically extend product bidding time if needed

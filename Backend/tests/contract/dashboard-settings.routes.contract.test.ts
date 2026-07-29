@@ -4,7 +4,11 @@ import { callRoute, createRouteContractApp, type RouteContract } from "../suppor
 
 const dashboard = vi.hoisted(() => {
   const ok = (handler: string) => (_req: unknown, res: Response) => res.json({ handler });
-  return { getSummary: ok("getSummary"), syncCache: ok("syncCache") };
+  return {
+    getSummary: ok("getSummary"), syncCache: ok("syncCache"),
+    getOperations: ok("getOperations"), getDlq: ok("getDlq"),
+    retryDlq: ok("retryDlq"), exportCsv: ok("exportCsv"), getAuditLogs: ok("getAuditLogs"),
+  };
 });
 const settings = vi.hoisted(() => ({ getAutoExtendTimeSetting: (_req: unknown, res: Response) => res.json({ handler: "getAutoExtendTimeSetting" }) }));
 vi.mock("../../src/modules/dashboard/api/dashboard.controller.ts", () => dashboard);
@@ -19,6 +23,10 @@ const contracts: RouteContract[] = [
   { method: "get", path: "/settings/auto-extend-time", handler: "getAutoExtendTimeSetting" },
   { method: "get", path: "/admin/dashboard", handler: "getSummary" },
   { method: "post", path: "/admin/dashboard/sync", handler: "syncCache" },
+  { method: "get", path: "/admin/dashboard/operations", handler: "getOperations" },
+  { method: "get", path: "/admin/dashboard/dlq", handler: "getDlq" },
+  { method: "post", path: `/admin/dashboard/dlq/123e4567-e89b-42d3-a456-426614174000/retry`, handler: "retryDlq" },
+  { method: "get", path: "/admin/dashboard/export.csv?dataset=analytics&range=30d", handler: "exportCsv" },
 ];
 
 describe("dashboard and settings route contract", () => {

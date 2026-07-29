@@ -76,11 +76,111 @@ export interface CategoryItemResponse { code: "success"; item: CategoryEditItem 
 
 // Dashboard.
 export type DashboardRange = "7d" | "30d" | "3m" | "6m" | "1y";
-export interface DashboardMetrics { gmv: number; activeUsers: number; activeAuctions: number; pendingVerifications: number; }
-export interface DashboardChartPoint { month: string; count: string | number; }
-export interface DashboardActivity { created_at: string; username: string; user: string; action: string; item: string; value: string | number; color: string; }
-export interface DashboardSummary { metrics: DashboardMetrics; chartData: { overview: DashboardChartPoint[]; revenue: DashboardChartPoint[]; bids: DashboardChartPoint[] }; activities: DashboardActivity[]; }
-export interface DashboardSummaryResponse { code: "success"; message: string; data: DashboardSummary; }
+export interface DashboardMetrics {
+  completedOrderGmvVnd: number;
+  activeBidders: number;
+  enabledAccounts: number;
+  activeAuctions: number;
+  pendingOrders: number;
+  finishedOrders: number;
+  rejectedOrders: number;
+  pendingSellerVerifications: number;
+  sellThroughRate: number;
+}
+export interface DashboardComparison {
+  completedOrderGmvVnd: number | null;
+  activeBidders: number | null;
+  finishedOrders: number | null;
+}
+export interface DashboardChartPoint {
+  label: string;
+  bucketStart: string;
+  completedOrderGmvVnd: number;
+  bids: number;
+  auctions: number;
+}
+export interface DashboardCategoryPoint { category: string; auctions: number; share: number; }
+export interface DashboardHeatmapPoint { day: number; hour: number; bids: number; }
+export interface DashboardActivity {
+  createdAt: string;
+  actor: string;
+  action: string;
+  resource: string;
+  value: string | number | null;
+}
+export interface DashboardSnapshotMetadata {
+  version: number;
+  updatedAt: string;
+  freshnessMs: number;
+  state: "fresh" | "stale";
+  refreshDurationMs: number | null;
+  sourceEventCount: number;
+  reason: string | null;
+}
+export interface DashboardSummary {
+  range: DashboardRange;
+  metrics: DashboardMetrics;
+  comparison: DashboardComparison;
+  series: DashboardChartPoint[];
+  categoryDistribution: DashboardCategoryPoint[];
+  bidHeatmap: DashboardHeatmapPoint[];
+  recentActivity: DashboardActivity[];
+  metadata: DashboardSnapshotMetadata;
+}
+export interface ApiSuccess<T> { success: true; data: T; }
+export interface DashboardSummaryResponse extends ApiSuccess<DashboardSummary> {}
+export interface DashboardSyncRequest {
+  eventId: string;
+  baselineVersion: number;
+  requestedAt: string;
+}
+export interface DashboardSyncResponse extends ApiSuccess<DashboardSyncRequest> {}
+export interface DependencyHealth {
+  available: boolean;
+  latencyMs: number | null;
+  detail?: string;
+}
+export interface DashboardOperations {
+  postgres: DependencyHealth;
+  redis: DependencyHealth;
+  kafka: DependencyHealth;
+  workerHeartbeat: { available: boolean; ageMs: number | null };
+  refreshAgeMs: number | null;
+  outboxPending: number;
+  outboxRetrying: number;
+  consumerLag: number | null;
+  dlqCount: number;
+  adminSocketCount: number;
+}
+export interface DashboardOperationsResponse extends ApiSuccess<DashboardOperations> {}
+export interface DashboardUpdatedEvent {
+  version: number;
+  updatedAt: string;
+  reason: string | null;
+  correlationId: string;
+}
+export interface AuditLog {
+  id: string;
+  actorId: number | null;
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  result: "success" | "failed" | "denied";
+  errorCode: string | null;
+  correlationId: string;
+  createdAt: string;
+}
+export interface PaginationMeta { page: number; limit: number; total: number; totalPages: number; }
+export interface AuditLogResponse extends ApiSuccess<AuditLog[]> { meta: PaginationMeta; }
+export interface DashboardDlqItem {
+  eventId: string;
+  eventType: string;
+  attempts: number;
+  lastError: string | null;
+  correlationId: string;
+  terminalAt: string | null;
+}
+export interface DashboardDlqResponse extends ApiSuccess<DashboardDlqItem[]> { meta: PaginationMeta; }
 
 // Products and orders: legacy HTTP envelopes retained while their backend modules move to Prisma.
 export interface ProductListQuery { cat2_id?: number; page?: number; price?: "asc" | "desc"; time?: "asc" | "desc"; search?: string; }

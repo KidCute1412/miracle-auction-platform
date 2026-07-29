@@ -39,6 +39,17 @@ export class BanBidderUseCase {
       if (existing) throw new BidDomainError("Bidder was already banned");
       await bids.ban(tx, productId, bannedUserId, reason);
       await addBidOutboxEvent(tx, "bidder.banned", productId, { productId, bannedUserId, reason });
+      await tx.admin_audit_logs.create({
+        data: {
+          actor_id: actor.userId,
+          action: "bidder.ban",
+          resource_type: "product_bidder",
+          resource_id: `${productId}:${bannedUserId}`,
+          result: "success",
+          correlation_id: correlationId,
+          metadata: { reason },
+        },
+      });
       return { status: "success", data: { product_id: productId, banned_user_id: bannedUserId } };
     });
   }

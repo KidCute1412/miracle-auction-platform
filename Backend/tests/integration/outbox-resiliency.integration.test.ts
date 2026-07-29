@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { publishBidEventStrict } from "../../src/config/kafka.config.ts";
+import { publishEventStrict } from "../../src/config/kafka.config.ts";
 import { prisma } from "../../src/infrastructure/database/prisma.client.ts";
 import { dispatchBidOutbox } from "../../src/modules/bids/infrastructure/bid-outbox.dispatcher.ts";
 import { useIsolatedDatabase } from "../support/database.ts";
@@ -19,14 +19,14 @@ describe("committed outbox resiliency", () => {
         available_at: new Date(0),
       },
     });
-    vi.mocked(publishBidEventStrict).mockRejectedValueOnce(new Error("Kafka unavailable"));
+    vi.mocked(publishEventStrict).mockRejectedValueOnce(new Error("Kafka unavailable"));
 
     await dispatchBidOutbox();
     await expect(prisma.auction_outbox.findUniqueOrThrow({ where: { id: event.id } }))
       .resolves.toMatchObject({ delivered_at: null, attempts: 1, last_error: "Kafka unavailable" });
 
     await prisma.auction_outbox.update({ where: { id: event.id }, data: { available_at: new Date(0) } });
-    vi.mocked(publishBidEventStrict).mockResolvedValueOnce(undefined);
+    vi.mocked(publishEventStrict).mockResolvedValueOnce(undefined);
     await dispatchBidOutbox();
     const delivered = await prisma.auction_outbox.findUniqueOrThrow({ where: { id: event.id } });
     expect(delivered.delivered_at).not.toBeNull();

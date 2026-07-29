@@ -9,6 +9,11 @@ import { useIsolatedDatabase } from "../support/database.ts";
 vi.mock("../../src/modules/dashboard/api/dashboard.controller.ts", () => ({
   getSummary: (_req: unknown, res: Response) => res.status(200).json({ status: "success" }),
   syncCache: (_req: unknown, res: Response) => res.status(200).json({ status: "success" }),
+  getOperations: (_req: unknown, res: Response) => res.status(200).json({ status: "success" }),
+  getDlq: (_req: unknown, res: Response) => res.status(200).json({ status: "success" }),
+  retryDlq: (_req: unknown, res: Response) => res.status(202).json({ status: "success" }),
+  exportCsv: (_req: unknown, res: Response) => res.status(200).send("csv"),
+  getAuditLogs: (_req: unknown, res: Response) => res.status(200).json({ status: "success" }),
 }));
 
 import adminRouter from "../../src/routes/admin/index.route.ts";

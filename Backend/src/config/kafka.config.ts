@@ -1,76 +1,90 @@
-import { Kafka } from "kafkajs";
+import { Kafka, logLevel, type Producer } from "kafkajs";
 
-// Check if environment variables are set for TLS/SASL production connections
-const isProd = process.env.NODE_ENV === "production";
+const brokers = (process.env.KAFKA_BROKERS || "localhost:19094").split(",").map((value) => value.trim());
+const sslEnabled = process.env.KAFKA_SSL === "true";
+const kafkaCa = process.env.KAFKA_CA?.replace(/\\n/g, "\n");
+const saslUsername = process.env.KAFKA_USERNAME;
+const saslPassword = process.env.KAFKA_PASSWORD;
 
-// Create Kafka client instance
 export const kafka = new Kafka({
-  clientId: "auction-platform",
-  brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(",").map((broker) => broker.trim()),
-  ssl: isProd,
-  sasl: isProd
-    ? {
-        mechanism: "scram-sha-256",
-        username: process.env.KAFKA_USERNAME || "",
-        password: process.env.KAFKA_PASSWORD || "",
-      }
+  clientId: process.env.KAFKA_CLIENT_ID || "auction-platform",
+  brokers,
+  connectionTimeout: Number(process.env.KAFKA_CONNECTION_TIMEOUT_MS || 10_000),
+  requestTimeout: Number(process.env.KAFKA_REQUEST_TIMEOUT_MS || 30_000),
+  retry: { retries: Number(process.env.KAFKA_CONNECTION_RETRIES || 5) },
+  ssl: sslEnabled ? (kafkaCa ? { ca: [kafkaCa] } : true) : false,
+  sasl: saslUsername && saslPassword
+    ? { mechanism: "scram-sha-256", username: saslUsername, password: saslPassword }
     : undefined,
+  logLevel: process.env.KAFKA_LOG_LEVEL === "debug" ? logLevel.DEBUG : logLevel.NOTHING,
 });
 
-// Create singleton producer instance
-const producer = kafka.producer();
+const producer: Producer = kafka.producer({ allowAutoTopicCreation: false });
 let producerConnected = false;
 
-// Initialize connection to Kafka
+export const kafkaTopics = {
+  bidding: process.env.KAFKA_BIDDING_TOPIC || "bidding_events",
+  dashboard: process.env.KAFKA_DASHBOARD_TOPIC || "dashboard_updates",
+  dashboardDlq: process.env.KAFKA_DASHBOARD_DLQ_TOPIC || "dashboard_updates_dlq",
+} as const;
+
 export async function initKafka(): Promise<boolean> {
+  if (producerConnected) return true;
   try {
     await producer.connect();
     producerConnected = true;
-    console.log("[KAFKA] Producer connected successfully!");
     return true;
   } catch (error) {
-    console.error("[KAFKA] Failed to connect producer:", error);
+    console.error("[KAFKA] Producer connection failed", error);
     return false;
   }
 }
 
 export async function checkKafkaConnection(): Promise<boolean> {
-  return producerConnected || initKafka();
+  const startedAt = Date.now();
+  const admin = kafka.admin();
+  try {
+    await admin.connect();
+    await admin.fetchTopicMetadata();
+    return Date.now() - startedAt >= 0;
+  } catch {
+    return false;
+  } finally {
+    await admin.disconnect().catch(() => undefined);
+  }
+}
+
+export async function measureKafkaLatency(): Promise<number> {
+  const startedAt = performance.now();
+  const admin = kafka.admin();
+  await admin.connect();
+  try {
+    await admin.fetchTopicMetadata();
+    return Math.round((performance.now() - startedAt) * 10) / 10;
+  } finally {
+    await admin.disconnect();
+  }
 }
 
 export async function closeKafkaConnection(): Promise<void> {
-  if (producerConnected) {
-    await producer.disconnect();
-    producerConnected = false;
-  }
+  if (!producerConnected) return;
+  await producer.disconnect();
+  producerConnected = false;
 }
 
-// Publish event to topic with product-level partitioning key
-export async function publishBidEvent(productId: string, bidData: object) {
+export async function publishEventStrict(topic: string, key: string, event: object): Promise<void> {
+  if (!producerConnected && !(await initKafka())) throw new Error("Kafka producer is unavailable");
+  await producer.send({ topic, acks: -1, messages: [{ key, value: JSON.stringify(event) }] });
+}
+
+/** Compatibility wrapper for existing bidding callers. */
+export async function publishBidEvent(productId: string, event: object): Promise<void> {
   try {
-    await publishBidEventStrict(productId, bidData);
+    await publishEventStrict(kafkaTopics.bidding, productId, event);
   } catch (error) {
-    console.error("[KAFKA] Failed to publish event:", error);
+    console.error("[KAFKA] Bid publish failed", error);
   }
 }
 
-/** Outbox dispatchers need failures to escape so an event remains retryable. */
-export async function publishBidEventStrict(productId: string, bidData: object): Promise<void> {
-  await producer.send({ topic: "bidding_events", messages: [{ key: productId, value: JSON.stringify(bidData) }] });
-}
-
-// Publish manual synchronization trigger to dashboard topic
-export async function publishDashboardUpdate() {
-  try {
-    await producer.send({
-      topic: "dashboard_updates",
-      messages: [
-        {
-          value: JSON.stringify({ type: "UPDATE_STATS", timestamp: new Date() }),
-        },
-      ],
-    });
-  } catch (error) {
-    console.error("[KAFKA] Failed to publish dashboard update:", error);
-  }
-}
+export const publishBidEventStrict = (productId: string, event: object): Promise<void> =>
+  publishEventStrict(kafkaTopics.bidding, productId, event);

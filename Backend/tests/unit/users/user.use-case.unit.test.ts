@@ -7,8 +7,18 @@ const repo = vi.hoisted(() => ({
   getAllSellerApplications: vi.fn(), getSellerApplicationById: vi.fn(), setApplicationStatus: vi.fn(),
 }));
 const sendMail = vi.hoisted(() => vi.fn());
+const tx = vi.hoisted(() => ({
+  users: { update: vi.fn() },
+  upgrade_to_sellers: { update: vi.fn() },
+  admin_audit_logs: { create: vi.fn() },
+}));
+const addOutboxEvent = vi.hoisted(() => vi.fn());
 vi.mock("../../../src/modules/users/infrastructure/user.repository.ts", () => repo);
 vi.mock("@/helpers/mail.helper.ts", () => ({ sendMail }));
+vi.mock("@/infrastructure/database/prisma.client.ts", () => ({
+  prisma: { $transaction: (operation: (client: typeof tx) => unknown) => operation(tx) },
+}));
+vi.mock("@/infrastructure/events/outbox.repository.ts", () => ({ addOutboxEvent }));
 
 import * as useCase from "../../../src/modules/users/application/user.use-case.ts";
 
@@ -33,8 +43,11 @@ describe("user use cases", () => {
 
   it("updates both role and status", async () => {
     await useCase.editUserRoleAndStatus(1, "seller", "active");
-    expect(repo.updateUserRole).toHaveBeenCalledWith(1, "seller");
-    expect(repo.updateUserStatus).toHaveBeenCalledWith(1, "active");
+    expect(tx.users.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { user_id: 1 },
+      data: expect.objectContaining({ role: "seller", status: "active" }),
+    }));
+    expect(addOutboxEvent).toHaveBeenCalledOnce();
   });
 
   it("does not reset a missing user's password", async () => {
@@ -67,10 +80,10 @@ describe("user use cases", () => {
   });
 
   it("promotes the applicant only when accepted", async () => {
-    repo.getSellerApplicationById.mockResolvedValue({ user_id: 7 });
+    tx.upgrade_to_sellers.update.mockResolvedValueOnce({ user_id: 7 }).mockResolvedValueOnce({ user_id: 8 });
     await expect(useCase.setApplicationStatus(1, "accepted")).resolves.toBe(true);
-    expect(repo.updateUserRole).toHaveBeenCalledWith(7, "seller");
+    expect(tx.users.update).toHaveBeenCalledWith(expect.objectContaining({ where: { user_id: 7 } }));
     await useCase.setApplicationStatus(2, "rejected");
-    expect(repo.updateUserRole).toHaveBeenCalledTimes(1);
+    expect(tx.users.update).toHaveBeenCalledTimes(1);
   });
 });

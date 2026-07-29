@@ -3,9 +3,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const repo = vi.hoisted(() => ({ updateWinnerOrder: vi.fn(), getPendingWinnerOrder: vi.fn(), getOrderDetail: vi.fn(), getSellerOrderView: vi.fn(), getOrderByProductId: vi.fn(), updateOrderStatus: vi.fn() }));
 const cloud = vi.hoisted(() => vi.fn().mockResolvedValue({ secure_url: "https://image.test/file.png" }));
 const unlinkSync = vi.hoisted(() => vi.fn());
+const tx = vi.hoisted(() => ({
+  orders: { update: vi.fn() },
+  products: { findUnique: vi.fn() },
+}));
+const addOutboxEvent = vi.hoisted(() => vi.fn());
 vi.mock("../../../src/modules/orders/infrastructure/order.repository.ts", () => repo);
 vi.mock("@/config/cloud.config.ts", () => ({ uploadToCloudinary: cloud }));
 vi.mock("fs", () => ({ default: { unlinkSync } }));
+vi.mock("@/infrastructure/database/prisma.client.ts", () => ({
+  prisma: { $transaction: (operation: (client: typeof tx) => unknown) => operation(tx) },
+}));
+vi.mock("@/infrastructure/events/outbox.repository.ts", () => ({ addOutboxEvent }));
 
 import * as useCase from "../../../src/modules/orders/application/order.use-case.ts";
 
@@ -42,7 +51,8 @@ describe("order use cases", () => {
     await expect(useCase.rejectOrder(1)).resolves.toMatchObject({ success: false, message: "Order does not exist" });
     await expect(useCase.rejectOrder(1)).resolves.toMatchObject({ success: false, message: "Can only reject pending orders" });
     await expect(useCase.rejectOrder(1)).resolves.toMatchObject({ success: true });
-    expect(repo.updateOrderStatus).toHaveBeenCalledWith(2, "rejected");
+    expect(tx.orders.update).toHaveBeenCalledWith(expect.objectContaining({ where: { order_id: 2 } }));
+    expect(addOutboxEvent).toHaveBeenCalledOnce();
   });
 
   it("approves only a pending order and stores a shipping label", async () => {
@@ -50,6 +60,10 @@ describe("order use cases", () => {
     await expect(useCase.approveOrder(1)).resolves.toMatchObject({ success: false, message: "Order does not exist" });
     await expect(useCase.approveOrder(1)).resolves.toMatchObject({ success: false, message: "Can only approve pending orders" });
     await expect(useCase.approveOrder(1, { path: "label.png" } as Express.Multer.File)).resolves.toMatchObject({ success: true });
-    expect(repo.updateOrderStatus).toHaveBeenCalledWith(2, "finished", "https://image.test/file.png");
+    expect(tx.orders.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { order_id: 2 },
+      data: expect.objectContaining({ order_status: "finished", shipping_label_image_url: "https://image.test/file.png" }),
+    }));
+    expect(addOutboxEvent).toHaveBeenCalledOnce();
   });
 });

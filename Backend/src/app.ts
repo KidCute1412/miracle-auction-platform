@@ -11,6 +11,7 @@ import { redisClient, checkRedisConnection } from "./config/redis.config.ts";
 import { checkPrismaConnection } from "./infrastructure/database/prisma.client.ts";
 import { checkKafkaConnection } from "./config/kafka.config.ts";
 import { csrfProtection } from "./middlewares/csrf.middleware.ts";
+import { requestId } from "./middlewares/request-id.middleware.ts";
 
 export function createApp() {
   const app = express();
@@ -18,6 +19,7 @@ export function createApp() {
   // PostgreSQL BIGINT values are represented as JavaScript bigint by Prisma.
   // JSON has no bigint type, so preserve exact values as strings in every API response.
   app.set("json replacer", (_key: string, value: unknown) => typeof value === "bigint" ? value.toString() : value);
+  app.use(requestId);
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
   app.get("/ready", async (_req, res) => {
     const [database, redis, kafka] = await Promise.all([checkPrismaConnection(), checkRedisConnection(), checkKafkaConnection()]);
@@ -37,6 +39,20 @@ export function createApp() {
   }));
   app.use("/", clientRoutes);
   app.use(`/${variableConfig.pathAdmin}`, adminRoutes);
+  app.use((error: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error("[API] Unhandled operational error", {
+      requestId: req.header("x-request-id"),
+      message: error instanceof Error ? error.message : "unknown",
+    });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An unexpected server error occurred",
+        requestId: req.header("x-request-id"),
+      },
+    });
+  });
   return app;
 }
 

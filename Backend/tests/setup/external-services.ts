@@ -7,7 +7,10 @@ vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Unexpected external 
  * Keep these mocks at the process boundary so importing createApp is safe in CI.
  */
 vi.mock("@/config/redis.config.ts", () => ({
-  redisClient: { call: vi.fn(), status: "end", ping: vi.fn().mockResolvedValue("PONG"), quit: vi.fn() },
+  redisClient: {
+    call: vi.fn(), status: "end", ping: vi.fn().mockResolvedValue("PONG"), quit: vi.fn(),
+    publish: vi.fn().mockResolvedValue(1), get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue("OK"),
+  },
   checkRedisConnection: vi.fn().mockResolvedValue(true),
   closeRedisConnection: vi.fn().mockResolvedValue(undefined),
 }));
@@ -19,7 +22,9 @@ vi.mock("@/config/kafka.config.ts", () => ({
   closeKafkaConnection: vi.fn().mockResolvedValue(undefined),
   publishBidEvent: vi.fn().mockResolvedValue(undefined),
   publishBidEventStrict: vi.fn().mockResolvedValue(undefined),
-  publishDashboardUpdate: vi.fn().mockResolvedValue(undefined),
+  publishEventStrict: vi.fn().mockResolvedValue(undefined),
+  measureKafkaLatency: vi.fn().mockResolvedValue(1),
+  kafkaTopics: { bidding: "bidding_events", dashboard: "dashboard_updates", dashboardDlq: "dashboard_updates_dlq" },
 }));
 
 vi.mock("rate-limit-redis", () => ({
@@ -44,6 +49,7 @@ vi.mock("@/helpers/mail.helper.ts", async (importOriginal) => {
 vi.mock("@/socket.ts", () => ({
   emitBidUpdate: vi.fn(),
   initSocket: vi.fn(),
+  getAdminSocketCount: vi.fn().mockReturnValue(0),
 }));
 
 vi.mock("google-auth-library", () => ({

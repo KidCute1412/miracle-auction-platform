@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import * as UsersService from "../application/user.use-case.ts";
+import type { AccountRequest } from "@/interfaces/request.interface.ts";
+import { requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 
 // Fetch paginated user listing
 export async function list(req: Request, res: Response) {
@@ -58,7 +60,7 @@ export async function detail(req: Request, res: Response) {
 }
 
 // Edit role and status tags of user
-export async function editRole(req: Request, res: Response) {
+export async function editRole(req: AccountRequest, res: Response) {
   try {
     const user_id = Number(req.params.id);
     const { role, status } = req.body;
@@ -66,7 +68,9 @@ export async function editRole(req: Request, res: Response) {
     if (!user) {
       return res.status(404).json({ code: "error", message: "User does not exist" });
     }
-    await UsersService.editUserRoleAndStatus(user_id, role, status);
+    await UsersService.editUserRoleAndStatus(
+      user_id, role, status, requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
+    );
     res.json({ code: "success", message: "Role updated successfully" });
   } catch (error) {
     res.status(500).json({ code: "error", message: "Server error" });
@@ -131,11 +135,13 @@ export async function applicationDetail(req: Request, res: Response) {
 }
 
 // Approve or reject application form status
-export async function setStatus(req: Request, res: Response) {
+export async function setStatus(req: AccountRequest, res: Response) {
   try {
     const applicationId = Number(req.params.id);
     const { status } = req.body;
-    await UsersService.setApplicationStatus(applicationId, status);
+    await UsersService.setApplicationStatus(
+      applicationId, status, requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
+    );
     res.json({ code: "success", message: "Application confirmed successfully" });
   } catch (error) {
     res.status(500).json({ code: "error", message: "Error confirming application" });
