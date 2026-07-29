@@ -1,5 +1,7 @@
 # Kế hoạch và quyết định triển khai chatbot AI
 
+> Historical/superseded infrastructure note: provider diagrams in this decision record do not describe the current runtime. Use [worker-process-architecture.md](worker-process-architecture.md) and [deployment.md](deployment.md).
+
 > Mục tiêu của tài liệu: trả lời câu hỏi **có nên triển khai chatbot cho Online Auction hay không**, thay vì mặc định rằng có AI là tốt.
 >
 > Ngày đánh giá: 25/07/2026.

@@ -1,5 +1,7 @@
 # Admin Dashboard: CV-Ready Architecture and Implementation Plan
 
+> Runtime status (2026-07-29): the current dashboard consumer and scheduled recovery run inside `async-worker`. Redis is Oracle-local, outbox publication belongs to `outbox-relay`, and terminal events use `async_events_dlq`. Any older topology below is design history; [worker-process-architecture.md](worker-process-architecture.md) is canonical.
+
 ## 1. Goal
 
 Build a **near-real-time, CQRS-style analytics read model** that demonstrates:

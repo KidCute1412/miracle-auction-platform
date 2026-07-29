@@ -1,5 +1,7 @@
 # Modular Monolith Architecture Design
 
+The backend remains one modular-monolith codebase and one Docker image, with four composition roots: `server.ts` (API), `auction-worker.ts`, `outbox-relay.ts`, and `async-worker.ts`. Process separation changes lifecycle and resource ownership, not domain module ownership. See [worker-process-architecture.md](worker-process-architecture.md).
+
 This document outlines the architecture for refactoring the [Backend](file:///D:/HCMUS/Third%20Year/Ultra%20Web%20Skills/ReflourishedOnlineAuction/Online-Auction/Backend) from the current MVC pattern to a Modular Monolith.
 
 ---

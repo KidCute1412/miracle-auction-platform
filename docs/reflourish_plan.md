@@ -1,5 +1,7 @@
 # Kế Hoạch Nâng Cấp Hệ Thống Đấu Giá Trực Tuyến (Reflourish Online Auction)
 
+> Historical roadmap. Provider choices and runtime topology in this document are superseded by [worker-process-architecture.md](worker-process-architecture.md) and [deployment.md](deployment.md).
+
 Dự án này sẽ được nâng cấp toàn diện từ một ứng dụng Web Đấu giá cơ bản thành một hệ thống **Production-Ready** tối ưu, có kiến trúc phân tầng rõ ràng, áp dụng caching, message queue, AI và containerization. Đây sẽ là một dự án nổi bật trong CV để gây ấn tượng mạnh với nhà tuyển dụng.
 
 ---

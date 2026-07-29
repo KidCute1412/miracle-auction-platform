@@ -1,49 +1,62 @@
-# Local bidding benchmark
+# Local process-split bidding benchmark
 
-This suite compares `BID_ENGINE=postgres` and `BID_ENGINE=redis` on the same local machine, containers, deterministic users, and auctions. It never targets production.
+Benchmarks run only against local deterministic data. Never point k6 at Aiven, Supabase, Oracle Free Tier or shared production.
 
-## Prepare one run
+## Runtime under test
+
+Run PostgreSQL, Redis, Kafka, `auction-worker`, `outbox-relay`, `async-worker` and API. Set `EMAIL_DELIVERY_MODE=disabled`. Background projection, outbox and dashboard work remain enabled so results include production-like contention.
 
 ```powershell
 docker compose up -d postgres redis kafka
-docker exec online-auction-postgres createdb -U postgres -O postgres online_auction_benchmark_test
 cd Backend
-$env:NODE_ENV = "benchmark"
-$env:DATABASE_URL = "postgresql://postgres:my_local_password@localhost:15432/online_auction_benchmark_test?schema=public"
-$env:DIRECT_URL = $env:DATABASE_URL
-$env:REDIS_URL = "redis://localhost:16379/14"
 npm run prisma:migrate:deploy
 npm run benchmark:seed
-cd ../PerformanceTests
-npm install
-node generate_tokens.js
+cd ..
+docker compose up -d auction-worker outbox-relay async-worker
 ```
 
-Start the API with the selected engine, then run one scenario. Reset with `npm run benchmark:seed` before switching engines.
+Start the API separately with `BID_ENGINE=redis`. Generate tokens from `PerformanceTests`, then run `smoke` before every measured suite.
+
+## Before/after artifact contract
+
+For each revision, create:
+
+```text
+artifacts/process-split/
+  before/<commit>/
+  after/<commit>/
+```
+
+Each directory must contain environment metadata (commit SHA, CPU/RAM/OS, Docker versions/config, Redis config and `docker stats`), raw k6 JSON, summary Markdown/JSON and invariant output. Reset the deterministic seed before every run.
+
+Run `hot` and `distributed` at least three times each:
 
 ```powershell
-$env:BID_ENGINE = "postgres"
-$env:SCENARIO = "hot"
-$env:ARTIFACT_PREFIX = "artifacts/postgres-hot"
-k6 run --out json=artifacts/postgres-hot-raw.json bidding_stress_test.js
-cd ../Backend
-$env:INVARIANT_OUTPUT = "../PerformanceTests/artifacts/postgres-hot-invariants.json"
-npm run benchmark:invariants
-cd ../PerformanceTests
+$env:SCENARIO = "smoke"
+k6 run bidding_stress_test.js
 
-$env:BID_ENGINE = "redis"
+npm --prefix ../Backend run benchmark:seed
 $env:SCENARIO = "hot"
-$env:ARTIFACT_PREFIX = "artifacts/redis-hot"
-k6 run --out json=artifacts/redis-hot-raw.json bidding_stress_test.js
-cd ../Backend
-$env:INVARIANT_OUTPUT = "../PerformanceTests/artifacts/redis-hot-invariants.json"
-$env:WAIT_FOR_CONVERGENCE_MS = "60000"
-npm run benchmark:invariants
-cd ../PerformanceTests
+$env:ARTIFACT_PREFIX = "artifacts/process-split/after/<commit>/hot-1"
+k6 run --out json=artifacts/process-split/after/<commit>/hot-1-raw.json bidding_stress_test.js
 
-node compare-results.js artifacts/postgres-hot-summary.json artifacts/redis-hot-summary.json artifacts/comparison-hot.md artifacts/postgres-hot-invariants.json artifacts/redis-hot-invariants.json
+npm --prefix ../Backend run benchmark:invariants
 ```
 
-Available scenarios are `smoke`, `hot`, `distributed`, `spike`, and `soak`. Set `PRODUCT_IDS=1,2,...,20` for `distributed`; set `SOAK_DURATION` to override the default 15 minutes.
+Repeat for `hot-2`, `hot-3`, `distributed-1..3`, and the baseline revision in `before/`.
 
-Record CPU, memory, operating system, Docker resource limits, PostgreSQL configuration, Redis configuration, and git revision alongside every artifact. A target run passes only when post-run invariant checks report zero violations, system errors are below 1%, projection has converged, and throughput is at least 2x baseline or p99 is at least 50% lower.
+## Acceptance gate
+
+Compare medians of three runs on the same machine/dataset/profile:
+
+- throughput regression no worse than 5%;
+- p99 regression no worse than 5%;
+- infrastructure error rate below 1%;
+- zero invariant violations;
+- projection converges within the configured timeout.
+
+The invariant checker must verify Redis/PostgreSQL sequence and version convergence, winner/current price agreement, no duplicate order/event/history sequence, Redis Stream PEL zero, drained outbox, and converged Kafka/dashboard lag.
+
+Do not claim a performance improvement without repeatable artifacts. The separate Redis-vs-PostgreSQL engine comparison may claim success only when Redis reaches at least 2x throughput or at least 50% lower p99 with zero correctness violations.
+
+If either before or after evidence is missing, the performance milestone remains unverified.

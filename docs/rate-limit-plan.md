@@ -1,5 +1,7 @@
 # Rate Limiting & High-Throughput Implementation Plan
 
+> Historical/superseded provider plan. Railway/Upstash examples below are not current deployment guidance. The current Redis authority is private on the Oracle VM; see [deployment.md](deployment.md). Throughput numbers here are targets, not measured claims.
+
 This document outlines the optimized strategy for implementing rate limiting across the Vercel frontend and Railway backend to protect services from abuse while supporting high throughput (up to 30,000 requests/minute / 500 RPS).
 
 ## 1. System Architecture

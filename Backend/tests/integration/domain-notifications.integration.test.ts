@@ -76,7 +76,10 @@ describe("domain outbox and durable notification integration", () => {
     expect(await prisma.email_deliveries.count({ where: { source_event_id: eventId } })).toBe(2);
 
     process.env.EMAIL_DELIVERY_MODE = "disabled";
-    await runEmailDeliveryBatch();
+    process.env.EMAIL_DELIVERY_CONCURRENCY = "2";
+    while (await runEmailDeliveryBatch() > 0) {
+      // Drain all rows regardless of a developer's local concurrency setting.
+    }
     expect(await prisma.email_deliveries.count({
       where: { source_event_id: eventId, status: "sent" },
     })).toBe(2);

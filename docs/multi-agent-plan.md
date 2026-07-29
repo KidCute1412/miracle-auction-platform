@@ -11,6 +11,7 @@ Important boundaries:
 - `AgentService/` is a separate development automation service inside the monorepo.
 - AgentService creates isolated workspaces, runs provider CLIs separately, stores its own artifacts, and waits for human approval.
 - V1 does not auto-push pull requests, auto-merge changes, or automatically modify the production database.
+- `AgentService/`, its scripts, documentation and CI remain in the repository, but `agent-service`, `agent-worker` and `agent_workspaces` are intentionally absent from application Docker Compose. Developer automation is not a fifth product process.
 
 ## Architecture Overview
 

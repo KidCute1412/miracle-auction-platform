@@ -16,7 +16,7 @@ const pillars: TrustPillar[] = [
     title: "Protected Escrow Vault",
     badge: "BANK-GRADE SSL",
     description: "Financial settlement is held in secured multi-signature escrow until item authentication and physical buyer delivery are confirmed.",
-    metrics: "100% Settlement Rate",
+    metrics: "100% Settlement Guarantee",
   },
   {
     icon: ShieldCheck,
@@ -43,42 +43,39 @@ const pillars: TrustPillar[] = [
 
 export const SectionVault3D: React.FC = () => {
   return (
-    <section className="relative py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/2 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
-
+    <section className="relative py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10">
       {/* Header */}
-      <div className="text-center max-w-3xl mx-auto mb-16">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-mono font-bold uppercase mb-4">
+      <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-mono font-bold uppercase mb-3">
           <Award size={14} />
-          <span>VANGUARD TRUST & COMPLIANCE VAULT</span>
+          <span>SECURITY & COMPLIANCE VAULT</span>
         </div>
-        <h2 className="text-3xl md:text-5xl font-heading font-black text-foreground uppercase tracking-tight mb-4">
-          Enterprise Security Standards
+        <h2 className="text-2xl md:text-4xl font-heading font-black text-foreground uppercase tracking-tight mb-3">
+          Enterprise Trust Standards
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Engineered for high-net-worth collectors and premier auctioneers with bank-grade security protocols, multi-sig escrow, and instant verification nodes.
+          Engineered for high-net-worth collectors and premier auctioneers with bank-grade security protocols and multi-sig escrow.
         </p>
       </div>
 
       {/* 3D Pillars Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {pillars.map((item, i) => {
           const Icon = item.icon;
           return (
-            <Card3DTilt key={i} maxTiltDeg={10} scale={1.03}>
-              <div className="relative p-6 rounded-3xl bg-card/40 backdrop-blur-xl border border-accent/20 hover:border-accent/50 transition-all duration-300 flex flex-col justify-between h-full group hover:shadow-[0_15px_35px_rgba(226,184,59,0.1)]">
+            <Card3DTilt key={i} maxTiltDeg={5} scale={1.02}>
+              <div className="relative p-6 rounded-3xl bg-card/40 backdrop-blur-xl border border-accent/20 hover:border-accent/40 transition-all duration-300 flex flex-col justify-between h-full group">
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="p-3.5 rounded-2xl bg-card border border-accent/30 text-accent group-hover:scale-110 group-hover:bg-accent group-hover:text-black transition-all duration-300 shadow-md">
-                      <Icon className="w-6 h-6" />
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="p-3 rounded-2xl bg-card border border-accent/30 text-accent group-hover:scale-105 transition-all duration-300 shadow-md">
+                      <Icon className="w-5 h-5" />
                     </div>
                     <span className="text-[9px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
                       {item.badge}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-foreground mb-2 font-heading">
+                  <h3 className="text-base font-bold text-foreground mb-2 font-heading">
                     {item.title}
                   </h3>
 

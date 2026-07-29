@@ -13,15 +13,16 @@ interface Card3DTiltProps {
 export const Card3DTilt: React.FC<Card3DTiltProps> = ({
   children,
   className = "",
-  maxTiltDeg = 10,
-  scale = 1.02,
-  glareOpacity = 0.15,
+  maxTiltDeg = 6, // Subtle, refined tilt angle
+  scale = 1.015, // Subtle scale
+  glareOpacity = 0.08, // Muted, elegant glare
   disabled = false,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<React.CSSProperties>({
-    transform: "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
+    transform: "perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
     transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+    willChange: "transform",
   });
   const [glareStyle, setGlareStyle] = useState<React.CSSProperties>({
     opacity: 0,
@@ -46,7 +47,7 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        // Normalized values from -1 to 1
+        // Normalized offset from center (-1 to 1)
         const xPct = (mouseX / width - 0.5) * 2;
         const yPct = (mouseY / height - 0.5) * 2;
 
@@ -54,16 +55,16 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
         const rotateY = xPct * maxTiltDeg;
 
         setStyle({
-          transform: `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(${scale}, ${scale}, ${scale})`,
-          transition: "transform 0.1s ease-out",
+          transform: `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(${scale}, ${scale}, ${scale})`,
+          transition: "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
+          willChange: "transform",
         });
 
-        // Specular glare angle based on mouse coordinates
         const angle = Math.atan2(mouseY - height / 2, mouseX - width / 2) * (180 / Math.PI) + 180;
         setGlareStyle({
           opacity: glareOpacity,
-          background: `linear-gradient(${angle}deg, rgba(255, 255, 255, 0.25) 0%, rgba(226, 184, 59, 0.15) 30%, transparent 80%)`,
-          transition: "opacity 0.2s ease-out",
+          background: `linear-gradient(${angle}deg, rgba(226, 184, 59, 0.12) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 80%)`,
+          transition: "opacity 0.3s ease-out",
         });
       });
     },
@@ -76,8 +77,9 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
       cancelAnimationFrame(rafRef.current);
     }
     setStyle({
-      transform: "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
+      transform: "perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
       transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+      willChange: "transform",
     });
     setGlareStyle({
       opacity: 0,
