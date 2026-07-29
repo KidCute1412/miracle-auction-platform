@@ -10,15 +10,16 @@ Run PostgreSQL, Redis, Kafka, `auction-worker`, `outbox-relay`, `async-worker` a
 docker compose up -d postgres redis kafka
 cd Backend
 npm run prisma:migrate:deploy
-npm run benchmark:seed
+$env:NODE_ENV="benchmark"; $env:DATABASE_URL="postgresql://postgres:my_local_password@localhost:15432/online_auction_benchmark_test?schema=public"; npm run benchmark:seed
 cd ..
 docker compose -f docker-compose.yml -f PerformanceTests/docker-compose.benchmark.override.yml up -d auction-worker outbox-relay async-worker
 ```
 
 Start the API separately with `BID_ENGINE=redis`, `REDIS_URL=redis://127.0.0.1:16379/1`,
+`DATABASE_URL=postgresql://postgres:my_local_password@localhost:15432/online_auction_benchmark_test?schema=public`,
 `NODE_ENV=benchmark` and `EMAIL_DELIVERY_MODE=disabled`. Generate tokens from
 `PerformanceTests`, then run `smoke` before every measured suite. After benchmarking,
-recreate the workers without the override to return local development to Redis DB 0.
+run `npm run benchmark:clean` to reset benchmark data, and recreate workers without the override to return local development to Redis DB 0.
 
 ## Before/after artifact contract
 

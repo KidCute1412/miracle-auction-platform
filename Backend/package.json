@@ -36,6 +36,7 @@
     "test:coverage": "tsx tests/run-database-tests.ts coverage",
     "test:ci": "npm run build && npm run test:coverage",
     "benchmark:seed": "tsx src/scripts/seed-bidding-benchmark.ts",
+    "benchmark:clean": "tsx src/scripts/clean-bidding-benchmark.ts",
     "benchmark:invariants": "tsx src/scripts/check-bidding-invariants.ts",
     "verify:dashboard": "tsx src/scripts/verify-dashboard.ts",
     "verify:dashboard:pipeline": "tsx src/scripts/verify-dashboard-pipeline.ts"

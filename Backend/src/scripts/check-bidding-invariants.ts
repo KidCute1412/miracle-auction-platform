@@ -112,16 +112,20 @@ async function main(): Promise<void> {
     const projectionMismatch = await prisma.$queryRaw<Array<{ product_id: bigint; auction_sequence: bigint; projected_sequence: bigint }>>(Prisma.sql`
       SELECT p.product_id, p.auction_sequence, COALESCE(MAX(t.sequence), 0) AS projected_sequence
       FROM products p LEFT JOIN auction_transitions t ON t.product_id = p.product_id
-      WHERE p.product_id BETWEEN 1 AND 20
+      WHERE (p.product_id >= 900000 OR p.product_name LIKE 'Benchmark Auction%')
       GROUP BY p.product_id, p.auction_sequence
       HAVING p.auction_sequence <> COALESCE(MAX(t.sequence), 0)`);
     if (projectionMismatch.length) violations.push({ invariant: "snapshot matches transition sequence", details: projectionMismatch });
     const timeoutMs = Number(process.env.WAIT_FOR_CONVERGENCE_MS ?? 0);
     const deadline = Date.now() + timeoutMs;
+    const benchmarkProducts = await prisma.products.findMany({
+      where: { OR: [{ product_name: { startsWith: "Benchmark Auction" } }, { product_id: { gte: 900000n } }] },
+      select: { product_id: true },
+    });
     for (;;) {
       reconciliation.length = 0;
-      for (let productId = 1; productId <= 20; productId += 1) {
-        reconciliation.push(await reconcileAuctionProjection(productId));
+      for (const prod of benchmarkProducts) {
+        reconciliation.push(await reconcileAuctionProjection(Number(prod.product_id)));
       }
       if (reconciliation.every((result) => result.status === "converged") || Date.now() >= deadline) break;
       await delay(250);
@@ -171,7 +175,7 @@ async function main(): Promise<void> {
     const baselineMismatch = await prisma.$queryRaw<Array<{ product_id: bigint }>>(Prisma.sql`
       SELECT p.product_id
       FROM products p
-      WHERE p.product_id BETWEEN 1 AND 20
+      WHERE (p.product_id >= 900000 OR p.product_name LIKE 'Benchmark Auction%')
         AND p.auction_sequence > 0
         AND NOT EXISTS (
           SELECT 1 FROM bidding_history h

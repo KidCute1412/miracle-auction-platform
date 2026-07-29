@@ -5,7 +5,7 @@ import { Rate } from "k6/metrics";
 const scenario = __ENV.SCENARIO || "smoke";
 const baseUrl = __ENV.BASE_URL || "http://localhost:5000";
 const clientUrl = __ENV.CLIENT_URL || "http://localhost:5173";
-const productIds = (__ENV.PRODUCT_IDS || "1").split(",").map(Number);
+const productIds = (__ENV.PRODUCT_IDS || "900001").split(",").map(Number);
 const startPrice = BigInt(__ENV.START_PRICE_VND || "100000");
 const stepPrice = BigInt(__ENV.STEP_PRICE_VND || "10000");
 const artifactPrefix = __ENV.ARTIFACT_PREFIX || `artifacts/${scenario}`;
