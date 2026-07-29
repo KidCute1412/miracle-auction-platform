@@ -174,20 +174,18 @@ export default function ProductListPage() {
         </button>
       </div>
 
-      {/* Styled filter bar without useless bulk action actions */}
-      <div className="bg-card border border-border p-4 rounded-2xl shadow-sm">
-        <FilterBar
-          showStatusFilter={false}
-          dateFrom={dateFrom}
-          setDateFrom={handleDateFromChange}
-          dateTo={dateTo}
-          setDateTo={handleDateToChange}
-          search={localSearch}
-          setSearch={setLocalSearch}
-          onSearchSubmit={handleSearchSubmit}
-          onResetFilters={resetFilters}
-        />
-      </div>
+      {/* Filters Catalog Bar */}
+      <FilterBar
+        showStatusFilter={false}
+        dateFrom={dateFrom}
+        setDateFrom={handleDateFromChange}
+        dateTo={dateTo}
+        setDateTo={handleDateToChange}
+        search={localSearch}
+        setSearch={setLocalSearch}
+        onSearchSubmit={handleSearchSubmit}
+        onResetFilters={resetFilters}
+      />
 
       {/* Desktop Table View */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden hidden lg:block relative shadow-sm transition-colors duration-300">

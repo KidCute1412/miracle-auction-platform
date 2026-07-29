@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { Filter, RotateCcw, Search, Trash2, ChevronDown, Check } from "lucide-react";
+import { Filter, RotateCcw, Search, Trash2, ChevronDown, Check, Calendar, Plus, X } from "lucide-react";
 
 type StatusOption = {
   value: string;
@@ -16,9 +16,10 @@ type FilterSelectProps = {
   onChange: (val: string) => void;
   options: { value: string; label: string }[];
   placeholder: string;
+  icon?: React.ReactNode;
 };
 
-function FilterSelect({ value, onChange, options, placeholder }: FilterSelectProps) {
+function FilterSelect({ value, onChange, options, placeholder, icon }: FilterSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,34 +34,55 @@ function FilterSelect({ value, onChange, options, placeholder }: FilterSelectPro
   }, []);
 
   const selectedOption = options.find((opt) => opt.value === value);
+  const isFiltered = value && value !== "" && value !== "all";
 
   return (
-    <div className="relative h-full flex items-center border-r border-border" ref={containerRef}>
+    <div className="relative" ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="h-full flex items-center gap-2 px-4 text-sm font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer outline-none border-none select-none"
+        className={`h-10 flex items-center gap-2 px-3.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer border select-none ${
+          isFiltered
+            ? "bg-accent/10 border-accent/40 text-accent font-semibold shadow-xs"
+            : "bg-muted/30 border-border/80 text-foreground hover:bg-muted/70 hover:border-border"
+        }`}
       >
+        {icon && <span className="opacity-70">{icon}</span>}
         <span>{selectedOption ? selectedOption.label : placeholder}</span>
-        <ChevronDown className="h-3.5 w-3.5 opacity-50 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }} />
+        <ChevronDown
+          className="h-3.5 w-3.5 opacity-60 transition-transform duration-200 ml-1"
+          style={{ transform: isOpen ? "rotate(180deg)" : "none" }}
+        />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-1 min-w-[150px] overflow-y-auto rounded-lg border border-border bg-card shadow-lg py-1">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center justify-between px-4 py-2 text-sm text-left hover:bg-muted text-foreground transition-colors duration-150 cursor-pointer"
-            >
-              <span>{opt.label}</span>
-              {value === opt.value && <Check className="h-4 w-4 text-accent shrink-0 ml-2" />}
-            </button>
-          ))}
+        <div className="absolute top-full left-0 z-50 mt-1.5 min-w-[170px] overflow-hidden rounded-xl border border-border bg-popover shadow-xl py-1 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-3 py-1.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            Select {placeholder}
+          </div>
+          <div className="max-h-56 overflow-y-auto py-1">
+            {options.map((opt) => {
+              const isSelected = value === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 text-sm text-left transition-colors duration-150 cursor-pointer ${
+                    isSelected
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "hover:bg-muted text-foreground"
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  {isSelected && <Check className="h-4 w-4 text-accent shrink-0 ml-2" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -94,18 +116,21 @@ function BulkSelect({
   const selectedOption = options.find((opt) => opt.value === value);
 
   return (
-    <div className="relative h-full flex items-center" ref={containerRef}>
+    <div className="relative flex-1" ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="h-full flex items-center justify-between gap-4 px-3 text-sm text-foreground bg-transparent outline-none border-none cursor-pointer select-none"
+        className="h-10 w-full flex items-center justify-between gap-2 px-3.5 text-sm text-foreground bg-transparent outline-none border-none cursor-pointer select-none font-medium"
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
-        <ChevronDown className="h-3.5 w-3.5 opacity-50 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }} />
+        <ChevronDown
+          className="h-3.5 w-3.5 opacity-50 transition-transform duration-200 shrink-0"
+          style={{ transform: isOpen ? "rotate(180deg)" : "none" }}
+        />
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 z-50 mb-1 min-w-[150px] overflow-y-auto rounded-lg border border-border bg-card shadow-lg py-1">
+        <div className="absolute top-full left-0 z-50 mt-1.5 w-full min-w-[150px] overflow-hidden rounded-xl border border-border bg-popover shadow-xl py-1 animate-in fade-in duration-150">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -114,7 +139,7 @@ function BulkSelect({
                 onChange(opt.value);
                 setIsOpen(false);
               }}
-              className="w-full flex items-center justify-between px-4 py-2 text-sm text-left hover:bg-muted text-foreground transition-colors duration-150 cursor-pointer"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-sm text-left hover:bg-muted text-foreground transition-colors duration-150 cursor-pointer"
             >
               <span>{opt.label}</span>
               {value === opt.value && <Check className="h-4 w-4 text-accent shrink-0 ml-2" />}
@@ -185,22 +210,22 @@ export default function FilterBar({
   onApplyBulkAction,
 
   onCreateNew,
-  createLabel = "+ Create New",
+  createLabel = "Create New",
 
   onTrashClick,
-  trashLabel = "Trash",
+  trashLabel = "Trash Bin",
 }: Props) {
   // Setup active status filters
   const effectiveStatusOptions: StatusOption[] = statusOptions ?? [
-    { value: "all", label: "Status" },
+    { value: "all", label: "All Statuses" },
     { value: "active", label: "Active" },
     { value: "inactive", label: "Inactive" },
   ];
 
   // Setup bulk data modify options
   const effectiveBulkActions: BulkActionOption[] = bulkActionOptions ?? [
-    { value: "hide", label: "Hide" },
-    { value: "delete", label: "Delete" },
+    { value: "hide", label: "Hide Selected" },
+    { value: "delete", label: "Delete Selected" },
   ];
 
   const hasStatusFilter =
@@ -249,15 +274,20 @@ export default function FilterBar({
     return creatorOptions.map((c) => ({ value: c, label: c }));
   }, [creatorOptions]);
 
+  const isFilterActive =
+    (statusFilter && statusFilter !== "all" && statusFilter !== "") ||
+    (creatorFilter && creatorFilter !== "") ||
+    (dateFrom && dateFrom !== "") ||
+    (dateTo && dateTo !== "");
+
   return (
-    <div className="mb-7 space-y-6 text-foreground">
-      {/* Top section holding all structured filters */}
+    <div className="space-y-4 text-foreground">
+      {/* Top Filter Bar Row */}
       {hasTopFilters && (
-        <div className="flex h-14 items-stretch rounded-xl border border-border bg-card shadow-sm text-sm w-fit transition-colors duration-300">
-          {/* Section banner */}
-          <div className="flex h-full items-center gap-2 px-4 border-r border-border font-medium text-foreground rounded-l-xl">
-            <Filter className="w-4 h-4 text-accent" />
-            <span>Filters</span>
+        <div className="flex flex-wrap items-center gap-2.5 bg-card/80 border border-border/80 p-2.5 rounded-2xl shadow-xs transition-colors duration-300">
+          <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border/60">
+            <Filter className="w-3.5 h-3.5 text-accent" />
+            <span>Catalog Filters</span>
           </div>
 
           {/* Status selector filter */}
@@ -275,17 +305,18 @@ export default function FilterBar({
             <FilterSelect
               value={creatorFilter!}
               onChange={setCreatorFilter!}
-              options={[{ value: "", label: "Creator" }, ...creatorOptionsList]}
+              options={[{ value: "", label: "All Creators" }, ...creatorOptionsList]}
               placeholder="Creator"
             />
           )}
 
           {/* Date range filter component */}
           {hasDateFilter && (
-            <div className="flex h-full items-center gap-3 px-4 border-r border-border">
+            <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border border-border/60 rounded-xl">
+              <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <input
                 type="date"
-                className="h-8 rounded-lg px-2 text-sm border border-border bg-muted/30 text-foreground outline-none"
+                className="h-8 rounded-lg px-2 text-xs border border-border/60 bg-card text-foreground outline-none focus:border-accent/60 transition-colors"
                 value={localDateFrom}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -300,10 +331,10 @@ export default function FilterBar({
                   }
                 }}
               />
-              <span className="text-muted-foreground">-</span>
+              <span className="text-xs text-muted-foreground font-medium">to</span>
               <input
                 type="date"
-                className="h-8 rounded-lg px-2 text-sm border border-border bg-muted/30 text-foreground outline-none"
+                className="h-8 rounded-lg px-2 text-xs border border-border/60 bg-card text-foreground outline-none focus:border-accent/60 transition-colors"
                 value={localDateTo}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -322,91 +353,112 @@ export default function FilterBar({
           )}
 
           {/* Reset filter configurations */}
-          {hasResetButton && (
+          {hasResetButton && isFilterActive && (
             <button
               type="button"
               onClick={onResetFilters}
-              className="flex items-center gap-2 px-4 h-full text-sm font-semibold text-destructive hover:text-destructive/80 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 h-10 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 border border-destructive/20 transition-all cursor-pointer ml-auto"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Clear Filters</span>
+              <span>Reset</span>
             </button>
           )}
         </div>
       )}
 
-      {/* Bottom control row holding bulk action inputs and creation links */}
-      <div className="flex h-12 items-stretch gap-3">
-        {/* Bulk Action selector */}
-        {hasBulkAction && (
-          <div className="flex rounded-xl bg-card border border-border shadow-sm transition-colors duration-300">
-            <BulkSelect
-              value={selectedAction}
-              onChange={setSelectedAction}
-              options={effectiveBulkActions}
-              placeholder="-- Actions --"
-            />
+      {/* Bottom Control Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          {/* Global search entry textfield */}
+          {hasSearch && (
+            <div className="relative flex items-center h-11 min-w-[280px] max-w-[440px] flex-1 rounded-xl border border-border/80 bg-card px-3.5 shadow-xs focus-within:ring-2 focus-within:ring-accent/20 focus-within:border-accent/50 transition-all">
+              <Search className="w-4 h-4 text-muted-foreground mr-2.5 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search catalog entries..."
+                className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                value={search}
+                onChange={(e) => {
+                  if (!isComposing) {
+                    setSearch!(e.target.value);
+                  }
+                }}
+                onCompositionStart={() => setIsComposing(true)}
+                onCompositionEnd={(e) => {
+                  setIsComposing(false);
+                  setSearch!((e.target as HTMLInputElement).value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isComposing && onSearchSubmit) {
+                    onSearchSubmit();
+                  }
+                }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch!("");
+                    if (onSearchSubmit) onSearchSubmit();
+                  }}
+                  className="p-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 ml-2 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground bg-muted/60 border border-border/60 rounded-md">
+                ↵
+              </kbd>
+            </div>
+          )}
 
+          {/* Bulk Action selector */}
+          {hasBulkAction && (
+            <div className="flex h-11 rounded-xl bg-card border border-border/80 shadow-xs overflow-hidden transition-colors">
+              <BulkSelect
+                value={selectedAction}
+                onChange={setSelectedAction}
+                options={effectiveBulkActions}
+                placeholder="Bulk Actions"
+              />
+
+              <button
+                type="button"
+                className="cursor-pointer h-full px-4 text-xs font-semibold text-primary hover:bg-primary/10 border-l border-border/80 transition-colors"
+                onClick={handleApplyClick}
+              >
+                Apply
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Action Triggers (Create / Trash) */}
+        <div className="flex items-center gap-2.5">
+          {/* Trash drawer selector trigger */}
+          {onTrashClick && (
             <button
               type="button"
-              className="cursor-pointer h-full px-4 text-sm font-semibold text-destructive hover:bg-muted/30 border-l border-border transition-colors"
-              onClick={handleApplyClick}
+              className="h-11 px-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 text-sm font-semibold hover:bg-destructive/20 transition-all cursor-pointer flex items-center gap-2"
+              onClick={onTrashClick}
             >
-              Apply
+              <Trash2 size={16} />
+              <span className="hidden sm:inline">{trashLabel}</span>
             </button>
-          </div>
-        )}
+          )}
 
-        {/* Global search entry textfield */}
-        {hasSearch && (
-          <div className="flex items-center space-x-2 h-full w-[400px] rounded-xl border border-border bg-card px-4 shadow-sm transition-colors duration-300">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search (press Enter to apply)"
-              className="flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-              value={search}
-              onChange={(e) => {
-                if (!isComposing) {
-                  setSearch!(e.target.value);
-                }
-              }}
-              onCompositionStart={() => setIsComposing(true)}
-              onCompositionEnd={(e) => {
-                setIsComposing(false);
-                setSearch!((e.target as HTMLInputElement).value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !isComposing && onSearchSubmit) {
-                  onSearchSubmit();
-                }
-              }}
-            />
-          </div>
-        )}
-
-        {/* Standard create new trigger */}
-        {onCreateNew && (
-          <button
-            type="button"
-            className="h-full px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all shadow-sm cursor-pointer"
-            onClick={onCreateNew}
-          >
-            {createLabel}
-          </button>
-        )}
-
-        {/* Trash drawer selector trigger */}
-        {onTrashClick && (
-          <button
-            type="button"
-            className="h-full px-4 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-all shadow-sm cursor-pointer flex items-center gap-2"
-            onClick={onTrashClick}
-          >
-            <Trash2 size={15} />
-            <span className="hidden sm:inline">{trashLabel}</span>
-          </button>
-        )}
+          {/* Standard create new trigger */}
+          {onCreateNew && (
+            <button
+              type="button"
+              className="h-11 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all shadow-xs cursor-pointer flex items-center gap-2"
+              onClick={onCreateNew}
+            >
+              <Plus size={16} />
+              <span>{createLabel}</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

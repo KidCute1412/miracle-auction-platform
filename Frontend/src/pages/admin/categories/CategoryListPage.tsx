@@ -187,30 +187,28 @@ export default function CategoryList() {
         </div>
       </div>
 
-      {/* Filters Card */}
-      <div className="bg-card border border-border p-4 rounded-2xl shadow-sm">
-        <FilterBar
-          showStatusFilter
-          statusFilter={statusFilter}
-          setStatusFilter={handleStatusFilterChange}
-          statusOptions={[
-            { value: "all", label: "Status" },
-            { value: "active", label: "Active" },
-            { value: "inactive", label: "Inactive" },
-          ]}
-          creatorFilter={creatorFilter}
-          setCreatorFilter={handleCreatorFilterChange}
-          creatorOptions={creatorOptions}
-          dateFrom={dateFrom}
-          setDateFrom={handleDateFromChange}
-          dateTo={dateTo}
-          setDateTo={handleDateToChange}
-          search={localSearch}
-          setSearch={setLocalSearch}
-          onSearchSubmit={handleSearchSubmit}
-          onResetFilters={resetFilters}
-        />
-      </div>
+      {/* Filters Catalog Bar */}
+      <FilterBar
+        showStatusFilter
+        statusFilter={statusFilter}
+        setStatusFilter={handleStatusFilterChange}
+        statusOptions={[
+          { value: "all", label: "All Statuses" },
+          { value: "active", label: "Active" },
+          { value: "inactive", label: "Inactive" },
+        ]}
+        creatorFilter={creatorFilter}
+        setCreatorFilter={handleCreatorFilterChange}
+        creatorOptions={creatorOptions}
+        dateFrom={dateFrom}
+        setDateFrom={handleDateFromChange}
+        dateTo={dateTo}
+        setDateTo={handleDateToChange}
+        search={localSearch}
+        setSearch={setLocalSearch}
+        onSearchSubmit={handleSearchSubmit}
+        onResetFilters={resetFilters}
+      />
 
       {/* Desktop Table View */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden hidden lg:block relative shadow-sm transition-colors duration-300">
