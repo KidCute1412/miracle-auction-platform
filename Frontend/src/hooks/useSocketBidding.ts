@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import type { BidSocketEvent } from "api-contracts";
 
-const SOCKET_SERVER_URL = `${import.meta.env.VITE_API_URL}`; // Phải khớp với URL backend
+const SOCKET_SERVER_URL = import.meta.env.VITE_API_URL || "http://localhost:5000"; // Must match backend URL
 
 const isNewer = (
   incoming: BidSocketEvent,

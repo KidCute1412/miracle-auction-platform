@@ -75,6 +75,9 @@ export class RedisAuctionAuthority {
       throw new BidInfrastructureError("Bidding authority returned malformed JSON");
     }
     if (result.status === "error") {
+      if (result.code === "AUCTION_STATE_NOT_READY") {
+        throw new BidDomainError(result.message, result.statusCode, result.code);
+      }
       if (result.statusCode >= 500) throw new BidInfrastructureError(result.message);
       throw new BidDomainError(result.message, result.statusCode, result.code);
     }

@@ -17,7 +17,15 @@ export async function createUser(overrides: Partial<{ username: string; email: s
   });
 }
 
-export async function createAuction(sellerId: number, overrides: Partial<{ current_price: number; start_price: number; step_price: number; buy_now_price: number | null }> = {}) {
+export async function createAuction(sellerId: number, overrides: Partial<{
+  current_price: number;
+  start_price: number;
+  step_price: number;
+  buy_now_price: number | null;
+  start_time: Date;
+  end_time: Date;
+  auction_status: string;
+}> = {}) {
   return prisma.products.create({
     data: {
       product_name: "Test auction",
@@ -26,10 +34,10 @@ export async function createAuction(sellerId: number, overrides: Partial<{ curre
       current_price: BigInt(overrides.current_price ?? 100),
       step_price: BigInt(overrides.step_price ?? 10),
       buy_now_price: overrides.buy_now_price === null || overrides.buy_now_price === undefined ? null : BigInt(overrides.buy_now_price),
-      start_time: new Date(Date.now() - 60_000),
-      end_time: new Date(Date.now() + 60 * 60_000),
+      start_time: overrides.start_time ?? new Date(Date.now() - 60_000),
+      end_time: overrides.end_time ?? new Date(Date.now() + 60 * 60_000),
       product_images: [],
-      auction_status: "ACTIVE",
+      auction_status: overrides.auction_status ?? "ACTIVE",
     },
   });
 }

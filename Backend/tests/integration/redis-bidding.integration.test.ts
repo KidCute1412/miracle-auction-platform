@@ -5,6 +5,7 @@ vi.unmock("@/config/redis.config.ts");
 
 import { redisClient } from "../../src/config/redis.config.ts";
 import { prisma } from "../../src/infrastructure/database/prisma.client.ts";
+import { PlaceBidUseCase } from "../../src/modules/bids/application/place-bid.use-case.ts";
 import { redisAuctionAuthority } from "../../src/modules/bids/infrastructure/redis/redis-auction.authority.ts";
 import { bootstrapRedisAuction } from "../../src/modules/bids/infrastructure/redis/redis-auction.bootstrap.ts";
 import { redisAuctionKeys } from "../../src/modules/bids/infrastructure/redis/redis-auction.keys.ts";
@@ -31,6 +32,64 @@ beforeEach(async () => {
 afterAll(async () => closeProjectorRedisConnection());
 
 describe("Redis-authoritative bidding integration", () => {
+  it("bootstraps missing Redis state before accepting the first bid", async () => {
+    const seller = await createUser({ role: "seller" });
+    const bidder = await createUser();
+    const auction = await createAuction(seller.user_id);
+    const productId = Number(auction.product_id);
+    const previousBidEngine = process.env.BID_ENGINE;
+    process.env.BID_ENGINE = "redis";
+
+    try {
+      await expect(new PlaceBidUseCase().execute({
+        userId: bidder.user_id,
+        productId,
+        maxPriceVnd: "120",
+        idempotencyKey: "bootstrap-first-bid",
+        correlationId: randomUUID(),
+      })).resolves.toMatchObject({ status: "success" });
+    } finally {
+      if (previousBidEngine === undefined) delete process.env.BID_ENGINE;
+      else process.env.BID_ENGINE = previousBidEngine;
+    }
+
+    await expect(redisClient.exists(redisAuctionKeys.state(productId))).resolves.toBe(1);
+    await expect(redisClient.hget(redisAuctionKeys.state(productId), "leaderId"))
+      .resolves.toBe(bidder.user_id.toString());
+  });
+
+  it("activates a cached PENDING auction when its start time arrives", async () => {
+    const seller = await createUser({ role: "seller" });
+    const bidder = await createUser();
+    const startTime = new Date(Date.now() + 60_000);
+    const endTime = new Date(startTime.getTime() + 60 * 60_000);
+    const auction = await createAuction(seller.user_id, {
+      start_time: startTime,
+      end_time: endTime,
+      auction_status: "PENDING",
+    });
+    const productId = Number(auction.product_id);
+
+    await bootstrapRedisAuction(productId);
+    await expect(redisClient.hget(redisAuctionKeys.state(productId), "status")).resolves.toBe("PENDING");
+
+    await expect(redisAuctionAuthority.mutate({
+      operation: "BID",
+      productId,
+      actorId: bidder.user_id,
+      actorRole: "user",
+      amountVnd: "120",
+      idempotencyKey: "pending-becomes-active",
+      correlationId: randomUUID(),
+      now: new Date(startTime.getTime() + 1),
+    })).resolves.toMatchObject({ status: "success" });
+
+    await expect(redisClient.hget(redisAuctionKeys.state(productId), "status")).resolves.toBe("ACTIVE");
+    await runProjectorBatch("integration-pending-activation");
+    await expect(prisma.products.findUniqueOrThrow({ where: { product_id: auction.product_id } }))
+      .resolves.toMatchObject({ auction_status: "ACTIVE" });
+  });
+
   it("mutates once, safely replays, projects, and creates one public buy-now order", async () => {
     const seller = await createUser({ role: "seller" });
     const bidder = await createUser();

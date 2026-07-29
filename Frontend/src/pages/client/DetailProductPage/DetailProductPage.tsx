@@ -19,6 +19,7 @@ import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { productService } from "@/services/product.service.ts";
 import { categoryService } from "@/services/category.service.ts";
 import { formatVnd } from "@/lib/money.ts";
+import { formatAuctionDuration, getAuctionClock, type AuctionPhase } from "@/utils/auction_time";
 
 type ProductType = {
   product_id: number;
@@ -64,14 +65,21 @@ function DetailProductPage() {
   }
   useSocketBidding(
     product_id || null,
-    (event) => setProduct((current) => current ? {
-      ...current,
-      current_price: Number(event.currentPriceVnd),
-      price_owner_id: event.leaderId === null ? undefined : Number(event.leaderId),
-      end_time: new Date(Number(event.endTimeMs)).toISOString(),
-      auction_sequence: event.sequence,
-      auction_version: event.version,
-    } : current),
+    (event) => setProduct((current) => {
+      if (!current) return current;
+      const isMe = Boolean(auth?.user_id && event.leaderId !== null && Number(event.leaderId) === auth.user_id);
+      return {
+        ...current,
+        current_price: Number(event.currentPriceVnd),
+        price_owner_id: event.leaderId === null ? undefined : Number(event.leaderId),
+        price_owner_username: isMe
+          ? (auth?.username || current.price_owner_username || "You")
+          : current.price_owner_username,
+        end_time: new Date(Number(event.endTimeMs)).toISOString(),
+        auction_sequence: event.sequence,
+        auction_version: event.version,
+      };
+    }),
     () => {
       if (!product_id) return;
       void productService.getDetail(product_id)
@@ -82,7 +90,8 @@ function DetailProductPage() {
 
   const [formattedStartTime, setFormatStartTime] = useState("");
   const [timeLeft, setTimeLeft] = useState("");
-  const [isExpired, setIsExpired] = useState(true);
+  const [auctionPhase, setAuctionPhase] = useState<AuctionPhase>("ENDED");
+  const isExpired = auctionPhase === "ENDED";
 
   const [isLoading, setLoading] = useState(true);
   const { setBreadcrumbs } = useBreadcrumb();
@@ -146,16 +155,15 @@ function DetailProductPage() {
       formatStartTime(
         DateTime.fromISO(products.start_time).setZone("Asia/Ho_Chi_Minh")
       );
-      const end = DateTime.fromISO(products.end_time).setZone(
-        "Asia/Ho_Chi_Minh"
-      );
-      formatEndTime(end);
-      const interval = setInterval(() => {
-        const end = DateTime.fromISO(products.end_time).setZone(
-          "Asia/Ho_Chi_Minh"
-        );
-        formatEndTime(end);
-      }, 1000);
+      const updateAuctionClock = () => {
+        const clock = getAuctionClock(products.start_time, products.end_time);
+        setAuctionPhase(clock.phase);
+        setTimeLeft(clock.phase === "ENDED"
+          ? "Expired"
+          : `${clock.phase === "PENDING" ? "Starts in" : "Ends in"} ${formatAuctionDuration(clock.remainingMs)}`);
+      };
+      updateAuctionClock();
+      const interval = setInterval(updateAuctionClock, 1000);
       return () => clearInterval(interval);
     }
   }, [products]);
@@ -164,35 +172,6 @@ function DetailProductPage() {
     if (start_time) {
       setFormatStartTime(start_time.toFormat("dd-MM-yyyy HH:mm"));
     }
-  };
-
-  const formatEndTime = (end_time: DateTime) => {
-    if (!end_time) return;
-
-    const present_time = DateTime.now().setZone("Asia/Ho_Chi_Minh");
-    const diff = end_time
-      .diff(present_time, ["days", "hours", "minutes", "seconds"])
-      .toObject();
-
-    const days = diff.days ?? 0;
-    const hours = diff.hours ?? 0;
-    const minutes = diff.minutes ?? 0;
-    const seconds = diff.seconds ?? 0;
-    let result;
-    if (days >= 1) {
-      result = `${Math.floor(days)}d ${Math.floor(hours)}h left`;
-      setIsExpired(false);
-    } else if (hours >= 1) {
-      result = `${Math.floor(hours)}h ${Math.floor(minutes)}m left`;
-      setIsExpired(false);
-    } else if (minutes >= 0 && seconds >= 0) {
-      result = `${Math.floor(minutes)}m ${Math.floor(seconds)}s left`;
-      setIsExpired(false);
-    } else {
-      result = "Expired";
-      setIsExpired(true);
-    }
-    setTimeLeft(result);
   };
 
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -279,7 +258,9 @@ function DetailProductPage() {
               <div className="flex items-center gap-3 p-3 bg-red-500/10 rounded-lg">
                 <Clock className="w-5 h-5 text-red-500" />
                 <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">Time Left</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {auctionPhase === "PENDING" ? "Auction Starts" : "Time Left"}
+                  </p>
                   <p className="text-lg font-bold text-red-500">{timeLeft ?? "Waiting..."}</p>
                 </div>
               </div>
@@ -469,7 +450,7 @@ function DetailProductPage() {
       </div>
 
       {/* Bid Section - Full Width */}
-      {!isExpired && (
+      {auctionPhase === "ACTIVE" && (
         <div className="mt-8 bg-card border border-border rounded-lg shadow-sm animate__animated animate__fadeIn">
           <PlayBidSection
             product_id={products?.product_id}
@@ -484,6 +465,13 @@ function DetailProductPage() {
               product_name={products?.product_name}
             />
           )}
+        </div>
+      )}
+      {auctionPhase === "PENDING" && (
+        <div className="mt-8 rounded-lg border border-accent/30 bg-accent/10 p-6 text-center shadow-sm">
+          <Clock className="mx-auto mb-3 h-6 w-6 text-accent" />
+          <h4 className="text-lg font-semibold text-foreground">Bidding has not started yet</h4>
+          <p className="mt-1 text-sm text-muted-foreground">{timeLeft}</p>
         </div>
       )}
 

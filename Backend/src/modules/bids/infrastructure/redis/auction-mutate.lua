@@ -129,6 +129,14 @@ if productId ~= tostring(request.productId) then
   return fail("CORRUPT_REDIS_STATE", "Auction identifier does not match its key", 503)
 end
 
+-- PENDING is persisted when a future auction is created. Redis may have cached
+-- that state before the start time, so derive the effective state atomically
+-- from the authoritative mutation clock instead of requiring a scheduler to
+-- promote it first.
+if status == "PENDING" and nowMs >= startAtMs and nowMs < endAtMs then
+  status = "ACTIVE"
+end
+
 local operation = request.operation
 local actorId = tostring(request.actorId)
 local nextStatus = status

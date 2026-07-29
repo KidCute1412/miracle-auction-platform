@@ -2,7 +2,10 @@ import { BidDomainError } from "./bid.errors.ts";
 import type { AuctionState, BidderEligibility } from "./bid.types.ts";
 
 export function assertAuctionAvailable(auction: AuctionState, now = new Date()): void {
-  if (auction.status !== "ACTIVE" || auction.isRemoved || auction.startTime > now || auction.endTime <= now) {
+  const effectiveStatus = (auction.status === "PENDING" && auction.startTime <= now && auction.endTime > now)
+    ? "ACTIVE"
+    : auction.status;
+  if (effectiveStatus !== "ACTIVE" || auction.isRemoved || auction.startTime > now || auction.endTime <= now) {
     throw new BidDomainError("Product is not in bidding period");
   }
 }

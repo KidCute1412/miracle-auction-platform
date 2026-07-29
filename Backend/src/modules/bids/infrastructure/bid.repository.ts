@@ -25,6 +25,12 @@ const numberOf = (value: Numeric): number => Number(value ?? 0);
 const moneyOf = (value: bigint | null): bigint => value ?? 0n;
 
 function mapAuctionRow(row: ProductLockRow): AuctionState {
+  const now = new Date();
+  const startTime = row.start_time ?? new Date(0);
+  const endTime = row.end_time ?? new Date(0);
+  const effectiveStatus = (row.auction_status === "PENDING" && startTime <= now && endTime > now)
+    ? "ACTIVE"
+    : (row.auction_status as AuctionState["status"]);
   return {
     productId: numberOf(row.product_id),
     sellerId: numberOf(row.seller_id),
@@ -33,10 +39,10 @@ function mapAuctionRow(row: ProductLockRow): AuctionState {
     stepPrice: moneyOf(row.step_price),
     priceOwnerId: row.price_owner_id === null ? null : numberOf(row.price_owner_id),
     buyNowPrice: row.buy_now_price,
-    startTime: row.start_time ?? new Date(0),
-    endTime: row.end_time ?? new Date(0),
+    startTime,
+    endTime,
     isRemoved: Boolean(row.is_removed),
-    status: row.auction_status as AuctionState["status"],
+    status: effectiveStatus,
     version: row.auction_version,
     sequence: row.auction_sequence,
   };

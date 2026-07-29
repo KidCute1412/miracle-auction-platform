@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertBidAmount, assertBidderCanParticipate } from "../../../src/modules/bids/domain/auction.policy.ts";
+import { assertAuctionAvailable, assertBidAmount, assertBidderCanParticipate } from "../../../src/modules/bids/domain/auction.policy.ts";
 import { BidDomainError } from "../../../src/modules/bids/domain/bid.errors.ts";
 import { calculateProxyBid } from "../../../src/modules/bids/domain/proxy-bid.policy.ts";
 
@@ -18,5 +18,23 @@ describe("bid domain policies", () => {
   });
   it("keeps the existing leader when an incoming maximum is lower", () => {
     expect(calculateProxyBid(auction, { userId: 2, maxPrice: 130n }, { userId: 3, maxPrice: 150n })).toMatchObject({ currentPrice: 140n, priceOwnerId: 3 });
+  });
+  it("accepts a PENDING auction if start_time <= now < end_time", () => {
+    const pendingAuction = {
+      ...auction,
+      status: "PENDING" as const,
+      startTime: new Date(Date.now() - 1000),
+      endTime: new Date(Date.now() + 100000),
+    };
+    expect(() => assertAuctionAvailable(pendingAuction)).not.toThrow();
+  });
+  it("rejects a PENDING auction if start_time is in the future", () => {
+    const futureAuction = {
+      ...auction,
+      status: "PENDING" as const,
+      startTime: new Date(Date.now() + 100000),
+      endTime: new Date(Date.now() + 200000),
+    };
+    expect(() => assertAuctionAvailable(futureAuction)).toThrow("Product is not in bidding period");
   });
 });
