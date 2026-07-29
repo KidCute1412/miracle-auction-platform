@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { closeKafkaConnection, initKafka } from "@/config/kafka.config.ts";
 import { closeRedisConnection, redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import {
@@ -24,7 +23,6 @@ async function writeHeartbeat(): Promise<void> {
 }
 
 async function run(): Promise<void> {
-  await initKafka();
   await startDashboardConsumer();
   await startNotificationConsumer().catch((error) =>
     console.error("[ASYNC_WORKER] Notification intake unavailable; email delivery remains active", {
@@ -49,7 +47,7 @@ async function shutdown(signal: string): Promise<void> {
     stopNotificationConsumer(),
     stopEmailDeliveryLoop(),
   ]);
-  await Promise.allSettled([closeKafkaConnection(), closeRedisConnection(), prisma.$disconnect()]);
+  await Promise.allSettled([closeRedisConnection(), prisma.$disconnect()]);
   process.exit(0);
 }
 

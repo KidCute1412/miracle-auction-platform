@@ -58,7 +58,7 @@ export async function getUserProfileDetail(req: AccountRequest, res: Response) {
       data: profileDetail.data,
       is_owner: profileDetail.is_owner,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       status: "error",
       message: "Server error",

@@ -39,9 +39,9 @@ export async function getProductsPageList(req: Request, res: Response) {
         totalPages: result.numberOfPages,
       },
     });
-  } catch (error: any) {
-    console.error("CONTROLLER ERROR STACK:", error?.stack || error);
-    return res.status(500).json({ status: "error", message: error?.message || "Server error" });
+  } catch (error: unknown) {
+    console.error("CONTROLLER ERROR STACK:", error instanceof Error ? error.stack : error);
+    return res.status(500).json({ status: "error", message: error instanceof Error ? error.message : "Server error" });
   }
 }
 
@@ -229,7 +229,7 @@ export async function getRelatedProducts(req: Request, res: Response) {
       status: "success",
       data: products,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       status: "error",
       message: "Server error",
@@ -298,7 +298,7 @@ export async function getTopEndingSoonProducts(req: Request, res: Response) {
     const limit = parseInt(req.query.limit as string) || 5;
     const products = await ProductsService.getTopEndingSoonProducts(limit);
     return res.status(200).json({ status: "success", data: products });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ status: "error", message: "Server error" });
   }
 }
@@ -309,7 +309,7 @@ export async function getTopHighestPriceProducts(req: Request, res: Response) {
     const limit = parseInt(req.query.limit as string) || 5;
     const products = await ProductsService.getTopHighestPriceProducts(limit);
     return res.status(200).json({ status: "success", data: products });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ status: "error", message: "Server error" });
   }
 }
@@ -320,7 +320,7 @@ export async function getTopMostBidProducts(req: Request, res: Response) {
     const limit = parseInt(req.query.limit as string) || 5;
     const products = await ProductsService.getTopMostBidProducts(limit);
     return res.status(200).json({ status: "success", data: products });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ status: "error", message: "Server error" });
   }
 }

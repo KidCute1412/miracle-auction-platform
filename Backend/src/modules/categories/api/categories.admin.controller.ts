@@ -16,7 +16,7 @@ export async function createPost(req: AccountRequest, res: Response) {
     req.body.updated_by = account.user_id;
     await CategoriesService.insertCategory(req.body);
     res.json({ code: "success", message: "Created new category successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred" });
   }
 }
@@ -82,7 +82,7 @@ export async function edit(req: Request, res: Response) {
     const list = await CategoriesService.getCategoryWithID(Number(id));
     const item = list.length > 0 ? list[0] : null;
     res.json({ code: "success", item });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", item: null });
   }
 }
@@ -93,7 +93,7 @@ export async function editPatch(req: Request, res: Response) {
     const { id } = req.params;
     await CategoriesService.updateCategoryWithID(Number(id), req.body);
     res.json({ code: "success", message: "Updated successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred here" });
   }
 }
@@ -110,7 +110,7 @@ export async function deleteCategory(req: Request, res: Response) {
       });
     }
     res.json({ code: "success", message: "Deleted category successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred" });
   }
 }
@@ -121,7 +121,7 @@ export async function restoreCategory(req: Request, res: Response) {
     const { id } = req.params;
     await CategoriesService.restoreCategoryWithID(Number(id));
     res.json({ code: "success", message: "Restored category successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred" });
   }
 }
@@ -132,7 +132,7 @@ export async function destroyCategory(req: Request, res: Response) {
     const { id } = req.params;
     await CategoriesService.destroyCategory(Number(id));
     res.json({ code: "success", message: "Permanently deleted category successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred" });
   }
 }
@@ -142,7 +142,7 @@ export async function getCreators(_: Request, res: Response) {
   try {
     const list = await CategoriesService.getUniqueCreators();
     res.json({ code: "success", message: "Success", list });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred fetching creators", list: [] });
   }
 }

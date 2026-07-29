@@ -1,0 +1,9 @@
+﻿CONTAINER ID   NAME                                                                                                               CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+74634331bb9d   online-auction-auction-worker                                                                                      0.20%     20.6MiB / 1.859GiB    1.08%     435kB / 767kB     450MB / 72.2MB    42
+5490c4c7db51   online-auction-outbox-relay                                                                                        3.71%     25.73MiB / 1.859GiB   1.35%     211kB / 302kB     327MB / 61.4MB    42
+600a3a3aa7ae   online-auction-async-worker                                                                                        3.20%     46.93MiB / 1.859GiB   2.46%     721kB / 895kB     456MB / 71MB      42
+86c2713b96c1   online-auction-postgres                                                                                            0.18%     35.45MiB / 1.859GiB   1.86%     35.9MB / 31.9MB   4.5GB / 1.21GB    14
+b4ebd6c60b64   online-auction-redis                                                                                               0.45%     8.457MiB / 1.859GiB   0.44%     130MB / 49.6MB    4.23GB / 64.1MB   7
+bc4c6ad26b67   online-auction-kafka                                                                                               2.79%     64.62MiB / 1.859GiB   3.39%     6.52MB / 7.53MB   25.8GB / 3.1GB    102
+73f8a3cca283   k8s_argocd-application-controller_argocd-application-controller-0_argocd_fbbc8bd3-d80d-4513-b8e4-6a074b5d6476_43   0.12%     36.18MiB / 1.859GiB   1.90%     0B / 0B           101GB / 1.19GB    10
+881a33ad0cf9   mutux-postgres                                                                                                     0.00%     3.129MiB / 1.859GiB   0.16%     1.7kB / 126B      260MB / 26.4MB    6

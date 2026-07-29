@@ -1,0 +1,303 @@
+﻿name: online-auction
+services:
+  async-worker:
+    build:
+      context: D:\HCMUS\Third Year\Ultra Web Skills\ReflourishedOnlineAuction\Online-Auction\Backend
+      dockerfile: Dockerfile
+    command:
+      - npm
+      - run
+      - async-worker:prod
+    container_name: online-auction-async-worker
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      ASYNC_WORKER_HEARTBEAT_TTL_SECONDS: "90"
+      BID_ENGINE: redis
+      DASHBOARD_DEBOUNCE_MS: "15000"
+      DASHBOARD_KAFKA_GROUP_ID: dashboard-analytics-v1
+      DASHBOARD_RECOVERY_INTERVAL_MS: "60000"
+      DASHBOARD_RETRY_LIMIT: "5"
+      DASHBOARD_STALE_THRESHOLD_MS: "120000"
+      DATABASE_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      DIRECT_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      EMAIL_DELIVERY_CONCURRENCY: "2"
+      EMAIL_DELIVERY_LEASE_MS: "300000"
+      EMAIL_DELIVERY_MAX_ATTEMPTS: "5"
+      EMAIL_DELIVERY_MODE: disabled
+      KAFKA_ASYNC_DLQ_TOPIC: async_events_dlq
+      KAFKA_BIDDING_TOPIC: bidding_events
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_DASHBOARD_DLQ_TOPIC: dashboard_updates_dlq
+      KAFKA_DASHBOARD_TOPIC: dashboard_updates
+      KAFKA_DOMAIN_TOPIC: domain_events
+      KAFKA_SSL: "false"
+      NOTIFICATION_KAFKA_GROUP_ID: notification-intake-v1
+      REDIS_URL: redis://redis:6379
+    logging:
+      driver: json-file
+      options:
+        max-file: "3"
+        max-size: 10m
+    networks:
+      default: null
+    stop_grace_period: 30s
+    volumes:
+      - type: bind
+        source: D:\HCMUS\Third Year\Ultra Web Skills\ReflourishedOnlineAuction\Online-Auction\Backend
+        target: /app
+        bind: {}
+      - type: volume
+        target: /app/node_modules
+        volume: {}
+  auction-worker:
+    build:
+      context: D:\HCMUS\Third Year\Ultra Web Skills\ReflourishedOnlineAuction\Online-Auction\Backend
+      dockerfile: Dockerfile
+    command:
+      - npm
+      - run
+      - auction-worker:prod
+    container_name: online-auction-auction-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      AUCTION_CLOSE_INTERVAL_MS: "1000"
+      AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: "90"
+      BID_ENGINE: redis
+      BID_PROJECTOR_GROUP: postgres-projector-v1
+      BID_PROJECTOR_MAX_ATTEMPTS: "10"
+      BID_PROJECTOR_RECLAIM_INTERVAL_MS: "30000"
+      DATABASE_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      DIRECT_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      EMAIL_DELIVERY_MODE: disabled
+      KAFKA_ASYNC_DLQ_TOPIC: async_events_dlq
+      KAFKA_BIDDING_TOPIC: bidding_events
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_DASHBOARD_DLQ_TOPIC: dashboard_updates_dlq
+      KAFKA_DASHBOARD_TOPIC: dashboard_updates
+      KAFKA_DOMAIN_TOPIC: domain_events
+      KAFKA_SSL: "false"
+      REDIS_URL: redis://redis:6379
+    logging:
+      driver: json-file
+      options:
+        max-file: "3"
+        max-size: 10m
+    networks:
+      default: null
+    stop_grace_period: 30s
+    volumes:
+      - type: bind
+        source: D:\HCMUS\Third Year\Ultra Web Skills\ReflourishedOnlineAuction\Online-Auction\Backend
+        target: /app
+        bind: {}
+      - type: volume
+        target: /app/node_modules
+        volume: {}
+  kafka:
+    container_name: online-auction-kafka
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:19094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
+      KAFKA_NODE_ID: "1"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+    image: apache/kafka:3.7.0
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 9092
+        published: "19092"
+        protocol: tcp
+      - mode: ingress
+        target: 9094
+        published: "19094"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: kafka_data
+        target: /var/lib/kafka/data
+        volume: {}
+  kafka-init:
+    command:
+      - |
+        until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do sleep 2; done
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic bidding_events --partitions 2 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic domain_events --partitions 2 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic dashboard_updates --partitions 1 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic async_events_dlq --partitions 1 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic dashboard_updates_dlq --partitions 1 --replication-factor 1
+    depends_on:
+      kafka:
+        condition: service_started
+        required: true
+    entrypoint:
+      - /bin/sh
+      - -c
+    image: apache/kafka:3.7.0
+    networks:
+      default: null
+  outbox-relay:
+    build:
+      context: D:\HCMUS\Third Year\Ultra Web Skills\ReflourishedOnlineAuction\Online-Auction\Backend
+      dockerfile: Dockerfile
+    command:
+      - npm
+      - run
+      - outbox-relay:prod
+    container_name: online-auction-outbox-relay
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      BID_ENGINE: redis
+      DATABASE_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      DIRECT_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      EMAIL_DELIVERY_MODE: disabled
+      KAFKA_ASYNC_DLQ_TOPIC: async_events_dlq
+      KAFKA_BIDDING_TOPIC: bidding_events
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_DASHBOARD_DLQ_TOPIC: dashboard_updates_dlq
+      KAFKA_DASHBOARD_TOPIC: dashboard_updates
+      KAFKA_DOMAIN_TOPIC: domain_events
+      KAFKA_SSL: "false"
+      OUTBOX_BATCH_SIZE: "100"
+      OUTBOX_IDLE_POLL_MS: "500"
+      OUTBOX_MAX_BACKOFF_MS: "300000"
+      OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS: "90"
+      REDIS_URL: redis://redis:6379
+    logging:
+      driver: json-file
+      options:
+        max-file: "3"
+        max-size: 10m
+    networks:
+      default: null
+    stop_grace_period: 30s
+    volumes:
+      - type: bind
+        source: D:\HCMUS\Third Year\Ultra Web Skills\ReflourishedOnlineAuction\Online-Auction\Backend
+        target: /app
+        bind: {}
+      - type: volume
+        target: /app/node_modules
+        volume: {}
+  postgres:
+    container_name: online-auction-postgres
+    environment:
+      POSTGRES_DB: online_auction_test
+      POSTGRES_PASSWORD: my_local_password
+      POSTGRES_USER: postgres
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d online_auction_test
+      timeout: 3s
+      interval: 5s
+      retries: 20
+    image: postgres:15-alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "15432"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data
+        volume: {}
+  redis:
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory-policy
+      - noeviction
+    container_name: online-auction-redis
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 3s
+      interval: 5s
+      retries: 20
+    image: redis:7-alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 6379
+        published: "16379"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: redis_data
+        target: /data
+        volume: {}
+networks:
+  default:
+    name: online-auction_default
+volumes:
+  kafka_data:
+    name: online-auction_kafka_data
+  postgres_data:
+    name: online-auction_postgres_data
+  redis_data:
+    name: online-auction_redis_data
+x-backend-worker:
+  build:
+    context: ./Backend
+    dockerfile: Dockerfile
+  environment:
+    BID_ENGINE: redis
+    DATABASE_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+    DIRECT_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+    EMAIL_DELIVERY_MODE: disabled
+    KAFKA_ASYNC_DLQ_TOPIC: async_events_dlq
+    KAFKA_BIDDING_TOPIC: bidding_events
+    KAFKA_BROKERS: kafka:9092
+    KAFKA_DASHBOARD_DLQ_TOPIC: dashboard_updates_dlq
+    KAFKA_DASHBOARD_TOPIC: dashboard_updates
+    KAFKA_DOMAIN_TOPIC: domain_events
+    KAFKA_SSL: "false"
+    REDIS_URL: redis://redis:6379
+  logging:
+    driver: json-file
+    options:
+      max-file: "3"
+      max-size: 10m
+  stop_grace_period: 30s
+  volumes:
+    - ./Backend:/app
+    - /app/node_modules

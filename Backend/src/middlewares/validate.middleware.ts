@@ -5,6 +5,8 @@ export type ValidationTarget = "body" | "query" | "params";
 export type ValidatedInputs = Partial<Record<ValidationTarget, unknown>>;
 
 declare global {
+  // Express exposes request locals through namespace augmentation.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Locals { validated?: ValidatedInputs; }
   }

@@ -38,7 +38,7 @@ export async function getOrderDetail(req: AccountRequest, res: Response) {
       message: "Successfully retrieved order details",
       data: orderDetail,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       status: "error",
       message: "Error retrieving order details",
@@ -56,7 +56,7 @@ export async function getSellerOrderView(req: Request, res: Response) {
       message: "Successfully retrieved seller order details",
       data: orderDetail,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       status: "error",
       message: "Error retrieving seller order details",
@@ -79,7 +79,7 @@ export async function rejectOrder(req: Request, res: Response) {
       status: "success",
       message: result.message,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       status: "error",
       message: "Error rejecting order",
@@ -103,7 +103,7 @@ export async function approveOrder(req: Request, res: Response) {
       status: "success",
       message: result.message,
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       status: "error",
       message: "Error approving order",

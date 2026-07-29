@@ -22,7 +22,7 @@ export async function list(req: Request, res: Response) {
       message: "Success",
       list,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Server error" });
   }
 }
@@ -40,7 +40,7 @@ export async function calNumberOfUsers(req: Request, res: Response) {
 
     const total = await UsersService.calTotalUsers(filter);
     res.json({ code: "success", message: "Success", total });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Server error" });
   }
 }
@@ -54,7 +54,7 @@ export async function detail(req: Request, res: Response) {
       return res.status(404).json({ code: "error", message: "User does not exist" });
     }
     res.json({ code: "success", message: "Success", user });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Server error" });
   }
 }
@@ -72,7 +72,7 @@ export async function editRole(req: AccountRequest, res: Response) {
       user_id, role, status, requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
     );
     res.json({ code: "success", message: "Role updated successfully" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Server error" });
   }
 }
@@ -86,7 +86,7 @@ export async function resetPassword(req: Request, res: Response) {
       return res.status(404).json({ code: "error", message: "User does not exist" });
     }
     res.json({ code: "success", message: "Password reset successfully" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Server error" });
   }
 }
@@ -111,7 +111,7 @@ export async function applications(req: Request, res: Response) {
     }
     const list = await UsersService.getSellerApplicationsDetailed(page, limit, filter);
     res.json({ code: "success", message: "Success", list });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Server error" });
   }
 }
@@ -129,7 +129,7 @@ export async function applicationDetail(req: Request, res: Response) {
       message: "Success",
       applicationInfo,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Application details do not exist" });
   }
 }
@@ -143,7 +143,7 @@ export async function setStatus(req: AccountRequest, res: Response) {
       applicationId, status, requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
     );
     res.json({ code: "success", message: "Application confirmed successfully" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Error confirming application" });
   }
 }
@@ -166,7 +166,7 @@ export async function calTotalApplications(req: Request, res: Response) {
     }
     const total = await UsersService.calTotalApplications(filter);
     res.json({ code: "success", message: "Success", total });
-  } catch (error) {
+  } catch {
     res.status(500).json({ code: "error", message: "Server error" });
   }
 }

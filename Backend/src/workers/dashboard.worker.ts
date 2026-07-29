@@ -1,10 +1,11 @@
 import type { EachBatchPayload, KafkaMessage } from "kafkajs";
 import { createHash } from "node:crypto";
-import { kafka, kafkaTopics, publishEventStrict } from "@/config/kafka.config.ts";
+import { kafka, kafkaTopics } from "@/config/kafka.config.ts";
 import { redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { Prisma } from "@prisma/client";
 import { parseEventEnvelope, type EventEnvelope } from "@/infrastructure/events/event-envelope.ts";
+import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
 import {
   completeDashboardReceipt,
   refreshDashboardSnapshot,
@@ -69,7 +70,7 @@ async function receiptAttempts(event: EventEnvelope, topic: string, partition: n
   return row.attempts;
 }
 
-async function recordTerminal(
+export async function recordDashboardTerminal(
   event: EventEnvelope,
   topic: string,
   partition: number,
@@ -78,38 +79,49 @@ async function recordTerminal(
   error: unknown,
 ): Promise<void> {
   const lastError = error instanceof Error ? error.message.slice(0, 2_000) : "Unknown analytics error";
-  await prisma.dashboard_event_receipts.upsert({
-    where: { event_id: event.eventId },
-    create: {
-      event_id: event.eventId,
-      topic,
-      event_type: event.eventType,
-      event_version: event.eventVersion,
-      aggregate_id: event.aggregateId,
-      correlation_id: event.correlationId,
-      payload: event.payload as Prisma.InputJsonValue,
-      status: "terminal",
-      attempts,
-      last_error: lastError,
-      partition,
-      offset,
-      terminal_at: new Date(),
-    },
-    update: { status: "terminal", attempts, last_error: lastError, terminal_at: new Date(), updated_at: new Date() },
-  });
-  await publishEventStrict(kafkaTopics.asyncDlq, event.aggregateId, {
-    ...event,
-    payload: {
-      ...event.payload,
-      failure: {
-        consumer: groupId,
+  await prisma.$transaction(async (tx) => {
+    await tx.dashboard_event_receipts.upsert({
+      where: { event_id: event.eventId },
+      create: {
+        event_id: event.eventId,
+        topic,
+        event_type: event.eventType,
+        event_version: event.eventVersion,
+        aggregate_id: event.aggregateId,
+        correlation_id: event.correlationId,
+        payload: event.payload as Prisma.InputJsonValue,
+        status: "terminal",
         attempts,
-        message: lastError,
-        sourceTopic: topic,
+        last_error: lastError,
         partition,
         offset,
+        terminal_at: new Date(),
       },
-    },
+      update: { status: "terminal", attempts, last_error: lastError, terminal_at: new Date(), updated_at: new Date() },
+    });
+    const existingDlq = await tx.auction_outbox.findFirst({
+      where: {
+        topic: kafkaTopics.asyncDlq,
+        causation_id: event.eventId,
+        event_type: "async.consumer_terminal.v1",
+      },
+      select: { id: true },
+    });
+    if (existingDlq) return;
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.asyncDlq,
+      eventType: "async.consumer_terminal.v1",
+      aggregateId: event.aggregateId,
+      correlationId: event.correlationId,
+      causationId: event.eventId,
+      payload: {
+        consumer: groupId,
+        source: { topic, partition, offset },
+        envelope: event,
+        attempt: attempts,
+        error: { message: lastError },
+      },
+    });
   });
 }
 
@@ -136,7 +148,7 @@ async function processMessage(
       correlationId: eventId,
       payload: { raw: message.value.toString().slice(0, 4_000) },
     };
-    await recordTerminal(event, topic, partition, message.offset, retryLimit, error);
+    await recordDashboardTerminal(event, topic, partition, message.offset, retryLimit, error);
     return false;
   }
   const existing = await prisma.dashboard_event_receipts.findUnique({
@@ -181,7 +193,7 @@ async function processMessage(
         },
       });
       if (attempts >= retryLimit) {
-        await recordTerminal(event, topic, partition, message.offset, attempts, error);
+        await recordDashboardTerminal(event, topic, partition, message.offset, attempts, error);
         return false;
       }
       await wait(calculateRetryDelayMs(attempts));

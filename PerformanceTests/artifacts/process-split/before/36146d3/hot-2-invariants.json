@@ -1,0 +1,166 @@
+{
+  "violations": [],
+  "reconciliation": [
+    {
+      "productId": "1",
+      "redisVersion": "226",
+      "postgresVersion": "226",
+      "redisSequence": "226",
+      "postgresSequence": "226",
+      "status": "converged"
+    },
+    {
+      "productId": "2",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "3",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "4",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "5",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "6",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "7",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "8",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "9",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "10",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "11",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "12",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "13",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "14",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "15",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "16",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "17",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "18",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "19",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    },
+    {
+      "productId": "20",
+      "redisVersion": "0",
+      "postgresVersion": "0",
+      "redisSequence": "0",
+      "postgresSequence": "0",
+      "status": "converged"
+    }
+  ],
+  "passed": true
+}

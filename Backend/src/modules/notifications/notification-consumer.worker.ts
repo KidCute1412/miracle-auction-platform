@@ -165,7 +165,8 @@ export async function startNotificationConsumer(): Promise<void> {
   await consumer.connect();
   await consumer.subscribe({
     topics: [kafkaTopics.bidding, kafkaTopics.domain, kafkaTopics.dashboard],
-    fromBeginning: false,
+    // The compatibility dashboard subscription intentionally drains legacy seller-event backlog.
+    fromBeginning: true,
   });
   void consumer.run({
     autoCommit: false,

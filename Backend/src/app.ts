@@ -13,6 +13,21 @@ import { checkKafkaConnection } from "./config/kafka.config.ts";
 import { csrfProtection } from "./middlewares/csrf.middleware.ts";
 import { requestId } from "./middlewares/request-id.middleware.ts";
 
+async function checkKafkaForReadiness(): Promise<boolean> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      checkKafkaConnection(),
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), 1_000);
+        timer.unref();
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export function createApp() {
   const app = express();
   app.set("trust proxy", 1);
@@ -25,7 +40,7 @@ export function createApp() {
     const [database, redis, kafka, heartbeat] = await Promise.all([
       checkPrismaConnection(),
       checkRedisConnection(),
-      checkKafkaConnection(),
+      checkKafkaForReadiness(),
       redisClient.get("auction:worker:heartbeat").catch(() => null),
     ]);
     const heartbeatAt = heartbeat ? Date.parse(heartbeat) : Number.NaN;

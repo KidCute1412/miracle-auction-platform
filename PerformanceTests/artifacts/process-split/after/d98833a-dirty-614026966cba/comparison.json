@@ -1,0 +1,104 @@
+﻿{
+    "baseline":  "36146d3",
+    "target":  "d98833a-dirty-614026966cba",
+    "targetIsDirty":  true,
+    "generatedAt":  "2026-07-29T20:51:49.7500676+07:00",
+    "scenarios":  {
+                      "hot":  {
+                                  "before":  {
+                                                 "throughputRuns":  [
+                                                                        1545.1602287589349,
+                                                                        1480.8203378958317,
+                                                                        1488.6711513604282
+                                                                    ],
+                                                 "p99RunsMs":  [
+                                                                   80.034035999999986,
+                                                                   86.0765,
+                                                                   82.891330000000053
+                                                               ],
+                                                 "systemErrorRates":  [
+                                                                          0,
+                                                                          0,
+                                                                          0
+                                                                      ],
+                                                 "throughputMedian":  1488.6711513604282,
+                                                 "p99MedianMs":  82.891330000000053,
+                                                 "maxSystemErrorRate":  0,
+                                                 "invariantsPassed":  true
+                                             },
+                                  "after":  {
+                                                "throughputRuns":  [
+                                                                       1463.6010458097412,
+                                                                       1461.5396502696376,
+                                                                       1475.5752271075082
+                                                                   ],
+                                                "p99RunsMs":  [
+                                                                  79.6419,
+                                                                  85.834,
+                                                                  81.113624000000058
+                                                              ],
+                                                "systemErrorRates":  [
+                                                                         0,
+                                                                         0,
+                                                                         0
+                                                                     ],
+                                                "throughputMedian":  1463.6010458097412,
+                                                "p99MedianMs":  81.113624000000058,
+                                                "maxSystemErrorRate":  0,
+                                                "invariantsPassed":  true
+                                            },
+                                  "throughputChangePercent":  -1.6840593389464547,
+                                  "p99ChangePercent":  -2.144622362797163,
+                                  "gatePassed":  true
+                              },
+                      "distributed":  {
+                                          "before":  {
+                                                         "throughputRuns":  [
+                                                                                1217.9376128646284,
+                                                                                1185.6357081668584,
+                                                                                1421.0522006478211
+                                                                            ],
+                                                         "p99RunsMs":  [
+                                                                           166.1939,
+                                                                           147.0122,
+                                                                           133.76030800000046
+                                                                       ],
+                                                         "systemErrorRates":  [
+                                                                                  0,
+                                                                                  0,
+                                                                                  0
+                                                                              ],
+                                                         "throughputMedian":  1217.9376128646284,
+                                                         "p99MedianMs":  147.0122,
+                                                         "maxSystemErrorRate":  0,
+                                                         "invariantsPassed":  true
+                                                     },
+                                          "after":  {
+                                                        "throughputRuns":  [
+                                                                               1468.6717731242168,
+                                                                               1513.6079198168163,
+                                                                               943.073160557166
+                                                                           ],
+                                                        "p99RunsMs":  [
+                                                                          114.923136,
+                                                                          116.76730999999997,
+                                                                          152.87318999999971
+                                                                      ],
+                                                        "systemErrorRates":  [
+                                                                                 0,
+                                                                                 0,
+                                                                                 0
+                                                                             ],
+                                                        "throughputMedian":  1468.6717731242168,
+                                                        "p99MedianMs":  116.76730999999997,
+                                                        "maxSystemErrorRate":  0,
+                                                        "invariantsPassed":  true
+                                                    },
+                                          "throughputChangePercent":  20.586781918152081,
+                                          "p99ChangePercent":  -20.57304767903619,
+                                          "gatePassed":  true
+                                      }
+                  },
+    "extendedSuiteInvariantPassed":  true,
+    "allGatesPassed":  true
+}

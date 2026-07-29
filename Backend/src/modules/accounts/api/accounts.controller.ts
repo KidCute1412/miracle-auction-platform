@@ -220,7 +220,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       res.json({ code: "error", message: "Invalid or expired OTP session." });
       return;
     }
-  } catch (err) {
+  } catch {
     res.json({ code: "error", message: "Session expired or invalid verification token." });
     return;
   }
@@ -414,7 +414,7 @@ export const refreshSession = async (req: Request, res: Response) => {
     const rememberMe = decoded.section === "long";
     await issueSession(res, account, rememberMe, decoded.sid);
     res.json({ code: "success", role: account.role, message: "Session refreshed successfully" });
-  } catch (error) {
+  } catch {
     res.status(401).json({ code: "error", message: "Invalid refresh token" });
   }
 };

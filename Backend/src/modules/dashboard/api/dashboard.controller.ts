@@ -44,7 +44,7 @@ export async function retryDlq(req: AccountRequest, res: Response): Promise<void
   try {
     const result = await DashboardService.retryDlq(kind, eventId, actor.user_id, req.header("x-request-id") as string);
     res.status(202).json({ success: true, data: result });
-  } catch (error) {
+  } catch {
     res.status(404).json({ success: false, error: { code: "DLQ_EVENT_NOT_FOUND", message: "DLQ event was not found", requestId: req.header("x-request-id") } });
   }
 }

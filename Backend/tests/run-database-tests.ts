@@ -34,6 +34,11 @@ function wait(milliseconds: number): Promise<void> {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 }
 
+function reachableContainerHost(container: StartedTestContainer): string {
+  const host = container.getHost();
+  return host === "localhost" ? "127.0.0.1" : host;
+}
+
 async function runMigrationWhenDatabaseIsReachable(env: NodeJS.ProcessEnv): Promise<void> {
   const migrationEntrypoint = resolve(root, "node_modules/prisma/build/index.js");
   let lastError: unknown;
@@ -56,13 +61,14 @@ async function runMigrationWhenDatabaseIsReachable(env: NodeJS.ProcessEnv): Prom
 
 function buildDatabaseUrl(container: StartedTestContainer): string {
   const url = new URL(`postgresql://${databaseUser}:${databasePassword}@127.0.0.1:${container.getMappedPort(postgresPort)}/${databaseName}`);
-  url.hostname = container.getHost();
+  url.hostname = reachableContainerHost(container);
   url.searchParams.set("schema", "public");
   return url.toString();
 }
 
 async function verifyRedisAofRestart(container: StartedTestContainer): Promise<string> {
-  const redisUrlBeforeRestart = `redis://${container.getHost()}:${container.getMappedPort(redisPort)}`;
+  const host = reachableContainerHost(container);
+  const redisUrlBeforeRestart = `redis://${host}:${container.getMappedPort(redisPort)}`;
   const redisOptions = {
     maxRetriesPerRequest: 3,
     retryStrategy: (times: number) => (times > 10 ? null : 200),
@@ -96,7 +102,7 @@ async function verifyRedisAofRestart(container: StartedTestContainer): Promise<s
     throw new Error("Redis AOF restart lost an acknowledged write", { cause: lastError });
   }
   await container.exec(["redis-cli", "FLUSHDB"]);
-  return `redis://${container.getHost()}:${container.getMappedPort(redisPort)}`;
+  return `redis://${host}:${container.getMappedPort(redisPort)}`;
 }
 
 async function printContainerLogTail(container: StartedTestContainer): Promise<void> {
@@ -167,7 +173,7 @@ async function main(): Promise<void> {
       DATABASE_URL: databaseUrl,
       DIRECT_URL: databaseUrl,
       TEST_DATABASE_MANAGED: "true",
-      TEST_DATABASE_HOST: container.getHost(),
+      TEST_DATABASE_HOST: reachableContainerHost(container),
       TEST_DATABASE_PORT: String(container.getMappedPort(postgresPort)),
       REDIS_URL: redisUrl,
     };

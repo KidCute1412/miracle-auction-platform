@@ -12,10 +12,13 @@ cd Backend
 npm run prisma:migrate:deploy
 npm run benchmark:seed
 cd ..
-docker compose up -d auction-worker outbox-relay async-worker
+docker compose -f docker-compose.yml -f PerformanceTests/docker-compose.benchmark.override.yml up -d auction-worker outbox-relay async-worker
 ```
 
-Start the API separately with `BID_ENGINE=redis`. Generate tokens from `PerformanceTests`, then run `smoke` before every measured suite.
+Start the API separately with `BID_ENGINE=redis`, `REDIS_URL=redis://127.0.0.1:16379/1`,
+`NODE_ENV=benchmark` and `EMAIL_DELIVERY_MODE=disabled`. Generate tokens from
+`PerformanceTests`, then run `smoke` before every measured suite. After benchmarking,
+recreate the workers without the override to return local development to Redis DB 0.
 
 ## Before/after artifact contract
 
@@ -27,7 +30,7 @@ artifacts/process-split/
   after/<commit>/
 ```
 
-Each directory must contain environment metadata (commit SHA, CPU/RAM/OS, Docker versions/config, Redis config and `docker stats`), raw k6 JSON, summary Markdown/JSON and invariant output. Reset the deterministic seed before every run.
+Each directory must contain environment metadata (commit SHA, CPU/RAM/OS, Docker versions/config, Redis config and `docker stats`), losslessly compressed raw k6 JSON (`*-raw.json.gz`), summary Markdown/JSON and invariant output. Reset the deterministic seed before every run.
 
 Run `hot` and `distributed` at least three times each:
 
@@ -44,6 +47,8 @@ npm --prefix ../Backend run benchmark:invariants
 ```
 
 Repeat for `hot-2`, `hot-3`, `distributed-1..3`, and the baseline revision in `before/`.
+Compress each raw JSON file with gzip after the suite; do not commit multi-hundred-megabyte
+uncompressed traces.
 
 ## Acceptance gate
 

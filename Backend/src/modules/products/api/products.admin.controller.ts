@@ -105,7 +105,7 @@ export async function deleteProduct(req: AccountRequest, res: Response) {
       await ProductsService.deleteProductById(Number(id), actor.user_id, req.header("x-request-id"));
     }
     res.json({ code: "success", message: "Deleted product successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred while deleting product" });
   }
 }
@@ -118,7 +118,7 @@ export async function restoreProduct(req: AccountRequest, res: Response) {
       Number(id), requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
     );
     res.json({ code: "success", message: "Restored product successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred while restoring product" });
   }
 }
@@ -131,7 +131,7 @@ export async function destroyProduct(req: AccountRequest, res: Response) {
       Number(id), requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
     );
     res.json({ code: "success", message: "Permanently deleted product successfully" });
-  } catch (error) {
+  } catch {
     res.json({ code: "error", message: "An error occurred while permanently deleting product" });
   }
 }
