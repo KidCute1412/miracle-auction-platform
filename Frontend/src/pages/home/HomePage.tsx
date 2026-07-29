@@ -7,7 +7,7 @@ import SectionVault3D from "@/pages/home/sections/SectionVault3D";
 
 function Home() {
   return (
-    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-300">
+    <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
       {/* Continuous Ambient Cosmic Mesh Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-accent/[0.04] dark:bg-accent/[0.02] rounded-full blur-[140px]" />
