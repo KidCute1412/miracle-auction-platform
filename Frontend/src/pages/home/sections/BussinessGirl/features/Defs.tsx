@@ -221,11 +221,17 @@ export const Defs: React.FC<DefsProps> = ({ isDark, themeColors }) => {
         <stop offset="0%" stopColor="rgba(255, 255, 255, 0.2)" />
         <stop offset="100%" stopColor="rgba(255, 255, 255, 0.05)" />
       </linearGradient>
-      <linearGradient id="irisGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#7c3aed" />
-        <stop offset="50%" stopColor="#2563eb" />
-        <stop offset="100%" stopColor="#67e8f9" />
+      <linearGradient id="disneyBlueIris" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#0b1329" />
+        <stop offset="30%" stopColor="#172554" />
+        <stop offset="65%" stopColor="#1d4ed8" />
+        <stop offset="100%" stopColor="#93c5fd" />
       </linearGradient>
+      <radialGradient id="disneyGlowRing" cx="50%" cy="75%" r="45%">
+        <stop offset="0%" stopColor="#dbeafe" stopOpacity="0.85" />
+        <stop offset="60%" stopColor="#60a5fa" stopOpacity="0.35" />
+        <stop offset="100%" stopColor="#1e40af" stopOpacity="0" />
+      </radialGradient>
       <radialGradient id="blushGrad" cx="50%" cy="50%" r="50%">
         <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.45" />
         <stop offset="60%" stopColor="#f43f5e" stopOpacity="0.18" />

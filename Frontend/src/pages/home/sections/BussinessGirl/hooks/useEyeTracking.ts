@@ -22,8 +22,8 @@ export const useEyeTracking = (
       const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
 
       const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
-      targetX = clamp(x, -1, 1) * 2.0;
-      targetY = clamp(y, -1, 1) * 1.5;
+      targetX = clamp(x, -1, 1) * 0.6;
+      targetY = clamp(y, -1, 1) * 0.4;
       hasMoved = true;
     };
 

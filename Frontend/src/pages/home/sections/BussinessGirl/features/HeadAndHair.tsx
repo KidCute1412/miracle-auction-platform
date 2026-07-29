@@ -162,10 +162,10 @@ export const HeadAndHair: React.FC<HeadAndHairProps> = ({
         <path d="M 35 34 Q 50 26 65 34 Q 50 30 35 34 Z" fill="url(#hairHighlight)" opacity="0.4" />
       </g>
 
-      {/* Eyebrows */}
+      {/* Eyebrows - Soft & Friendly Arch */}
       <g className="transition-transform duration-100 ease-out">
-        <path d="M 36 40.5 Q 41 37.5 45 40.5" stroke="#4a3736" strokeWidth="0.8" fill="none" strokeLinecap="round" style={{ transform: eyebrowTranslate, transformOrigin: '40px 40.5px' }} className="transition-transform duration-200" />
-        <path d="M 64 40.5 Q 59 37.5 55 40.5" stroke="#4a3736" strokeWidth="0.8" fill="none" strokeLinecap="round" style={{ transform: eyebrowTranslate, transformOrigin: '60px 40.5px' }} className="transition-transform duration-200" />
+        <path d="M 36 40.5 Q 40.5 39.0 45 40.2" stroke="#4a3736" strokeWidth="0.85" fill="none" strokeLinecap="round" style={{ transform: eyebrowTranslate, transformOrigin: '40px 40.5px' }} className="transition-transform duration-200" />
+        <path d="M 64 40.5 Q 59.5 39.0 55 40.2" stroke="#4a3736" strokeWidth="0.85" fill="none" strokeLinecap="round" style={{ transform: eyebrowTranslate, transformOrigin: '60px 40.5px' }} className="transition-transform duration-200" />
       </g>
     </>
   );
