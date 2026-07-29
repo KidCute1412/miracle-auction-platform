@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Filter, RotateCcw, Search, Trash2, ChevronDown, Check, Calendar, Plus, X } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 type StatusOption = {
   value: string;
@@ -85,6 +87,85 @@ function FilterSelect({ value, onChange, options, placeholder, icon }: FilterSel
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function parseDateString(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return null;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+  return new Date(year, month, day);
+}
+
+function formatDateString(date: Date | null): string {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(dateStr: string): string {
+  const d = parseDateString(dateStr);
+  if (!d) return "";
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+type CustomDatePickerProps = {
+  value: string;
+  onChange: (dateStr: string) => void;
+  placeholder: string;
+};
+
+function CustomDatePicker({ value, onChange, placeholder }: CustomDatePickerProps) {
+  const dateValue = useMemo(() => parseDateString(value), [value]);
+
+  return (
+    <div className="relative inline-block">
+      <DatePicker
+        selected={dateValue}
+        onChange={(d: Date | null) => {
+          onChange(formatDateString(d));
+        }}
+        dateFormat="MMM d, yyyy"
+        placeholderText={placeholder}
+        customInput={
+          <button
+            type="button"
+            className={`h-10 flex items-center gap-2 px-3 rounded-xl text-xs font-medium border transition-all duration-200 cursor-pointer select-none ${
+              value
+                ? "bg-accent/10 border-accent/40 text-accent font-semibold shadow-xs"
+                : "bg-card border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5 opacity-70 shrink-0" />
+            <span>{value ? formatDisplayDate(value) : placeholder}</span>
+            {value && (
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange("");
+                }}
+                className="hover:bg-accent/20 rounded-md p-0.5 ml-0.5 transition-colors"
+                title="Clear date"
+              >
+                <X className="w-3 h-3" />
+              </span>
+            )}
+          </button>
+        }
+        popperClassName="z-[10000]"
+        popperPlacement="bottom-start"
+      />
     </div>
   );
 }
@@ -253,16 +334,6 @@ export default function FilterBar({
 
   const [selectedAction, setSelectedAction] = useState<string>("");
   const [isComposing, setIsComposing] = useState(false);
-  const [localDateFrom, setLocalDateFrom] = useState(dateFrom || "");
-  const [localDateTo, setLocalDateTo] = useState(dateTo || "");
-
-  useEffect(() => {
-    setLocalDateFrom(dateFrom || "");
-  }, [dateFrom]);
-
-  useEffect(() => {
-    setLocalDateTo(dateTo || "");
-  }, [dateTo]);
 
   const handleApplyClick = () => {
     if (!onApplyBulkAction) return;
@@ -310,44 +381,19 @@ export default function FilterBar({
             />
           )}
 
-          {/* Date range filter component */}
+          {/* Custom Date Range Filter Selectors */}
           {hasDateFilter && (
-            <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border border-border/60 rounded-xl">
-              <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <input
-                type="date"
-                className="h-8 rounded-lg px-2 text-xs border border-border/60 bg-card text-foreground outline-none focus:border-accent/60 transition-colors"
-                value={localDateFrom}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setLocalDateFrom(val);
-                  if (val.length === 10 || val === "") {
-                    setDateFrom!(val);
-                  }
-                }}
-                onBlur={() => {
-                  if (localDateFrom !== dateFrom) {
-                    setDateFrom!(localDateFrom);
-                  }
-                }}
+            <div className="flex items-center gap-2 px-2.5 py-1 bg-muted/20 border border-border/60 rounded-xl">
+              <CustomDatePicker
+                value={dateFrom || ""}
+                onChange={(val) => setDateFrom!(val)}
+                placeholder="From Date"
               />
               <span className="text-xs text-muted-foreground font-medium">to</span>
-              <input
-                type="date"
-                className="h-8 rounded-lg px-2 text-xs border border-border/60 bg-card text-foreground outline-none focus:border-accent/60 transition-colors"
-                value={localDateTo}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setLocalDateTo(val);
-                  if (val.length === 10 || val === "") {
-                    setDateTo!(val);
-                  }
-                }}
-                onBlur={() => {
-                  if (localDateTo !== dateTo) {
-                    setDateTo!(localDateTo);
-                  }
-                }}
+              <CustomDatePicker
+                value={dateTo || ""}
+                onChange={(val) => setDateTo!(val)}
+                placeholder="To Date"
               />
             </div>
           )}
