@@ -4,7 +4,7 @@ import fs from "fs";
 import { OrderDomainError } from "../domain/order.errors.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
-import { kafkaTopics } from "@/config/kafka.config.ts";
+import { kafkaTopics } from "@/config/kafka-topics.config.ts";
 
 // Create order and optionally upload payment proof image to Cloudinary
 export type CreateOrderData = {
@@ -58,7 +58,7 @@ export async function rejectOrder(product_id: number): Promise<{ success: boolea
       data: { order_status: "rejected" },
     });
     await addOutboxEvent(tx, {
-      topic: kafkaTopics.dashboard,
+      topic: kafkaTopics.domain,
       eventType: "order.rejected.v1",
       aggregateId: existedOrder.order_id.toString(),
       payload: { orderId: existedOrder.order_id.toString(), productId: existedOrder.product_id?.toString() ?? null },
@@ -99,7 +99,7 @@ export async function approveOrder(
       },
     });
     await addOutboxEvent(tx, {
-      topic: kafkaTopics.dashboard,
+      topic: kafkaTopics.domain,
       eventType: "order.finished.v1",
       aggregateId: existedOrder.order_id.toString(),
       payload: {

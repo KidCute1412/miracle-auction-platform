@@ -16,10 +16,10 @@ const users = vi.hoisted(() => ({ getUserById: vi.fn() }));
 const accounts = vi.hoisted(() => ({ findDetailedById: vi.fn() }));
 const upload = vi.hoisted(() => vi.fn().mockResolvedValue({ secure_url: "https://image.test/product.png" }));
 const unlinkSync = vi.hoisted(() => vi.fn());
-const sendMail = vi.hoisted(() => vi.fn());
-const emitBidUpdate = vi.hoisted(() => vi.fn());
 const tx = vi.hoisted(() => ({
-  products: { update: vi.fn(), delete: vi.fn() },
+  products: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  product_questions: { findUnique: vi.fn(), create: vi.fn() },
+  users: { findUnique: vi.fn() },
   admin_audit_logs: { create: vi.fn() },
 }));
 const addOutboxEvent = vi.hoisted(() => vi.fn());
@@ -28,15 +28,10 @@ vi.mock("@/modules/users/infrastructure/user.repository.ts", () => users);
 vi.mock("@/modules/accounts/infrastructure/account.repository.ts", () => ({ accountRepository: accounts }));
 vi.mock("@/config/cloud.config.ts", () => ({ uploadToCloudinary: upload }));
 vi.mock("fs", () => ({ default: { unlinkSync } }));
-vi.mock("@/socket.ts", () => ({ emitBidUpdate }));
 vi.mock("@/infrastructure/database/prisma.client.ts", () => ({
   prisma: { $transaction: (operation: (client: typeof tx) => unknown) => operation(tx) },
 }));
 vi.mock("@/infrastructure/events/outbox.repository.ts", () => ({ addOutboxEvent }));
-vi.mock("@/helpers/mail.helper.ts", () => ({
-  sendMail, sendBidderQuestionTemplate: vi.fn(() => "question-mail"), sendSellerAnswerTemplate: vi.fn(() => "answer-mail"),
-  getProductDescriptionChangedTemplate: vi.fn(() => "description-mail"),
-}));
 
 import * as useCase from "../../../src/modules/products/application/product.use-case.ts";
 
@@ -94,30 +89,46 @@ describe("product use cases", () => {
     expect(repo.loveProduct).toHaveBeenCalledOnce(); expect(repo.unloveProduct).toHaveBeenCalledOnce();
   });
 
-  it("returns paginated questions and notifies seller for a bidder question", async () => {
+  it("writes a bidder question and its domain outbox event atomically", async () => {
     repo.getProductQuestions.mockResolvedValue([{ total_count: "2" }]);
     await expect(useCase.getProductQuestions(1, 2, 5)).resolves.toMatchObject({ total_questions: 2 });
-    repo.postProductQuestion.mockResolvedValue({ id: 9 });
-    repo.getSellerOfProduct.mockResolvedValue({ user_id: 7, username: "seller", product_name: "Watch", email: "seller@example.com" });
-    await expect(useCase.postProductQuestion(1, 3, "Question", null)).resolves.toEqual({ id: 9 });
-    expect(sendMail).toHaveBeenCalledWith("seller@example.com", expect.any(String), "question-mail");
+    tx.products.findUnique.mockResolvedValue({ seller_id: 7n });
+    tx.product_questions.create.mockResolvedValue({ question_id: 9n, product_id: 1n, user_id: 3, content: "Question" });
+    tx.users.findUnique.mockResolvedValue({ username: "bidder" });
+    await expect(useCase.postProductQuestion(1, 3, "Question", null)).resolves.toMatchObject({
+      question_id: 9n,
+      username: "bidder",
+    });
+    expect(addOutboxEvent).toHaveBeenCalledWith(tx, expect.objectContaining({
+      topic: "domain_events",
+      eventType: "product.question_created.v1",
+    }));
   });
 
-  it("notifies the bidder when the seller replies", async () => {
-    repo.postProductQuestion.mockResolvedValue({ id: 10 });
-    repo.getSellerOfProduct.mockResolvedValue({ user_id: 7, username: "seller", product_name: "Watch", email: "seller@example.com" });
-    repo.getUserInParentQuestion.mockResolvedValue({ user_id: 3, username: "bidder", email: "bidder@example.com", content: "Question" });
+  it("writes a seller answer using the canonical domain event", async () => {
+    tx.products.findUnique.mockResolvedValue({ seller_id: 7n });
+    tx.product_questions.findUnique.mockResolvedValue({ user_id: 3 });
+    tx.product_questions.create.mockResolvedValue({ question_id: 10n, product_id: 1n, user_id: 7, content: "Answer" });
+    tx.users.findUnique.mockResolvedValue({ username: "seller" });
     await useCase.postProductQuestion(1, 7, "Answer", 9);
-    expect(sendMail).toHaveBeenCalledWith("bidder@example.com", expect.any(String), "answer-mail");
+    expect(addOutboxEvent).toHaveBeenCalledWith(tx, expect.objectContaining({
+      topic: "domain_events",
+      eventType: "product.question_answered.v1",
+    }));
   });
 
-  it("checks ownership before changing a description", async () => {
-    repo.verifyProductSeller.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-    await expect(useCase.updateProductDescription(1, "2", "new")).resolves.toMatchObject({ status: "403" });
-    repo.getProductById.mockResolvedValue({ bid_turns: 1, price_owner_id: 3, price_owner_username: "bidder", product_name: "Watch", current_price: 120, product_id: 1 });
-    users.getUserById.mockResolvedValue({ email: "bidder@example.com" });
-    await expect(useCase.updateProductDescription(1, "2", "new")).resolves.toMatchObject({ status: "200" });
-    expect(sendMail).toHaveBeenCalledWith("bidder@example.com", expect.any(String), "description-mail");
+  it("checks ownership and writes description plus outbox in one transaction", async () => {
+    tx.products.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({ product_id: 1n, price_owner_id: 3n });
+    await expect(useCase.updateProductDescription(1, 2, "new")).resolves.toMatchObject({ status: "403" });
+    await expect(useCase.updateProductDescription(1, 2, "new")).resolves.toMatchObject({ status: "200" });
+    expect(tx.products.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { product_id: 1n },
+      data: expect.objectContaining({ description: "new" }),
+    }));
+    expect(addOutboxEvent).toHaveBeenCalledWith(tx, expect.objectContaining({
+      topic: "domain_events",
+      eventType: "product.description_changed.v1",
+    }));
   });
 
   it("delegates related, featured, count and bidding-time reads", async () => {
@@ -148,6 +159,6 @@ describe("product use cases", () => {
     await useCase.extendBiddingTimeIfNeeded(1); expect(repo.getExtendTimeSetting).not.toHaveBeenCalled();
     repo.getProductForExtension.mockResolvedValue({ end_time: new Date(Date.now() + 30_000) }); repo.getExtendTimeSetting.mockResolvedValue({ extend_time: 5, threshold_time: 2 }); repo.getProductById.mockResolvedValue({ product_id: 1 });
     await useCase.extendBiddingTimeIfNeeded(1);
-    expect(repo.updateProductEndTime).toHaveBeenCalledWith(1, expect.any(Date)); expect(emitBidUpdate).toHaveBeenCalledOnce();
+    expect(repo.updateProductEndTime).toHaveBeenCalledWith(1, expect.any(Date));
   });
 });

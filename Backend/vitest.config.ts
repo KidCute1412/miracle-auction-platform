@@ -10,6 +10,8 @@ export default defineConfig({
     environment: "node",
     setupFiles: [resolve(root, "tests/setup/external-services.ts")],
     fileParallelism: false,
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],

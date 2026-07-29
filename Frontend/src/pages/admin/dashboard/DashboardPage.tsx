@@ -105,7 +105,10 @@ export default function DashboardPage() {
         ["PostgreSQL", operations.postgres.available, operations.postgres.latencyMs === null ? "Unavailable" : `${operations.postgres.latencyMs} ms`],
         ["Redis", operations.redis.available, operations.redis.latencyMs === null ? "Unavailable" : `${operations.redis.latencyMs} ms`],
         ["Kafka", operations.kafka.available, operations.kafka.latencyMs === null ? "Unavailable" : `${operations.kafka.latencyMs} ms`],
-        ["Analytics worker", operations.workerHeartbeat.available, operations.workerHeartbeat.ageMs === null ? "No heartbeat" : `${Math.round(operations.workerHeartbeat.ageMs / 1000)}s ago`],
+        ["Auction worker", operations.workers.auctionWorker.available, operations.workers.auctionWorker.ageMs === null ? "No heartbeat" : `${Math.round(operations.workers.auctionWorker.ageMs / 1000)}s ago · lag ${operations.projectionLag ?? "?"}`],
+        ["Outbox relay", operations.workers.outboxRelay.available, `${operations.outboxPending} pending / ${operations.outboxRetrying} retrying / ${operations.outboxTerminal} terminal`],
+        ["Async worker", operations.workers.asyncWorker.available, operations.workers.asyncWorker.ageMs === null ? "No heartbeat" : `${Math.round(operations.workers.asyncWorker.ageMs / 1000)}s ago`],
+        ["Email queue", operations.emailPending === 0, `${operations.emailPending} pending / ${operations.emailRetrying} retrying / ${operations.emailTerminal} terminal`],
         ["Outbox", operations.outboxPending === 0, `${operations.outboxPending} pending · ${operations.outboxRetrying} retrying`],
         ["DLQ / sockets", operations.dlqCount === 0, `${operations.dlqCount} terminal · ${operations.adminSocketCount} admins`],
       ].map(([label, ok, value]) => <article key={String(label)} className="bg-card border border-border rounded-2xl p-5"><Activity className={`w-5 mb-4 ${ok ? "text-emerald-500" : "text-amber-500"}`} /><p className="font-bold">{label}</p><p className="text-xs text-muted-foreground mt-1">{value}</p></article>)}

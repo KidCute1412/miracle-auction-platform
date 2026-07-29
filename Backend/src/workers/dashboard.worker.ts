@@ -97,9 +97,19 @@ async function recordTerminal(
     },
     update: { status: "terminal", attempts, last_error: lastError, terminal_at: new Date(), updated_at: new Date() },
   });
-  await publishEventStrict(kafkaTopics.dashboardDlq, event.aggregateId, {
+  await publishEventStrict(kafkaTopics.asyncDlq, event.aggregateId, {
     ...event,
-    payload: { ...event.payload, failure: { attempts, message: lastError, sourceTopic: topic, partition, offset } },
+    payload: {
+      ...event.payload,
+      failure: {
+        consumer: groupId,
+        attempts,
+        message: lastError,
+        sourceTopic: topic,
+        partition,
+        offset,
+      },
+    },
   });
 }
 
@@ -234,10 +244,13 @@ export async function startDashboardConsumer(): Promise<void> {
   try {
     console.log("[DASHBOARD_WORKER] Connecting Kafka consumer", { groupId });
     await dashboardConsumer.connect();
-    await dashboardConsumer.subscribe({ topics: [kafkaTopics.bidding, kafkaTopics.dashboard], fromBeginning: false });
+    await dashboardConsumer.subscribe({
+      topics: [kafkaTopics.bidding, kafkaTopics.domain, kafkaTopics.dashboard],
+      fromBeginning: false,
+    });
     console.log("[DASHBOARD_WORKER] Kafka consumer subscribed", {
       groupId,
-      topics: [kafkaTopics.bidding, kafkaTopics.dashboard],
+      topics: [kafkaTopics.bidding, kafkaTopics.domain, kafkaTopics.dashboard],
     });
     void dashboardConsumer.run({
       autoCommit: false,

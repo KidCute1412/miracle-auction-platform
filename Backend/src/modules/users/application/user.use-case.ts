@@ -70,7 +70,7 @@ export async function editUserRoleAndStatus(
       data: { role, status, auth_version: { increment: 1 } },
     });
     await addOutboxEvent(tx, {
-      topic: kafkaTopics.dashboard,
+      topic: kafkaTopics.domain,
       eventType: "user.access_changed.v1",
       aggregateId: String(user_id),
       correlationId,
@@ -152,7 +152,7 @@ export async function setApplicationStatus(
       await tx.users.update({ where: { user_id: application.user_id }, data: { role: "seller", auth_version: { increment: 1 } } });
     }
     await addOutboxEvent(tx, {
-      topic: kafkaTopics.dashboard,
+      topic: kafkaTopics.domain,
       eventType: status === "accepted" ? "seller.approved.v1" : "seller.rejected.v1",
       aggregateId: String(applicationId),
       correlationId,

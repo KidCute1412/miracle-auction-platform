@@ -1,5 +1,32 @@
+x-backend-worker: &backend-worker
+  build:
+    context: ./Backend
+    dockerfile: Dockerfile
+  image: online-auction-backend:local
+  volumes:
+    - ./Backend:/app
+    - /app/node_modules
+  environment: &backend-worker-environment
+    DATABASE_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+    DIRECT_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+    REDIS_URL: redis://redis:6379
+    BID_ENGINE: redis
+    KAFKA_BROKERS: kafka:9092
+    KAFKA_SSL: "false"
+    KAFKA_BIDDING_TOPIC: bidding_events
+    KAFKA_DOMAIN_TOPIC: domain_events
+    KAFKA_DASHBOARD_TOPIC: dashboard_updates
+    KAFKA_ASYNC_DLQ_TOPIC: async_events_dlq
+    KAFKA_DASHBOARD_DLQ_TOPIC: dashboard_updates_dlq
+    EMAIL_DELIVERY_MODE: disabled
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
 services:
-  # Local Postgres database for development and testing
   postgres:
     image: postgres:15-alpine
     container_name: online-auction-postgres
@@ -11,18 +38,26 @@ services:
       - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d online_auction_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-  # Local Redis cache and rate limiting service
   redis:
     image: redis:7-alpine
     container_name: online-auction-redis
     ports:
       - "16379:6379"
-    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-  # Local Kafka event streaming broker in KRaft mode
   kafka:
     image: apache/kafka:3.7.0
     container_name: online-auction-kafka
@@ -30,18 +65,18 @@ services:
       - "19092:9092"
       - "19094:9094"
     environment:
-      - KAFKA_NODE_ID=1
-      - KAFKA_PROCESS_ROLES=broker,controller
-      - KAFKA_LISTENERS=INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
-      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:19094
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
-      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
-      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
-      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:19094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     volumes:
       - kafka_data:/var/lib/kafka/data
 
@@ -53,106 +88,70 @@ services:
     command:
       - |
         until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do sleep 2; done
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic bidding_events --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic bidding_events --partitions 2 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic domain_events --partitions 2 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic dashboard_updates --partitions 1 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic async_events_dlq --partitions 1 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic dashboard_updates_dlq --partitions 1 --replication-factor 1
 
-  # Node.js Worker (handles bidding writes, dashboard, email)
-  node-worker:
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile
-    container_name: online-auction-node-worker
-    command: npm run worker
-    volumes:
-      - ./Backend:/app
-      - /app/node_modules
+  auction-worker:
+    <<: *backend-worker
+    container_name: online-auction-auction-worker
+    command: npm run auction-worker:prod
     environment:
-      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
-      - DIRECT_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
-      - REDIS_URL=redis://redis:6379
-      - KAFKA_BROKERS=kafka:9092
-      - KAFKA_SSL=false
-      - KAFKA_BIDDING_TOPIC=bidding_events
-      - KAFKA_DASHBOARD_TOPIC=dashboard_updates
-      - KAFKA_DASHBOARD_DLQ_TOPIC=dashboard_updates_dlq
-      - DASHBOARD_KAFKA_GROUP_ID=dashboard-analytics-v1
-      - DASHBOARD_DEBOUNCE_MS=15000
-      - DASHBOARD_RECOVERY_INTERVAL_MS=60000
-      - DASHBOARD_STALE_THRESHOLD_MS=120000
-      - DASHBOARD_RETRY_LIMIT=5
+      <<: *backend-worker-environment
+      BID_PROJECTOR_GROUP: postgres-projector-v1
+      BID_PROJECTOR_MAX_ATTEMPTS: 10
+      BID_PROJECTOR_RECLAIM_INTERVAL_MS: 30000
+      AUCTION_CLOSE_INTERVAL_MS: 1000
+      AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: 90
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+
+  outbox-relay:
+    <<: *backend-worker
+    container_name: online-auction-outbox-relay
+    command: npm run outbox-relay:prod
+    environment:
+      <<: *backend-worker-environment
+      OUTBOX_BATCH_SIZE: 100
+      OUTBOX_IDLE_POLL_MS: 500
+      OUTBOX_MAX_BACKOFF_MS: 300000
+      OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS: 90
+    depends_on:
+      postgres:
+        condition: service_healthy
       kafka-init:
         condition: service_completed_successfully
 
-  # Multi-agent development automation service
-  agent-service:
-    profiles:
-      - agents
-    build:
-      context: ./AgentService
-      dockerfile: Dockerfile
-    container_name: online-auction-agent-service
-    command: npm start
-    ports:
-      - "8010:8010"
-    volumes:
-      - ./AgentService:/app
-      - ./:/workspace/source:ro
-      - agent_workspaces:/app/.agent-workspaces
-      - /app/node_modules
+  async-worker:
+    <<: *backend-worker
+    container_name: online-auction-async-worker
+    command: npm run async-worker:prod
     environment:
-      - AGENT_SERVICE_PORT=8010
-      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_agents
-      - AGENT_REPO_ROOT=/workspace/source
-      - AGENT_WORKSPACE_ROOT=/app/.agent-workspaces
-      - CODEX_CLI_PATH=codex
-      - ANTIGRAVITY_CLI_PATH=antigravity
+      <<: *backend-worker-environment
+      DASHBOARD_KAFKA_GROUP_ID: dashboard-analytics-v1
+      NOTIFICATION_KAFKA_GROUP_ID: notification-intake-v1
+      DASHBOARD_DEBOUNCE_MS: 15000
+      DASHBOARD_RECOVERY_INTERVAL_MS: 60000
+      DASHBOARD_STALE_THRESHOLD_MS: 120000
+      DASHBOARD_RETRY_LIMIT: 5
+      EMAIL_DELIVERY_CONCURRENCY: 2
+      EMAIL_DELIVERY_MAX_ATTEMPTS: 5
+      EMAIL_DELIVERY_LEASE_MS: 300000
+      ASYNC_WORKER_HEARTBEAT_TTL_SECONDS: 90
     depends_on:
-      - postgres
-
-  agent-worker:
-    profiles:
-      - agents
-    build:
-      context: ./AgentService
-      dockerfile: Dockerfile
-    container_name: online-auction-agent-worker
-    command: npm run start:worker
-    volumes:
-      - ./AgentService:/app
-      - ./:/workspace/source:ro
-      - agent_workspaces:/app/.agent-workspaces
-      - /app/node_modules
-    environment:
-      - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_agents
-      - AGENT_REPO_ROOT=/workspace/source
-      - AGENT_WORKSPACE_ROOT=/app/.agent-workspaces
-      - CODEX_CLI_PATH=codex
-      - ANTIGRAVITY_CLI_PATH=antigravity
-    depends_on:
-      - postgres
-
-  # Python AI Worker (uncomment and configure once your python codebase is ready)
-  # python-worker:
-  #   build:
-  #     context: ./AI-Service
-  #     dockerfile: Dockerfile
-  #   container_name: local-python-worker
-  #   command: python main.py
-  #   environment:
-  #     - KAFKA_BROKERS=kafka:9092
-  #     - DATABASE_URL=postgresql://postgres:my_local_password@postgres:5432/online_auction_test
-  #   depends_on:
-  #     - postgres
-  #     - kafka
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
   redis_data:
   kafka_data:
-  agent_workspaces:

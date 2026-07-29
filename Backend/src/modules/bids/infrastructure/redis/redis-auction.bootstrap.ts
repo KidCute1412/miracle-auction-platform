@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { redisAuctionKeys } from "./redis-auction.keys.ts";
@@ -24,9 +25,14 @@ const rankMember = (amount: bigint, userId: number): string => `${pad(amount)}:$
 
 export async function bootstrapRedisAuction(productId: number): Promise<boolean> {
   const stateKey = redisAuctionKeys.state(productId);
-  if (await redisClient.exists(stateKey)) return false;
+  const lockKey = `auction:bootstrap-lock:${productId}`;
+  const lockToken = randomUUID();
+  const acquired = await redisClient.set(lockKey, lockToken, "PX", 30_000, "NX");
+  if (acquired !== "OK") return false;
+  try {
+    if (await redisClient.exists(stateKey)) return false;
 
-  const [rows, settings, bans, maxima] = await Promise.all([
+    const [rows, settings, bans, maxima] = await Promise.all([
     prisma.$queryRaw<AuctionSeedRow[]>(Prisma.sql`
       SELECT product_id, seller_id, start_price, current_price, step_price, buy_now_price,
              price_owner_id, start_time, end_time, auto_extended, auction_status,
@@ -42,9 +48,9 @@ export async function bootstrapRedisAuction(productId: number): Promise<boolean>
       where: { product_id: BigInt(productId), status: null },
       _max: { max_price: true },
     }),
-  ]);
-  const auction = rows[0];
-  if (!auction) throw new Error(`Cannot bootstrap missing auction ${productId}`);
+    ]);
+    const auction = rows[0];
+    if (!auction) throw new Error(`Cannot bootstrap missing auction ${productId}`);
 
   const maximumByUser = new Map(maxima.map((row) => [row.user_id, row._max.max_price ?? 0n]));
   const leaderId = auction.price_owner_id === null ? undefined : Number(auction.price_owner_id);
@@ -85,8 +91,16 @@ export async function bootstrapRedisAuction(productId: number): Promise<boolean>
   if (effectiveStatus === "ACTIVE" && auction.end_time) {
     transaction.zadd(redisAuctionKeys.deadlines, auction.end_time.getTime(), productId.toString());
   }
-  await transaction.exec();
-  return true;
+    await transaction.exec();
+    return true;
+  } finally {
+    await redisClient.eval(
+      "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0",
+      1,
+      lockKey,
+      lockToken,
+    ).catch(() => undefined);
+  }
 }
 
 export async function bootstrapActiveRedisAuctions(): Promise<number> {

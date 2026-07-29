@@ -23,8 +23,15 @@ vi.mock("@/config/kafka.config.ts", () => ({
   publishBidEvent: vi.fn().mockResolvedValue(undefined),
   publishBidEventStrict: vi.fn().mockResolvedValue(undefined),
   publishEventStrict: vi.fn().mockResolvedValue(undefined),
+  publishEventBatchesStrict: vi.fn().mockResolvedValue(undefined),
   measureKafkaLatency: vi.fn().mockResolvedValue(1),
-  kafkaTopics: { bidding: "bidding_events", dashboard: "dashboard_updates", dashboardDlq: "dashboard_updates_dlq" },
+  kafkaTopics: {
+    bidding: "bidding_events",
+    domain: "domain_events",
+    dashboard: "dashboard_updates",
+    asyncDlq: "async_events_dlq",
+    dashboardDlq: "dashboard_updates_dlq",
+  },
 }));
 
 vi.mock("rate-limit-redis", () => ({

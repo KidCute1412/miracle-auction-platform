@@ -45,7 +45,7 @@ if /i "%SEED_STATE%"=="empty" (
   if errorlevel 1 exit /b 1
 )
 
-docker compose up -d node-worker
+docker compose up -d auction-worker outbox-relay async-worker
 if errorlevel 1 exit /b 1
 
 where wt >nul 2>nul

@@ -216,15 +216,45 @@ async function measure<T>(operation: () => Promise<T>): Promise<{ available: boo
 }
 
 export async function getOperations(adminSocketCount: number): Promise<DashboardOperations> {
-  const [postgres, redis, kafkaHealth, heartbeat, snapshot, outboxPending, outboxRetrying, dlqCount] = await Promise.all([
+  const [
+    postgres,
+    redis,
+    kafkaHealth,
+    auctionHeartbeat,
+    outboxHeartbeat,
+    asyncHeartbeat,
+    projectionLagValue,
+    snapshot,
+    outboxPending,
+    outboxRetrying,
+    outboxTerminal,
+    oldestOutbox,
+    emailPending,
+    emailRetrying,
+    emailTerminal,
+    dashboardDlqCount,
+    notificationDlqCount,
+  ] = await Promise.all([
     measure(() => prisma.$queryRaw`SELECT 1`),
     measure(() => redisClient.ping()),
     measure(() => measureKafkaLatency()),
-    redisClient.get("dashboard:worker:heartbeat").catch(() => null),
+    redisClient.get("auction:worker:heartbeat").catch(() => null),
+    redisClient.get("outbox:relay:heartbeat").catch(() => null),
+    redisClient.get("async:worker:heartbeat").catch(() => null),
+    redisClient.get("auction:worker:projection-lag").catch(() => null),
     prisma.dashboard_stats.findUnique({ where: { key: "summary" }, select: { updated_at: true } }),
-    prisma.auction_outbox.count({ where: { delivered_at: null } }),
-    prisma.auction_outbox.count({ where: { delivered_at: null, attempts: { gt: 0 } } }),
+    prisma.auction_outbox.count({ where: { delivered_at: null, terminal_at: null } }),
+    prisma.auction_outbox.count({ where: { delivered_at: null, terminal_at: null, attempts: { gt: 0 } } }),
+    prisma.auction_outbox.count({ where: { terminal_at: { not: null } } }),
+    prisma.auction_outbox.aggregate({
+      where: { delivered_at: null, terminal_at: null },
+      _min: { created_at: true },
+    }),
+    prisma.email_deliveries.count({ where: { status: { in: ["pending", "leased"] } } }),
+    prisma.email_deliveries.count({ where: { status: { in: ["pending", "leased"] }, attempts: { gt: 0 } } }),
+    prisma.email_deliveries.count({ where: { status: "terminal" } }),
     prisma.dashboard_event_receipts.count({ where: { status: "terminal" } }),
+    prisma.notification_event_receipts.count({ where: { status: "terminal" } }),
   ]);
   let consumerLag: number | null = null;
   try {
@@ -246,17 +276,35 @@ export async function getOperations(adminSocketCount: number): Promise<Dashboard
   } catch {
     consumerLag = null;
   }
-  const heartbeatAge = heartbeat ? Math.max(0, Date.now() - new Date(heartbeat).getTime()) : null;
+  const heartbeat = (value: string | null): { available: boolean; ageMs: number | null } => {
+    const timestamp = value ? Date.parse(value) : Number.NaN;
+    const ageMs = Number.isFinite(timestamp) ? Math.max(0, Date.now() - timestamp) : null;
+    return { available: ageMs !== null && ageMs < 90_000, ageMs };
+  };
+  const workers = {
+    auctionWorker: heartbeat(auctionHeartbeat),
+    outboxRelay: heartbeat(outboxHeartbeat),
+    asyncWorker: heartbeat(asyncHeartbeat),
+  };
   return {
     postgres,
     redis,
     kafka: kafkaHealth,
-    workerHeartbeat: { available: heartbeatAge !== null && heartbeatAge < 90_000, ageMs: heartbeatAge },
+    workers,
+    workerHeartbeat: workers.asyncWorker,
     refreshAgeMs: snapshot?.updated_at ? Math.max(0, Date.now() - snapshot.updated_at.getTime()) : null,
     outboxPending,
     outboxRetrying,
+    outboxTerminal,
+    oldestOutboxAgeMs: oldestOutbox._min.created_at
+      ? Math.max(0, Date.now() - oldestOutbox._min.created_at.getTime())
+      : null,
+    projectionLag: projectionLagValue === null ? null : Number(projectionLagValue),
+    emailPending,
+    emailRetrying,
+    emailTerminal,
     consumerLag,
-    dlqCount,
+    dlqCount: dashboardDlqCount + notificationDlqCount + outboxTerminal + emailTerminal,
     adminSocketCount,
   };
 }

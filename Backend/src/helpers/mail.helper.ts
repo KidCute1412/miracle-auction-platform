@@ -13,6 +13,31 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export async function deliverMail(input: {
+  email: string;
+  title: string;
+  html: string;
+  text?: string;
+  messageId?: string;
+}): Promise<void> {
+  await transporter.sendMail({
+    from: {
+      name: "Online Auction",
+      address: process.env.GMAIL_ADDRESS || "",
+    },
+    to: input.email,
+    subject: input.title,
+    html: input.html,
+    text: input.text ?? input.html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+    ...(input.messageId ? { messageId: input.messageId } : {}),
+    headers: {
+      "X-Priority": "3",
+      "X-Mailer": "Online Auction Mailer",
+      Importance: "normal",
+    },
+  });
+}
+
 export const sendMail = async (email: string, title: string, content: string): Promise<boolean> => {
   try {
     const mailOptions = {

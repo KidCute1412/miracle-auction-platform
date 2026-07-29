@@ -1,4 +1,53 @@
+x-backend-process: &backend-process
+  image: online-auction-backend:latest
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging: &rotated-logs
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "5"
+
+x-database-environment: &database-environment
+  NODE_ENV: production
+  DATABASE_URL: ${DATABASE_URL}
+  DIRECT_URL: ${DIRECT_URL}
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  BID_ENGINE: redis
+
+x-kafka-environment: &kafka-environment
+  KAFKA_BROKERS: ${KAFKA_BROKERS}
+  KAFKA_SSL: ${KAFKA_SSL:-true}
+  KAFKA_USERNAME: ${KAFKA_USERNAME}
+  KAFKA_PASSWORD: ${KAFKA_PASSWORD}
+  KAFKA_CA: ${KAFKA_CA:-}
+  KAFKA_BIDDING_TOPIC: ${KAFKA_BIDDING_TOPIC:-bidding_events}
+  KAFKA_DOMAIN_TOPIC: ${KAFKA_DOMAIN_TOPIC:-domain_events}
+  KAFKA_DASHBOARD_TOPIC: ${KAFKA_DASHBOARD_TOPIC:-dashboard_updates}
+  KAFKA_ASYNC_DLQ_TOPIC: ${KAFKA_ASYNC_DLQ_TOPIC:-async_events_dlq}
+  KAFKA_DASHBOARD_DLQ_TOPIC: ${KAFKA_DASHBOARD_DLQ_TOPIC:-dashboard_updates_dlq}
+
 services:
+  redis:
+    image: redis:7-alpine
+    command:
+      - /bin/sh
+      - -ec
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --appendfsync everysec --maxmemory 768mb --maxmemory-policy noeviction
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    restart: unless-stopped
+    volumes:
+      - redis_authority_data:/data
+    mem_limit: 1g
+    cpu_shares: 1024
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *rotated-logs
+
   migrate:
     build:
       context: ./Backend
@@ -9,30 +58,77 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       DIRECT_URL: ${DIRECT_URL}
 
-  api:
-    build:
-      context: ./Backend
-    image: online-auction-backend:latest
-    command: npm run start:prod
-    restart: unless-stopped
+  auction-worker:
+    <<: *backend-process
+    command: npm run auction-worker:prod
+    mem_limit: 512m
+    cpu_shares: 768
+    environment:
+      <<: *database-environment
+      BID_PROJECTOR_GROUP: ${BID_PROJECTOR_GROUP:-postgres-projector-v1}
+      BID_PROJECTOR_MAX_ATTEMPTS: ${BID_PROJECTOR_MAX_ATTEMPTS:-10}
+      BID_PROJECTOR_RECLAIM_INTERVAL_MS: ${BID_PROJECTOR_RECLAIM_INTERVAL_MS:-30000}
+      AUCTION_CLOSE_INTERVAL_MS: ${AUCTION_CLOSE_INTERVAL_MS:-1000}
+      AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: ${AUCTION_WORKER_HEARTBEAT_TTL_SECONDS:-90}
     depends_on:
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"import('ioredis').then(async({default:R})=>{const r=new R(process.env.REDIS_URL);const v=await r.get('auction:worker:heartbeat');await r.quit();process.exit(v?0:1)})\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  outbox-relay:
+    <<: *backend-process
+    command: npm run outbox-relay:prod
+    mem_limit: 256m
+    cpu_shares: 384
     environment:
-      NODE_ENV: ${NODE_ENV}
-      PORT: ${PORT}
+      <<: [*database-environment, *kafka-environment]
+      OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-100}
+      OUTBOX_IDLE_POLL_MS: ${OUTBOX_IDLE_POLL_MS:-500}
+      OUTBOX_MAX_BACKOFF_MS: ${OUTBOX_MAX_BACKOFF_MS:-300000}
+      OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS: ${OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS:-90}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  async-worker:
+    <<: *backend-process
+    command: npm run async-worker:prod
+    mem_limit: 512m
+    cpu_shares: 384
+    environment:
+      <<: [*database-environment, *kafka-environment]
       CLIENT_URL: ${CLIENT_URL}
-      DATABASE_URL: ${DATABASE_URL}
-      DIRECT_URL: ${DIRECT_URL}
-      REDIS_URL: ${REDIS_URL}
-      KAFKA_BROKERS: ${KAFKA_BROKERS}
-      KAFKA_SSL: ${KAFKA_SSL:-true}
-      KAFKA_USERNAME: ${KAFKA_USERNAME}
-      KAFKA_PASSWORD: ${KAFKA_PASSWORD}
-      KAFKA_CA: ${KAFKA_CA:-}
-      KAFKA_BIDDING_TOPIC: ${KAFKA_BIDDING_TOPIC:-bidding_events}
-      KAFKA_DASHBOARD_TOPIC: ${KAFKA_DASHBOARD_TOPIC:-dashboard_updates}
-      KAFKA_DASHBOARD_DLQ_TOPIC: ${KAFKA_DASHBOARD_DLQ_TOPIC:-dashboard_updates_dlq}
+      DASHBOARD_KAFKA_GROUP_ID: ${DASHBOARD_KAFKA_GROUP_ID:-dashboard-analytics-v1}
+      NOTIFICATION_KAFKA_GROUP_ID: ${NOTIFICATION_KAFKA_GROUP_ID:-notification-intake-v1}
+      EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-smtp}
+      EMAIL_DELIVERY_CONCURRENCY: ${EMAIL_DELIVERY_CONCURRENCY:-2}
+      EMAIL_DELIVERY_MAX_ATTEMPTS: ${EMAIL_DELIVERY_MAX_ATTEMPTS:-5}
+      EMAIL_DELIVERY_LEASE_MS: ${EMAIL_DELIVERY_LEASE_MS:-300000}
+      ASYNC_WORKER_HEARTBEAT_TTL_SECONDS: ${ASYNC_WORKER_HEARTBEAT_TTL_SECONDS:-90}
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  api:
+    <<: *backend-process
+    command: npm run start:prod
+    mem_limit: 768m
+    cpu_shares: 1024
+    environment:
+      <<: [*database-environment, *kafka-environment]
+      PORT: ${PORT:-5000}
+      CLIENT_URL: ${CLIENT_URL}
+      AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: ${AUCTION_WORKER_HEARTBEAT_TTL_SECONDS:-90}
       GMAIL_ADDRESS: ${GMAIL_ADDRESS}
       GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
@@ -42,40 +138,18 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-
-  worker:
-    image: online-auction-backend:latest
-    command: npm run worker:prod
-    restart: unless-stopped
     depends_on:
       migrate:
         condition: service_completed_successfully
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      DATABASE_URL: ${DATABASE_URL}
-      DIRECT_URL: ${DIRECT_URL}
-      REDIS_URL: ${REDIS_URL}
-      KAFKA_BROKERS: ${KAFKA_BROKERS}
-      KAFKA_SSL: ${KAFKA_SSL:-true}
-      KAFKA_USERNAME: ${KAFKA_USERNAME}
-      KAFKA_PASSWORD: ${KAFKA_PASSWORD}
-      KAFKA_CA: ${KAFKA_CA:-}
-      KAFKA_BIDDING_TOPIC: ${KAFKA_BIDDING_TOPIC:-bidding_events}
-      KAFKA_DASHBOARD_TOPIC: ${KAFKA_DASHBOARD_TOPIC:-dashboard_updates}
-      KAFKA_DASHBOARD_DLQ_TOPIC: ${KAFKA_DASHBOARD_DLQ_TOPIC:-dashboard_updates_dlq}
-      DASHBOARD_KAFKA_GROUP_ID: ${DASHBOARD_KAFKA_GROUP_ID:-dashboard-analytics-v1}
-      DASHBOARD_DEBOUNCE_MS: ${DASHBOARD_DEBOUNCE_MS:-15000}
-      DASHBOARD_RECOVERY_INTERVAL_MS: ${DASHBOARD_RECOVERY_INTERVAL_MS:-60000}
-      DASHBOARD_STALE_THRESHOLD_MS: ${DASHBOARD_STALE_THRESHOLD_MS:-120000}
-      DASHBOARD_RETRY_LIMIT: ${DASHBOARD_RETRY_LIMIT:-5}
-      GMAIL_ADDRESS: ${GMAIL_ADDRESS}
-      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
-      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
-      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
-      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      redis:
+        condition: service_healthy
+      auction-worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:$${PORT:-5000}/ready >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
   caddy:
     image: caddy:2-alpine
@@ -89,7 +163,11 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    mem_limit: 128m
+    cpu_shares: 256
+    logging: *rotated-logs
 
 volumes:
+  redis_authority_data:
   caddy_data:
   caddy_config:

@@ -1,10 +1,8 @@
-import { Zap, Lock, Trophy, BookOpen, Crown, ShieldCheck, Heart, Info } from "lucide-react";
+import { Zap, Crown, Heart, Info } from "lucide-react";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { productService } from "@/services/product.service.ts";
 import BussinessGirl from "./BussinessGirl/BussinessGirl";
-import { slugify } from "@/utils/make_slug";
 
 // Scenic cosmic/nebula background with orbiting rings and floating stars/particles
 const ScenicBackground = () => {
@@ -177,68 +175,11 @@ const PrestigeLedgerMarquee = () => {
   );
 };
 
-
-
-// Trust Pillars
-const VanguardTrustPillars = () => {
-  const { ref, hasIntersected } = useIntersectionObserver();
-
-  return (
-    <div
-      ref={ref}
-      className={`relative bg-card/20 backdrop-blur-md py-12 px-6 rounded-3xl mx-4 my-8 transition-all duration-1000 ${
-        hasIntersected ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
-    >
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-6 rounded-2xl bg-card/40 hover:bg-card/60 transition-all duration-300 group">
-            <Zap className="w-6 h-6 text-accent mb-4 transition-transform group-hover:scale-110" />
-            <h4 className="text-sm font-bold text-foreground mb-2">Real-Time Bidding</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Instantaneous live bid matching powered by fully optimized, low-latency Socket.io protocols.
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-card/40 hover:bg-card/60 transition-all duration-300 group">
-            <Lock className="w-6 h-6 text-accent mb-4 transition-transform group-hover:scale-110" />
-            <h4 className="text-sm font-bold text-foreground mb-2">Protected Escrow Vault</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Complete financial settlement backed by secure multi-signature escrow guidelines.
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-card/40 hover:bg-card/60 transition-all duration-300 group">
-            <Trophy className="w-6 h-6 text-accent mb-4 transition-transform group-hover:scale-110" />
-            <h4 className="text-sm font-bold text-foreground mb-2">Verified Provenance</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              All artifacts are guaranteed authentic and certified by leading global horology & jewelry panels.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Immersive Centerpiece Hero Layout
 const Hero = () => {
   const { ref, hasIntersected } = useIntersectionObserver();
   const heroRef = useRef<HTMLDivElement>(null);
-  const [isSmiling, setIsSmiling] = useState(false);
-  const [featuredProduct, setFeaturedProduct] = useState<any>(null);
-
-  useEffect(() => {
-    async function fetchFeatured() {
-      try {
-        const response = await productService.getHighestPrice();
-        if (response.data && response.data.length > 0) {
-          setFeaturedProduct(response.data[0]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch featured product", error);
-      }
-    }
-    fetchFeatured();
-  }, []);
+  const [isSmiling] = useState(false);
 
   return (
     <div
@@ -399,13 +340,37 @@ const Hero = () => {
   );
 };
 
+// Enterprise Metrics Ribbon
+const EnterpriseMetricsRibbon = () => {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-3xl bg-card/40 backdrop-blur-xl border border-accent/20 my-8 shadow-xl">
+      <div className="text-center p-3 border-r border-border/40 last:border-none">
+        <span className="text-xl md:text-3xl font-black font-mono text-accent block">$12.8M+</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Total Sales Volume</span>
+      </div>
+      <div className="text-center p-3 border-r border-border/40 last:border-none font-mono">
+        <span className="text-xl md:text-3xl font-black font-mono text-foreground block">450+</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Active Verified Lots</span>
+      </div>
+      <div className="text-center p-3 border-r border-border/40 last:border-none">
+        <span className="text-xl md:text-3xl font-black font-mono text-emerald-400 block">&lt; 50ms</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">WebSocket Latency</span>
+      </div>
+      <div className="text-center p-3">
+        <span className="text-xl md:text-3xl font-black font-mono text-accent block">99.8%</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Escrow Success Rate</span>
+      </div>
+    </div>
+  );
+};
+
 function Section1() {
   return (
     <div className="bg-transparent text-foreground pb-12">
       <Hero />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <PrestigeLedgerMarquee />
-        <VanguardTrustPillars />
+        <EnterpriseMetricsRibbon />
       </div>
     </div>
   );

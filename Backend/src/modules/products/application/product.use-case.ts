@@ -4,12 +4,6 @@ import { accountRepository } from "@/modules/accounts/infrastructure/account.rep
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
 import fs from "fs";
 import { slugify } from "@/helpers/slug.helper.ts";
-import {
-  sendBidderQuestionTemplate,
-  sendSellerAnswerTemplate,
-  getProductDescriptionChangedTemplate,
-  sendMail,
-} from "@/helpers/mail.helper.ts";
 import type { Prisma } from "@prisma/client";
 import type { ProductFilter, ProductRow } from "../infrastructure/product.repository.ts";
 import { parseMoneyVnd } from "@/modules/bids/domain/money.ts";
@@ -206,60 +200,46 @@ export async function postProductQuestion(
   content: string,
   question_parent_id: number | null,
 ) {
-  const insertData: Prisma.product_questionsUncheckedCreateInput = {
-    product_id: BigInt(product_id),
-    user_id,
-    content,
-  };
-  if (question_parent_id) {
-    insertData.question_parent_id = BigInt(question_parent_id);
-  }
-  const result = await ProductsModel.postProductQuestion(insertData);
-
-  const sellerInfo = await ProductsModel.getSellerOfProduct(product_id);
-  if (sellerInfo && sellerInfo.user_id !== user_id && sellerInfo.product_name && sellerInfo.username && sellerInfo.email) {
-    const product_name = sellerInfo.product_name;
-    const product_name_slug = slugify(product_name);
-    const productUrl = `${process.env.CLIENT_URL}/product/${product_name_slug}-${product_id}`;
-    const emailContent = sendBidderQuestionTemplate({
-      seller_username: sellerInfo.username,
-      product_name,
-      productUrl,
-      content,
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.products.findUnique({
+      where: { product_id: BigInt(product_id) },
+      select: { seller_id: true },
     });
-    sendMail(sellerInfo.email, "New question regarding your product", emailContent);
-  }
-
-  let userInParentQuestion = null;
-  if (question_parent_id) {
-    userInParentQuestion = await ProductsModel.getUserInParentQuestion(question_parent_id);
-  }
-  if (
-    userInParentQuestion?.user_id !== undefined
-    && sellerInfo?.user_id !== undefined
-    && userInParentQuestion.user_id !== sellerInfo.user_id
-    && user_id === sellerInfo.user_id
-    && sellerInfo.product_name
-    && sellerInfo.username
-    && userInParentQuestion.username
-    && userInParentQuestion.email
-    && userInParentQuestion.content
-  ) {
-    const product_name = sellerInfo.product_name;
-    const product_name_slug = slugify(product_name);
-    const productUrl = `${process.env.CLIENT_URL}/product/${product_name_slug}-${product_id}`;
-    const emailContent = sendSellerAnswerTemplate({
-      bidder_username: userInParentQuestion.username,
-      seller_username: sellerInfo.username,
-      product_name,
-      productUrl,
-      bidder_question: userInParentQuestion.content,
-      content,
+    if (!product) throw new Error("Product not found");
+    const parent = question_parent_id
+      ? await tx.product_questions.findUnique({
+          where: { question_id: BigInt(question_parent_id) },
+          select: { user_id: true },
+        })
+      : null;
+    const question = await tx.product_questions.create({
+      data: {
+        product_id: BigInt(product_id),
+        user_id,
+        content,
+        ...(question_parent_id ? { question_parent_id: BigInt(question_parent_id) } : {}),
+      },
     });
-    sendMail(userInParentQuestion.email, "Seller replied to your question", emailContent);
-  }
-
-  return result;
+    const isSellerAnswer = parent !== null
+      && Number(product.seller_id) === user_id
+      && parent.user_id !== user_id;
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.domain,
+      eventType: isSellerAnswer ? "product.question_answered.v1" : "product.question_created.v1",
+      aggregateId: String(product_id),
+      payload: {
+        productId: String(product_id),
+        questionId: question.question_id.toString(),
+        actorId: String(user_id),
+        parentQuestionId: question_parent_id === null ? null : String(question_parent_id),
+      },
+    });
+    const actor = await tx.users.findUnique({
+      where: { user_id },
+      select: { username: true },
+    });
+    return { ...question, username: actor?.username ?? null };
+  });
 }
 
 // Fetch related product list matching category recommendation
@@ -273,35 +253,33 @@ export async function updateProductDescription(
   seller_id: number,
   newDescription: string,
 ): Promise<{ status: string; message: string }> {
-  const isAuthorized = await ProductsModel.verifyProductSeller(product_id, seller_id);
-  if (!isAuthorized) {
+  const updated = await prisma.$transaction(async (tx) => {
+    const product = await tx.products.findFirst({
+      where: { product_id: BigInt(product_id), seller_id: BigInt(seller_id) },
+      select: { product_id: true, price_owner_id: true },
+    });
+    if (!product) return false;
+    await tx.products.update({
+      where: { product_id: BigInt(product_id) },
+      data: { description: newDescription, edited_at: new Date() },
+    });
+    await addOutboxEvent(tx, {
+      topic: kafkaTopics.domain,
+      eventType: "product.description_changed.v1",
+      aggregateId: String(product_id),
+      payload: {
+        productId: String(product_id),
+        sellerId: String(seller_id),
+        leaderId: product.price_owner_id?.toString() ?? null,
+      },
+    });
+    return true;
+  });
+  if (!updated) {
     return {
       status: "403",
       message: "You are not authorized to update this product.",
     };
-  }
-  await ProductsModel.updateProductDescription(product_id, newDescription);
-
-  const productInfo = await ProductsModel.getProductById(product_id);
-  if (
-    productInfo
-    && (productInfo.bid_turns ?? 0n) > 0n
-    && productInfo.price_owner_id
-    && productInfo.product_name
-    && productInfo.price_owner_username
-    && productInfo.current_price !== null
-  ) {
-    const emailContent = getProductDescriptionChangedTemplate({
-      bidderUsername: productInfo.price_owner_username,
-      productName: productInfo.product_name,
-      currentPrice: productInfo.current_price,
-      productUrl: `${process.env.CLIENT_URL}/product/${slugify(productInfo.product_name)}-${productInfo.product_id}`,
-      changeDate: new Date().toLocaleString(),
-    });
-    const userInfo = await usersModel.getUserById(Number(productInfo.price_owner_id));
-    if (userInfo) {
-      sendMail(userInfo.email, "Product description update alert", emailContent);
-    }
   }
 
   return {
@@ -374,7 +352,7 @@ async function moderateProduct(
     if (action === "destroy") await tx.products.delete({ where: { product_id: BigInt(id) } });
     else await tx.products.update({ where: { product_id: BigInt(id) }, data: { is_removed: action === "remove" } });
     await addOutboxEvent(tx, {
-      topic: kafkaTopics.dashboard,
+      topic: kafkaTopics.domain,
       eventType: `product.${action}d.v1`,
       aggregateId: String(id),
       correlationId,

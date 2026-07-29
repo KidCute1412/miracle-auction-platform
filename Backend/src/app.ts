@@ -22,9 +22,17 @@ export function createApp() {
   app.use(requestId);
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
   app.get("/ready", async (_req, res) => {
-    const [database, redis, kafka] = await Promise.all([checkPrismaConnection(), checkRedisConnection(), checkKafkaConnection()]);
-    const dependencies = { database, redis, kafka };
-    const ready = Object.values(dependencies).every(Boolean);
+    const [database, redis, kafka, heartbeat] = await Promise.all([
+      checkPrismaConnection(),
+      checkRedisConnection(),
+      checkKafkaConnection(),
+      redisClient.get("auction:worker:heartbeat").catch(() => null),
+    ]);
+    const heartbeatAt = heartbeat ? Date.parse(heartbeat) : Number.NaN;
+    const heartbeatTtlMs = Number(process.env.AUCTION_WORKER_HEARTBEAT_TTL_SECONDS ?? 90) * 1_000;
+    const auctionWorker = Number.isFinite(heartbeatAt) && Date.now() - heartbeatAt < heartbeatTtlMs;
+    const dependencies = { database, redis, auctionWorker, kafka };
+    const ready = database && redis && auctionWorker;
     res.status(ready ? 200 : 503).json({ status: ready ? "ready" : "not_ready", dependencies });
   });
   app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
