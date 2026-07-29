@@ -1,7 +1,7 @@
-import avatar from "@/assets/images/Cristiano.jpg";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Sun, Moon } from "lucide-react";
+import UserAvatar from "@/components/common/UserAvatar";
 
 export default function Header() {
   const { auth } = useAuth();
@@ -29,24 +29,14 @@ export default function Header() {
 
         {/* User profile details */}
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-full overflow-hidden border border-accent/30 shadow-gold-glow">
-            {auth && auth.avatar ? (
-              <img
-                src={auth.avatar}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={avatar}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
+          <UserAvatar
+            src={auth?.avatar}
+            name={auth?.full_name || auth?.username || "Admin"}
+            size="sm"
+          />
 
           <div className="flex flex-col leading-tight">
-            <span className="font-medium text-sm max-w-[150px] truncate">{auth?.username}</span>
+            <span className="font-medium text-sm max-w-[150px] truncate">{auth?.username || "Admin"}</span>
             <span className="font-normal text-xs text-muted-foreground">Administrator</span>
           </div>
         </div>

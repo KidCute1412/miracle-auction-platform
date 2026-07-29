@@ -4,7 +4,6 @@ import { accountRepository } from "@/modules/accounts/infrastructure/account.rep
 import { uploadToCloudinary } from "@/config/cloud.config.ts";
 import fs from "fs";
 import { slugify } from "@/helpers/slug.helper.ts";
-import { emitBidUpdate } from "@/socket.ts";
 import {
   sendBidderQuestionTemplate,
   sendSellerAnswerTemplate,
@@ -18,7 +17,7 @@ import { getBidEngine } from "@/modules/bids/application/bid-engine.ts";
 import { bootstrapRedisAuction } from "@/modules/bids/infrastructure/redis/redis-auction.bootstrap.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
-import { kafkaTopics } from "@/config/kafka.config.ts";
+import { kafkaTopics } from "@/config/kafka-topics.config.ts";
 import { randomUUID } from "node:crypto";
 
 export type NewProductRequest = {
@@ -429,8 +428,6 @@ export async function extendBiddingTimeIfNeeded(product_id: number): Promise<voi
     const newEndTime = new Date(endTime.getTime() + extend_time * 60 * 1000);
     await ProductsModel.updateProductEndTime(product_id, newEndTime);
 
-    const productInfo = await ProductsModel.getProductById(product_id);
-    emitBidUpdate(product_id, { data: productInfo });
   }
 }
 

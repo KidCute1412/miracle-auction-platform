@@ -8,6 +8,7 @@ import { slugify } from "@/utils/make_slug";
 import Loading from "@/components/common/Loading";
 import PaginationComponent from "@/components/common/Pagination";
 import { userService } from "@/services/user.service";
+import UserAvatar from "@/components/common/UserAvatar";
 
 type UserItem = {
   user_id: number;
@@ -173,19 +174,7 @@ export default function UserListPage() {
                         >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              {user.avatar ? (
-                                <div className="h-10 w-10 rounded-lg overflow-hidden border border-border shrink-0">
-                                  <img
-                                    src={user.avatar}
-                                    alt={user.full_name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="h-10 w-10 rounded-lg bg-accent text-accent-foreground flex items-center justify-center font-bold text-sm shrink-0">
-                                  {getInitials(user.full_name)}
-                                </div>
-                              )}
+                              <UserAvatar src={user.avatar} name={user.full_name} size="md" />
                               <span className="font-medium text-foreground text-sm">
                                 {user.full_name}
                               </span>
@@ -244,19 +233,7 @@ export default function UserListPage() {
                   className="bg-card rounded-xl border border-border p-4 shadow-sm text-foreground transition-colors duration-300"
                 >
                   <div className="flex items-start gap-3 mb-3">
-                    {user.avatar ? (
-                      <div className="h-14 w-14 rounded-lg overflow-hidden border border-border shrink-0">
-                        <img
-                          src={user.avatar}
-                          alt={user.full_name}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-14 w-14 rounded-lg bg-accent text-accent-foreground flex items-center justify-center font-bold text-xl shrink-0">
-                        {getInitials(user.full_name)}
-                      </div>
-                    )}
+                    <UserAvatar src={user.avatar} name={user.full_name} size="lg" />
                     <div className="flex-1">
                       <h3 className="font-bold text-foreground text-base mb-1">
                         {user.full_name}

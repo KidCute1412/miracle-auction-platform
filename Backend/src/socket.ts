@@ -7,6 +7,7 @@ import { accountRepository } from "@/modules/accounts/infrastructure/account.rep
 let socketServer: Server | undefined;
 let adminNamespace: Namespace | undefined;
 let dashboardSubscriber: Redis | undefined;
+let auctionSubscriber: Redis | undefined;
 let adminConnections = 0;
 
 export function setSocketServer(io: Server): void {
@@ -67,13 +68,41 @@ export async function startAdminSocket(io: Server): Promise<void> {
   });
   await dashboardSubscriber.subscribe("dashboard:updated:v1").catch((error) =>
     console.warn("[SOCKET] Dashboard Redis subscriber unavailable; clients will poll", error));
+
+  auctionSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+    maxRetriesPerRequest: null,
+  });
+  auctionSubscriber.on("error", (error) =>
+    console.warn("[SOCKET] Auction Redis subscriber unavailable; clients will refetch", error.message));
+  auctionSubscriber.on("message", (channel, value) => {
+    if (channel !== "auction:committed:v1") return;
+    try {
+      const event = JSON.parse(value) as Partial<BidSocketEvent>;
+      if (!event.eventId || !event.productId || !event.sequence || !event.version || !event.status) {
+        throw new Error("Invalid committed auction event");
+      }
+      emitBidUpdate(Number(event.productId), event as BidSocketEvent);
+    } catch (error) {
+      console.warn("[SOCKET] Ignored invalid auction Redis notification", {
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    }
+  });
+  await auctionSubscriber.subscribe("auction:committed:v1").catch((error) =>
+    console.warn("[SOCKET] Auction subscription failed; clients will refetch", error));
 }
 
 export async function stopAdminSocket(): Promise<void> {
-  if (!dashboardSubscriber) return;
-  await dashboardSubscriber.unsubscribe("dashboard:updated:v1").catch(() => undefined);
-  await dashboardSubscriber.quit().catch(() => undefined);
+  if (dashboardSubscriber) {
+    await dashboardSubscriber.unsubscribe("dashboard:updated:v1").catch(() => undefined);
+    await dashboardSubscriber.quit().catch(() => undefined);
+  }
+  if (auctionSubscriber) {
+    await auctionSubscriber.unsubscribe("auction:committed:v1").catch(() => undefined);
+    await auctionSubscriber.quit().catch(() => undefined);
+  }
   dashboardSubscriber = undefined;
+  auctionSubscriber = undefined;
 }
 
 export function getAdminSocketCount(): number {

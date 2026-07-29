@@ -1,4 +1,5 @@
 import { Kafka, logLevel, type Producer } from "kafkajs";
+import { kafkaTopics } from "./kafka-topics.config.ts";
 
 const brokers = (process.env.KAFKA_BROKERS || "localhost:19094").split(",").map((value) => value.trim());
 const sslEnabled = process.env.KAFKA_SSL === "true";
@@ -22,11 +23,7 @@ export const kafka = new Kafka({
 const producer: Producer = kafka.producer({ allowAutoTopicCreation: false });
 let producerConnected = false;
 
-export const kafkaTopics = {
-  bidding: process.env.KAFKA_BIDDING_TOPIC || "bidding_events",
-  dashboard: process.env.KAFKA_DASHBOARD_TOPIC || "dashboard_updates",
-  dashboardDlq: process.env.KAFKA_DASHBOARD_DLQ_TOPIC || "dashboard_updates_dlq",
-} as const;
+export { kafkaTopics } from "./kafka-topics.config.ts";
 
 export async function initKafka(): Promise<boolean> {
   if (producerConnected) return true;
@@ -75,6 +72,23 @@ export async function closeKafkaConnection(): Promise<void> {
 export async function publishEventStrict(topic: string, key: string, event: object): Promise<void> {
   if (!producerConnected && !(await initKafka())) throw new Error("Kafka producer is unavailable");
   await producer.send({ topic, acks: -1, messages: [{ key, value: JSON.stringify(event) }] });
+}
+
+export interface KafkaEventBatch {
+  topic: string;
+  messages: Array<{ key: string; value: string }>;
+}
+
+export async function publishEventBatchesStrict(batches: KafkaEventBatch[]): Promise<void> {
+  if (batches.length === 0) return;
+  if (!producerConnected && !(await initKafka())) throw new Error("Kafka producer is unavailable");
+  await producer.sendBatch({
+    acks: -1,
+    topicMessages: batches.map((batch) => ({
+      topic: batch.topic,
+      messages: batch.messages,
+    })),
+  });
 }
 
 /** Compatibility wrapper for existing bidding callers. */

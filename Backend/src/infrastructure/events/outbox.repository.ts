@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
+import { relayTopics } from "@/config/kafka-topics.config.ts";
 
 export interface AddOutboxEventInput {
   topic: string;
@@ -14,6 +15,9 @@ export async function addOutboxEvent(
   tx: Prisma.TransactionClient,
   input: AddOutboxEventInput,
 ): Promise<{ eventId: string; correlationId: string; occurredAt: Date }> {
+  if (!relayTopics.has(input.topic)) {
+    throw new Error(`Unsupported outbox topic: ${input.topic}`);
+  }
   const eventId = randomUUID();
   const correlationId = input.correlationId ?? randomUUID();
   const occurredAt = new Date();

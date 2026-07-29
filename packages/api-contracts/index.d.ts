@@ -50,7 +50,18 @@ export interface BuyNowSuccessResponse extends LegacyStatusSuccess {
 export interface BidHistoryResponse extends LegacyStatusSuccess { data: BidHistoryItem[]; isSeller: boolean; }
 export interface BanBidderResponse extends LegacyStatusSuccess { data: unknown; }
 export interface CancelAuctionResponse extends LegacyStatusSuccess { data: unknown; }
-export type BidSocketEvent = { data: unknown };
+export type AuctionSocketStatus = "PENDING" | "ACTIVE" | "SOLD" | "ENDED" | "CANCELLED";
+export interface BidSocketEvent {
+  eventId: string;
+  productId: string;
+  currentPriceVnd: string;
+  leaderId: string | null;
+  endTimeMs: string;
+  sequence: string;
+  version: string;
+  orderId: string | null;
+  status: AuctionSocketStatus;
+}
 
 export interface PaginationQuery { page?: number; limit?: number; }
 export interface ApiClientErrorBody { message?: string; status?: LegacyErrorStatus; code?: string; [key: string]: unknown; }
@@ -144,10 +155,22 @@ export interface DashboardOperations {
   postgres: DependencyHealth;
   redis: DependencyHealth;
   kafka: DependencyHealth;
+  workers: {
+    auctionWorker: { available: boolean; ageMs: number | null };
+    outboxRelay: { available: boolean; ageMs: number | null };
+    asyncWorker: { available: boolean; ageMs: number | null };
+  };
+  /** @deprecated Compatibility alias for asyncWorker. */
   workerHeartbeat: { available: boolean; ageMs: number | null };
   refreshAgeMs: number | null;
   outboxPending: number;
   outboxRetrying: number;
+  outboxTerminal: number;
+  oldestOutboxAgeMs: number | null;
+  projectionLag: number | null;
+  emailPending: number;
+  emailRetrying: number;
+  emailTerminal: number;
   consumerLag: number | null;
   dlqCount: number;
   adminSocketCount: number;

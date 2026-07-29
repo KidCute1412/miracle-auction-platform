@@ -1,14 +1,14 @@
-import React, { useState, useRef } from "react";
-import { Camera, Save, X, User, Mail, Shield } from "lucide-react";
+import React, { useState } from "react";
+import { Save, X, User, Mail, Shield } from "lucide-react";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile.service";
+import AvatarUpload from "@/components/common/AvatarUpload";
 
 export default function ProfilePage() {
   const { auth: user, setAuth } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -16,9 +16,7 @@ export default function ProfilePage() {
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Sync state values with auth contexts on update
   React.useEffect(() => {
     if (user) {
       setFormData({
@@ -36,12 +34,10 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+  const handleAvatarSelect = (file: File) => {
+    setSelectedFile(file);
+    if (!isEditing) {
+      setIsEditing(true);
     }
   };
 
@@ -65,7 +61,6 @@ export default function ProfilePage() {
         setAuth(data.data);
         setIsEditing(false);
         setSelectedFile(null);
-        setPreviewUrl(null);
       } else {
         toast.error(data.message || "An error occurred during update!");
       }
@@ -80,20 +75,12 @@ export default function ProfilePage() {
   const handleCancel = () => {
     setIsEditing(false);
     setSelectedFile(null);
-    setPreviewUrl(null);
     if (user) {
       setFormData({
         full_name: user.full_name || "",
         email: user.email || "",
       });
     }
-  };
-
-  const getInitials = (name: string) => {
-    const words = name.trim().split(" ");
-    if (words.length === 0) return "?";
-    const lastWord = words[words.length - 1];
-    return lastWord.charAt(0).toUpperCase();
   };
 
   if (!user) {
@@ -120,35 +107,11 @@ export default function ProfilePage() {
           {/* Avatar Section */}
           <div className="lg:col-span-1">
             <div className="bg-card rounded-xl border border-border p-5 shadow-sm text-center transition-colors duration-300">
-              <div className="relative inline-block">
-                {previewUrl || user.avatar ? (
-                  <img
-                    src={previewUrl || user.avatar}
-                    alt={user.full_name}
-                    className="w-28 h-28 rounded-full object-cover border-2 border-border mx-auto shadow-sm"
-                  />
-                ) : (
-                  <div className="w-28 h-28 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-3xl font-bold mx-auto border-2 border-border shadow-sm">
-                    {getInitials(user.full_name)}
-                  </div>
-                )}
-
-                {isEditing && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
-                  >
-                    <Camera size={14} />
-                  </button>
-                )}
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
+              <AvatarUpload
+                currentAvatarUrl={user.avatar}
+                name={user.full_name || user.username}
+                onFileSelect={handleAvatarSelect}
+                size="xl"
               />
 
               <h3 className="text-base font-bold text-foreground mt-3">

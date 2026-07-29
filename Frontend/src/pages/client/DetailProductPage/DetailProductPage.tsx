@@ -43,6 +43,8 @@ type ProductType = {
   end_time: string;
   description: string;
   auto_extended?: boolean;
+  auction_sequence?: string;
+  auction_version?: string;
 
   cat2_id: number;
 };
@@ -60,7 +62,23 @@ function DetailProductPage() {
     product_id = Number(parts.pop());
     product_slug = parts.join("-");
   }
-  const socket = useSocketBidding(product_id || null);
+  useSocketBidding(
+    product_id || null,
+    (event) => setProduct((current) => current ? {
+      ...current,
+      current_price: Number(event.currentPriceVnd),
+      price_owner_id: event.leaderId === null ? undefined : Number(event.leaderId),
+      end_time: new Date(Number(event.endTimeMs)).toISOString(),
+      auction_sequence: event.sequence,
+      auction_version: event.version,
+    } : current),
+    () => {
+      if (!product_id) return;
+      void productService.getDetail(product_id)
+        .then((response) => setProduct(response.data))
+        .catch(() => toast.error("Live bidding reconnected; refresh failed"));
+    },
+  );
 
   const [formattedStartTime, setFormatStartTime] = useState("");
   const [timeLeft, setTimeLeft] = useState("");
@@ -122,19 +140,6 @@ function DetailProductPage() {
       setIsSeller(auth.user_id === products.seller_id);
     }
   }, [auth, products]);
-
-  useEffect(() => {
-    if (!socket) return;
-    socket.on("new_bid", (data: any) => {
-      console.log("Received new bid data via socket: ", data.data);
-      setProduct(data.data);
-    });
-    return () => {
-      if (socket) {
-        socket.off("new_bid");
-      }
-    };
-  }, [socket]);
 
   useEffect(() => {
     if (products) {

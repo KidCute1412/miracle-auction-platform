@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile.service.ts";
+import AvatarUpload from "@/components/common/AvatarUpload";
 
 interface ProfileData {
   username: string;
@@ -151,35 +152,12 @@ export default function EditProfilePage() {
             <div className="space-y-4">
               {/* Avatar Upload */}
               <div className="flex items-center gap-4 p-3 bg-muted/30 border border-border rounded-xl mb-4">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full overflow-hidden bg-muted border border-border shadow-md">
-                    {avatarPreview ? (
-                      <img 
-                        src={avatarPreview} 
-                        alt="Avatar preview" 
-                        defaultValue={formData.avatar}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted">
-                        <User className="w-10 h-10 text-muted-foreground/50" />
-                      </div>
-                    )}
-                  </div>
-                  <label 
-                    htmlFor="avatar-upload"
-                    className="absolute bottom-0 right-0 bg-accent hover:bg-accent/90 text-white p-1.5 rounded-full cursor-pointer shadow-md transition-colors"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                  </label>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                </div>
+                <AvatarUpload
+                  currentAvatarUrl={auth.avatar}
+                  name={auth.full_name || auth.username}
+                  onFileSelect={(file) => setAvatarFile(file)}
+                  size="lg"
+                />
                 <div>
                   <p className="text-sm font-semibold text-foreground">Profile Avatar</p>
                   <p className="text-xs text-muted-foreground mt-0.5">JPG or PNG, max 10MB.</p>

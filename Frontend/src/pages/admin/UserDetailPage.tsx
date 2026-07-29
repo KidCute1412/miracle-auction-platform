@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import Swal from "sweetalert2";
 import { userService } from "@/services/user.service.ts";
 import Loading from "@/components/common/Loading";
+import UserAvatar from "@/components/common/UserAvatar";
 import {
   ArrowLeft,
   User,
@@ -227,9 +228,7 @@ export default function UserDetailPage() {
         <div className="space-y-6">
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-5">
             <div className="flex flex-col items-center text-center py-4 border-b border-border/50">
-              <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center text-accent mb-3 shadow-inner">
-                <User className="w-10 h-10" />
-              </div>
+              <UserAvatar src={userDetail.avatar} name={userDetail.full_name || userDetail.username} size="lg" className="mb-3" />
               <h3 className="font-bold text-foreground text-lg">{userDetail.username}</h3>
               <p className="text-xs text-muted-foreground capitalize mt-0.5">{userDetail.role}</p>
             </div>

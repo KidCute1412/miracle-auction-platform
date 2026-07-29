@@ -9,6 +9,7 @@ export type UserItem = {
   date_of_birth: string;
   rating: number;
   rating_count: number;
+  avatar?: string;
   created_at: string;
   updated_at: string;
 };

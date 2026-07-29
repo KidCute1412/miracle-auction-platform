@@ -143,6 +143,7 @@ model products {
   edited_at              DateTime?                @db.Timestamptz(6)
   fts                    Unsupported("tsvector")? @default(dbgenerated("setweight(to_tsvector('simple'::regconfig, remove_accents(COALESCE(product_name, ''::character varying)::text)), 'A'::\"char\") || setweight(to_tsvector('simple'::regconfig, remove_accents(COALESCE(description, ''::text))), 'B'::\"char\")"))
   auction_end_email_sent Boolean?                 @default(false)
+  auction_notification_enqueued_at DateTime?      @db.Timestamptz(6)
   auction_status         String                   @default("PENDING") @db.VarChar(16)
   auction_version        BigInt                   @default(0)
   auction_sequence       BigInt                   @default(0)
@@ -186,8 +187,56 @@ model auction_outbox {
   correlation_id String   @default(uuid()) @db.Uuid
   causation_id  String?   @db.Uuid
   occurred_at   DateTime  @default(now()) @db.Timestamptz(6)
+  terminal_at   DateTime? @db.Timestamptz(6)
 
   @@index([delivered_at, available_at, id], map: "auction_outbox_pending_idx")
+  @@index([terminal_at, delivered_at, available_at, id], map: "auction_outbox_relay_pending_idx")
+}
+
+model notification_event_receipts {
+  event_id       String    @id @db.Uuid
+  topic          String    @db.VarChar(100)
+  event_type     String    @db.VarChar(100)
+  event_version  Int
+  aggregate_id   String    @db.VarChar(64)
+  correlation_id String    @db.Uuid
+  payload        Json
+  status         String    @db.VarChar(20)
+  attempts       Int       @default(0)
+  last_error     String?
+  partition      Int?
+  offset         String?   @db.VarChar(32)
+  processed_at   DateTime? @db.Timestamptz(6)
+  terminal_at    DateTime? @db.Timestamptz(6)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([status, updated_at], map: "notification_event_receipts_status_idx")
+}
+
+model email_deliveries {
+  id              BigInt    @id @default(autoincrement())
+  source_event_id String    @db.Uuid
+  recipient_key   String    @db.VarChar(160)
+  recipient_email String    @db.VarChar(320)
+  template_key    String    @db.VarChar(100)
+  subject         String    @db.VarChar(500)
+  html_body       String
+  text_body       String
+  message_id      String    @db.VarChar(255)
+  status          String    @default("pending") @db.VarChar(20)
+  attempts        Int       @default(0)
+  available_at    DateTime  @default(now()) @db.Timestamptz(6)
+  lease_until     DateTime? @db.Timestamptz(6)
+  last_error      String?
+  sent_at         DateTime? @db.Timestamptz(6)
+  terminal_at     DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@unique([source_event_id, recipient_key, template_key], map: "email_deliveries_event_recipient_template_unique")
+  @@unique([message_id], map: "email_deliveries_message_id_unique")
+  @@index([status, available_at, lease_until, id], map: "email_deliveries_pending_idx")
 }
 
 model dashboard_event_receipts {

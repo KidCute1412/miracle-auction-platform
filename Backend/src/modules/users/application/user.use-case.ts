@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import type { ApplicationFilter, UserFilter } from "../infrastructure/user.repository.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
-import { kafkaTopics } from "@/config/kafka.config.ts";
+import { kafkaTopics } from "@/config/kafka-topics.config.ts";
 import { randomUUID } from "node:crypto";
 
 const NEW_PASSWORD = "OnlineAuction123@";

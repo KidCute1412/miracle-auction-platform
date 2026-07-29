@@ -27,9 +27,16 @@ const operations = {
   postgres: { available: true, latencyMs: 1 },
   redis: { available: true, latencyMs: 1 },
   kafka: { available: true, latencyMs: 1 },
+  workers: {
+    auctionWorker: { available: true, ageMs: 1 },
+    outboxRelay: { available: true, ageMs: 1 },
+    asyncWorker: { available: true, ageMs: 1 },
+  },
   workerHeartbeat: { available: true, ageMs: 1 },
-  refreshAgeMs: 1, outboxPending: 0, outboxRetrying: 0, consumerLag: 0, dlqCount: 0, adminSocketCount: 1,
-} satisfies DashboardOperations;
+  refreshAgeMs: 1, outboxPending: 0, outboxRetrying: 0, outboxTerminal: 0,
+  oldestOutboxAgeMs: null, projectionLag: null, emailPending: 0, emailRetrying: 0, emailTerminal: 0,
+  consumerLag: 1, dlqCount: 0, adminSocketCount: 1,
+} as unknown as DashboardOperations;
 
 describe("useDashboardData", () => {
   beforeEach(() => {
