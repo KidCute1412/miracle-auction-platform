@@ -1,41 +1,38 @@
-import { Zap, Crown, Heart, Info } from "lucide-react";
+import { Crown, Heart, Info } from "lucide-react";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import BussinessGirl from "./BussinessGirl/BussinessGirl";
 
 // Scenic cosmic/nebula background with orbiting rings and floating stars/particles
-const ScenicBackground = () => {
+export const ScenicBackground = () => {
   const [particles, setParticles] = useState<{ id: number; x: number; y: number; size: number; delay: number; duration: number }[]>([]);
   const [shootingStars, setShootingStars] = useState<{ id: number; top: number; left: number; delay: number; duration: number; length: number }[]>([]);
 
   useEffect(() => {
-    // Fireflies / floating glow spots: more quantity, larger size, smooth floating
     const arr = Array.from({ length: 35 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: Math.random() * 5 + 4, // Larger size: 4px to 9px
-      delay: Math.random() * -10,  // Negative delay to start immediately at different phases
-      duration: 6 + Math.random() * 8, // Longer duration for smooth floating
+      size: Math.random() * 5 + 4,
+      delay: Math.random() * -10,
+      duration: 6 + Math.random() * 8,
     }));
     setParticles(arr);
 
-    // Redesigned shooting stars
     const stars = Array.from({ length: 6 }).map((_, i) => ({
       id: i,
-      top: Math.random() * 40,      // Keep in upper/mid region
-      left: 20 + Math.random() * 70, // Across the width
-      delay: Math.random() * 12,     // Distributed delays
-      duration: 3 + Math.random() * 3, // Faster and smoother duration
-      length: 80 + Math.random() * 100, // Varying tail lengths
+      top: Math.random() * 40,
+      left: 20 + Math.random() * 70,
+      delay: Math.random() * 12,
+      duration: 3 + Math.random() * 3,
+      length: 80 + Math.random() * 100,
     }));
     setShootingStars(stars);
   }, []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      {/* Shooting stars & Fireflies styles */}
       <style>{`
         @keyframes shoot {
           0% {
@@ -101,7 +98,6 @@ const ScenicBackground = () => {
         }
       `}</style>
 
-      {/* Render Shooting Stars */}
       {shootingStars.map((star) => (
         <div
           key={star.id}
@@ -116,14 +112,12 @@ const ScenicBackground = () => {
         />
       ))}
 
-      {/* Elegant orbiting dashed rings */}
       <div className="absolute inset-0 flex items-center justify-center opacity-20">
         <div className="absolute w-[900px] h-[900px] rounded-full border border-accent/40 border-dashed animate-[spin_120s_linear_infinite]" />
         <div className="absolute w-[600px] h-[600px] rounded-full border border-indigo-400/30 border-dashed animate-[spin_80s_linear_infinite_reverse]" />
         <div className="absolute w-[400px] h-[400px] rounded-full border border-accent/20 border-dotted animate-[spin_50s_linear_infinite]" />
       </div>
 
-      {/* Floating starry firefly particles */}
       {particles.map((p) => (
         <div
           key={p.id}
@@ -143,7 +137,7 @@ const ScenicBackground = () => {
 };
 
 // Infinite scrolling ledger of prestige bids
-const PrestigeLedgerMarquee = () => {
+export const PrestigeLedgerMarquee = () => {
   const items = [
     "Lord Sterling bid $185,000 on Miracle Celestial Astrolabe",
     "Duchess Claire acquired Doge of Venice Medal for $42,500",
@@ -153,7 +147,7 @@ const PrestigeLedgerMarquee = () => {
   ];
 
   return (
-    <div className="relative w-full bg-card/40 backdrop-blur-md py-4 overflow-hidden z-10 my-6">
+    <div className="relative w-full bg-card/40 backdrop-blur-md py-3.5 overflow-hidden z-10 my-4 border-y border-border/30">
       <div className="flex whitespace-nowrap gap-16 animate-marquee">
         {[...items, ...items].map((text, i) => (
           <div key={i} className="flex items-center gap-2.5 text-xs font-semibold tracking-wider text-muted-foreground">
@@ -175,6 +169,30 @@ const PrestigeLedgerMarquee = () => {
   );
 };
 
+// Enterprise Metrics Ribbon
+export const EnterpriseMetricsRibbon = () => {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-3xl bg-card/40 backdrop-blur-xl border border-accent/20 my-6 shadow-xl">
+      <div className="text-center p-3 border-r border-border/40 last:border-none">
+        <span className="text-xl md:text-3xl font-black font-mono text-accent block">$12.8M+</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Total Sales Volume</span>
+      </div>
+      <div className="text-center p-3 border-r border-border/40 last:border-none font-mono">
+        <span className="text-xl md:text-3xl font-black font-mono text-foreground block">450+</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Active Verified Lots</span>
+      </div>
+      <div className="text-center p-3 border-r border-border/40 last:border-none">
+        <span className="text-xl md:text-3xl font-black font-mono text-emerald-400 block">&lt; 50ms</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">WebSocket Latency</span>
+      </div>
+      <div className="text-center p-3">
+        <span className="text-xl md:text-3xl font-black font-mono text-accent block">99.8%</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Escrow Success Rate</span>
+      </div>
+    </div>
+  );
+};
+
 // Immersive Centerpiece Hero Layout
 const Hero = () => {
   const { ref, hasIntersected } = useIntersectionObserver();
@@ -184,7 +202,7 @@ const Hero = () => {
   return (
     <div
       ref={ref}
-      className={`relative py-16 md:py-20 bg-transparent overflow-hidden transition-all duration-1000 ${
+      className={`relative pt-12 pb-8 md:pt-16 md:pb-12 bg-transparent overflow-hidden transition-all duration-1000 ${
         hasIntersected ? "opacity-100" : "opacity-0"
       }`}
     >
@@ -335,30 +353,11 @@ const Hero = () => {
           </div>
 
         </div>
-      </div>
-    </div>
-  );
-};
 
-// Enterprise Metrics Ribbon
-const EnterpriseMetricsRibbon = () => {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-3xl bg-card/40 backdrop-blur-xl border border-accent/20 my-8 shadow-xl">
-      <div className="text-center p-3 border-r border-border/40 last:border-none">
-        <span className="text-xl md:text-3xl font-black font-mono text-accent block">$12.8M+</span>
-        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Total Sales Volume</span>
-      </div>
-      <div className="text-center p-3 border-r border-border/40 last:border-none font-mono">
-        <span className="text-xl md:text-3xl font-black font-mono text-foreground block">450+</span>
-        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Active Verified Lots</span>
-      </div>
-      <div className="text-center p-3 border-r border-border/40 last:border-none">
-        <span className="text-xl md:text-3xl font-black font-mono text-emerald-400 block">&lt; 50ms</span>
-        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">WebSocket Latency</span>
-      </div>
-      <div className="text-center p-3">
-        <span className="text-xl md:text-3xl font-black font-mono text-accent block">99.8%</span>
-        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Escrow Success Rate</span>
+        {/* Embedded Metrics Ribbon directly inside Hero flow */}
+        <div className="mt-12">
+          <EnterpriseMetricsRibbon />
+        </div>
       </div>
     </div>
   );
@@ -366,12 +365,9 @@ const EnterpriseMetricsRibbon = () => {
 
 function Section1() {
   return (
-    <div className="bg-transparent text-foreground pb-12">
+    <div className="bg-transparent text-foreground">
       <Hero />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <PrestigeLedgerMarquee />
-        <EnterpriseMetricsRibbon />
-      </div>
+      <PrestigeLedgerMarquee />
     </div>
   );
 }
