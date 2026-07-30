@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { DateTime } from "luxon";
-import { useAuth } from "@/routes/ProtectedRouter";
 import PlayBidSection from "./components/PlayBidSection";
 import BuyNowSection from "./components/BuyNowSection";
 import BidHistorySection from "./components/BidHistorySection";
@@ -10,7 +9,10 @@ import QASection from "./components/QASection";
 import ProductDescriptionSection from "./components/ProductDescriptionSection";
 import RelatedProductsSection from "./components/RelatedProductsSection";
 import ProductImageGallery from "./components/ProductImageGallery";
-import { Clock, Calendar, User, Star, Award, TrendingUp } from "lucide-react";
+import FloatingQuickBidBar from "./components/FloatingQuickBidBar";
+import VictoryVaultReveal from "./components/VictoryVaultReveal";
+import { Clock, Calendar, User, Star, Award, TrendingUp, Sparkles } from "lucide-react";
+import { useAuth } from "@/routes/ProtectedRouter";
 import useSocketBidding from "@/hooks/useSocketBidding";
 import PreviewImage from "./components/PreviewProductModal";
 import Loading from "@/components/common/Loading";
@@ -20,6 +22,7 @@ import { productService } from "@/services/product.service.ts";
 import { categoryService } from "@/services/category.service.ts";
 import { formatVnd } from "@/lib/money.ts";
 import { formatAuctionDuration, getAuctionClock, type AuctionPhase } from "@/utils/auction_time";
+import { cn } from "@/lib/utils";
 
 type ProductType = {
   product_id: number;
@@ -66,6 +69,7 @@ function DetailProductPage() {
   useSocketBidding(
     product_id || null,
     (event) => {
+      triggerPricePulse();
       setProduct((current) => {
         if (!current) return current;
         const isMe = Boolean(auth?.user_id && event.leaderId !== null && Number(event.leaderId) === auth.user_id);
@@ -101,6 +105,21 @@ function DetailProductPage() {
   const [timeLeft, setTimeLeft] = useState("");
   const [auctionPhase, setAuctionPhase] = useState<AuctionPhase>("ENDED");
   const isExpired = auctionPhase === "ENDED";
+  const [isPriceUpdated, setIsPriceUpdated] = useState(false);
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
+
+  const triggerPricePulse = () => {
+    setIsPriceUpdated(true);
+    setTimeout(() => setIsPriceUpdated(false), 1200);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowFloatingBar(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const [isLoading, setLoading] = useState(true);
   const { setBreadcrumbs } = useBreadcrumb();
@@ -199,6 +218,7 @@ function DetailProductPage() {
 
   const handleMutationSuccess = (mutationData: any) => {
     if (!mutationData) return;
+    triggerPricePulse();
     setProduct((current) => {
       if (!current) return current;
       const isMe = Boolean(auth?.user_id && mutationData.leader_id !== null && Number(mutationData.leader_id) === auth.user_id);
@@ -253,7 +273,14 @@ function DetailProductPage() {
                 <span className="text-sm font-medium text-muted-foreground">
                   Current Price:
                 </span>
-                <span className="text-2xl font-bold text-accent">
+                <span
+                  className={cn(
+                    "text-2xl font-extrabold transition-all duration-500 font-heading",
+                    isPriceUpdated
+                      ? "scale-115 text-amber-300 drop-shadow-[0_0_16px_rgba(245,158,11,0.8)]"
+                      : "scale-100 text-accent"
+                  )}
+                >
                   {formatVnd(products?.current_price)} VND
                 </span>
               </div>
@@ -271,7 +298,7 @@ function DetailProductPage() {
           </div>
 
           {/* Auction Timing */}
-          <div className="bg-card rounded-lg border border-border p-5 shadow-sm">
+          <div className="bg-card rounded-lg border border-border p-5 shadow-sm relative overflow-hidden">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-accent" />
               <h4 className="text-lg font-semibold text-foreground">
@@ -288,8 +315,15 @@ function DetailProductPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-red-500/10 rounded-lg">
-                <Clock className="w-5 h-5 text-red-500" />
+              <div
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg transition-all duration-500 relative overflow-hidden",
+                  auctionPhase === "ACTIVE" && timeLeft.includes("s") && !timeLeft.includes("m") && !timeLeft.includes("h")
+                    ? "bg-red-500/20 border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.35)] animate-pulse"
+                    : "bg-red-500/10"
+                )}
+              >
+                <Clock className="w-5 h-5 text-red-500 flex-shrink-0 animate-spin-slow" />
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground mb-1">
                     {auctionPhase === "PENDING" ? "Auction Starts" : "Time Left"}
@@ -298,10 +332,10 @@ function DetailProductPage() {
                 </div>
               </div>
               {products?.auto_extended && (
-                <div className="flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
+                <div className="flex items-center gap-2 p-2 bg-accent/15 rounded-lg border border-accent/30 shadow-[0_0_15px_oklch(0.78_0.09_75_/_20%)] animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-1.5 flex-1">
-                    <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
-                    <p className="text-xs font-medium text-accent">
+                    <Sparkles className="w-3.5 h-3.5 text-accent animate-spin" />
+                    <p className="text-xs font-semibold text-accent uppercase tracking-wider">
                       Auto Extended Enable
                     </p>
                   </div>
@@ -449,16 +483,11 @@ function DetailProductPage() {
               {products.price_owner_id === auth?.user_id &&
                 new Date(products.end_time).getTime() < Date.now() && (
                   <div className="mt-4 pt-4 border-t border-border">
-                    <button
-                      onClick={() => {
-                        navigator(
-                          `/winner-order?product_id=${products.product_id}`
-                        );
-                      }}
-                      className="cursor-pointer w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                    >
-                      Confirm Order
-                    </button>
+                    <VictoryVaultReveal
+                      product_id={products.product_id}
+                      product_name={products.product_name}
+                      winningPrice={products.current_price}
+                    />
                   </div>
                 )}
               {products.seller_id === auth?.user_id &&
@@ -502,14 +531,6 @@ function DetailProductPage() {
           )}
         </div>
       )}
-      {auctionPhase === "PENDING" && (
-        <div className="mt-8 rounded-lg border border-accent/30 bg-accent/10 p-6 text-center shadow-sm">
-          <Clock className="mx-auto mb-3 h-6 w-6 text-accent" />
-          <h4 className="text-lg font-semibold text-foreground">Bidding has not started yet</h4>
-          <p className="mt-1 text-sm text-muted-foreground">{timeLeft}</p>
-        </div>
-      )}
-
       {/* Tab Section */}
       <TabSection products={products} isSeller={isSeller} isExpired={isExpired} />
 
@@ -527,6 +548,19 @@ function DetailProductPage() {
           modalImageIndex={modalImageIndex}
           setModalImageIndex={setModalImageIndex}
           setImageModalOpen={setImageModalOpen}
+        />
+      )}
+
+      {/* Floating Quick-Bid Bar */}
+      {showFloatingBar && (
+        <FloatingQuickBidBar
+          product_id={products?.product_id}
+          current_price={products?.current_price}
+          step_price={products?.step_price}
+          buy_now_price={products?.buy_now_price}
+          timeLeft={timeLeft}
+          auctionPhase={auctionPhase}
+          onBidSuccess={handleMutationSuccess}
         />
       )}
     </div>
