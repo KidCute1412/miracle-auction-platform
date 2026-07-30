@@ -1,11 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Editor } from "@tinymce/tinymce-react";
 
-type TinyMCEEditorProps = {
-  editorRef: any;
-  value: string;
-  isReadOnly?: boolean;
-};
+import { Editor } from "@tinymce/tinymce-react";
 
 export default function TinyMCEEditor(props: {
   editorRef: any;

@@ -122,7 +122,7 @@ export default function MyProductsPage() {
         setProducts(data.data);
         setNumberOfPages(data.numberOfPages);
         setQuantity(data.quantity);
-      } catch(e) {
+      } catch {
         toast.error("Server connection error");
         setLoading(false);
       }

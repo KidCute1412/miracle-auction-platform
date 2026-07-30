@@ -23,9 +23,21 @@ export default defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-use-before-define": "off",
       "@typescript-eslint/no-unused-vars": "warn",
-      "react-refresh/only-export-components": "warn",
+      "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }],
       "@typescript-eslint/no-unsafe-function-type": "warn",
       "no-var": "warn"
     }
+  },
+  {
+    files: [
+      'src/components/ui/button.tsx',
+      'src/components/ui/navigation-menu.tsx',
+      'src/contexts/*.tsx',
+      'src/pages/client/ListProductsPage/components/FormattedPriceInput.tsx',
+      'src/routes/ProtectedRouter.tsx',
+    ],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])

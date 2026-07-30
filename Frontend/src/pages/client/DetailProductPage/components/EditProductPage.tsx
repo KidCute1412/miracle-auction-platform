@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import TinyMCEEditor from "@/components/editor/TinyMCEEditor";
@@ -44,7 +44,7 @@ export default function EditProductPage() {
         navigate(-1);
       }
     }
-  }, [auth, product]);
+  }, [auth, navigate, product]);
 
   useEffect(() => {
     if (slugid) {
@@ -60,20 +60,14 @@ export default function EditProductPage() {
         }
       }
     }
-  }, [slugid]);
+  }, [product_id, product_slug, slugid]);
    
   const handleEditorChange = (content: string) => {
     setNewDescription(content);
   };
   const editorRef = React.useRef<any>(null);
   
-  useEffect(() => {
-    if (product_id && product_slug) {
-      fetchProductDetail();
-    }
-  }, [product_id, product_slug]);
-
-  const fetchProductDetail = async () => {
+  const fetchProductDetail = useCallback(async () => {
     try {
       const data = await productService.getDetail(product_id!);
       setProduct(data.data);
@@ -83,7 +77,13 @@ export default function EditProductPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [navigate, product_id]);
+
+  useEffect(() => {
+    if (product_id && product_slug) {
+      void fetchProductDetail();
+    }
+  }, [fetchProductDetail, product_id, product_slug]);
 
   const handleAddDescription = async () => {
     if (!newDescription.trim()) {

@@ -12,7 +12,7 @@ export const categoryService = {
     return data.tree;
   },
 
-  list: async (params?: Record<string, any>, body?: any): Promise<any> => {
+  list: async (params?: Record<string, any>): Promise<any> => {
     return apiRequest(`/${ADMIN_PATH}/categories`, {
       method: "GET",
       params,

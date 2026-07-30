@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import FilterBar from "@/components/admin/FilterBar";
 import { Pencil, Trash2, FolderTree, Plus } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -55,7 +55,7 @@ export default function CategoryList() {
       });
   }, []);
 
-  const fetchItems = () => {
+  const fetchItems = useCallback(() => {
     setIsPageLoading(true);
 
     categoryService
@@ -79,9 +79,9 @@ export default function CategoryList() {
         setIsLoading(false);
         setIsPageLoading(false);
       });
-  };
+  }, [creatorFilter, currentPage, dateFrom, dateTo, searchFromUrl, statusFilter]);
 
-  const fetchTotal = () => {
+  const fetchTotal = useCallback(() => {
     categoryService
       .getTotal({
         status: statusFilter,
@@ -106,7 +106,7 @@ export default function CategoryList() {
       .catch(() => {
         setTotalPages(1);
       });
-  };
+  }, [creatorFilter, currentPage, dateFrom, dateTo, searchFromUrl, setSearchParams, statusFilter]);
 
   useEffect(() => {
     if (!searchFromUrl) {
@@ -123,11 +123,11 @@ export default function CategoryList() {
 
   useEffect(() => {
     fetchTotal();
-  }, [statusFilter, creatorFilter, dateFrom, dateTo, searchFromUrl]);
+  }, [fetchTotal]);
 
   useEffect(() => {
     fetchItems();
-  }, [currentPage, statusFilter, creatorFilter, dateFrom, dateTo, searchFromUrl]);
+  }, [fetchItems]);
 
   const handleDelete = (id: number) => {
     if (!window.confirm("Are you sure you want to delete this category?")) {

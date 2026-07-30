@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Ban } from "lucide-react";
 import { useAuth } from "@/routes/ProtectedRouter";

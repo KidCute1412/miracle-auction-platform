@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 import FilterBar from "@/components/admin/FilterBar";
@@ -27,7 +27,7 @@ export default function UserListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<UserItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [, setIsPageLoading] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1", 10));
   
@@ -72,7 +72,7 @@ export default function UserListPage() {
           setTotalPages(1);
         }
       });
-  }, [search, statusFilter]);
+  }, [currentPage, search, setSearchParams, statusFilter]);
 
   useEffect(() => {
     // Fetch users listings
@@ -95,13 +95,6 @@ export default function UserListPage() {
         setIsPageLoading(false);
       });
   }, [search, currentPage, statusFilter]);
-
-  const getInitials = (name: string) => {
-    const words = name.trim().split(" ");
-    if (words.length === 0) return "?";
-    const lastWord = words[words.length - 1];
-    return lastWord.charAt(0).toUpperCase();
-  };
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-foreground bg-background">

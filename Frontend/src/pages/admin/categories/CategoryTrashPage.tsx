@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import FilterBar from "@/components/admin/FilterBar";
 import Pagination from "@/components/admin/Pagination";
 import { Trash2, RotateCcw } from "lucide-react";
@@ -40,7 +40,7 @@ export default function CategoryTrashPage() {
   // Local state to keep unmodified search query string
   const [localSearch, setLocalSearch] = useState("");
 
-  const fetchItems = () => {
+  const fetchItems = useCallback(() => {
     setIsPageLoading(true);
 
     categoryService
@@ -64,9 +64,9 @@ export default function CategoryTrashPage() {
         setIsLoading(false);
         setIsPageLoading(false);
       });
-  };
+  }, [creatorFilter, currentPage, dateFrom, dateTo, searchFromUrl, statusFilter]);
 
-  const fetchTotal = () => {
+  const fetchTotal = useCallback(() => {
     categoryService
       .getTotal({
         status: statusFilter,
@@ -90,7 +90,7 @@ export default function CategoryTrashPage() {
       .catch(() => {
         setTotalPages(1);
       });
-  };
+  }, [creatorFilter, currentPage, dateFrom, dateTo, searchFromUrl, setSearchParams, statusFilter]);
 
   useEffect(() => {
     if (!searchFromUrl) {
@@ -108,18 +108,11 @@ export default function CategoryTrashPage() {
 
   useEffect(() => {
     fetchTotal();
-  }, [statusFilter, creatorFilter, dateFrom, dateTo, searchFromUrl]);
+  }, [fetchTotal]);
 
   useEffect(() => {
     fetchItems();
-  }, [
-    currentPage,
-    statusFilter,
-    creatorFilter,
-    dateFrom,
-    dateTo,
-    searchFromUrl,
-  ]);
+  }, [fetchItems]);
 
   const handleRestore = (id: number) => {
     categoryService

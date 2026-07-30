@@ -9,8 +9,7 @@ import {
   Mail, 
   MapPin, 
   Save, 
-  Edit3,
-  Camera
+  Edit3
 } from "lucide-react";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile.service.ts";
@@ -32,7 +31,6 @@ export default function EditProfilePage() {
   const [date, setDate] = useState<Date | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [formData, setFormData] = useState<ProfileData | null>(null);
 
   useEffect(() => {
@@ -47,9 +45,6 @@ export default function EditProfilePage() {
       });
       const parsedDate = auth.date_of_birth ? new Date(auth.date_of_birth) : null;
       setDate(parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate : null);
-      if (auth.avatar) {
-        setAvatarPreview(auth.avatar);
-      }
     }
   }, [auth]);
 
@@ -74,26 +69,6 @@ export default function EditProfilePage() {
         setIsSubmitting(true);
       });
   }, [formData]);
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("Image size cannot exceed 10MB");
-        return;
-      }
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file");
-        return;
-      }
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleSubmit = (event: any) => {
     event.preventDefault();

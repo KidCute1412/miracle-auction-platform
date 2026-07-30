@@ -20,7 +20,6 @@ export default function FloatingQuickBidBar({
   product_id,
   current_price,
   step_price,
-  buy_now_price: _buy_now_price,
   timeLeft,
   auctionPhase = "ACTIVE",
   onBidSuccess,

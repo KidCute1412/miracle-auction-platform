@@ -31,7 +31,7 @@ export default function BanBidderModal({
 
     setIsSubmitting(true);
     try {
-      const data = await bidService.banBidder({
+      await bidService.banBidder({
         product_id: productId,
         banned_user_id: userId,
         reason: reason,

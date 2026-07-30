@@ -1,5 +1,5 @@
 import React from "react";
-import { Code, Server, Award, Github, Mail, Zap, Radio, CreditCard, ShoppingBag, CheckCircle2, ChevronRight, ShieldCheck, Sparkles } from "lucide-react";
+import { Code, Server, Award, Github, Mail, Zap, Radio, CreditCard, ShoppingBag, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 
 const HeaderSection = () => {

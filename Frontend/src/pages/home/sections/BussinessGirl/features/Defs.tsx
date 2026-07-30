@@ -16,7 +16,7 @@ const defaultThemeColors: ThemeColors = {
   hairHighlightEnd: "#f472b6"
 };
 
-export const Defs: React.FC<DefsProps> = ({ isDark, themeColors }) => {
+export const Defs: React.FC<DefsProps> = ({ themeColors }) => {
   const colors = themeColors || defaultThemeColors;
   return (
     <defs>

@@ -25,14 +25,14 @@ const HoverDropMenu = (handler: any) => {
   const domRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!domRef.current) return;
+    const node = domRef.current;
+    if (!node) return;
 
-    domRef.current.addEventListener("mouseenter", handler);
-    domRef.current.addEventListener("mouseleave", handler);
+    node.addEventListener("mouseenter", handler);
+    node.addEventListener("mouseleave", handler);
     return () => {
-      if (!domRef.current) return;
-      domRef.current.removeEventListener("mouseenter", handler);
-      domRef.current.removeEventListener("mouseleave", handler);
+      node.removeEventListener("mouseenter", handler);
+      node.removeEventListener("mouseleave", handler);
     };
   }, [handler]);
   return domRef;

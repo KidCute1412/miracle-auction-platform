@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { ShoppingCart, Zap, X, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/routes/ProtectedRouter";
 import { cn } from "@/lib/utils";
 import { bidService } from "@/services/bid.service.ts";
 import { ApiClientError } from "@/services/api.client.ts";
@@ -19,8 +17,6 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name,
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
-  const navigate = useNavigate();
-  const { auth } = useAuth();
 
   const handleBuyNowClick = () => {
     setShowConfirmModal(true);

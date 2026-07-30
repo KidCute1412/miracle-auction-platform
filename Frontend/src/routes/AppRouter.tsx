@@ -32,7 +32,6 @@ import {
   UserListPage,
   UserDetailPage,
   SellerApplicationPage as BidderFormListPage,
-  SellerApplicationDetailPage as BidderFormDetailPage,
   SellerApplicationDetailPage,
   ProfilePage as AdminProfilePage,
 } from "@/pages/admin";

@@ -13,8 +13,6 @@ import {
   Image as ImageIcon,
   Clock,
   AlertTriangle,
-  CheckCircle,
-  Trash2,
   RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";

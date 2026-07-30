@@ -1,19 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { useAuth } from "@/routes/ProtectedRouter";
 import { useParams } from "react-router-dom";
 import Loading from "@/components/common/Loading";
 import {
-  User,
   Mail,
   MapPin,
   Calendar,
   Star,
-  Award,
   Edit,
   Shield,
   Crown,
-  Sparkles,
   ChevronRight,
   Fingerprint
 } from "lucide-react";

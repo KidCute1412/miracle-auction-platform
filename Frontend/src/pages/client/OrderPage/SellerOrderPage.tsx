@@ -65,7 +65,7 @@ export default function SellerOrderPage() {
             setShippingLabelPreview(data.data.shipping_label_image);
           }
         }
-      } catch (e) {
+      } catch {
         toast.error("An error occurred while loading order information");
       }
       setIsLoading(false);
@@ -129,7 +129,7 @@ export default function SellerOrderPage() {
           } else {
             toast.error(data.message || "An error occurred while confirming the order");
           }
-        } catch (error) {
+        } catch {
           toast.error("An error occurred while confirming the order");
         }
       }
@@ -156,7 +156,7 @@ export default function SellerOrderPage() {
           } else {
             toast.error(data.message || "An error occurred while rejecting the order");
           }
-        } catch (error) {
+        } catch {
           toast.error("An error occurred while rejecting the order");
         }
       }

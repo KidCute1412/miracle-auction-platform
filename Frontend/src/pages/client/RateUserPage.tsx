@@ -71,7 +71,7 @@ export default function RateUserPage() {
       });
 
       navigate(-1);
-    } catch (error) {
+    } catch {
       setError("Failed to submit rating. Please try again.");
       toast.error("Failed to submit rating. Please try again.");
       setIsSubmitting(false);

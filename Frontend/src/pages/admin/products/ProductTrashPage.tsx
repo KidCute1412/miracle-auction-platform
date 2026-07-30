@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import FilterBar from "@/components/admin/FilterBar";
 import Pagination from "@/components/admin/Pagination";
 import { Eye, Trash2, RotateCcw } from "lucide-react";
@@ -45,7 +45,7 @@ export default function ProductTrashPage() {
 
   const [localSearch, setLocalSearch] = useState("");
 
-  const fetchItems = () => {
+  const fetchItems = useCallback(() => {
     setIsPageLoading(true);
 
     productService
@@ -68,9 +68,9 @@ export default function ProductTrashPage() {
         setIsLoading(false);
         setIsPageLoading(false);
       });
-  };
+  }, [creatorFilter, currentPage, dateFrom, dateTo, searchFromUrl]);
 
-  const fetchTotal = () => {
+  const fetchTotal = useCallback(() => {
     productService
       .adminGetTotal({
         creator: creatorFilter,
@@ -90,7 +90,7 @@ export default function ProductTrashPage() {
           }));
         }
       });
-  };
+  }, [creatorFilter, currentPage, dateFrom, dateTo, searchFromUrl, setSearchParams]);
 
   useEffect(() => {
     if (!searchFromUrl) {
@@ -106,11 +106,11 @@ export default function ProductTrashPage() {
 
   useEffect(() => {
     fetchTotal();
-  }, [creatorFilter, dateFrom, dateTo, searchFromUrl]);
+  }, [fetchTotal]);
 
   useEffect(() => {
     fetchItems();
-  }, [currentPage, creatorFilter, dateFrom, dateTo, searchFromUrl]);
+  }, [fetchItems]);
 
   const handleRestore = (id: number) => {
     productService

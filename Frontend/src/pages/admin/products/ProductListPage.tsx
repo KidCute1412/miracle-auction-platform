@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Eye, Trash2, ShoppingBag, Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Eye, Trash2, ShoppingBag } from "lucide-react";
 import FilterBar from "@/components/admin/FilterBar";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatToVN } from "@/utils/format_time";
@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import Loading from "@/components/common/Loading";
 import PaginationComponent from "@/components/common/Pagination";
 import { productService } from "@/services/product.service";
-import { categoryService } from "@/services/category.service";
 
 const LIMIT = 10;
 
@@ -54,7 +53,7 @@ export default function ProductListPage() {
 
   const [localSearch, setLocalSearch] = useState("");
 
-  const fetchItems = () => {
+  const fetchItems = useCallback(() => {
     setIsPageLoading(true);
 
     productService
@@ -76,9 +75,9 @@ export default function ProductListPage() {
         setIsLoading(false);
         setIsPageLoading(false);
       });
-  };
+  }, [currentPage, dateFrom, dateTo, searchFromUrl]);
 
-  const fetchTotal = () => {
+  const fetchTotal = useCallback(() => {
     productService
       .adminGetTotal({
         dateFrom,
@@ -98,7 +97,7 @@ export default function ProductListPage() {
           }));
         }
       });
-  };
+  }, [currentPage, dateFrom, dateTo, searchFromUrl, setSearchParams]);
 
   useEffect(() => {
     if (!searchFromUrl) {
@@ -114,11 +113,11 @@ export default function ProductListPage() {
 
   useEffect(() => {
     fetchTotal();
-  }, [dateFrom, dateTo, searchFromUrl]);
+  }, [fetchTotal]);
 
   useEffect(() => {
     fetchItems();
-  }, [currentPage, dateFrom, dateTo, searchFromUrl]);
+  }, [fetchItems]);
 
   const handleView = (id: number) => {
     navigate(`/${import.meta.env.VITE_PATH_ADMIN}/product/detail/${id}`);

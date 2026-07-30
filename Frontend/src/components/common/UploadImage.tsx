@@ -18,12 +18,6 @@ export default function UploadImage({
   const [imageModalOpen, setImageModalOpen] = useState(false);
 
   useEffect(() => {
-    previews.forEach((url) => {
-      if (url.startsWith("blob:")) {
-        URL.revokeObjectURL(url);
-      }
-    });
-
     if (images.length === 0) {
       setPreviews([]);
       return;
@@ -74,14 +68,15 @@ export default function UploadImage({
   }, [imageModalOpen]);
 
   useEffect(() => {
+    const currentPreviews = previews;
     return () => {
-      previews.forEach((url) => {
+      currentPreviews.forEach((url) => {
         if (url.startsWith("blob:")) {
           URL.revokeObjectURL(url);
         }
       });
     };
-  }, []);
+  }, [previews]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {

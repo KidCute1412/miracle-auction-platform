@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef } from "react";
+
+import { useEffect } from "react";
 import JustValidate from "just-validate";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +9,6 @@ import { accountService } from "@/services/account.service.ts";
 
 function AccountRegister() {
   const navigate = useNavigate();
-  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const handleSuccessGoogleLogin = async (credentialResponse: any) => {
     const { credential } = credentialResponse;

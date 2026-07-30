@@ -57,7 +57,7 @@ export default function AddToLove({ product_id, className }: { product_id: numbe
         setIsLoved(newLoveStatus);
         setLoveCount((prev) => (newLoveStatus ? prev + 1 : prev - 1));
       })
-      .catch((error) => {
+      .catch(() => {
         toast.error("Login is required to add favorites");
       })
       .finally(() => {

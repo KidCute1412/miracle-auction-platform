@@ -74,7 +74,7 @@ export default function BidderFormListPage() {
           }));
         }
       });
-  }, [statusFilter, dateFrom, dateTo, searchFromUrl]);
+  }, [currentPage, dateFrom, dateTo, searchFromUrl, setSearchParams, statusFilter]);
 
   useEffect(() => {
     // Fetch list of application forms

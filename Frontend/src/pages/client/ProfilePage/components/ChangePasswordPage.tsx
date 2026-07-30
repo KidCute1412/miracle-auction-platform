@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useNavigate } from "react-router-dom";
 import JustValidate from "just-validate";
 import { useEffect, useState } from "react";

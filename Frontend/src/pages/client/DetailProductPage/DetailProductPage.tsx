@@ -61,11 +61,9 @@ function DetailProductPage() {
   const [products, setProduct] = useState<ProductType>();
   const { slugid } = useParams();
   let product_id: number | undefined;
-  let product_slug: string;
   if (slugid) {
     const parts = slugid.split("-");
     product_id = Number(parts.pop());
-    product_slug = parts.join("-");
   }
   useSocketBidding(
     product_id || null,
@@ -138,7 +136,7 @@ function DetailProductPage() {
       setLoading(false);
     }
     fetchProduct();
-  }, [slugid]);
+  }, [product_id, slugid]);
 
   useEffect(() => {
     async function fetchBreadCrumbs() {
@@ -171,7 +169,7 @@ function DetailProductPage() {
     if (products) {
       fetchBreadCrumbs();
     }
-  }, [products]);
+  }, [products, setBreadcrumbs]);
 
   useEffect(() => {
     if (auth && products) {

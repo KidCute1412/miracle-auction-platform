@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { NumericFormat } from "react-number-format";
 import { TrendingUp, AlertCircle, Zap, ChevronDown, X, AlertTriangle, CheckCircle } from "lucide-react";
 import JustValidate from "just-validate";
-import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { bidService } from "@/services/bid.service";
 import { ApiClientError } from "@/services/api.client";
@@ -27,7 +26,6 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
   const [isFlashing, setIsFlashing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
