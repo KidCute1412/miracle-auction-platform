@@ -22,6 +22,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 describe("apiRequest", () => {
   it("serializes query parameters and ignores undefined values", async () => {
     const { apiRequest, fetchMock } = await loadClient([jsonResponse({ ok: true })]);
@@ -31,7 +33,7 @@ describe("apiRequest", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:5000/products?page=2&active=true",
+      `${baseUrl}/products?page=2&active=true`,
       expect.objectContaining({ credentials: "include" }),
     );
   });
@@ -47,7 +49,7 @@ describe("apiRequest", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "http://localhost:5000/products",
+      `${baseUrl}/products`,
       expect.objectContaining({
         body: JSON.stringify({ name: "Watch" }),
         headers: expect.objectContaining({
@@ -70,7 +72,7 @@ describe("apiRequest", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "http://localhost:5000/uploads",
+      `${baseUrl}/uploads`,
       expect.objectContaining({
         body: formData,
         headers: { "X-CSRF-Token": "csrf-token" },
@@ -102,7 +104,7 @@ describe("apiRequest", () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
-      "http://localhost:5000/bids",
+      `${baseUrl}/bids`,
       expect.objectContaining({
         headers: expect.objectContaining({ "X-CSRF-Token": "new-token" }),
       }),
@@ -122,12 +124,12 @@ describe("apiRequest", () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
-      "http://localhost:5000/accounts/sessions/refresh",
+      `${baseUrl}/accounts/sessions/refresh`,
       expect.any(Object),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
-      "http://localhost:5000/products/private",
+      `${baseUrl}/products/private`,
       expect.any(Object),
     );
   });
