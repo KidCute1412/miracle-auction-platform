@@ -12,6 +12,7 @@ import { checkPrismaConnection } from "./infrastructure/database/prisma.client.t
 import { checkKafkaConnection } from "./config/kafka.config.ts";
 import { csrfProtection } from "./middlewares/csrf.middleware.ts";
 import { requestId } from "./middlewares/request-id.middleware.ts";
+import { requestLogger } from "./middlewares/request-logger.middleware.ts";
 
 async function checkKafkaForReadiness(): Promise<boolean> {
   let timer: NodeJS.Timeout | undefined;
@@ -35,6 +36,7 @@ export function createApp() {
   // JSON has no bigint type, so preserve exact values as strings in every API response.
   app.set("json replacer", (_key: string, value: unknown) => typeof value === "bigint" ? value.toString() : value);
   app.use(requestId);
+  app.use(requestLogger);
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
   app.get("/ready", async (_req, res) => {
     const [database, redis, kafka, heartbeat] = await Promise.all([
@@ -57,6 +59,7 @@ export function createApp() {
   app.use(csrfProtection);
   app.use(rateLimit({
     store: new RedisStore({ sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as never }),
+    passOnStoreError: true,
     windowMs: 15 * 60 * 1000, limit: 2000, standardHeaders: true, legacyHeaders: false,
     message: { message: "Too many requests from this IP, please try again later." },
   }));

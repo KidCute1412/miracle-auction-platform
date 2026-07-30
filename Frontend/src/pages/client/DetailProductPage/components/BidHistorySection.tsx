@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Ban } from "lucide-react";
@@ -11,6 +11,7 @@ import { formatVnd } from "@/lib/money.ts";
 type ProductType = {
   product_id: number;
   seller_id?: number;
+  auction_sequence?: string;
 };
 
 export default function BidHistorySection({ product, isSeller, isExpired }: { product?: ProductType | null; isSeller?: boolean; isExpired?: boolean }) {
@@ -26,6 +27,8 @@ export default function BidHistorySection({ product, isSeller, isExpired }: { pr
     status?: string;
   }[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const isFirstLoad = useRef(true);
+  const currentProductIdRef = useRef<number | undefined>(undefined);
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [selectedBidder, setSelectedBidder] = useState<{
     userId: number;
@@ -34,22 +37,36 @@ export default function BidHistorySection({ product, isSeller, isExpired }: { pr
   
   const { auth } = useAuth();
   useEffect(() => {
-    setLoading(true);
+    if (!product?.product_id) return;
+    const productId = product.product_id;
+    if (currentProductIdRef.current !== productId) {
+      isFirstLoad.current = true;
+      currentProductIdRef.current = productId;
+    }
+    if (isFirstLoad.current) {
+      setLoading(true);
+    }
+    let isMounted = true;
     async function fetchBidHistory() {
-      if (!product?.product_id) return;
       try {
-        const data = await bidService.getHistory({ product_id: product.product_id });
-        setBidHistory(data.data);
+        const data = await bidService.getHistory({ product_id: productId });
+        if (isMounted) {
+          setBidHistory(data.data);
+        }
       } catch (e) {
         console.log(e);
+      } finally {
+        if (isMounted && isFirstLoad.current) {
+          setLoading(false);
+          isFirstLoad.current = false;
+        }
       }
     }
-    fetchBidHistory();
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [product]);
+    void fetchBidHistory();
+    return () => {
+      isMounted = false;
+    };
+  }, [product?.product_id, product?.auction_sequence]);
 
   const maskName = (name: string) => {
     const len = name.length;

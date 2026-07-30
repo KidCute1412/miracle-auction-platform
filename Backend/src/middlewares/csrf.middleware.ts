@@ -10,9 +10,21 @@ const secret = () => {
 };
 const sign = (value: string) => crypto.createHmac("sha256", secret()).update(value).digest("base64url");
 
+function isValidToken(signedToken: string | undefined): signedToken is string {
+  if (!signedToken) return false;
+  const parts = signedToken.split(".");
+  if (parts.length !== 2) return false;
+  const [token, signature] = parts;
+  if (!token || !signature) return false;
+
+  const expected = sign(token);
+  if (signature.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
 export function issueCsrfToken(req: Request, res: Response) {
   const existing = req.cookies?.[COOKIE] as string | undefined;
-  if (existing?.includes(".")) return existing;
+  if (isValidToken(existing)) return existing;
   const token = crypto.randomBytes(32).toString("base64url");
   const signed = `${token}.${sign(token)}`;
   res.cookie(COOKIE, signed, { httpOnly: false, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
@@ -28,9 +40,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   if (!origin || origin !== clientUrl || !cookie || !header || cookie !== header) {
     return res.status(403).json({ code: "error", message: "Invalid CSRF token" });
   }
-  const [token, signature] = cookie.split(".");
-  const expected = sign(token || "");
-  if (!token || !signature || signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+  if (!isValidToken(cookie)) {
     return res.status(403).json({ code: "error", message: "Invalid CSRF token" });
   }
   next();

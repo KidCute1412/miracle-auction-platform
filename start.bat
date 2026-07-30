@@ -52,8 +52,9 @@ where wt >nul 2>nul
 if errorlevel 1 (
   start "Online Auction - Backend" cmd /k "call \"%ROOT%scripts\run-backend-dev.bat\""
   start "Online Auction - Frontend" cmd /k "call \"%ROOT%scripts\run-frontend-dev.bat\""
+  start "Online Auction - Workers" cmd /k "call \"%ROOT%scripts\run-worker-logs.bat\""
 ) else (
-  wt -w 0 new-tab --title "Online Auction - App" --startingDirectory "%START_DIR%" cmd /k scripts\run-backend-dev.bat ; split-pane -H --title "Online Auction - Frontend" --startingDirectory "%START_DIR%" cmd /k scripts\run-frontend-dev.bat
+  wt -w 0 new-tab --title "Online Auction - App" --startingDirectory "%START_DIR%" cmd /k scripts\run-backend-dev.bat ; split-pane -V --title "Online Auction - Frontend" --startingDirectory "%START_DIR%" cmd /k scripts\run-frontend-dev.bat ; split-pane -H --title "Online Auction - Workers" --startingDirectory "%START_DIR%" cmd /k scripts\run-worker-logs.bat
 )
 
 echo All services have been launched.

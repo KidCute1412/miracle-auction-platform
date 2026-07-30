@@ -10,11 +10,12 @@ import { ApiClientError } from "@/services/api.client";
 import type { BidRequest } from "api-contracts";
 import { formatVnd, moneyBigInt } from "@/lib/money.ts";
 
-export default function PlayBidSection({ product_id, current_price, step_price, buy_now_price }: {
+export default function PlayBidSection({ product_id, current_price, step_price, buy_now_price, onBidSuccess }: {
   product_id?: number;
   current_price?: string | number;
   step_price?: string | number;
   buy_now_price?: string | number;
+  onBidSuccess?: (data: any) => void;
 }) {
   const [isSubmit, setIsSubmit] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -27,7 +28,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -43,7 +44,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showSuggestions]);
-  
+
   useEffect(() => {
     if (!product_id || !formRef.current) return;
     const validate = new JustValidate(formRef.current);
@@ -105,6 +106,9 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
         setSuccessBidAmount(pendingBidData.max_price);
         setShowSuccessOverlay(true);
         setBidValue("");
+        if (data.data) {
+          onBidSuccess?.(data.data);
+        }
       } else {
         toast.error(`Failed to place bid`);
       }

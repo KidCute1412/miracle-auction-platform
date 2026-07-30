@@ -45,3 +45,19 @@ describe("health and readiness route contract", () => {
     });
   });
 });
+
+describe("CSRF bootstrap route contract", () => {
+  it("never returns a cached 304 response for a conditional token request", async () => {
+    const app = createApp();
+    const first = await request(app).get("/accounts/csrf");
+    const second = await request(app)
+      .get("/accounts/csrf")
+      .set("If-None-Match", first.headers.etag as string);
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(second.headers["cache-control"]).toContain("no-store");
+    expect(second.headers["set-cookie"]).toBeDefined();
+    expect(second.body.token).toEqual(expect.any(String));
+  });
+});

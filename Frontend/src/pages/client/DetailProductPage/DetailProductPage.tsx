@@ -65,27 +65,36 @@ function DetailProductPage() {
   }
   useSocketBidding(
     product_id || null,
-    (event) => setProduct((current) => {
-      if (!current) return current;
-      const isMe = Boolean(auth?.user_id && event.leaderId !== null && Number(event.leaderId) === auth.user_id);
-      return {
-        ...current,
-        current_price: Number(event.currentPriceVnd),
-        price_owner_id: event.leaderId === null ? undefined : Number(event.leaderId),
-        price_owner_username: isMe
-          ? (auth?.username || current.price_owner_username || "You")
-          : current.price_owner_username,
-        end_time: new Date(Number(event.endTimeMs)).toISOString(),
-        auction_sequence: event.sequence,
-        auction_version: event.version,
-      };
-    }),
+    (event) => {
+      setProduct((current) => {
+        if (!current) return current;
+        const isMe = Boolean(auth?.user_id && event.leaderId !== null && Number(event.leaderId) === auth.user_id);
+        return {
+          ...current,
+          current_price: Number(event.currentPriceVnd),
+          price_owner_id: event.leaderId === null ? undefined : Number(event.leaderId),
+          price_owner_username: isMe
+            ? (auth?.username || current.price_owner_username || "You")
+            : current.price_owner_username,
+          end_time: new Date(Number(event.endTimeMs)).toISOString(),
+          auction_sequence: event.sequence,
+          auction_version: event.version,
+        };
+      });
+      if (product_id) {
+        void productService.getDetail(product_id)
+          .then((response) => setProduct(response.data))
+          .catch(() => undefined);
+      }
+    },
     () => {
       if (!product_id) return;
       void productService.getDetail(product_id)
         .then((response) => setProduct(response.data))
         .catch(() => toast.error("Live bidding reconnected; refresh failed"));
     },
+    products?.auction_sequence,
+    products?.auction_version,
   );
 
   const [formattedStartTime, setFormatStartTime] = useState("");
@@ -186,6 +195,30 @@ function DetailProductPage() {
     const len = name.length;
     const thirdLen = Math.floor(len / 2);
     return name.substring(0, len - thirdLen) + "*****";
+  };
+
+  const handleMutationSuccess = (mutationData: any) => {
+    if (!mutationData) return;
+    setProduct((current) => {
+      if (!current) return current;
+      const isMe = Boolean(auth?.user_id && mutationData.leader_id !== null && Number(mutationData.leader_id) === auth.user_id);
+      return {
+        ...current,
+        current_price: Number(mutationData.current_price),
+        price_owner_id: mutationData.leader_id === null ? undefined : Number(mutationData.leader_id),
+        price_owner_username: isMe
+          ? (auth?.username || current.price_owner_username || "You")
+          : current.price_owner_username,
+        end_time: new Date(Number(mutationData.end_time_ms)).toISOString(),
+        auction_sequence: mutationData.sequence,
+        auction_version: mutationData.version,
+      };
+    });
+    if (product_id) {
+      void productService.getDetail(product_id)
+        .then((response) => setProduct(response.data))
+        .catch(() => undefined);
+    }
   };
 
   return isLoading ? (
@@ -457,12 +490,14 @@ function DetailProductPage() {
             current_price={products?.current_price}
             step_price={products?.step_price}
             buy_now_price={products?.buy_now_price} 
+            onBidSuccess={handleMutationSuccess}
           />
           {products?.buy_now_price && (
             <BuyNowSection
               product_id={products?.product_id}
               buy_now_price={products?.buy_now_price}
               product_name={products?.product_name}
+              onBuyNowSuccess={handleMutationSuccess}
             />
           )}
         </div>

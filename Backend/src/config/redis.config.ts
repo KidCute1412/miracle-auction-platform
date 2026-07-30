@@ -1,15 +1,12 @@
 import { Redis } from "ioredis";
+import { redisOptions } from "./redis-options.ts";
 
-// Create Redis client instance with bounded retries to prevent infinite reconnect loops when host is unreachable
-export const redisClient = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    if (times > 20) {
-      return null; // Stop retrying after 20 attempts
-    }
-    return Math.min(times * 100, 3000);
-  },
-});
+// Keep reconnecting after transient Redis or Docker restarts. Individual commands
+// remain bounded by maxRetriesPerRequest and commandTimeout.
+export const redisClient = new Redis(
+  process.env.REDIS_URL || "redis://localhost:16379",
+  redisOptions,
+);
 
 redisClient.on("error", (error: Error) => console.error("[REDIS] Connection error:", error.message));
 export async function checkRedisConnection(): Promise<boolean> {

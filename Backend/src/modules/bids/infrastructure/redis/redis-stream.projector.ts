@@ -202,6 +202,13 @@ export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"app
   });
 
   if (result === "applied") {
+    console.log("[BID_PROJECTOR] Projected event", {
+      type: event.type,
+      productId: event.productId,
+      currentPriceVnd: event.currentPriceVnd,
+      sequence: event.sequence,
+      version: event.version,
+    });
     const notification: BidSocketEvent = {
       eventId: event.eventId,
       productId: event.productId,

@@ -15,6 +15,12 @@ export function setSocketServer(io: Server): void {
 }
 
 export function emitBidUpdate(productId: number, event: BidSocketEvent): void {
+  console.log(`[SOCKET] Emitting new_bid to bidding_room_${productId}`, {
+    productId,
+    currentPriceVnd: event.currentPriceVnd,
+    sequence: event.sequence,
+    version: event.version,
+  });
   socketServer?.to(`bidding_room_${productId}`).emit("new_bid", event);
 }
 
@@ -62,8 +68,8 @@ export async function startAdminSocket(io: Server): Promise<void> {
       adminConnections = Math.max(0, adminConnections - 1);
     });
   });
-  dashboardSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
-    maxRetriesPerRequest: 3,
+  dashboardSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:16379", {
+    maxRetriesPerRequest: null,
   });
   dashboardSubscriber.on("error", (error) => console.warn("[SOCKET] Redis subscriber error", error.message));
   dashboardSubscriber.on("message", (channel, value) => {
@@ -78,7 +84,7 @@ export async function startAdminSocket(io: Server): Promise<void> {
   await dashboardSubscriber.subscribe("dashboard:updated:v1").catch((error) =>
     console.warn("[SOCKET] Dashboard Redis subscriber unavailable; clients will poll", error));
 
-  auctionSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+  auctionSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:16379", {
     maxRetriesPerRequest: null,
   });
   auctionSubscriber.on("error", (error) =>

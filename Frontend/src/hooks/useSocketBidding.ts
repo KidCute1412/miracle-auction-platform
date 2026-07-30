@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import type { BidSocketEvent } from "api-contracts";
 
-const SOCKET_SERVER_URL = import.meta.env.VITE_API_URL || "http://localhost:5000"; // Must match backend URL
+const rawUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const SOCKET_SERVER_URL = rawUrl.replace(/\/api\/?$/, "").replace(/\/+$/, "");
 
 const isNewer = (
   incoming: BidSocketEvent,
@@ -17,6 +18,8 @@ const useSocketBidding = (
   productId: number | null,
   onBid?: (event: BidSocketEvent) => void,
   onReconnect?: () => void,
+  initialSequence?: string,
+  initialVersion?: string,
 ): void => {
     const onBidRef = useRef(onBid);
     const onReconnectRef = useRef(onReconnect);
@@ -24,8 +27,15 @@ const useSocketBidding = (
     onReconnectRef.current = onReconnect;
 
     useEffect(() => {
-        const newSocket = io(SOCKET_SERVER_URL);
-        let latest: Pick<BidSocketEvent, "sequence" | "version"> | undefined;
+        if (!productId) return;
+        const newSocket = io(SOCKET_SERVER_URL, {
+            withCredentials: true,
+            transports: ["websocket", "polling"],
+        });
+        let latest: Pick<BidSocketEvent, "sequence" | "version"> | undefined =
+            initialSequence && initialVersion
+                ? { sequence: initialSequence, version: initialVersion }
+                : undefined;
         let connectedOnce = false;
 
         const handleBid = (event: BidSocketEvent) => {
@@ -34,7 +44,7 @@ const useSocketBidding = (
             onBidRef.current?.(event);
         };
         const handleConnect = () => {
-            if (productId !== null) newSocket.emit("join_bidding_channel", productId);
+            newSocket.emit("join_bidding_channel", productId);
             if (connectedOnce) onReconnectRef.current?.();
             connectedOnce = true;
         };
@@ -46,7 +56,7 @@ const useSocketBidding = (
             newSocket.off("connect", handleConnect);
             newSocket.disconnect();
         };
-    }, [productId]);
+    }, [productId, initialSequence, initialVersion]);
 };
 export default useSocketBidding;
 export { isNewer };

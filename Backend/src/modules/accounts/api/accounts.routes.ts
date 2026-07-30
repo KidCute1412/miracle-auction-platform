@@ -14,10 +14,22 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({ sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as never }),
+  passOnStoreError: true,
   message: { code: "error", message: "Too many authentication attempts. Please try again later." },
 });
 
-route.get("/csrf", (req, res) => res.json({ code: "success", token: issueCsrfToken(req, res) }));
+route.get("/csrf", (req, res) => {
+  // CSRF tokens must never be satisfied from a cached 304 response because the
+  // browser also needs the matching cookie from this request.
+  delete req.headers["if-none-match"];
+  delete req.headers["if-modified-since"];
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, private",
+    Pragma: "no-cache",
+    Expires: "0",
+  });
+  res.json({ code: "success", token: issueCsrfToken(req, res) });
+});
 
 // Create a new account (register)
 route.post("/", accountValidate.registerPost, accountsController.registerPost);

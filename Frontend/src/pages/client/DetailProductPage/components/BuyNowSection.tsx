@@ -12,10 +12,10 @@ interface BuyNowSectionProps {
   product_id?: number;
   buy_now_price?: string | number;
   product_name?: string;
-  setProduct?: Function;
+  onBuyNowSuccess?: (data: any) => void;
 }
 
-export default function BuyNowSection({ product_id, buy_now_price, product_name }: BuyNowSectionProps) {
+export default function BuyNowSection({ product_id, buy_now_price, product_name, onBuyNowSuccess }: BuyNowSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
@@ -41,7 +41,12 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name 
         buy_price: String(buy_now_price),
       });
 
-      if (data.status === "success") setShowSuccessOverlay(true);
+      if (data.status === "success") {
+        setShowSuccessOverlay(true);
+        if (data.data) {
+          onBuyNowSuccess?.(data.data);
+        }
+      }
     } catch (error: unknown) {
       console.error(error);
       toast.error(error instanceof ApiClientError ? error.message : "Error connecting to server!");

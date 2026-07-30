@@ -23,7 +23,10 @@ let csrfRequest: Promise<string> | undefined;
 
 async function getCsrfToken(): Promise<string> {
   if (csrfToken) return csrfToken;
-  csrfRequest ??= fetch(`${API_BASE_URL}/accounts/csrf`, { credentials: "include" })
+  csrfRequest ??= fetch(`${API_BASE_URL}/accounts/csrf`, {
+    credentials: "include",
+    cache: "no-store",
+  })
     .then(async (response) => {
       if (!response.ok) throw new Error("Could not initialize CSRF protection");
       const body = await response.json() as { token?: string };
@@ -48,7 +51,8 @@ const processQueue = (error: any, success: boolean = false) => {
 
 export async function apiRequest<TResponse, TBody = unknown>(
   path: string,
-  options: RequestOptions<TBody> = {}
+  options: RequestOptions<TBody> = {},
+  csrfRetried = false,
 ): Promise<TResponse> {
   const { params, headers, body, ...restOptions } = options;
 
@@ -88,6 +92,16 @@ export async function apiRequest<TResponse, TBody = unknown>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({})) as ApiClientErrorBody;
+
+    if (
+      response.status === 403
+      && !csrfRetried
+      && typeof errorData.message === "string"
+      && errorData.message === "Invalid CSRF token"
+    ) {
+      csrfToken = undefined;
+      return apiRequest<TResponse, TBody>(path, options, true);
+    }
 
     if (response.status === 401 && path !== "/accounts/sessions/refresh") {
       if (isRefreshing) {
