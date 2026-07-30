@@ -762,6 +762,27 @@ html {
   animation: vanguard-star-drop 0.65s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
+@keyframes laser-scan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    top: 98%;
+    opacity: 0;
+  }
+}
+
+.animate-laser-scan {
+  animation: laser-scan 1.6s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
+}
+
 
 
 

@@ -253,17 +253,19 @@ function DetailProductPage() {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] gap-8">
-        <ProductImageGallery
-          product_id={products?.product_id}
-          product_name={products?.product_name}
-          product_images={products?.product_images}
-          onOpenImageModal={openImageModal}
-        />
+        <div className="animate-in fade-in slide-in-from-left-6 duration-700 ease-out">
+          <ProductImageGallery
+            product_id={products?.product_id}
+            product_name={products?.product_name}
+            product_images={products?.product_images}
+            onOpenImageModal={openImageModal}
+          />
+        </div>
 
         {/* Product Details - Right Column */}
         <div className="space-y-4">
           {/* Pricing Section */}
-          <div className="bg-card border border-border p-5 rounded-lg shadow-sm">
+          <div className="bg-card border border-border p-5 rounded-lg shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 ease-out hover:shadow-[0_0_25px_oklch(0.78_0.09_75_/_20%)] transition-all">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-5 h-5 text-accent" />
               <h3 className="text-lg font-semibold text-foreground">
@@ -300,7 +302,7 @@ function DetailProductPage() {
           </div>
 
           {/* Auction Timing */}
-          <div className="bg-card rounded-lg border border-border p-5 shadow-sm relative overflow-hidden">
+          <div className="bg-card rounded-lg border border-border p-5 shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 ease-out">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-accent" />
               <h4 className="text-lg font-semibold text-foreground">
@@ -347,7 +349,7 @@ function DetailProductPage() {
           </div>
 
           {/* Seller Info */}
-          <div className="bg-card rounded-lg border border-border p-5 shadow-sm">
+          <div className="bg-card rounded-lg border border-border p-5 shadow-sm animate-in fade-in slide-in-from-right-6 duration-700 delay-300 ease-out">
             <div className="flex items-center gap-2 mb-4">
               <User className="w-5 h-5 text-indigo-500" />
               <h4 className="text-lg font-semibold text-foreground">Seller</h4>
@@ -399,18 +401,19 @@ function DetailProductPage() {
 
           {/* Highest Bidder Info */}
           {products?.price_owner_username && (
-            <div className={`bg-card rounded-lg border p-5 shadow-sm ${
+            <div className={cn(
+              "bg-card rounded-lg border p-5 shadow-sm animate-in fade-in slide-in-from-right-6 duration-700 delay-350 ease-out",
               products.price_owner_id === auth?.user_id 
                 ? 'border-yellow-500/50 bg-gradient-to-br from-yellow-500/10 to-amber-500/5' 
                 : 'border-border'
-            }`}>
+            )}>
               <div className="flex items-center gap-2 mb-4">
                 <Award className="w-5 h-5 text-yellow-500" />
                 <h4 className="text-lg font-semibold text-foreground">
                   Highest Bidder
                 </h4>
                 {products.price_owner_id === auth?.user_id && (
-                  <div className="ml-auto flex items-center gap-2 bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                  <div className="ml-auto flex items-center gap-2 bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce animate-in slide-in-from-top-3 duration-500 delay-400">
                     <Award className="w-4 h-4" />
                     <span>You are leading!</span>
                   </div>
