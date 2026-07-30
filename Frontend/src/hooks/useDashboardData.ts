@@ -10,16 +10,18 @@ export function useDashboardData(range: DashboardRange, polling: boolean) {
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [summaryResponse, operationsResponse] = await Promise.all([
-        dashboardService.getSummary({ range }),
-        dashboardService.getOperations(),
-      ]);
-      setSummary(summaryResponse.data);
-      setOperations(operationsResponse.data);
+      const summaryPromise = dashboardService.getSummary({ range }).then((res) => {
+        setSummary(res.data);
+        if (!silent) setLoading(false);
+      });
+      const operationsPromise = dashboardService.getOperations().then((res) => {
+        setOperations(res.data);
+      }).catch(() => undefined);
+
+      await Promise.all([summaryPromise, operationsPromise]);
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Dashboard data is unavailable");
-    } finally {
       if (!silent) setLoading(false);
     }
   }, [range]);

@@ -18,8 +18,19 @@ export async function getSummary(_req: AccountRequest, res: Response): Promise<v
 }
 
 export async function syncCache(req: AccountRequest, res: Response): Promise<void> {
+  const snapshotResult = await DashboardService.refreshDashboardSnapshot({
+    reason: "manual_admin_sync",
+    correlationId: req.header("x-request-id") as string,
+  });
   const result = await DashboardService.requestDashboardRecalculation(req.header("x-request-id"));
-  res.status(202).json({ success: true, data: result });
+  res.status(200).json({
+    success: true,
+    data: {
+      ...result,
+      version: snapshotResult.version,
+      updatedAt: snapshotResult.updatedAt,
+    },
+  });
 }
 
 export async function getOperations(_req: AccountRequest, res: Response): Promise<void> {

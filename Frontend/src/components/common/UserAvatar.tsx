@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User } from "lucide-react";
 
 export interface UserAvatarProps {
@@ -33,6 +33,10 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   onClick,
 }) => {
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
 
   const getInitials = (str: string) => {
     if (!str) return "";

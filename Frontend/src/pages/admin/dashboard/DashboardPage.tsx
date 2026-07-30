@@ -7,12 +7,71 @@ import { VanguardAreaChart, type DataPoint } from "@/components/admin/charts/Van
 import { useAdminDashboardSocket } from "@/hooks/useAdminDashboardSocket";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { dashboardService } from "@/services/dashboard.service";
+import SelectComponent from "@/components/common/Select";
 
 const ranges: Record<DashboardRange, string> = {
   "7d": "Last 7 days", "30d": "Last 30 days", "3m": "Last 3 months", "6m": "Last 6 months", "1y": "Last year",
 };
-const colors = ["#F59E0B", "#D97706", "#B45309", "#78716C", "#A8A29E", "#FBBF24"];
+const colors = [
+  "oklch(0.78 0.09 75)",
+  "oklch(0.68 0.08 75)",
+  "oklch(0.58 0.07 75)",
+  "oklch(0.72 0.04 75)",
+  "oklch(0.62 0.03 75)",
+  "oklch(0.86 0.07 75)",
+];
 const formatVnd = (value: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
+
+function DashboardSkeleton() {
+  return (
+    <main className="p-4 sm:p-8 space-y-6 bg-background min-h-screen animate-pulse">
+      <header className="flex flex-wrap gap-4 justify-between items-end border-b border-border pb-5">
+        <div className="space-y-2">
+          <div className="h-3 w-32 bg-accent/20 rounded" />
+          <div className="h-8 w-60 bg-muted/60 rounded-xl" />
+          <div className="h-4 w-48 bg-muted/40 rounded" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-10 w-40 bg-card border border-border rounded-xl" />
+          <div className="h-10 w-20 bg-card border border-border rounded-xl" />
+          <div className="h-10 w-36 bg-accent/30 rounded-xl" />
+        </div>
+      </header>
+
+      <div className="flex gap-2">
+        <div className="h-9 w-28 bg-accent/30 rounded-xl" />
+        <div className="h-9 w-28 bg-card border border-border rounded-xl" />
+        <div className="h-9 w-28 bg-card border border-border rounded-xl" />
+      </div>
+
+      <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-card border border-border rounded-2xl p-5 space-y-3">
+            <div className="w-5 h-5 bg-accent/20 rounded" />
+            <div className="h-3 w-24 bg-muted/40 rounded" />
+            <div className="h-7 w-36 bg-muted/60 rounded-lg" />
+          </div>
+        ))}
+      </section>
+
+      <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="bg-card border border-border rounded-xl p-4 space-y-2">
+            <div className="h-3 w-20 bg-muted/40 rounded" />
+            <div className="h-6 w-16 bg-muted/60 rounded" />
+          </div>
+        ))}
+      </section>
+
+      <div className="h-80 bg-card border border-border rounded-2xl p-6 space-y-4">
+        <div className="h-5 w-72 bg-muted/60 rounded" />
+        <div className="h-56 bg-muted/20 rounded-xl flex items-center justify-center">
+          <p className="text-xs font-mono text-accent animate-pulse">Loading telemetry analytics feed…</p>
+        </div>
+      </div>
+    </main>
+  );
+}
 
 export default function DashboardPage() {
   const [range, setRange] = useState<DashboardRange>("6m");
@@ -48,14 +107,23 @@ export default function DashboardPage() {
     label: point.label, revenue: point.completedOrderGmvVnd, bids: point.bids, overview: point.auctions,
   })) ?? [], [summary]);
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
   async function requestSync() {
-    const response = await dashboardService.syncCache();
-    setSync({ baseline: response.data.baselineVersion, state: "waiting" });
+    setIsSyncing(true);
+    try {
+      await dashboardService.syncCache();
+      await refresh(true);
+    } catch (err) {
+      console.error("[DASHBOARD] Sync request failed", err);
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
-  if (loading && !summary) return <div className="p-10 text-muted-foreground">Loading measured analytics…</div>;
+  if (loading && !summary) return <DashboardSkeleton />;
   if (error && !summary) return <div className="m-8 p-6 border border-rose-500/30 rounded-2xl text-rose-500"><AlertTriangle className="inline w-4 mr-2" />{error}<button onClick={() => void refresh()} className="ml-4 underline">Retry</button></div>;
-  if (!summary) return null;
+  if (!summary) return <DashboardSkeleton />;
 
   const metrics = summary.metrics;
   const stale = summary.metadata.state === "stale";
@@ -69,27 +137,35 @@ export default function DashboardPage() {
   return <main className="p-4 sm:p-8 space-y-6 bg-background min-h-screen">
     <header className="flex flex-wrap gap-4 justify-between items-end border-b border-border pb-5">
       <div>
-        <p className="text-[10px] tracking-[.2em] text-amber-500 font-mono">VANGUARD INTELLIGENCE</p>
+        <p className="text-[10px] tracking-[.2em] text-accent font-mono">VANGUARD INTELLIGENCE</p>
         <h1 className="text-3xl font-black">Admin Analytics</h1>
         <div className="flex gap-2 mt-2 text-xs">
-          <span className={socketState === "connected" ? "text-emerald-500" : "text-amber-500"}><Radio className="inline w-3 mr-1" />{socketState === "connected" ? "Realtime connected" : "Polling fallback"}</span>
-          <span className={stale ? "text-amber-500" : "text-muted-foreground"}>Snapshot v{summary.metadata.version} · {Math.round(summary.metadata.freshnessMs / 1000)}s old</span>
+          <span className={socketState === "connected" ? "text-emerald-500" : "text-accent"}><Radio className="inline w-3 mr-1" />{socketState === "connected" ? "Realtime connected" : "Polling fallback"}</span>
+          <span className={stale ? "text-accent" : "text-muted-foreground"}>Snapshot v{summary.metadata.version} · {Math.round(summary.metadata.freshnessMs / 1000)}s old</span>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <select value={range} onChange={(event) => setRange(event.target.value as DashboardRange)} className="bg-card border border-border rounded-xl px-3 py-2 text-xs">{Object.entries(ranges).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
-        <a href={dashboardService.exportUrl(tab === "audit" ? "audit" : "analytics", range)} className="border border-border rounded-xl px-3 py-2 text-xs"><Download className="inline w-3 mr-1" />CSV</a>
-        <button onClick={() => void requestSync()} disabled={sync?.state === "waiting"} className="bg-amber-500 text-slate-950 rounded-xl px-4 py-2 text-xs font-bold disabled:opacity-60"><RefreshCw className={`inline w-3 mr-1 ${sync?.state === "waiting" ? "animate-spin" : ""}`} />{sync?.state === "waiting" ? "Waiting for version…" : sync?.state === "delayed" ? "Queued / delayed" : "Sync telemetry"}</button>
+      <div className="flex flex-wrap gap-2 items-center">
+        <SelectComponent
+          value={range}
+          setState={(val) => setRange(val as DashboardRange)}
+          items={Object.entries(ranges).map(([key, label]) => ({
+            value: key,
+            content: label,
+          }))}
+          className="w-40 text-xs"
+        />
+        <a href={dashboardService.exportUrl(tab === "audit" ? "audit" : "analytics", range)} className="border border-border rounded-xl px-3 py-2 text-xs flex items-center gap-1 hover:bg-muted/50 transition-colors h-10"><Download className="inline w-3 mr-1" />CSV</a>
+        <button onClick={() => void requestSync()} disabled={isSyncing || sync?.state === "waiting"} className="bg-accent text-accent-foreground rounded-xl px-4 py-2 text-xs font-bold disabled:opacity-60 h-10 cursor-pointer flex items-center shadow-xs hover:bg-accent/90 transition-colors"><RefreshCw className={`inline w-3 mr-1 ${isSyncing || sync?.state === "waiting" ? "animate-spin" : ""}`} />{isSyncing ? "Syncing now…" : sync?.state === "waiting" ? "Waiting for version…" : sync?.state === "delayed" ? "Queued / delayed" : "Force Sync Telemetry"}</button>
       </div>
     </header>
 
-    {stale && <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-3 text-xs text-amber-600"><AlertTriangle className="inline w-4 mr-2" />Data is older than the configured freshness threshold. Scheduled recovery and polling remain active.</div>}
-    {error && <div className="text-xs text-amber-500">Partial refresh failure: {error}</div>}
+    {stale && <div className="border border-accent/30 bg-accent/10 rounded-xl p-3 text-xs text-accent"><AlertTriangle className="inline w-4 mr-2" />Data is older than the configured freshness threshold. Scheduled recovery and polling remain active.</div>}
+    {error && <div className="text-xs text-accent">Partial refresh failure: {error}</div>}
 
-    <nav className="flex gap-2">{(["overview", "operations", "audit"] as const).map((item) => <button key={item} onClick={() => setTab(item)} className={`px-4 py-2 rounded-xl text-xs capitalize ${tab === item ? "bg-amber-500 text-slate-950 font-bold" : "bg-card border border-border"}`}>{item === "audit" ? "Audit / DLQ" : item}</button>)}</nav>
+    <nav className="flex gap-2">{(["overview", "operations", "audit"] as const).map((item) => <button key={item} onClick={() => setTab(item)} className={`px-4 py-2 rounded-xl text-xs capitalize ${tab === item ? "bg-accent text-accent-foreground font-bold" : "bg-card border border-border"}`}>{item === "audit" ? "Audit / DLQ" : item}</button>)}</nav>
 
     {tab === "overview" && <>
-      <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">{cards.map(({ label, value, icon: Icon }) => <article key={label} className="bg-card border border-border rounded-2xl p-5"><Icon className="w-5 text-amber-500 mb-4" /><p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p><strong className="text-2xl font-mono">{value}</strong></article>)}</section>
+      <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">{cards.map(({ label, value, icon: Icon }) => <article key={label} className="bg-card border border-border rounded-2xl p-5"><Icon className="w-5 text-accent mb-4" /><p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p><strong className="text-2xl font-mono">{value}</strong></article>)}</section>
       <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
         {[["Pending orders", metrics.pendingOrders], ["Finished orders", metrics.finishedOrders], ["Rejected orders", metrics.rejectedOrders], ["Seller verifications", metrics.pendingSellerVerifications], ["Sell-through", `${metrics.sellThroughRate}%`]].map(([label, value]) => <div key={label} className="bg-card border border-border rounded-xl p-4"><span className="text-muted-foreground">{label}</span><b className="block text-lg mt-1">{value}</b></div>)}
       </section>
@@ -111,13 +187,13 @@ export default function DashboardPage() {
         ["Email queue", operations.emailPending === 0, `${operations.emailPending} pending / ${operations.emailRetrying} retrying / ${operations.emailTerminal} terminal`],
         ["Outbox", operations.outboxPending === 0, `${operations.outboxPending} pending · ${operations.outboxRetrying} retrying`],
         ["DLQ / sockets", operations.dlqCount === 0, `${operations.dlqCount} terminal · ${operations.adminSocketCount} admins`],
-      ].map(([label, ok, value]) => <article key={String(label)} className="bg-card border border-border rounded-2xl p-5"><Activity className={`w-5 mb-4 ${ok ? "text-emerald-500" : "text-amber-500"}`} /><p className="font-bold">{label}</p><p className="text-xs text-muted-foreground mt-1">{value}</p></article>)}
+      ].map(([label, ok, value]) => <article key={String(label)} className="bg-card border border-border rounded-2xl p-5"><Activity className={`w-5 mb-4 ${ok ? "text-emerald-500" : "text-accent"}`} /><p className="font-bold">{label}</p><p className="text-xs text-muted-foreground mt-1">{value}</p></article>)}
     </section>}
 
     {tab === "audit" && <section className="grid xl:grid-cols-2 gap-6">
       {secondaryError && <p className="text-rose-500">{secondaryError}</p>}
       <div className="bg-card border border-border rounded-2xl p-5 overflow-x-auto"><h2 className="font-bold mb-4">Admin audit log</h2>{audit.length === 0 ? <p className="text-sm text-muted-foreground">No matching audit records.</p> : <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground"><th>Time</th><th>Action</th><th>Resource</th><th>Result</th></tr></thead><tbody>{audit.map((item) => <tr key={item.id} className="border-t border-border"><td className="py-3">{new Date(item.createdAt).toLocaleString()}</td><td>{item.action}</td><td>{item.resourceType} {item.resourceId}</td><td>{item.result}</td></tr>)}</tbody></table>}</div>
-      <div className="bg-card border border-border rounded-2xl p-5 overflow-x-auto"><h2 className="font-bold mb-4">Async / outbox DLQ</h2>{dlq.length === 0 ? <p className="text-sm text-muted-foreground">No terminal events.</p> : <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground"><th>Kind</th><th>Event</th><th>Attempts</th><th>Error</th><th /></tr></thead><tbody>{dlq.map((item) => <tr key={`${item.kind}:${item.eventId}`} className="border-t border-border"><td>{item.kind}</td><td className="py-3">{item.eventType}</td><td>{item.attempts}</td><td className="max-w-48 truncate">{item.lastError}</td><td><button onClick={() => void dashboardService.retryDlq(item.eventId, item.kind)} className="text-amber-500 underline">Retry</button></td></tr>)}</tbody></table>}</div>
+      <div className="bg-card border border-border rounded-2xl p-5 overflow-x-auto"><h2 className="font-bold mb-4">Async / outbox DLQ</h2>{dlq.length === 0 ? <p className="text-sm text-muted-foreground">No terminal events.</p> : <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground"><th>Kind</th><th>Event</th><th>Attempts</th><th>Error</th><th /></tr></thead><tbody>{dlq.map((item) => <tr key={`${item.kind}:${item.eventId}`} className="border-t border-border"><td>{item.kind}</td><td className="py-3">{item.eventType}</td><td>{item.attempts}</td><td className="max-w-48 truncate">{item.lastError}</td><td><button onClick={() => void dashboardService.retryDlq(item.eventId, item.kind)} className="text-accent underline">Retry</button></td></tr>)}</tbody></table>}</div>
     </section>}
   </main>;
 }

@@ -52,15 +52,22 @@ export async function checkKafkaConnection(): Promise<boolean> {
 }
 
 export async function measureKafkaLatency(): Promise<number> {
-  const startedAt = performance.now();
-  const admin = kafka.admin();
-  await admin.connect();
-  try {
-    await admin.fetchTopicMetadata();
-    return Math.round((performance.now() - startedAt) * 10) / 10;
-  } finally {
-    await admin.disconnect();
-  }
+  return Promise.race([
+    (async () => {
+      const startedAt = performance.now();
+      const admin = kafka.admin();
+      await admin.connect();
+      try {
+        await admin.fetchTopicMetadata();
+        return Math.round((performance.now() - startedAt) * 10) / 10;
+      } finally {
+        await admin.disconnect().catch(() => undefined);
+      }
+    })(),
+    new Promise<number>((_, reject) =>
+      setTimeout(() => reject(new Error("Kafka latency check timeout")), 1500)
+    ),
+  ]);
 }
 
 export async function closeKafkaConnection(): Promise<void> {

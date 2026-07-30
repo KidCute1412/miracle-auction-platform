@@ -13,7 +13,15 @@ const authLimiter = rateLimit({
   limit: process.env.NODE_ENV === "production" ? 100 : 500,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore({ sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as never }),
+  store: new RedisStore({
+    sendCommand: async (...args: string[]) => {
+      try {
+        return (await redisClient.call(args[0], ...args.slice(1))) as never;
+      } catch {
+        return undefined as never;
+      }
+    },
+  }),
   passOnStoreError: true,
   message: { code: "error", message: "Too many authentication attempts. Please try again later." },
 });

@@ -14,7 +14,7 @@ export function BidDensityHeatmap({ rangeLabel, data }: {
   return (
     <section className="bg-card border border-border/80 rounded-2xl p-5 shadow-md space-y-4">
       <header className="border-b border-border pb-3">
-        <h3 className="text-sm font-bold flex items-center gap-2"><Clock className="w-4 h-4 text-amber-500" />Bidding Traffic Density</h3>
+        <h3 className="text-sm font-bold flex items-center gap-2"><Clock className="w-4 h-4 text-accent" />Bidding Traffic Density</h3>
         <p className="text-[11px] text-muted-foreground mt-1">PostgreSQL bid volume by weekday and hour ({rangeLabel}).</p>
       </header>
       <div className="overflow-x-auto">
@@ -26,8 +26,8 @@ export function BidDensityHeatmap({ rangeLabel, data }: {
             ...row.map((value, slot) => <span
               key={`${day}-${slot}`}
               title={`${days[day]} ${slots[slot]}: ${value} bids`}
-              className="h-8 rounded flex items-center justify-center border border-amber-500/20"
-              style={{ backgroundColor: `rgb(245 158 11 / ${0.06 + (value / max) * 0.84})` }}
+              className="h-8 rounded flex items-center justify-center border border-accent/20"
+              style={{ backgroundColor: `oklch(0.78 0.09 75 / ${0.06 + (value / max) * 0.84})` }}
             >{value}</span>),
           ])}
         </div>

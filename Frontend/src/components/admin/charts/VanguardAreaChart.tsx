@@ -15,6 +15,45 @@ interface VanguardAreaChartProps {
   rangeLabel: string;
 }
 
+function formatVndCompact(val: number): string {
+  if (val >= 1_000_000_000) return `₫${(val / 1_000_000_000).toFixed(1)}B`;
+  if (val >= 1_000_000) return `₫${(val / 1_000_000).toFixed(1)}M`;
+  if (val >= 1_000) return `₫${(val / 1_000).toFixed(0)}k`;
+  return `₫${Math.round(val).toLocaleString("vi-VN")}`;
+}
+
+function getGridTickValues(maxVal: number, isRevenue: boolean): number[] {
+  if (maxVal <= 0) return [0];
+  
+  if (!isRevenue) {
+    if (maxVal <= 4) {
+      const ticks: number[] = [];
+      for (let i = Math.round(maxVal); i >= 0; i--) {
+        ticks.push(i);
+      }
+      return ticks;
+    }
+    const step = Math.max(1, Math.ceil(maxVal / 4));
+    const ticks: number[] = [];
+    for (let val = Math.ceil(maxVal / step) * step; val >= 0; val -= step) {
+      if (val <= maxVal || ticks.length === 0) {
+        ticks.push(val);
+      }
+    }
+    if (!ticks.includes(0)) ticks.push(0);
+    return Array.from(new Set(ticks)).sort((a, b) => b - a);
+  }
+
+  const ratios = maxVal <= 1000 ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1];
+  return ratios.map((r) => maxVal * (1 - r));
+}
+
+function formatYTick(val: number, isRevenue: boolean): string {
+  if (isRevenue) return formatVndCompact(val);
+  if (val >= 1000) return `${(val / 1000).toFixed(1)}k`;
+  return String(Math.round(val));
+}
+
 export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
   data,
   activeTab,
@@ -27,7 +66,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
   if (!data || data.length === 0) {
     return (
       <div className="h-64 flex flex-col items-center justify-center border border-dashed border-border rounded-2xl p-8 text-center text-muted-foreground bg-card/50">
-        <ShieldAlert className="w-6 h-6 text-amber-500 mb-2" />
+        <ShieldAlert className="w-6 h-6 text-accent mb-2" />
         <p className="font-semibold text-xs text-foreground">Telemetry feed buffering...</p>
         <p className="text-xs text-muted-foreground mt-1">Select another timeframe or sync live data feed.</p>
       </div>
@@ -64,8 +103,10 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
   const chartW = svgWidth - paddingX * 2;
   const chartH = svgHeight - paddingTop - paddingBottom;
 
+  const slotW = chartW / Math.max(data.length, 1);
+
   const points = data.map((item, idx) => {
-    const x = paddingX + (idx / Math.max(data.length - 1, 1)) * chartW;
+    const x = paddingX + (idx + 0.5) * slotW;
     const val = getPrimaryVal(item);
     const y = svgHeight - paddingBottom - (val / maxPrimary) * chartH;
     return { x, y, val, label: item.label, raw: item };
@@ -73,7 +114,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
 
   const secondaryMax = Math.max(...data.map(getSecondaryVal), 1);
   const secondaryPoints = data.map((item, idx) => {
-    const x = paddingX + (idx / Math.max(data.length - 1, 1)) * chartW;
+    const x = paddingX + (idx + 0.5) * slotW;
     const val = getSecondaryVal(item);
     const y = svgHeight - paddingBottom - (val / secondaryMax) * chartH;
     return { x, y, val };
@@ -96,9 +137,13 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
   const secondaryPathD = createBezierPath(secondaryPoints);
 
   const hoveredData = hoveredIdx !== null ? data[hoveredIdx] : null;
+  const isRevenue = activeTab === "revenue";
+  const gridTicks = getGridTickValues(maxPrimary, isRevenue);
 
   return (
-    <div className="bg-card text-card-foreground border border-border/80 rounded-2xl p-5 sm:p-6 shadow-md backdrop-blur-xl transition-colors duration-300 space-y-5">
+    <div className="relative isolate overflow-hidden bg-card text-card-foreground border border-border/80 rounded-2xl p-5 sm:p-6 shadow-md backdrop-blur-xl transition-colors duration-300 space-y-5">
+      <div aria-hidden className="pointer-events-none absolute -top-24 right-8 -z-10 h-48 w-72 rounded-full bg-accent/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-16 bottom-8 -z-10 h-20 rounded-full bg-accent/5 blur-3xl" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
@@ -106,7 +151,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
             <h3 className="text-base font-bold tracking-tight text-foreground font-heading">
               Platform Financial & Bidding Telemetry
             </h3>
-            <span className="text-[10px] font-mono font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full uppercase">
+            <span className="text-[10px] font-mono font-semibold text-accent bg-accent/10 border border-accent/30 px-2 py-0.5 rounded-full uppercase">
               {rangeLabel}
             </span>
           </div>
@@ -124,7 +169,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
                 onClick={() => setActiveTab(tab)}
                 className={`px-3 py-1.5 text-xs rounded-lg font-semibold capitalize cursor-pointer transition-all duration-200 ${
                   activeTab === tab
-                    ? "bg-card text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-xs font-bold"
+                    ? "bg-card text-accent border border-accent/30 shadow-xs font-bold"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -146,7 +191,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
               title="Vanguard Bezier Curve"
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                 viewStyle === "bezier"
-                  ? "bg-card text-amber-600 dark:text-amber-400 shadow-xs border border-border"
+                  ? "bg-card text-accent shadow-xs border border-border"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -157,7 +202,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
               title="Vanguard Bar Spectrum"
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                 viewStyle === "bar"
-                  ? "bg-card text-amber-600 dark:text-amber-400 shadow-xs border border-border"
+                  ? "bg-card text-accent shadow-xs border border-border"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -174,16 +219,37 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
             <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto select-none overflow-visible">
               <defs>
                 <linearGradient id="vanguardAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.3} />
-                  <stop offset="60%" stopColor="#F59E0B" stopOpacity={0.08} />
-                  <stop offset="100%" stopColor="#F59E0B" stopOpacity={0.0} />
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.42} />
+                  <stop offset="55%" stopColor="var(--accent)" stopOpacity={0.12} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.0} />
                 </linearGradient>
+                <radialGradient id="vanguardPlotLight" cx="50%" cy="0%" r="85%">
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.12} />
+                  <stop offset="72%" stopColor="var(--accent)" stopOpacity={0} />
+                </radialGradient>
+                <filter id="vanguardLineGlow" x="-30%" y="-50%" width="160%" height="200%">
+                  <feGaussianBlur stdDeviation="5" />
+                </filter>
+                <filter id="vanguardPointGlow" x="-150%" y="-150%" width="400%" height="400%">
+                  <feGaussianBlur stdDeviation="3.5" />
+                </filter>
               </defs>
 
+              <rect
+                x={paddingX}
+                y={paddingTop}
+                width={chartW}
+                height={chartH}
+                rx={14}
+                fill="url(#vanguardPlotLight)"
+                stroke="var(--accent)"
+                strokeOpacity={0.08}
+              />
+
               {/* Grid Lines */}
-              {[0, 0.33, 0.66, 1].map((ratio, i) => {
+              {gridTicks.map((tickVal, i) => {
+                const ratio = maxPrimary > 0 ? (maxPrimary - tickVal) / maxPrimary : 0;
                 const y = paddingTop + ratio * chartH;
-                const gridVal = Math.round(maxPrimary * (1 - ratio));
                 return (
                   <g key={i}>
                     <line
@@ -202,7 +268,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
                       className="text-[10px] font-mono fill-muted-foreground"
                       textAnchor="end"
                     >
-                      {activeTab === "revenue" ? `$${gridVal >= 1000 ? `${(gridVal / 1000).toFixed(0)}k` : gridVal}` : gridVal}
+                      {formatYTick(tickVal, isRevenue)}
                     </text>
                   </g>
                 );
@@ -225,7 +291,18 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
                   <path
                     d={primaryPathD}
                     fill="none"
-                    stroke="#F59E0B"
+                    stroke="var(--accent)"
+                    strokeWidth={11}
+                    strokeOpacity={0.28}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#vanguardLineGlow)"
+                  />
+
+                  <path
+                    d={primaryPathD}
+                    fill="none"
+                    stroke="var(--accent)"
                     strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -234,23 +311,32 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
                   {points.map((pt, idx) => {
                     const isHovered = hoveredIdx === idx;
                     return (
-                      <circle
-                        key={idx}
-                        cx={pt.x}
-                        cy={pt.y}
-                        r={isHovered ? 6 : 3.5}
-                        fill="#F59E0B"
-                        stroke="currentColor"
-                        className="text-card transition-all duration-150 cursor-pointer"
-                        strokeWidth={2}
-                      />
+                      <g key={idx} className="cursor-pointer">
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r={isHovered ? 11 : 7}
+                          fill="var(--accent)"
+                          fillOpacity={isHovered ? 0.5 : 0.24}
+                          filter="url(#vanguardPointGlow)"
+                        />
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r={isHovered ? 6 : 3.5}
+                          fill="var(--accent)"
+                          stroke="currentColor"
+                          className="text-card transition-all duration-150"
+                          strokeWidth={2}
+                        />
+                      </g>
                     );
                   })}
                 </>
               ) : (
                 <g>
                   {points.map((pt, idx) => {
-                    const barWidth = Math.max(chartW / data.length - 14, 10);
+                    const barWidth = Math.max(slotW - 12, 8);
                     const barH = svgHeight - paddingBottom - pt.y;
                     const isHovered = hoveredIdx === idx;
 
@@ -262,8 +348,9 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
                         width={barWidth}
                         height={Math.max(barH, 2)}
                         rx={4}
-                        fill="#F59E0B"
+                        fill="var(--accent)"
                         fillOpacity={isHovered ? 0.9 : 0.65}
+                        filter={isHovered ? "url(#vanguardLineGlow)" : undefined}
                         className="transition-all duration-150 cursor-pointer"
                       />
                     );
@@ -279,7 +366,7 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
                   y={svgHeight - 10}
                   fill="currentColor"
                   className={`text-[10px] font-mono uppercase ${
-                    hoveredIdx === idx ? "fill-amber-500 font-bold" : "fill-muted-foreground"
+                    hoveredIdx === idx ? "fill-accent font-bold" : "fill-muted-foreground"
                   }`}
                   textAnchor="middle"
                 >
@@ -294,22 +381,23 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
                   y1={paddingTop}
                   x2={points[hoveredIdx].x}
                   y2={svgHeight - paddingBottom}
-                  stroke="#F59E0B"
+                  stroke="var(--accent)"
                   strokeWidth={1.5}
+                  strokeOpacity={0.7}
                   strokeDasharray="3 3"
                 />
               )}
 
               {/* Hover Rectangles */}
               {points.map((pt, idx) => {
-                const rectW = chartW / data.length;
+                const rectX = paddingX + idx * slotW;
                 return (
                   <rect
                     key={idx}
-                    x={pt.x - rectW / 2}
-                    y={0}
-                    width={rectW}
-                    height={svgHeight}
+                    x={rectX}
+                    y={paddingTop}
+                    width={slotW}
+                    height={chartH}
                     fill="transparent"
                     className="cursor-pointer"
                     onMouseEnter={() => setHoveredIdx(idx)}
@@ -324,22 +412,22 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
         {/* Floating Tooltip */}
         {hoveredData && hoveredIdx !== null && (
           <div className="absolute top-2 right-4 bg-popover text-popover-foreground border border-border rounded-xl p-3 shadow-xl text-xs z-10 pointer-events-none min-w-[190px] animate-in fade-in zoom-in-95 duration-150">
-            <div className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-bold border-b border-border pb-1 mb-1.5 flex justify-between">
+            <div className="text-[11px] font-mono text-accent font-bold border-b border-border pb-1 mb-1.5 flex justify-between">
               <span>{hoveredData.label}</span>
               <span className="text-muted-foreground text-[10px]">TELEMETRY</span>
             </div>
             <div className="space-y-1 font-mono text-[11px]">
               <div className="flex justify-between text-foreground">
                 <span className="text-muted-foreground">GMV Revenue:</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400">${hoveredData.revenue.toLocaleString()}</span>
+                <span className="font-bold text-accent">{formatVndCompact(hoveredData.revenue)}</span>
               </div>
               <div className="flex justify-between text-foreground">
                 <span className="text-muted-foreground">Bids Placed:</span>
-                <span className="font-bold">${hoveredData.bids.toLocaleString()}</span>
+                <span className="font-bold">{hoveredData.bids.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-foreground">
                 <span className="text-muted-foreground">Listings:</span>
-                <span className="font-bold">${hoveredData.overview.toLocaleString()}</span>
+                <span className="font-bold">{hoveredData.overview.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -352,20 +440,20 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
           <span className="text-[10px] font-mono text-muted-foreground uppercase block">
             Total ({activeTab.toUpperCase()})
           </span>
-          <span className="text-sm font-mono font-black text-amber-600 dark:text-amber-400 mt-0.5 block">
-            {activeTab === "revenue" ? `$${totalPrimary.toLocaleString()}` : totalPrimary.toLocaleString()}
+          <span className="text-sm font-mono font-black text-accent mt-0.5 block">
+            {activeTab === "revenue" ? formatVndCompact(totalPrimary) : totalPrimary.toLocaleString()}
           </span>
         </div>
         <div>
           <span className="text-[10px] font-mono text-muted-foreground uppercase block">Interval Average</span>
           <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-            {activeTab === "revenue" ? `$${avgPrimary.toLocaleString()}` : avgPrimary.toLocaleString()}
+            {activeTab === "revenue" ? formatVndCompact(avgPrimary) : avgPrimary.toLocaleString()}
           </span>
         </div>
         <div>
           <span className="text-[10px] font-mono text-muted-foreground uppercase block">Peak Value</span>
           <span className="text-sm font-mono font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block">
-            {activeTab === "revenue" ? `$${maxPrimary.toLocaleString()}` : maxPrimary.toLocaleString()}
+            {activeTab === "revenue" ? formatVndCompact(maxPrimary) : maxPrimary.toLocaleString()}
           </span>
         </div>
         <div>

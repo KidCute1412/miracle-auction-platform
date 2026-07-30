@@ -58,7 +58,15 @@ export function createApp() {
   app.use(cookieParser());
   app.use(csrfProtection);
   app.use(rateLimit({
-    store: new RedisStore({ sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as never }),
+    store: new RedisStore({
+      sendCommand: async (...args: string[]) => {
+        try {
+          return (await redisClient.call(args[0], ...args.slice(1))) as never;
+        } catch {
+          return undefined as never;
+        }
+      },
+    }),
     passOnStoreError: true,
     windowMs: 15 * 60 * 1000, limit: 2000, standardHeaders: true, legacyHeaders: false,
     message: { message: "Too many requests from this IP, please try again later." },

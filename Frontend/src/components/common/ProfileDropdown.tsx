@@ -5,6 +5,8 @@ import { ChevronDown, User, Package, Lock, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { accountService } from "@/services/account.service";
 
+import UserAvatar from "./UserAvatar";
+
 interface ProfileMenuItem {
   label: string;
   icon: React.ReactNode;
@@ -34,16 +36,6 @@ export default function ProfileDropdown({ menuItems }: ProfileDropdownProps) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const initials = auth?.full_name
-    ? auth.full_name
-        .split(" ")
-        .map((n: any) => n[0])
-        .join("")
-        .toUpperCase()
-    : auth?.username
-    ? auth.username.charAt(0).toUpperCase()
-    : "";
 
   const defaultMenuItems: ProfileMenuItem[] = [
     {
@@ -95,17 +87,12 @@ export default function ProfileDropdown({ menuItems }: ProfileDropdownProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center cursor-pointer space-x-3 px-3 py-1.5 rounded-full border border-border hover:shadow-sm transition-all duration-200 bg-background/50 hover:bg-muted"
       >
-        {auth?.avatar ? (
-          <img
-            src={auth.avatar}
-            alt="User Avatar"
-            className="w-10 h-10 rounded-full object-cover border border-accent/30 shadow-gold-glow"
-          />
-        ) : (
-          <div className="w-10 h-10 border border-accent/30 rounded-full bg-gradient-to-r from-accent to-accent/60 flex items-center justify-center text-primary-foreground font-heading font-semibold">
-            {initials}
-          </div>
-        )}
+        <UserAvatar
+          src={auth?.avatar}
+          name={auth?.full_name || auth?.username || ""}
+          size="md"
+          className="border-accent/30 shadow-gold-glow"
+        />
 
         <div className="hidden md:flex flex-col text-left">
           <span className="text-sm font-semibold text-foreground max-w-[120px] truncate">

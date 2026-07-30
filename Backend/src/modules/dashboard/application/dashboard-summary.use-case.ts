@@ -118,9 +118,12 @@ export async function refreshDashboardSnapshot(input: {
     correlationId,
   };
   try {
-    await redisClient.publish("dashboard:updated:v1", JSON.stringify(notification));
+    await Promise.race([
+      redisClient.publish("dashboard:updated:v1", JSON.stringify(notification)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Redis publish timeout")), 1000)),
+    ]);
   } catch (error) {
-    console.warn("[DASHBOARD] Snapshot committed but Redis notification failed", error);
+    console.warn("[DASHBOARD] Snapshot committed but Redis notification skipped/failed", error);
   }
   return notification;
 }
@@ -259,21 +262,26 @@ export async function getOperations(adminSocketCount: number): Promise<Dashboard
   ]);
   let consumerLag: number | null = null;
   try {
-    const admin = kafka.admin();
-    await admin.connect();
-    try {
-      const [topicOffsets, groupOffsets] = await Promise.all([
-        admin.fetchTopicOffsets(kafkaTopics.dashboard),
-        admin.fetchOffsets({ groupId: process.env.DASHBOARD_KAFKA_GROUP_ID || "dashboard-analytics-v1", topics: [kafkaTopics.dashboard] }),
-      ]);
-      const group = groupOffsets[0]?.partitions ?? [];
-      consumerLag = topicOffsets.reduce((total, topicOffset) => {
-        const current = group.find((item) => item.partition === topicOffset.partition)?.offset ?? "0";
-        return total + Math.max(0, Number(topicOffset.high) - Number(current));
-      }, 0);
-    } finally {
-      await admin.disconnect();
-    }
+    consumerLag = await Promise.race([
+      (async () => {
+        const admin = kafka.admin();
+        await admin.connect();
+        try {
+          const [topicOffsets, groupOffsets] = await Promise.all([
+            admin.fetchTopicOffsets(kafkaTopics.dashboard),
+            admin.fetchOffsets({ groupId: process.env.DASHBOARD_KAFKA_GROUP_ID || "dashboard-analytics-v1", topics: [kafkaTopics.dashboard] }),
+          ]);
+          const group = groupOffsets[0]?.partitions ?? [];
+          return topicOffsets.reduce((total, topicOffset) => {
+            const current = group.find((item) => item.partition === topicOffset.partition)?.offset ?? "0";
+            return total + Math.max(0, Number(topicOffset.high) - Number(current));
+          }, 0);
+        } finally {
+          await admin.disconnect().catch(() => undefined);
+        }
+      })(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+    ]);
   } catch {
     consumerLag = null;
   }
