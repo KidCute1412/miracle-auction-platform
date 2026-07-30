@@ -68,8 +68,10 @@ export default function ProductImageGallery({
               className="w-full h-[500px] object-contain bg-card transition-all duration-500 animate-in fade-in zoom-in-95 duration-300"
             />
 
-            {/* Holographic Laser Scanner Beam on Mount */}
-            <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#F59E0B] pointer-events-none animate-laser-scan z-10" />
+            {/* Perfectly Centered Holographic Laser Scanner Beam */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[3px] bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_20px_#F59E0B] pointer-events-none animate-laser-center-scan z-10">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-amber-400/35 rounded-full blur-xl pointer-events-none" />
+            </div>
 
             {/* Dynamic Specular Lens Sheen Spotlight */}
             <div
