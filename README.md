@@ -1,134 +1,261 @@
-# Hướng Dẫn Thiết Lập Dự Án Đấu Giá Trực Tuyến
+# Miracle Auction Platform
 
-## Giới Thiệu Dự Án
+[![CI/CD Pipeline](https://github.com/KidCute1412/miracle-auction-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/KidCute1412/miracle-auction-platform/actions/workflows/ci.yml)
 
-**Online Auction** là một nền tảng đấu giá trực tuyến được xây dựng để cho phép người dùng tham gia đấu giá sản phẩm một cách thuận tiện và an toàn. Dự án bao gồm các tính năng chính như:
+A full-stack auction platform built around one difficult requirement: accepting concurrent bids quickly without losing ordering, correctness, or recoverability.
 
-- **Đấu giá real-time**: Sử dụng Socket.io để cập nhật giá đấu giá tức thời.
-- **Quản lý sản phẩm và danh mục**: Hỗ trợ thêm, sửa, xóa sản phẩm và phân loại theo danh mục.
-- **Hệ thống người dùng**: Đăng ký, đăng nhập, quản lý hồ sơ cá nhân.
-- **Thông báo email**: Tự động gửi email khi đấu giá kết thúc.
-- **Upload hình ảnh**: Tích hợp Cloudinary để lưu trữ và quản lý hình ảnh sản phẩm.
-- **Giao diện thân thiện**: Frontend responsive với React và TailwindCSS.
+Miracle Auction combines a React storefront and administration console with a TypeScript modular monolith. Active-auction decisions are atomic in Redis; PostgreSQL stores the durable business projection; a transactional outbox and Kafka carry asynchronous work; Socket.IO delivers post-commit updates.
 
-**Công nghệ sử dụng**:
+> This is an engineering portfolio project. It demonstrates production-oriented patterns and their tradeoffs, but does not claim unlimited scale or exactly-once delivery.
 
-- **Backend**: Node.js, TypeScript, Express.js, Socket.io, Prisma, PostgreSQL (Supabase)
-- **Frontend**: React, Vite, TailwindCSS, Socket.io-client
-- **Bảo mật**: JWT, bcrypt
-- **Email**: Nodemailer với Gmail SMTP
-- **Hình ảnh**: Cloudinary
+## Highlights
 
-Dự án này phù hợp cho việc học tập, phát triển kỹ năng full-stack và triển khai ứng dụng web real-time.
+- Real-time bidding, proxy maxima, buy-now, anti-sniping, winner, seller, and order workflows
+- Atomic Redis Lua mutations with ordered Stream events
+- Idempotent PostgreSQL projection with event and per-auction sequence fences
+- Transactional outbox publication to Kafka
+- Retryable dashboard and email consumers with durable DLQ records
+- Socket.IO updates emitted only after projection commits
+- Cookie authentication, CSRF, CORS, Helmet, rate limits, RBAC, and request IDs
+- Unit, API contract, integration, concurrency, frontend, and k6 test assets
 
-## Yêu Cầu Hệ Thống
+## Architecture
 
-- Node.js (phiên bản 16 trở lên)
-- npm hoặc yarn
-- PostgreSQL (chỉ cần nếu sử dụng local; nếu dùng Supabase thì không cần)
+The backend is one modular-monolith codebase and image with four composition roots. This preserves shared domain boundaries while isolating HTTP latency, ordered projection, relay, and asynchronous work.
 
-## 1. Thiết Lập Cơ Sở Dữ Liệu (Database)
+```mermaid
+flowchart LR
+    UI["React 19 + Vite<br/>storefront and admin"] -->|HTTPS / Socket.IO| API["API process<br/>Express 5"]
+    API -->|atomic EVALSHA| REDIS[("Redis 7<br/>active-auction authority")]
+    REDIS -->|ordered Stream| AW["auction-worker<br/>single projector"]
+    AW -->|transaction| PG[("PostgreSQL<br/>durable projection")]
+    PG --> OUTBOX[("transactional outbox")]
+    OUTBOX --> RELAY["outbox-relay"]
+    RELAY --> KAFKA[("Kafka")]
+    KAFKA --> ASYNC["async-worker<br/>dashboard + notifications"]
+    ASYNC --> PG
+    ASYNC --> SMTP["SMTP provider"]
+    AW -->|post-commit Pub/Sub| API
+    API -->|product room| UI
+```
 
-### 1.1 Sử Dụng Supabase (Khuyến Nghị)
+### Bid processing
 
-Dự án này sử dụng PostgreSQL thông qua dịch vụ đám mây Supabase để dễ dàng quản lý và triển khai.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Browser
+    participant A as API
+    participant R as Redis authority
+    participant W as auction-worker
+    participant P as PostgreSQL
+    participant O as outbox-relay
+    participant K as Kafka
+    participant X as async-worker
 
-1. Đăng ký tài khoản tại [Supabase](https://supabase.com/).
-2. Tạo một project mới trên Supabase.
-3. Trong dashboard của project, vào phần "Settings" > "Database" để lấy thông tin kết nối.
+    C->>A: Submit bid
+    A->>R: Atomic Lua mutation
+    R->>R: Validate window, role, ban, step,<br/>proxy maximum, idempotency, anti-sniping
+    R->>R: Update authority + append Stream event
+    R-->>A: Authoritative result
+    A-->>C: HTTP response
+    W->>R: Read ordered Stream entry
+    W->>P: Project state/history/order + outbox
+    P-->>W: Commit
+    W-->>A: Publish committed socket event
+    A-->>C: Socket.IO update
+    W->>R: Acknowledge Stream entry
+    O->>P: Lease pending outbox rows
+    O->>K: Publish with aggregate key
+    K-->>O: Broker acknowledgement
+    O->>P: Mark delivered
+    K->>X: At-least-once delivery
+    X->>P: Idempotent effect
+```
 
-### 1.2 Database schema and demo data
+The synchronous bid request ends at Redis. PostgreSQL, Kafka, Socket.IO, dashboards, and email are not part of bid HTTP latency. See the [system overview](docs/overview_system_architecture.md), [bid architecture](docs/bidding_architecture.md), and [worker failure model](docs/worker-process-architecture.md).
 
-Schema is managed only by Prisma migrations. For local development, run `start.bat`; it starts infrastructure, applies migrations, and seeds demo data only when the database is empty.
+## Reliability model
 
-For Supabase, configure `DATABASE_URL` and `DIRECT_URL`, then run `npx prisma migrate deploy` from the backend release. Do not paste application schema SQL into Supabase SQL Editor.
+| Concern | Design |
+|---|---|
+| Active-auction decisions | Redis is authoritative. A Lua script validates and mutates the complete state atomically. |
+| Durable business view | PostgreSQL stores users, products, bid history, orders, outbox rows, and consumer receipts as an eventually convergent projection. |
+| Ordering | One `auction-worker` sequentially projects the global Redis Stream. |
+| Projection retries | Database failure leaves the entry pending for idempotent reclaim and retry. |
+| Event publication | Projection and outbox insert commit together; delivery is recorded only after Kafka acknowledges publication. |
+| Duplicate delivery | Event IDs, sequence constraints, consumer receipts, and effect-specific unique constraints suppress duplicates. |
+| Poison events | Bounded retries terminate in durable DLQ records for inspection and controlled replay. |
+| Live updates | Redis Pub/Sub and Socket.IO are best-effort after commit; clients reject stale versions and refetch after reconnect. |
 
-## 2. Thiết Lập Backend
+The system provides **at-least-once delivery with idempotent effects**, not exactly-once delivery.
 
-### 2.1 Cài Đặt Dependencies
+## Technology
 
-1. Mở terminal và điều hướng đến thư mục `Backend`.
-2. Chạy lệnh:
-   ```
-   npm install
-   ```
+| Layer | Main technology |
+|---|---|
+| Frontend | React 19, TypeScript, Vite 7, Tailwind CSS 4, Radix UI, Socket.IO client |
+| API | Node.js 22, TypeScript, Express 5, Socket.IO |
+| Persistence | PostgreSQL 15, Prisma migrations/client |
+| Auction authority | Redis 7, Lua, Streams, Pub/Sub, AOF |
+| Events | Kafka 3.7, KafkaJS, transactional outbox |
+| Testing | Vitest, Supertest, Testcontainers, k6 |
+| Operations | Docker Compose, GitHub Actions, health/readiness endpoints |
 
-### 2.2 Cấu Hình Biến Môi Trường
+## Repository map
 
-1. Copy file `.env.example` trong thư mục `Backend` thành `.env`.
-2. Chỉnh sửa file `.env` với thông tin thực tế của bạn:
-   - Nếu sử dụng Supabase: đặt `DATABASE_URL` (pooled URL) và `DIRECT_URL` (direct URL) từ Supabase dashboard ("Settings" > "Database").
-   - Cập nhật các biến khác như `JWT_SECRET`, `GMAIL_ADDRESS`, `CLOUDINARY_*`, v.v. với thông tin thực tế.
+```text
+Backend/             API, modules, Prisma schema, workers, and tests
+Frontend/            React storefront and administration console
+AgentService/        Repository-scoped agent service
+PerformanceTests/    Repeatable k6 scenarios and benchmark artifacts
+data/                Local demonstration seed data
+docs/                Architecture, demo, evidence, and operating notes
+.github/workflows/   CI quality gates
+```
 
-### 2.3 Chạy Backend
+## Local development
 
-1. Trong thư mục `Backend`, chạy:
-   ```
-   npm run dev
-   ```
-2. Backend sẽ chạy trên `http://localhost:5000`.
+### Prerequisites
 
-## 3. Thiết Lập Frontend
+- Node.js 22
+- npm
+- Docker Desktop with Docker Compose
+- Windows PowerShell for the one-command launcher
 
-### 3.1 Cài Đặt Dependencies
+External email, OAuth, CAPTCHA, Cloudinary, and editor integrations are optional for the core local auction flow.
 
-1. Mở terminal và điều hướng đến thư mục `Frontend`.
-2. Chạy lệnh:
-   ```
-   npm install
-   ```
+### One-command Windows start
 
-### 3.2 Chạy Frontend
+```powershell
+Copy-Item Backend/.env.example Backend/.env
+Copy-Item Frontend/.env.example Frontend/.env
+.\start.bat
+```
 
-1. Trong thư mục `Frontend`, chạy:
-   ```
-   npm run dev
-   ```
-2. Frontend sẽ chạy trên `http://localhost:5173`.
-
-## 4. Triển Khai Toàn Bộ Dự Án
-
-### 4.1 Chạy Song Song Backend và Frontend
-
-1. Mở hai terminal riêng biệt.
-2. Trong terminal 1: Chạy backend (`npm run dev` trong thư mục Backend).
-3. Trong terminal 2: Chạy frontend (`npm run dev` trong thư mục Frontend).
-
-### 4.2 Truy Cập Ứng Dụng
+`start.bat` starts PostgreSQL, Redis, and Kafka; installs dependencies; generates Prisma; applies migrations; seeds only when the database is empty; starts all three workers; and opens backend/frontend development processes.
 
 - Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5000`
+- API: `http://localhost:5000`
+- Liveness: `http://localhost:5000/health`
+- Readiness: `http://localhost:5000/ready`
 
-## 5. Cấu Hình Bổ Sung
+### Manual start
 
-### 5.1 Email Setup
+```powershell
+docker compose up -d postgres redis kafka
 
-Để gửi email (cho việc kết thúc đấu giá), cấu hình trong file `.env`:
+Set-Location Backend
+npm install
+npm run prisma:generate
+npm run prisma:migrate:deploy
+npm run dev
+```
 
-- `GMAIL_ADDRESS`: Email Gmail gửi
-- `GMAIL_APP_PASSWORD`: Mật khẩu ứng dụng Gmail (tạo trong Google Account settings)
+In separate terminals:
 
-### 5.2 Cloudinary Setup
+```powershell
+Set-Location Frontend
+npm install
+npm run dev
+```
 
-Để upload hình ảnh:
+```powershell
+docker compose up -d auction-worker outbox-relay async-worker
+```
 
-- Đăng ký tài khoản Cloudinary
-- Thêm thông tin vào `.env`
+Use `start.bat` when you want the provided demo data; the manual commands do not import it automatically.
 
-### 5.3 Socket.io
+## Environment
 
-Ứng dụng sử dụng Socket.io cho đấu giá real-time. Đảm bảo CORS được cấu hình đúng (mặc định cho `localhost:5173`).
+Start from the committed examples:
 
-## 6. Troubleshooting
+- `Backend/.env.example` — database, Redis, Kafka, auth, providers, workers, and topics
+- `Frontend/.env.example` — API URL and optional browser integrations
+- `AgentService/.env.example` — agent service configuration
 
-- Nếu gặp lỗi kết nối database với Supabase, kiểm tra lại thông tin connection trong "Settings" > "Database" và đảm bảo project đang active.
-- Nếu gặp lỗi kết nối database local, kiểm tra lại thông tin trong `.env` và đảm bảo PostgreSQL đang chạy.
-- Nếu port bị conflict, thay đổi port trong `server.ts` (backend) hoặc `vite.config.ts` (frontend).
-- Đảm bảo PostgreSQL (local hoặc Supabase) đang chạy trước khi start backend.
+Production secrets must be injected by the deployment environment. Never commit `.env` files, JWT secrets, provider keys, SMTP credentials, or database passwords.
 
-## 7. Cấu Trúc Dự Án
+## Verification
 
-- `Backend/`: Code backend với Express.js, Socket.io, Prisma
-- `Frontend/`: Code frontend với React, Vite, TailwindCSS
+CI runs separate gates for the backend, frontend, AgentService, Compose definitions, and production image.
 
-Chúc bạn thành công trong việc thiết lập dự án!
+```powershell
+Set-Location Backend
+npm run build
+npm run test:unit
+npm run test:contracts
+npm run test:coverage
+
+Set-Location ../Frontend
+npm run lint
+npm test
+npm run build
+
+Set-Location ../AgentService
+npm run build
+npm test
+
+Set-Location ..
+docker compose config
+docker compose --env-file Backend/.env.example -f compose.production.yml config
+```
+
+Database and concurrency tests use isolated Testcontainers rather than shared development data. See [engineering evidence](docs/engineering-evidence.md) for current results and benchmark provenance.
+
+## Security notes
+
+- Access and refresh tokens use secure cookie flows; authorization remains server-side.
+- State-changing browser requests pass CSRF validation.
+- CORS is restricted to the configured client origin; Helmet supplies baseline security headers.
+- Global and authentication-specific rate limits protect sensitive endpoints.
+- Bid rules, seller restrictions, bidder bans, winner permissions, and admin actions are enforced by backend use cases.
+- Request IDs are returned and propagated as correlation IDs where supported.
+- Live external providers are excluded from deterministic tests and benchmarks.
+
+This is not a security certification. Refresh-token reuse tests, broader audit coverage, secret-redaction tests, and a complete OWASP review remain roadmap work.
+
+## Performance evidence
+
+The preserved three-run k6 comparison measured:
+
+- Hot-auction median: **1,463.60 req/s**, **81.11 ms p99**, **0% infrastructure errors**
+- Distributed median: **1,468.67 req/s**, **116.77 ms p99**, **0% infrastructure errors**
+- Extended invariants: Redis/PostgreSQL agreement, zero pending Stream entries, drained outbox, and zero dashboard/notification Kafka lag
+
+The optimized run came from a preserved dirty revision, so these are **historical measurements, not a clean-release benchmark claim**. See [engineering evidence](docs/engineering-evidence.md). New claims require a clean commit, deterministic data, three-run medians, and post-run invariant convergence.
+
+## Demo and media
+
+Follow the [five-minute demo guide](docs/demo-guide.md) to present product discovery, live bidding, winner/order behavior, administration, and engineering evidence. Real UI captures belong under `docs/assets/`; mockups are not accepted as portfolio evidence.
+
+| Storefront | Active auction |
+|---|---|
+| ![Miracle Auction storefront](docs/assets/storefront.webp) | ![Miracle Auction active product](docs/assets/product-bidding.webp) |
+
+## Tradeoffs and limits
+
+- One sequential projector preserves ordering but limits projection throughput.
+- Redis outages reject bid mutations; PostgreSQL is deliberately not a fallback because dual authorities risk divergence.
+- PostgreSQL and dashboards converge asynchronously, so operational lag must be monitored.
+- Pub/Sub can lose transient updates; reconnecting clients refetch canonical state.
+- Kafka and SMTP are at-least-once. Idempotency prevents duplicate business effects, but email acceptance cannot be transactional with PostgreSQL.
+- Fixed-date catalog seeds must be refreshed when their auction windows no longer fit the demonstration date.
+- A complete operator-facing Redis/PostgreSQL reconciliation and repair tool remains planned.
+- The frontend does not yet have the complete Playwright workflow suite in the roadmap.
+
+## Documentation
+
+- [Five-minute demo](docs/demo-guide.md)
+- [Engineering evidence](docs/engineering-evidence.md)
+- [Current architecture](docs/overview_system_architecture.md)
+- [Redis-authoritative bidding](docs/bidding_architecture.md)
+- [Worker architecture and failures](docs/worker-process-architecture.md)
+- [Modular monolith boundaries](docs/modular_monolith_architecture.md)
+- [Deployment and recovery](docs/deployment.md)
+- [API contracts](docs/api-route-contracts.md)
+- [Current roadmap](docs/reflourish_plan.md)
+
+## License
+
+The backend package declares ISC. Add a root `LICENSE` file before presenting the entire repository as formally licensed.
