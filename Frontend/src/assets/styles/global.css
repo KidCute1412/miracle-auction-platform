@@ -740,6 +740,28 @@ html {
   animation-delay: 15s;
 }
 
+@keyframes vanguard-star-drop {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0px) scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 10px rgba(230, 194, 91, 0.9));
+  }
+  60% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) translateY(28px) scale(0.85) rotate(45deg);
+    filter: drop-shadow(0 0 15px rgba(240, 205, 109, 0.7));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(55px) scale(0.2) rotate(90deg);
+    filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0));
+  }
+}
+
+.animate-vanguard-star-drop {
+  animation: vanguard-star-drop 0.65s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
 
 
 

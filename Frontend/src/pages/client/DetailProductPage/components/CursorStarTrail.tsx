@@ -5,8 +5,8 @@ interface Sparkle {
   x: number;
   y: number;
   size: number;
-  rotation: number;
   color: string;
+  char: string;
 }
 
 export default function CursorStarTrail() {
@@ -16,21 +16,31 @@ export default function CursorStarTrail() {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const now = Date.now();
-      // Throttle spawn to once every 45ms for optimal performance & elegant density
-      if (now - lastSpawnRef.current < 45) return;
+      // Throttle spawn to once every 40ms for smooth fluid trail
+      if (now - lastSpawnRef.current < 40) return;
       lastSpawnRef.current = now;
 
-      const colors = ["#F59E0B", "#FBBF24", "#FCD34D", "#34D399", "#E0E7FF"];
+      // Vanguard Elite Champagne Gold color palette
+      const vanguardGoldColors = [
+        "#E6C25B", // Champagne Gold Primary
+        "#F0CD6D", // Bright Champagne Glow
+        "#D4AF37", // Metallic Gold Accent
+        "#F59E0B", // Amber Gold Light
+        "#FFF4B8", // Ivory Gold Sparkle
+      ];
+
+      const chars = ["✦", "★", "✦", "✧"];
+
       const newSparkle: Sparkle = {
         id: now + Math.random(),
         x: e.clientX,
         y: e.clientY,
-        size: 10 + Math.random() * 14,
-        rotation: Math.random() * 90,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 10 + Math.random() * 12,
+        color: vanguardGoldColors[Math.floor(Math.random() * vanguardGoldColors.length)],
+        char: chars[Math.floor(Math.random() * chars.length)],
       };
 
-      setSparkles((prev) => [...prev.slice(-15), newSparkle]);
+      setSparkles((prev) => [...prev.slice(-18), newSparkle]);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -40,7 +50,7 @@ export default function CursorStarTrail() {
   useEffect(() => {
     if (sparkles.length === 0) return;
     const timer = setTimeout(() => {
-      setSparkles((prev) => prev.filter((s) => Date.now() - s.id < 600));
+      setSparkles((prev) => prev.filter((s) => Date.now() - s.id < 650));
     }, 100);
     return () => clearTimeout(timer);
   }, [sparkles]);
@@ -50,17 +60,15 @@ export default function CursorStarTrail() {
       {sparkles.map((s) => (
         <span
           key={s.id}
-          className="fixed pointer-events-none animate-sparkle-float select-none"
+          className="fixed pointer-events-none animate-vanguard-star-drop select-none font-bold"
           style={{
             left: `${s.x}px`,
             top: `${s.y}px`,
             fontSize: `${s.size}px`,
             color: s.color,
-            transform: `translate(-50%, -50%) rotate(${s.rotation}deg)`,
-            textShadow: `0 0 10px ${s.color}, 0 0 20px rgba(245, 158, 11, 0.6)`,
           }}
         >
-          ✦
+          {s.char}
         </span>
       ))}
     </div>
