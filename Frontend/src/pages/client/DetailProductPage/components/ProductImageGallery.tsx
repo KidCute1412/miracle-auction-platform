@@ -51,6 +51,9 @@ export default function ProductImageGallery({
         onMouseLeave={handleMouseLeave}
         onClick={() => onOpenImageModal(currentImageIndex)}
       >
+        {/* Full-width Holographic Laser Scanner Beam on Mount */}
+        <div className="absolute inset-x-0 h-[2.5px] bg-gradient-to-r from-transparent via-amber-400 via-yellow-300 to-transparent shadow-[0_0_20px_#F59E0B,0_0_35px_rgba(245,158,11,0.8)] pointer-events-none animate-laser-scan z-30" />
+
         {product_images && product_images.length > 0 ? (
           <div
             className="w-full relative transition-transform duration-200 ease-out transform-gpu"
@@ -67,11 +70,6 @@ export default function ProductImageGallery({
               loading="lazy"
               className="w-full h-[500px] object-contain bg-card transition-all duration-500 animate-in fade-in zoom-in-95 duration-300"
             />
-
-            {/* Perfectly Centered Holographic Laser Scanner Beam */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[3px] bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_20px_#F59E0B] pointer-events-none animate-laser-center-scan z-10">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-amber-400/35 rounded-full blur-xl pointer-events-none" />
-            </div>
 
             {/* Dynamic Specular Lens Sheen Spotlight */}
             <div

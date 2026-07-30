@@ -762,29 +762,25 @@ html {
   animation: vanguard-star-drop 0.65s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-@keyframes laser-center-scan {
+@keyframes laser-scan {
   0% {
-    transform: translate(-50%, -50%) scaleX(0);
+    top: 0%;
     opacity: 0;
   }
-  30% {
+  20% {
     opacity: 1;
-    transform: translate(-50%, -50%) scaleX(1);
-    filter: drop-shadow(0 0 20px #F59E0B);
   }
-  70% {
+  80% {
     opacity: 1;
-    transform: translate(-50%, -50%) scaleX(1) scaleY(1.5);
-    filter: drop-shadow(0 0 25px #E6C25B);
   }
   100% {
-    transform: translate(-50%, -50%) scaleX(1.1) scaleY(0);
+    top: 98%;
     opacity: 0;
   }
 }
 
-.animate-laser-center-scan {
-  animation: laser-center-scan 1.6s cubic-bezier(0.16, 1, 0.3, 1) 1 forwards;
+.animate-laser-scan {
+  animation: laser-scan 1.6s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
 }
 
 
