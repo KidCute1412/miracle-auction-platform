@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("account-auth.use-case");
+
 // Authentication application operations: no Express or database query code lives here.
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -22,7 +26,7 @@ export async function verifyCaptcha(token: string): Promise<boolean> {
   try {
     const secretKey = process.env.CAPTCHA_SECRET_KEY;
     if (!secretKey) {
-      console.error("Missing CAPTCHA_SECRET_KEY in env configuration");
+      log.error("Missing CAPTCHA_SECRET_KEY in env configuration");
       return false;
     }
     const params = new URLSearchParams({ secret: secretKey, response: token });
@@ -34,7 +38,7 @@ export async function verifyCaptcha(token: string): Promise<boolean> {
     const data: unknown = await response.json();
     return typeof data === "object" && data !== null && "success" in data && data.success === true;
   } catch (error) {
-    console.error("Error validating CAPTCHA:", error);
+    log.error("Error validating CAPTCHA:", error);
     return false;
   }
 }
@@ -55,7 +59,12 @@ export function generateAccessToken(user: UserPayload): string {
 }
 
 // Generate refresh JWT token with expiry
-export function generateRefreshToken(user: UserPayload, rememberMe: boolean, sessionId: string, tokenId: string): string {
+export function generateRefreshToken(
+  user: UserPayload,
+  rememberMe: boolean,
+  sessionId: string,
+  tokenId: string,
+): string {
   const payload = {
     user_id: user.user_id,
     auth_version: user.auth_version,

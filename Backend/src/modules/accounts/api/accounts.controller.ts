@@ -1,28 +1,50 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("accounts.controller");
+
 import { Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import * as AccountsService from "../application/account-auth.use-case.ts";
-import { consumeRefreshSession, createRefreshSession, persistRefreshSession, revokeRefreshSession } from "../application/auth-session.service.ts";
+import {
+  consumeRefreshSession,
+  createRefreshSession,
+  persistRefreshSession,
+  revokeRefreshSession,
+} from "../application/auth-session.service.ts";
 import { generateOTP } from "@/helpers/generate.helper.ts";
 import { sendMail } from "@/helpers/mail.helper.ts";
 import type { AccountRequest } from "@/interfaces/request.interface.ts";
 
 const googleClient = new OAuth2Client();
 
-const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+};
 const clearSessionCookies = (res: Response) => {
   res.clearCookie("accessToken", cookieOptions);
   res.clearCookie("refreshToken", cookieOptions);
 };
 
-async function issueSession(res: Response, account: { user_id: number; role: string; auth_version: number }, rememberMe: boolean, sessionId?: string) {
+async function issueSession(
+  res: Response,
+  account: { user_id: number; role: string; auth_version: number },
+  rememberMe: boolean,
+  sessionId?: string,
+) {
   const session = createRefreshSession(account.user_id, account.auth_version, rememberMe, sessionId);
   const user = { user_id: account.user_id, auth_version: account.auth_version };
   const accessToken = AccountsService.generateAccessToken(user);
   const refreshToken = AccountsService.generateRefreshToken(user, rememberMe, session.sessionId, session.tokenId);
   await persistRefreshSession(session);
   res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-  res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000 });
+  res.cookie("refreshToken", refreshToken, {
+    ...cookieOptions,
+    maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
+  });
 }
 
 type GoogleAccountData = {
@@ -236,9 +258,16 @@ export const logoutPost = async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken;
   if (refreshToken) {
     try {
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
-      if (typeof decoded.sid === "string" && typeof decoded.jti === "string") await revokeRefreshSession(decoded.sid, decoded.jti);
-    } catch { /* cookies are still cleared for expired or invalid tokens */ }
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string, {
+        algorithms: ["HS256"],
+        issuer: "online-auction",
+        audience: "online-auction-api",
+      }) as JwtPayload;
+      if (typeof decoded.sid === "string" && typeof decoded.jti === "string")
+        await revokeRefreshSession(decoded.sid, decoded.jti);
+    } catch {
+      /* cookies are still cleared for expired or invalid tokens */
+    }
   }
   clearSessionCookies(res);
   res.json({ code: "success", message: "Logged out successfully", data: null });
@@ -300,10 +329,7 @@ export const googleLoginPost = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    console.error(
-      "[AUTH] Google ID token verification failed:",
-      error instanceof Error ? error.message : "unknown error",
-    );
+    log.error("[AUTH] Google ID token verification failed:", error instanceof Error ? error.message : "unknown error");
     res.status(401).json({ code: "error", message: "Google sign-in could not be verified." });
   }
 };
@@ -359,7 +385,7 @@ export const changePassword = async (req: AccountRequest, res: Response) => {
     });
     res.json({ code: "success", message: "OTP sent to your email" });
   } catch (error) {
-    console.error("Change password error:", error);
+    log.error("Change password error:", error);
     res.json({ code: "error", message: "An error occurred, please try again" });
   }
 };
@@ -385,7 +411,7 @@ export const verifyChangePassword = async (req: Request, res: Response) => {
     res.clearCookie("change_password_token");
     res.json({ code: "success", message: "Password changed successfully" });
   } catch (error) {
-    console.error("Verify change password error:", error);
+    log.error("Verify change password error:", error);
     res.json({ code: "error", message: "An error occurred, please try again" });
   }
 };
@@ -397,8 +423,17 @@ export const refreshSession = async (req: Request, res: Response) => {
     return;
   }
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
-    if (typeof decoded.user_id !== "number" || typeof decoded.auth_version !== "number" || typeof decoded.sid !== "string" || typeof decoded.jti !== "string") {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string, {
+      algorithms: ["HS256"],
+      issuer: "online-auction",
+      audience: "online-auction-api",
+    }) as JwtPayload;
+    if (
+      typeof decoded.user_id !== "number" ||
+      typeof decoded.auth_version !== "number" ||
+      typeof decoded.sid !== "string" ||
+      typeof decoded.jti !== "string"
+    ) {
       res.status(401).json({ code: "error", message: "Refresh token has been revoked or is invalid" });
       return;
     }
@@ -407,7 +442,7 @@ export const refreshSession = async (req: Request, res: Response) => {
       res.status(401).json({ code: "error", message: "Refresh token has been revoked or is invalid" });
       return;
     }
-    if (await consumeRefreshSession(decoded.sid, decoded.jti) !== "active") {
+    if ((await consumeRefreshSession(decoded.sid, decoded.jti)) !== "active") {
       res.status(401).json({ code: "error", message: "Refresh token has been revoked or is invalid" });
       return;
     }

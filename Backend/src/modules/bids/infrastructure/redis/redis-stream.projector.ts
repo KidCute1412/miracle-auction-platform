@@ -1,3 +1,7 @@
+import { createComponentLogger, runWithLogContext, type LogContext } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("redis-stream.projector");
+
 import { Prisma } from "@prisma/client";
 import type { BidSocketEvent } from "api-contracts";
 import { redisClient } from "@/config/redis.config.ts";
@@ -16,7 +20,7 @@ const blockingClient = (): ReturnType<typeof redisClient.duplicate> => {
   if (!blockingRedisClient) {
     blockingRedisClient = redisClient.duplicate();
     blockingRedisClient.on("error", (error: Error) => {
-      console.error("[REDIS PROJECTOR] Connection error:", error.message);
+      log.error("[REDIS PROJECTOR] Connection error:", error.message);
     });
   }
   return blockingRedisClient;
@@ -30,8 +34,7 @@ const eventTypes = new Set([
   "AUCTION_CLOSED",
   "AUCTION_CANCELLED",
 ]);
-const isMissingGroup = (error: unknown): boolean =>
-  error instanceof Error && error.message.includes("NOGROUP");
+const isMissingGroup = (error: unknown): boolean => error instanceof Error && error.message.includes("NOGROUP");
 
 export class ProjectionGapError extends Error {}
 export class InvalidAuctionEventError extends Error {}
@@ -51,12 +54,23 @@ function parseEvent(payload: string): AuctionStreamEvent {
   if (!value || typeof value !== "object") throw new InvalidAuctionEventError("Stream payload is not an object");
   const event = value as Partial<AuctionStreamEvent>;
   const decimals = [
-    event.productId, event.currentPriceVnd, event.endAtMs, event.sequence,
-    event.version, event.occurredAtMs,
+    event.productId,
+    event.currentPriceVnd,
+    event.endAtMs,
+    event.sequence,
+    event.version,
+    event.occurredAtMs,
   ];
-  if (!event.eventId || !UUID.test(event.eventId) || !event.type || !eventTypes.has(event.type) ||
-      !event.actorId || !DECIMAL.test(event.actorId) || decimals.some((item) => !item || !DECIMAL.test(item)) ||
-      event.schemaVersion !== 1) {
+  if (
+    !event.eventId ||
+    !UUID.test(event.eventId) ||
+    !event.type ||
+    !eventTypes.has(event.type) ||
+    !event.actorId ||
+    !DECIMAL.test(event.actorId) ||
+    decimals.some((item) => !item || !DECIMAL.test(item)) ||
+    event.schemaVersion !== 1
+  ) {
     throw new InvalidAuctionEventError("Stream event contract is invalid");
   }
   if (event.orderId && !UUID.test(event.orderId)) throw new InvalidAuctionEventError("Order UUID is invalid");
@@ -141,11 +155,13 @@ export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"app
       });
     } else if (event.type === "BIDDER_BANNED" && event.targetUserId) {
       await tx.bidding_ban_user.createMany({
-        data: [{
-          product_id: productId,
-          user_id: Number(event.targetUserId),
-          reason: event.reason,
-        }],
+        data: [
+          {
+            product_id: productId,
+            user_id: Number(event.targetUserId),
+            reason: event.reason,
+          },
+        ],
         skipDuplicates: true,
       });
       await tx.bidding_history.updateMany({
@@ -154,8 +170,7 @@ export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"app
       });
     }
 
-    if (event.orderId && leaderId !== null &&
-        (event.type === "BUY_NOW_COMPLETED" || event.type === "AUCTION_CLOSED")) {
+    if (event.orderId && leaderId !== null && (event.type === "BUY_NOW_COMPLETED" || event.type === "AUCTION_CLOSED")) {
       await tx.orders.create({
         data: {
           public_order_id: event.orderId,
@@ -202,7 +217,7 @@ export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"app
   });
 
   if (result === "applied") {
-    console.log("[BID_PROJECTOR] Projected event", {
+    log.info("[BID_PROJECTOR] Projected event", {
       type: event.type,
       productId: event.productId,
       currentPriceVnd: event.currentPriceVnd,
@@ -221,7 +236,7 @@ export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"app
       status: event.status,
     };
     await redisClient.publish(COMMITTED_CHANNEL, JSON.stringify(notification)).catch((error: unknown) => {
-      console.warn("[BID_PROJECTOR] Post-commit socket notification unavailable", {
+      log.warn("[BID_PROJECTOR] Post-commit socket notification unavailable", {
         eventId: event.eventId,
         productId: event.productId,
         message: error instanceof Error ? error.message : "unknown",
@@ -261,16 +276,32 @@ export async function readNewProjectorEntries(consumer: string, count = 50): Pro
   let raw: unknown;
   try {
     raw = await blockingClient().xreadgroup(
-      "GROUP", GROUP, consumer, "COUNT", count, "BLOCK", 1_000,
-      "STREAMS", redisAuctionKeys.results, ">",
+      "GROUP",
+      GROUP,
+      consumer,
+      "COUNT",
+      count,
+      "BLOCK",
+      1_000,
+      "STREAMS",
+      redisAuctionKeys.results,
+      ">",
     );
   } catch (error) {
     if (!isMissingGroup(error)) throw error;
     projectorGroupReady = false;
     await ensureProjectorGroup();
     raw = await blockingClient().xreadgroup(
-      "GROUP", GROUP, consumer, "COUNT", count, "BLOCK", 1_000,
-      "STREAMS", redisAuctionKeys.results, ">",
+      "GROUP",
+      GROUP,
+      consumer,
+      "COUNT",
+      count,
+      "BLOCK",
+      1_000,
+      "STREAMS",
+      redisAuctionKeys.results,
+      ">",
     );
   }
   return entriesFromRead(raw);
@@ -290,15 +321,7 @@ export async function autoClaimProjectorEntries(
 ): Promise<RedisStreamEntry[]> {
   let raw: unknown;
   try {
-    raw = await redisClient.xautoclaim(
-      redisAuctionKeys.results,
-      GROUP,
-      consumer,
-      minIdleMs,
-      "0-0",
-      "COUNT",
-      count,
-    );
+    raw = await redisClient.xautoclaim(redisAuctionKeys.results, GROUP, consumer, minIdleMs, "0-0", "COUNT", count);
   } catch (error) {
     if (!isMissingGroup(error)) throw error;
     projectorGroupReady = false;
@@ -322,10 +345,14 @@ export async function recordProjectionFailure(entry: RedisStreamEntry, error: un
   await redisClient.xadd(
     redisAuctionKeys.dlq,
     "*",
-    "sourceEntryId", entry.id,
-    "attempts", attempts.toString(),
-    "error", message.slice(0, 2_000),
-    "event", entry.payload,
+    "sourceEntryId",
+    entry.id,
+    "attempts",
+    attempts.toString(),
+    "error",
+    message.slice(0, 2_000),
+    "event",
+    entry.payload,
   );
   await acknowledgeProjectedEntry(entry.id);
   return "dlq";
@@ -340,12 +367,27 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
   const fresh = await readNewProjectorEntries(consumer);
   const entries = [...claimed, ...fresh.filter((entry) => !claimed.some((item) => item.id === entry.id))];
   for (const entry of entries) {
+    let context: LogContext = { jobId: entry.id, consumerGroup: GROUP };
     try {
-      await projectAuctionEntry(entry);
-      await acknowledgeProjectedEntry(entry.id);
-    } catch (error) {
-      await recordProjectionFailure(entry, error);
+      const event = parseEvent(entry.payload);
+      context = {
+        ...context,
+        eventId: event.eventId,
+        correlationId: event.correlationId,
+        productId: event.productId,
+      };
+    } catch {
+      // The projector records malformed payloads through its normal retry/DLQ path.
     }
+    await runWithLogContext(context, async () => {
+      try {
+        await projectAuctionEntry(entry);
+        await acknowledgeProjectedEntry(entry.id);
+      } catch (error) {
+        const outcome = await recordProjectionFailure(entry, error);
+        log.error("Projection failed", { error, outcome });
+      }
+    });
   }
   return entries.length;
 }

@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("redis-auction.authority");
+
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { redisClient } from "@/config/redis.config.ts";
@@ -22,12 +26,12 @@ function fingerprint(command: AuctionMutationCommand): string {
 
 async function loadScript(): Promise<string> {
   const source = await readFile(SCRIPT_URL, "utf8");
-  scriptSha = await redisClient.script("LOAD", source) as string;
+  scriptSha = (await redisClient.script("LOAD", source)) as string;
   return scriptSha;
 }
 
 async function evaluate(keys: string[], payload: string): Promise<unknown> {
-  const sha = scriptSha ?? await loadScript();
+  const sha = scriptSha ?? (await loadScript());
   try {
     return await redisClient.evalsha(sha, keys.length, ...keys, payload);
   } catch (error) {
@@ -45,9 +49,8 @@ export class RedisAuctionAuthority {
     }
     if (command.amountVnd !== undefined) parseMoneyVnd(command.amountVnd);
     const eventId = randomUUID();
-    const orderId = command.orderId ?? (
-      command.operation === "BUY_NOW" || command.operation === "CLOSE" ? randomUUID() : undefined
-    );
+    const orderId =
+      command.orderId ?? (command.operation === "BUY_NOW" || command.operation === "CLOSE" ? randomUUID() : undefined);
     const payload = JSON.stringify({
       ...command,
       eventId,
@@ -63,7 +66,7 @@ export class RedisAuctionAuthority {
     try {
       raw = await evaluate(mutationKeys(command.productId, command.actorId), payload);
     } catch (error) {
-      console.error("[BIDDING] Redis authority failure", error);
+      log.error("[BIDDING] Redis authority failure", error);
       throw new BidInfrastructureError();
     }
     if (typeof raw !== "string") throw new BidInfrastructureError("Bidding authority returned an invalid result");

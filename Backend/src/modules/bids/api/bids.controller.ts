@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("bids.controller");
+
 import type { Response } from "express";
 import type { BanBidderRequest, BidHistoryQuery, BidRequest, BuyNowRequest } from "api-contracts";
 import { requireAuthenticatedUser, type AccountRequest } from "@/interfaces/request.interface.ts";
@@ -13,13 +17,16 @@ const body = <T>(res: Response): T => res.locals.validated?.body as T;
 const query = <T>(res: Response): T => res.locals.validated?.query as T;
 function legacyError(res: Response, error: unknown, fallback: string): Response {
   const status = error instanceof BidDomainError ? error.statusCode : 500;
-  if (status === 500) console.error(error);
+  if (status === 500) log.error(error);
   const code = error instanceof BidDomainError ? error.code : "INTERNAL_ERROR";
-  return res.status(status).json({ status: "error", code, message: status === 500 ? fallback : (error as Error).message });
+  return res
+    .status(status)
+    .json({ status: "error", code, message: status === 500 ? fallback : (error as Error).message });
 }
 function requireIdempotencyKey(req: AccountRequest): string {
   const key = req.header("Idempotency-Key")?.trim();
-  if (!key || key.length > 255) throw new BidDomainError("A valid Idempotency-Key header is required", 400, "IDEMPOTENCY_KEY_REQUIRED");
+  if (!key || key.length > 255)
+    throw new BidDomainError("A valid Idempotency-Key header is required", 400, "IDEMPOTENCY_KEY_REQUIRED");
   return key;
 }
 export async function playBid(req: AccountRequest, res: Response): Promise<Response> {
@@ -32,7 +39,7 @@ export async function playBid(req: AccountRequest, res: Response): Promise<Respo
         productId: input.product_id,
         maxPriceVnd: input.max_price,
         idempotencyKey: requireIdempotencyKey(req),
-        correlationId: req.header("x-request-id") ?? undefined,
+        correlationId: req.requestId,
         role: account.role,
       }),
     );
@@ -50,7 +57,7 @@ export async function buyNowProduct(req: AccountRequest, res: Response): Promise
         productId: input.product_id,
         buyPriceVnd: input.buy_price,
         idempotencyKey: requireIdempotencyKey(req),
-        correlationId: req.header("x-request-id") ?? undefined,
+        correlationId: req.requestId,
         role: account.role,
       }),
     );
@@ -81,7 +88,7 @@ export async function banBidder(req: AccountRequest, res: Response): Promise<Res
           input.banned_user_id,
           input.reason,
           requireIdempotencyKey(req),
-          req.header("x-request-id") ?? undefined,
+          req.requestId,
         ),
       );
   } catch (error) {
@@ -99,7 +106,7 @@ export async function cancelAuction(req: AccountRequest, res: Response): Promise
       actorId: account.user_id,
       actorRole: account.role,
       idempotencyKey: requireIdempotencyKey(req),
-      correlationId: req.header("x-request-id") ?? undefined,
+      correlationId: req.requestId,
       reason: input.reason,
     });
     return res.status(200).json({ status: "success", data });

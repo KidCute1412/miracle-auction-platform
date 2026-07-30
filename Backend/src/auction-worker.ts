@@ -9,6 +9,9 @@ import {
   getProjectorStreamHealth,
 } from "@/modules/bids/infrastructure/redis/redis-stream.projector.ts";
 import { startBidProjector, stopBidProjector } from "@/workers/bid-projector.worker.ts";
+import { getLogger, safeError } from "@/infrastructure/observability/logger.ts";
+
+const log = getLogger({ component: "auction-worker" });
 
 let heartbeatTimer: NodeJS.Timeout | undefined;
 
@@ -27,23 +30,23 @@ async function run(): Promise<void> {
 
   await ensureProjectorGroup();
   const before = await getProjectorStreamHealth();
-  console.log("[AUCTION_WORKER] Stream group ready", {
-    process: "auction-worker",
-    consumer: `${hostname()}-${process.pid}`,
-    pending: before.pending,
-    lag: before.lag,
-  });
+  log.info(
+    {
+      process: "auction-worker",
+      consumer: `${hostname()}-${process.pid}`,
+      pending: before.pending,
+      lag: before.lag,
+    },
+    "Stream consumer group ready",
+  );
   const initialized = await bootstrapActiveRedisAuctions();
-  console.log("[AUCTION_WORKER] Redis bootstrap complete", { initialized });
+  log.info({ initialized }, "Redis auction bootstrap completed");
 
   startBidProjector();
   startRedisAuctionCloseJob(Number(process.env.AUCTION_CLOSE_INTERVAL_MS ?? 1_000));
   await writeHeartbeat();
   heartbeatTimer = setInterval(() => {
-    void writeHeartbeat().catch((error) =>
-      console.error("[AUCTION_WORKER] Heartbeat failed", {
-        message: error instanceof Error ? error.message : "unknown",
-      }));
+    void writeHeartbeat().catch((error) => log.error({ err: safeError(error) }, "Heartbeat write failed"));
   }, 30_000);
   heartbeatTimer.unref();
 }
@@ -52,7 +55,7 @@ let shuttingDown = false;
 async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log("[AUCTION_WORKER] Stopping", { signal });
+  log.info({ signal }, "Worker stopping");
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   heartbeatTimer = undefined;
   await stopRedisAuctionCloseJob();
@@ -62,9 +65,7 @@ async function shutdown(signal: string): Promise<void> {
 }
 
 void run().catch((error: unknown) => {
-  console.error("[AUCTION_WORKER] Startup failed", {
-    message: error instanceof Error ? error.message : "unknown",
-  });
+  log.fatal({ err: safeError(error) }, "Worker startup failed");
   process.exit(1);
 });
 

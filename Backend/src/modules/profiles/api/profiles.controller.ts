@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("profiles.controller");
+
 import { Response } from "express";
 import * as profileUseCase from "../application/profile.use-case.ts";
 import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
@@ -18,7 +22,7 @@ export async function editUserProfile(req: AccountRequest, res: Response) {
       data: results[0],
     });
   } catch (error) {
-    console.error("Error editing user profile:", error);
+    log.error("Error editing user profile:", error);
     return res.status(500).json({
       status: "error",
       message: "Server error while updating user profile.",

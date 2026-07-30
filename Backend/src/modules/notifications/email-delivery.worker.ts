@@ -1,3 +1,7 @@
+import { createComponentLogger, runWithLogContext } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("email-delivery.worker");
+
 import { createHash } from "node:crypto";
 import { Prisma, type email_deliveries } from "@prisma/client";
 import { kafkaTopics } from "@/config/kafka-topics.config.ts";
@@ -133,7 +137,19 @@ export async function runEmailDeliveryBatch(): Promise<number> {
   const maxAttempts = Number(process.env.EMAIL_DELIVERY_MAX_ATTEMPTS ?? 5);
   const leaseMs = Number(process.env.EMAIL_DELIVERY_LEASE_MS ?? 300_000);
   const rows = await claimDeliveries(concurrency, leaseMs);
-  await Promise.all(rows.map((row) => deliverOne(row, maxAttempts)));
+  await Promise.all(
+    rows.map((row) =>
+      runWithLogContext(
+        {
+          jobId: row.id.toString(),
+          eventId: row.source_event_id,
+          causationId: row.source_event_id,
+          attempt: row.attempts + 1,
+        },
+        () => deliverOne(row, maxAttempts),
+      ),
+    ),
+  );
   return rows.length;
 }
 
@@ -154,15 +170,27 @@ export async function recoverLegacyAuctionNotifications(limit = 50): Promise<num
   });
   for (const product of products) {
     const eventId = recoveryEventId(product.product_id);
-    await enqueueNotificationEvent({
-      eventId,
-      eventType: "auction.closed.v1",
-      eventVersion: 1,
-      aggregateId: product.product_id.toString(),
-      occurredAt: (product.end_time ?? new Date()).toISOString(),
-      correlationId: eventId,
-      payload: { productId: product.product_id.toString(), recovery: true },
-    }, { topic: "scheduled_recovery" });
+    await runWithLogContext(
+      {
+        jobId: eventId,
+        eventId,
+        correlationId: eventId,
+        productId: product.product_id.toString(),
+      },
+      () =>
+        enqueueNotificationEvent(
+          {
+            eventId,
+            eventType: "auction.closed.v1",
+            eventVersion: 1,
+            aggregateId: product.product_id.toString(),
+            occurredAt: (product.end_time ?? new Date()).toISOString(),
+            correlationId: eventId,
+            payload: { productId: product.product_id.toString(), recovery: true },
+          },
+          { topic: "scheduled_recovery" },
+        ),
+    );
   }
   return products.length;
 }
@@ -174,16 +202,21 @@ let recoveryTimer: NodeJS.Timeout | undefined;
 export function startEmailDeliveryLoop(): void {
   if (active) return;
   active = true;
-  recoveryTimer = setInterval(() => void recoverLegacyAuctionNotifications().catch((error) =>
-    console.error("[EMAIL_DELIVERY] Recovery failed", {
-      message: error instanceof Error ? error.message : "unknown",
-    })), 60_000);
+  recoveryTimer = setInterval(
+    () =>
+      void recoverLegacyAuctionNotifications().catch((error) =>
+        log.error("[EMAIL_DELIVERY] Recovery failed", {
+          message: error instanceof Error ? error.message : "unknown",
+        }),
+      ),
+    60_000,
+  );
   recoveryTimer.unref();
   void recoverLegacyAuctionNotifications();
   loop = (async () => {
     while (active) {
       const count = await runEmailDeliveryBatch().catch((error) => {
-        console.error("[EMAIL_DELIVERY] Poll failed", {
+        log.error("[EMAIL_DELIVERY] Poll failed", {
           message: error instanceof Error ? error.message : "unknown",
         });
         return 0;

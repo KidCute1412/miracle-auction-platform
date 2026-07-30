@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("dashboard-summary.use-case");
+
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import type {
@@ -48,7 +52,9 @@ function parseSnapshot(value: Prisma.JsonValue): StoredSnapshot {
 
 async function calculateSnapshot(): Promise<StoredSnapshot> {
   const [rangeEntries, recentActivity] = await Promise.all([
-    Promise.all(dashboardRanges.map(async (range) => [range, await DashboardRepository.aggregateRange(range)] as const)),
+    Promise.all(
+      dashboardRanges.map(async (range) => [range, await DashboardRepository.aggregateRange(range)] as const),
+    ),
     DashboardRepository.getDashboardActivities(),
   ]);
   return {
@@ -123,7 +129,7 @@ export async function refreshDashboardSnapshot(input: {
       new Promise((_, reject) => setTimeout(() => reject(new Error("Redis publish timeout")), 1000)),
     ]);
   } catch (error) {
-    console.warn("[DASHBOARD] Snapshot committed but Redis notification skipped/failed", error);
+    log.warn("[DASHBOARD] Snapshot committed but Redis notification skipped/failed", error);
   }
   return notification;
 }
@@ -165,8 +171,8 @@ export async function completeDashboardReceipt(receipt: ReceiptContext): Promise
 
 export async function getDashboardSummary(range: DashboardRange = "6m"): Promise<DashboardSummary> {
   let row = await prisma.dashboard_stats.findUnique({ where: { key: "summary" } });
-  const hasCurrentShape = row && typeof row.value === "object" && row.value !== null && !Array.isArray(row.value)
-    && "ranges" in row.value;
+  const hasCurrentShape =
+    row && typeof row.value === "object" && row.value !== null && !Array.isArray(row.value) && "ranges" in row.value;
   if (!hasCurrentShape) {
     await refreshDashboardSnapshot({ reason: "live_fallback" });
     row = await prisma.dashboard_stats.findUniqueOrThrow({ where: { key: "summary" } });
@@ -209,13 +215,19 @@ export async function requestDashboardRecalculation(correlationId?: string) {
   });
 }
 
-async function measure<T>(operation: () => Promise<T>): Promise<{ available: boolean; latencyMs: number | null; detail?: string }> {
+async function measure<T>(
+  operation: () => Promise<T>,
+): Promise<{ available: boolean; latencyMs: number | null; detail?: string }> {
   const startedAt = performance.now();
   try {
     await operation();
     return { available: true, latencyMs: Math.round((performance.now() - startedAt) * 10) / 10 };
   } catch (error) {
-    return { available: false, latencyMs: null, detail: error instanceof Error ? error.message.slice(0, 120) : "unavailable" };
+    return {
+      available: false,
+      latencyMs: null,
+      detail: error instanceof Error ? error.message.slice(0, 120) : "unavailable",
+    };
   }
 }
 
@@ -269,7 +281,10 @@ export async function getOperations(adminSocketCount: number): Promise<Dashboard
         try {
           const [topicOffsets, groupOffsets] = await Promise.all([
             admin.fetchTopicOffsets(kafkaTopics.dashboard),
-            admin.fetchOffsets({ groupId: process.env.DASHBOARD_KAFKA_GROUP_ID || "dashboard-analytics-v1", topics: [kafkaTopics.dashboard] }),
+            admin.fetchOffsets({
+              groupId: process.env.DASHBOARD_KAFKA_GROUP_ID || "dashboard-analytics-v1",
+              topics: [kafkaTopics.dashboard],
+            }),
           ]);
           const group = groupOffsets[0]?.partitions ?? [];
           return topicOffsets.reduce((total, topicOffset) => {
@@ -339,8 +354,10 @@ export async function getAuditLogs(filters: AuditFilters): Promise<{ data: Audit
   };
   const [rows, total] = await prisma.$transaction([
     prisma.admin_audit_logs.findMany({
-      where, orderBy: [{ created_at: "desc" }, { id: "desc" }],
-      skip: (filters.page - 1) * filters.limit, take: filters.limit,
+      where,
+      orderBy: [{ created_at: "desc" }, { id: "desc" }],
+      skip: (filters.page - 1) * filters.limit,
+      take: filters.limit,
     }),
     prisma.admin_audit_logs.count({ where }),
   ]);
@@ -365,10 +382,12 @@ export async function getDlq(
   limit: number,
   kind?: DlqKind,
 ): Promise<{ data: DashboardDlqItem[]; total: number }> {
-  const selected = kind ? [kind] : ["dashboard", "notification", "outbox"] as const;
+  const selected = kind ? [kind] : (["dashboard", "notification", "outbox"] as const);
   const [dashboardRows, notificationRows, outboxRows] = await Promise.all([
     selected.includes("dashboard") ? prisma.dashboard_event_receipts.findMany({ where: { status: "terminal" } }) : [],
-    selected.includes("notification") ? prisma.notification_event_receipts.findMany({ where: { status: "terminal" } }) : [],
+    selected.includes("notification")
+      ? prisma.notification_event_receipts.findMany({ where: { status: "terminal" } })
+      : [],
     selected.includes("outbox") ? prisma.auction_outbox.findMany({ where: { terminal_at: { not: null } } }) : [],
   ]);
   const rows: DashboardDlqItem[] = [

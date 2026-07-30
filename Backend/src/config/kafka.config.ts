@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("kafka.config");
+
 import { Kafka, logLevel, type Producer } from "kafkajs";
 import { kafkaTopics } from "./kafka-topics.config.ts";
 
@@ -14,9 +18,10 @@ export const kafka = new Kafka({
   requestTimeout: Number(process.env.KAFKA_REQUEST_TIMEOUT_MS || 30_000),
   retry: { retries: Number(process.env.KAFKA_CONNECTION_RETRIES || 5) },
   ssl: sslEnabled ? (kafkaCa ? { ca: [kafkaCa] } : true) : false,
-  sasl: saslUsername && saslPassword
-    ? { mechanism: "scram-sha-256", username: saslUsername, password: saslPassword }
-    : undefined,
+  sasl:
+    saslUsername && saslPassword
+      ? { mechanism: "scram-sha-256", username: saslUsername, password: saslPassword }
+      : undefined,
   logLevel: process.env.KAFKA_LOG_LEVEL === "debug" ? logLevel.DEBUG : logLevel.NOTHING,
 });
 
@@ -32,7 +37,7 @@ export async function initKafka(): Promise<boolean> {
     producerConnected = true;
     return true;
   } catch (error) {
-    console.error("[KAFKA] Producer connection failed", error);
+    log.error("[KAFKA] Producer connection failed", error);
     return false;
   }
 }
@@ -64,9 +69,7 @@ export async function measureKafkaLatency(): Promise<number> {
         await admin.disconnect().catch(() => undefined);
       }
     })(),
-    new Promise<number>((_, reject) =>
-      setTimeout(() => reject(new Error("Kafka latency check timeout")), 1500)
-    ),
+    new Promise<number>((_, reject) => setTimeout(() => reject(new Error("Kafka latency check timeout")), 1500)),
   ]);
 }
 
@@ -103,7 +106,7 @@ export async function publishBidEvent(productId: string, event: object): Promise
   try {
     await publishEventStrict(kafkaTopics.bidding, productId, event);
   } catch (error) {
-    console.error("[KAFKA] Bid publish failed", error);
+    log.error("[KAFKA] Bid publish failed", error);
   }
 }
 

@@ -5,9 +5,18 @@ import { requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 import { getAdminSocketCount } from "@/socket.ts";
 import * as DashboardService from "../application/dashboard-summary.use-case.ts";
 
-interface PaginationQuery { page: number; limit: number; kind?: DlqKind; }
+interface PaginationQuery {
+  page: number;
+  limit: number;
+  kind?: DlqKind;
+}
 interface AuditQuery extends PaginationQuery {
-  actorId?: number; action?: string; resourceType?: string; result?: string; from?: Date; to?: Date;
+  actorId?: number;
+  action?: string;
+  resourceType?: string;
+  result?: string;
+  from?: Date;
+  to?: Date;
 }
 
 const query = <T>(res: Response): T => res.locals.validated?.query as T;
@@ -20,9 +29,9 @@ export async function getSummary(_req: AccountRequest, res: Response): Promise<v
 export async function syncCache(req: AccountRequest, res: Response): Promise<void> {
   const snapshotResult = await DashboardService.refreshDashboardSnapshot({
     reason: "manual_admin_sync",
-    correlationId: req.header("x-request-id") as string,
+    correlationId: req.requestId,
   });
-  const result = await DashboardService.requestDashboardRecalculation(req.header("x-request-id"));
+  const result = await DashboardService.requestDashboardRecalculation(req.requestId);
   res.status(200).json({
     success: true,
     data: {
@@ -53,10 +62,13 @@ export async function retryDlq(req: AccountRequest, res: Response): Promise<void
   const { eventId } = res.locals.validated?.params as { eventId: string };
   const { kind } = query<{ kind: DlqKind }>(res);
   try {
-    const result = await DashboardService.retryDlq(kind, eventId, actor.user_id, req.header("x-request-id") as string);
+    const result = await DashboardService.retryDlq(kind, eventId, actor.user_id, req.requestId);
     res.status(202).json({ success: true, data: result });
   } catch {
-    res.status(404).json({ success: false, error: { code: "DLQ_EVENT_NOT_FOUND", message: "DLQ event was not found", requestId: req.header("x-request-id") } });
+    res.status(404).json({
+      success: false,
+      error: { code: "DLQ_EVENT_NOT_FOUND", message: "DLQ event was not found", requestId: req.requestId },
+    });
   }
 }
 
@@ -66,7 +78,12 @@ export async function getAuditLogs(_req: AccountRequest, res: Response): Promise
   res.json({
     success: true,
     data: result.data,
-    meta: { page: filters.page, limit: filters.limit, total: result.total, totalPages: Math.ceil(result.total / filters.limit) },
+    meta: {
+      page: filters.page,
+      limit: filters.limit,
+      total: result.total,
+      totalPages: Math.ceil(result.total / filters.limit),
+    },
   });
 }
 
@@ -77,18 +94,42 @@ export async function exportCsv(_req: AccountRequest, res: Response): Promise<vo
     const summary = await DashboardService.getDashboardSummary(filters.range);
     rows = [
       ["dataset", "range", "bucket_start", "label", "completed_order_gmv_vnd", "bids", "auctions"],
-      ...summary.series.slice(0, 10_000).map((point) => [
-        "analytics", filters.range, point.bucketStart, point.label,
-        point.completedOrderGmvVnd, point.bids, point.auctions,
-      ]),
+      ...summary.series
+        .slice(0, 10_000)
+        .map((point) => [
+          "analytics",
+          filters.range,
+          point.bucketStart,
+          point.label,
+          point.completedOrderGmvVnd,
+          point.bids,
+          point.auctions,
+        ]),
     ];
   } else {
     const audit = await DashboardService.getAuditLogs({ ...filters, page: 1, limit: 10_000 });
     rows = [
-      ["id", "actor_id", "action", "resource_type", "resource_id", "result", "error_code", "correlation_id", "created_at"],
+      [
+        "id",
+        "actor_id",
+        "action",
+        "resource_type",
+        "resource_id",
+        "result",
+        "error_code",
+        "correlation_id",
+        "created_at",
+      ],
       ...audit.data.map((item) => [
-        item.id, item.actorId, item.action, item.resourceType, item.resourceId,
-        item.result, item.errorCode, item.correlationId, item.createdAt,
+        item.id,
+        item.actorId,
+        item.action,
+        item.resourceType,
+        item.resourceId,
+        item.result,
+        item.errorCode,
+        item.correlationId,
+        item.createdAt,
       ]),
     ];
   }

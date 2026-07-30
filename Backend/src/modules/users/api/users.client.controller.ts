@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("users.client.controller");
+
 import { Request, Response } from "express";
 import * as UsersService from "../application/user.use-case.ts";
 import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
@@ -31,7 +35,7 @@ export async function rateUser(req: AccountRequest, res: Response) {
       message: "User rated successfully.",
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "An error occurred while rating the user.",
@@ -50,7 +54,7 @@ export async function getUserRatingCount(req: Request, res: Response) {
       data: ratingData,
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "An error occurred while fetching user rating data.",
@@ -73,7 +77,7 @@ export async function getUserRatingHistory(req: Request, res: Response) {
       data: ratingHistory,
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "An error occurred while fetching user rating history.",

@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("bid-projector.worker");
+
 import { hostname } from "node:os";
 import {
   closeProjectorRedisConnection,
@@ -13,7 +17,7 @@ async function projectorLoop(): Promise<void> {
     try {
       await runProjectorBatch(consumer);
     } catch (error) {
-      console.error("[BID_PROJECTOR] Batch failed", error);
+      log.error("[BID_PROJECTOR] Batch failed", error);
       await new Promise((resolve) => setTimeout(resolve, 1_000));
     }
   }

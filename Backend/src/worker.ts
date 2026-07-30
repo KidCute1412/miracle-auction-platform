@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("worker");
+
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -10,7 +14,7 @@ import { prisma } from "./infrastructure/database/prisma.client.ts";
 
 // Initialize Kafka and start all background worker consumers
 async function run() {
-  console.log("[WORKER] Starting background stats worker process...");
+  log.info("[WORKER] Starting background stats worker process...");
   await initKafka();
   await startDashboardConsumer();
 }
@@ -19,14 +23,14 @@ let shuttingDown = false;
 const shutdown = async (signal: string): Promise<void> => {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log(`[WORKER] Received ${signal}; stopping consumers and connections...`);
+  log.info(`[WORKER] Received ${signal}; stopping consumers and connections...`);
   await stopDashboardConsumer();
   await Promise.allSettled([closeKafkaConnection(), closeRedisConnection(), prisma.$disconnect()]);
   process.exit(0);
 };
 
 run().catch((error: unknown) => {
-  console.error("[WORKER] Failed to start:", error instanceof Error ? error.message : "unknown error");
+  log.error("[WORKER] Failed to start:", error instanceof Error ? error.message : "unknown error");
   process.exit(1);
 });
 

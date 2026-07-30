@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("mail.helper");
+
 import nodemailer from "nodemailer";
 
 const formatVndForEmail = (value: number | bigint | string): string => BigInt(value).toLocaleString("vi-VN");
@@ -28,7 +32,12 @@ export async function deliverMail(input: {
     to: input.email,
     subject: input.title,
     html: input.html,
-    text: input.text ?? input.html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+    text:
+      input.text ??
+      input.html
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim(),
     ...(input.messageId ? { messageId: input.messageId } : {}),
     headers: {
       "X-Priority": "3",
@@ -42,31 +51,31 @@ export const sendMail = async (email: string, title: string, content: string): P
   try {
     const mailOptions = {
       from: {
-        name: 'Hệ Thống Đấu Giá Trực Tuyến',
-        address: process.env.GMAIL_ADDRESS || ''
+        name: "Hệ Thống Đấu Giá Trực Tuyến",
+        address: process.env.GMAIL_ADDRESS || "",
       },
       to: email,
       subject: title,
       html: content,
-      text: content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
+      text: content
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim(),
       headers: {
-        'X-Priority': '3',
-        'X-Mailer': 'Online Auction Mailer',
-        'Importance': 'normal'
+        "X-Priority": "3",
+        "X-Mailer": "Online Auction Mailer",
+        Importance: "normal",
       },
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[✓] Email sent to ${email}: ${info.response}`);
+    log.info("Email sent", { email, providerResponse: info.response });
     return true;
   } catch (error) {
-    console.error(`[✗] Failed to send email to ${email}:`, error);
+    log.error("Email delivery failed", { email, error });
     return false;
   }
 };
-
-
-
 
 // ============================================
 // AUCTION END EMAIL TEMPLATES
@@ -115,7 +124,7 @@ export const getWinnerEmailTemplate = (params: EmailTemplateParams): string => {
       
       <div class="product-info">
         <div class="product-name">${params.productName}</div>
-        <div class="price">${params.finalPrice.toLocaleString('vi-VN')} VNĐ</div>
+        <div class="price">${params.finalPrice.toLocaleString("vi-VN")} VNĐ</div>
       </div>
 
       <p class="info-text">Vui lòng hoàn tất thanh toán trong vòng 48 giờ để hoàn tất giao dịch. Không thanh toán đúng hạn có thể dẫn đến hủy đơn hàng.</p>
@@ -179,7 +188,7 @@ export const getSellerWithWinnerEmailTemplate = (params: EmailTemplateParams): s
         </div>
         <div class="info-row" style="border-bottom: none;">
           <span class="info-label">Giá cuối cùng</span>
-          <span class="info-value price">${params.finalPrice.toLocaleString('vi-VN')} VNĐ</span>
+          <span class="info-value price">${params.finalPrice.toLocaleString("vi-VN")} VNĐ</span>
         </div>
       </div>
 
@@ -295,7 +304,7 @@ export const getLoserEmailTemplate = (params: EmailTemplateParams): string => {
       <div class="product-info">
         <div class="product-name">${params.productName}</div>
         <p class="info-text">Giá thắng cuối cùng:</p>
-        <div class="price">${params.finalPrice.toLocaleString('vi-VN')} VNĐ</div>
+        <div class="price">${params.finalPrice.toLocaleString("vi-VN")} VNĐ</div>
       </div>
 
       <p>Rất tiếc, giá đặt của bạn không phải cao nhất. Nhưng đừng lo, còn rất nhiều sản phẩm tuyệt vời khác!</p>
@@ -316,20 +325,17 @@ export const getLoserEmailTemplate = (params: EmailTemplateParams): string => {
 
 // ========================================== Auction Question and Answer Templates =========================================
 
-export function sendBidderQuestionTemplate ({
+export function sendBidderQuestionTemplate({
   seller_username,
-  product_name, 
+  product_name,
   content,
   productUrl,
-} : {
+}: {
   seller_username: string;
   product_name: string;
   content: string;
   productUrl: string;
-
-})
-{
-
+}) {
   return `
     <!DOCTYPE html>
             <html>
@@ -843,23 +849,21 @@ export function getBidderBannedTemplate({
   `;
 }
 
-export function sendSellerAnswerTemplate ({
+export function sendSellerAnswerTemplate({
   bidder_username,
   seller_username,
   product_name,
   bidder_question,
   content,
   productUrl,
-} :
-{
+}: {
   bidder_username: string;
   seller_username: string;
   product_name: string;
   bidder_question: string;
   content: string;
   productUrl: string;
-})
-{
+}) {
   return `
     <!DOCTYPE html>
             <html>
@@ -969,7 +973,7 @@ export function sendSellerAnswerTemplate ({
                 </table>
             </body>
             </html>
-  `
+  `;
 }
 
 // ========================================== Product Description Changed Template =========================================
@@ -983,13 +987,7 @@ interface ProductDescriptionChangedParams {
 }
 
 export function getProductDescriptionChangedTemplate(params: ProductDescriptionChangedParams): string {
-  const {
-    bidderUsername,
-    productName,
-    currentPrice,
-    productUrl,
-    changeDate
-  } = params;
+  const { bidderUsername, productName, currentPrice, productUrl, changeDate } = params;
 
   return `
 <!DOCTYPE html>
@@ -1033,7 +1031,7 @@ export function getProductDescriptionChangedTemplate(params: ProductDescriptionC
         <div class="product-name">${productName}</div>
         <div class="info-row">
           <span class="info-label">Giá hiện tại</span>
-          <span class="info-value price">${currentPrice.toLocaleString('vi-VN')} VNĐ</span>
+          <span class="info-value price">${currentPrice.toLocaleString("vi-VN")} VNĐ</span>
         </div>
         <div class="info-row">
           <span class="info-label">Trạng thái</span>
@@ -1082,13 +1080,7 @@ interface OutbidNotificationParams {
 }
 
 export function getOutbidNotificationTemplate(params: OutbidNotificationParams): string {
-  const {
-    bidderUsername,
-    productName,
-    newCurrentPrice,
-    yourMaxBid,
-    productUrl
-  } = params;
+  const { bidderUsername, productName, newCurrentPrice, yourMaxBid, productUrl } = params;
 
   return `
 <!DOCTYPE html>

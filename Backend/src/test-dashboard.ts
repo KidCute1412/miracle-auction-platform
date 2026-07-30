@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("test-dashboard");
+
 import { Prisma } from "@prisma/client";
 import { prisma } from "./infrastructure/database/prisma.client.ts";
 
@@ -11,9 +15,9 @@ async function test() {
       FROM products WHERE created_at >= now() - ${interval}::interval
       GROUP BY to_char(created_at, ${format}), date_trunc(${dateTrunc}, created_at) ORDER BY trunc_date
     `);
-    console.log("Overview query output:", overviewQuery);
+    log.info("Overview query output:", overviewQuery);
   } catch (error: unknown) {
-    console.error("Test query failed:", error instanceof Error ? error.message : error);
+    log.error("Test query failed:", error instanceof Error ? error.message : error);
   } finally {
     await prisma.$disconnect();
   }

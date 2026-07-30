@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("auction-end-mail.use-case");
+
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import {
@@ -37,7 +41,7 @@ const getUserById = async (userId: number): Promise<User | null> => {
     });
     return user;
   } catch (error) {
-    console.error(`[ERROR] Failed to get user ${userId}:`, error);
+    log.error(`[ERROR] Failed to get user ${userId}:`, error);
     return null;
   }
 };
@@ -55,7 +59,7 @@ const getLosersForProduct = async (productId: number, winnerId: number | null): 
         AND bh.status IS NULL
     `);
   } catch (error) {
-    console.error(`[ERROR] Failed to get losers for product ${productId}:`, error);
+    log.error(`[ERROR] Failed to get losers for product ${productId}:`, error);
     return [];
   }
 };
@@ -74,7 +78,7 @@ export const sendWinnerEmail = async (winner: User, product: Product): Promise<b
 
     return true;
   } catch (error) {
-    console.error(`[ERROR] Failed to send winner email to ${winner.email}:`, error);
+    log.error("Failed to send winner email", { email: winner.email, error });
     return false;
   }
 };
@@ -94,7 +98,7 @@ export const sendSellerWithWinnerEmail = async (seller: User, product: Product, 
 
     return true;
   } catch (error) {
-    console.error(`[ERROR] Failed to send seller email to ${seller.email}:`, error);
+    log.error("Failed to send seller email", { email: seller.email, error });
     return false;
   }
 };
@@ -113,7 +117,7 @@ export const sendSellerNoWinnerEmail = async (seller: User, product: Product): P
 
     return true;
   } catch (error) {
-    console.error(`[ERROR] Failed to send seller email to ${seller.email}:`, error);
+    log.error("Failed to send seller email", { email: seller.email, error });
     return false;
   }
 };
@@ -140,7 +144,7 @@ export const sendLosersEmails = async (losers: User[], product: Product): Promis
       // Rate limiting: delay between emails
       await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
-      console.error(`[ERROR] Failed to send loser email to ${loser.email}:`, error);
+      log.error("Failed to send bidder email", { email: loser.email, error });
     }
   }
 
@@ -153,7 +157,7 @@ export const processAuctionEndNotification = async (product: Product): Promise<b
     // Get seller info
     const seller = await getUserById(product.seller_id);
     if (!seller) {
-      console.error(`[ERROR] Seller not found for product ${product.product_id}`);
+      log.error(`[ERROR] Seller not found for product ${product.product_id}`);
       return false;
     }
 
@@ -162,7 +166,7 @@ export const processAuctionEndNotification = async (product: Product): Promise<b
       // Has winner
       const winner = await getUserById(product.price_owner_id);
       if (!winner) {
-        console.error(`[ERROR] Winner not found for product ${product.product_id}`);
+        log.error(`[ERROR] Winner not found for product ${product.product_id}`);
         return false;
       }
 
@@ -183,18 +187,18 @@ export const processAuctionEndNotification = async (product: Product): Promise<b
       const loserEmailsResult = results[2];
 
       if (!winnerEmailSent || !sellerEmailSent) {
-        console.error(`[ERROR] Critical emails failed for product ${product.product_id}`);
-        console.error(`Winner email: ${winnerEmailSent ? "OK" : "FAILED"}`);
-        console.error(`Seller email: ${sellerEmailSent ? "OK" : "FAILED"}`);
+        log.error(`[ERROR] Critical emails failed for product ${product.product_id}`);
+        log.error(`Winner email: ${winnerEmailSent ? "OK" : "FAILED"}`);
+        log.error(`Seller email: ${sellerEmailSent ? "OK" : "FAILED"}`);
         return false;
       }
 
       // Log loser emails (non-critical)
       if (loserEmailsResult.status === "fulfilled") {
         const losersSent = loserEmailsResult.value as number;
-        console.log(`[INFO] Sent emails to ${losersSent}/${losers.length} losers`);
+        log.info(`[INFO] Sent emails to ${losersSent}/${losers.length} losers`);
       } else {
-        console.warn(`[WARNING] Failed to send loser emails:`, loserEmailsResult.reason);
+        log.warn(`[WARNING] Failed to send loser emails:`, loserEmailsResult.reason);
       }
 
       return true;
@@ -203,13 +207,13 @@ export const processAuctionEndNotification = async (product: Product): Promise<b
       const sent = await sendSellerNoWinnerEmail(seller, product);
 
       if (!sent) {
-        console.error(`[ERROR] Failed to send no-winner email for product ${product.product_id}`);
+        log.error(`[ERROR] Failed to send no-winner email for product ${product.product_id}`);
       }
 
       return sent;
     }
   } catch (error) {
-    console.error(`[ERROR] Failed to process auction end for product ${product.product_id}:`, error);
+    log.error(`[ERROR] Failed to process auction end for product ${product.product_id}:`, error);
     return false;
   }
 };
@@ -239,7 +243,7 @@ export const getExpiredProductsNeedingEmail = async (limit: number = 50): Promis
         seller_id: Number(product.seller_id),
       }));
   } catch (error) {
-    console.error("[ERROR] Failed to get expired products:", error);
+    log.error("[ERROR] Failed to get expired products:", error);
     return [];
   }
 };
@@ -254,7 +258,7 @@ export const markAuctionEmailSent = async (productId: number): Promise<boolean> 
 
     return true;
   } catch (error) {
-    console.error(`[ERROR] Failed to mark email sent for product ${productId}:`, error);
+    log.error(`[ERROR] Failed to mark email sent for product ${productId}:`, error);
     return false;
   }
 };

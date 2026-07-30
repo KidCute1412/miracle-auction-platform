@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("products.admin.controller");
+
 import { Request, Response } from "express";
 import * as ProductsService from "../application/product.use-case.ts";
 import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
@@ -58,7 +62,7 @@ export async function list(req: AccountRequest, res: Response) {
       list: resultList,
     });
   } catch (error) {
-    console.error("Error in product list controller:", error);
+    log.error("Error in product list controller:", error);
     res.json({ code: "error", message: "An error occurred", list: [] });
   }
 }
@@ -79,7 +83,7 @@ export async function detail(req: Request, res: Response) {
       product,
     });
   } catch (error) {
-    console.error("Error in product detail controller:", error);
+    log.error("Error in product detail controller:", error);
     res.json({ code: "error", message: "An error occurred" });
   }
 }
@@ -91,18 +95,19 @@ export async function deleteProduct(req: AccountRequest, res: Response) {
     if (getBidEngine() === "redis") {
       const actor = requireAuthenticatedUser(req);
       const idempotencyKey = req.header("Idempotency-Key")?.trim();
-      if (!idempotencyKey) return res.status(400).json({ code: "IDEMPOTENCY_KEY_REQUIRED", message: "Idempotency-Key is required" });
+      if (!idempotencyKey)
+        return res.status(400).json({ code: "IDEMPOTENCY_KEY_REQUIRED", message: "Idempotency-Key is required" });
       await new MutateAuctionUseCase().cancel({
         productId: Number(id),
         actorId: actor.user_id,
         actorRole: actor.role,
         idempotencyKey,
-        correlationId: req.header("x-request-id") ?? undefined,
+        correlationId: req.requestId,
         reason: "admin soft delete",
       });
     } else {
       const actor = requireAuthenticatedUser(req);
-      await ProductsService.deleteProductById(Number(id), actor.user_id, req.header("x-request-id"));
+      await ProductsService.deleteProductById(Number(id), actor.user_id, req.requestId);
     }
     res.json({ code: "success", message: "Deleted product successfully" });
   } catch {
@@ -114,9 +119,7 @@ export async function deleteProduct(req: AccountRequest, res: Response) {
 export async function restoreProduct(req: AccountRequest, res: Response) {
   try {
     const { id } = req.params;
-    await ProductsService.restoreProductById(
-      Number(id), requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
-    );
+    await ProductsService.restoreProductById(Number(id), requireAuthenticatedUser(req).user_id, req.requestId);
     res.json({ code: "success", message: "Restored product successfully" });
   } catch {
     res.json({ code: "error", message: "An error occurred while restoring product" });
@@ -127,9 +130,7 @@ export async function restoreProduct(req: AccountRequest, res: Response) {
 export async function destroyProduct(req: AccountRequest, res: Response) {
   try {
     const { id } = req.params;
-    await ProductsService.destroyProductById(
-      Number(id), requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
-    );
+    await ProductsService.destroyProductById(Number(id), requireAuthenticatedUser(req).user_id, req.requestId);
     res.json({ code: "success", message: "Permanently deleted product successfully" });
   } catch {
     res.json({ code: "error", message: "An error occurred while permanently deleting product" });

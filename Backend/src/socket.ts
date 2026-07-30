@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("socket");
+
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { Redis } from "ioredis";
 import type { Namespace, Server, Socket } from "socket.io";
@@ -15,7 +19,7 @@ export function setSocketServer(io: Server): void {
 }
 
 export function emitBidUpdate(productId: number, event: BidSocketEvent): void {
-  console.log(`[SOCKET] Emitting new_bid to bidding_room_${productId}`, {
+  log.info(`[SOCKET] Emitting new_bid to bidding_room_${productId}`, {
     productId,
     currentPriceVnd: event.currentPriceVnd,
     sequence: event.sequence,
@@ -27,14 +31,20 @@ export function emitBidUpdate(productId: number, event: BidSocketEvent): void {
 function isBidSocketEvent(value: unknown): value is BidSocketEvent {
   if (!value || typeof value !== "object") return false;
   const event = value as Record<string, unknown>;
-  return ["eventId", "productId", "currentPriceVnd", "endTimeMs", "sequence", "version", "status"]
-    .every((field) => typeof event[field] === "string")
-    && (event.leaderId === null || typeof event.leaderId === "string")
-    && (event.orderId === null || typeof event.orderId === "string");
+  return (
+    ["eventId", "productId", "currentPriceVnd", "endTimeMs", "sequence", "version", "status"].every(
+      (field) => typeof event[field] === "string",
+    ) &&
+    (event.leaderId === null || typeof event.leaderId === "string") &&
+    (event.orderId === null || typeof event.orderId === "string")
+  );
 }
 
 function cookieValue(header: string | undefined, name: string): string | undefined {
-  return header?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))
+  return header
+    ?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`))
     ?.slice(name.length + 1);
 }
 
@@ -48,7 +58,12 @@ async function authenticateAdminSocket(socket: Socket, next: (error?: Error) => 
       audience: "online-auction-api",
     }) as JwtPayload;
     const account = await accountRepository.findById(decoded.user_id);
-    if (!account || account.status !== "active" || account.role !== "admin" || account.auth_version !== decoded.auth_version) {
+    if (
+      !account ||
+      account.status !== "active" ||
+      account.role !== "admin" ||
+      account.auth_version !== decoded.auth_version
+    ) {
       return next(new Error("FORBIDDEN"));
     }
     socket.data.userId = account.user_id;
@@ -71,24 +86,26 @@ export async function startAdminSocket(io: Server): Promise<void> {
   dashboardSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:16379", {
     maxRetriesPerRequest: null,
   });
-  dashboardSubscriber.on("error", (error) => console.warn("[SOCKET] Redis subscriber error", error.message));
+  dashboardSubscriber.on("error", (error) => log.warn("[SOCKET] Redis subscriber error", error.message));
   dashboardSubscriber.on("message", (channel, value) => {
     if (channel !== "dashboard:updated:v1") return;
     try {
       const event = JSON.parse(value) as DashboardUpdatedEvent;
       adminNamespace?.to("dashboard_admins").emit("dashboard.updated.v1", event);
     } catch (error) {
-      console.warn("[SOCKET] Ignored invalid dashboard Redis notification", error);
+      log.warn("[SOCKET] Ignored invalid dashboard Redis notification", error);
     }
   });
-  await dashboardSubscriber.subscribe("dashboard:updated:v1").catch((error) =>
-    console.warn("[SOCKET] Dashboard Redis subscriber unavailable; clients will poll", error));
+  await dashboardSubscriber
+    .subscribe("dashboard:updated:v1")
+    .catch((error) => log.warn("[SOCKET] Dashboard Redis subscriber unavailable; clients will poll", error));
 
   auctionSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:16379", {
     maxRetriesPerRequest: null,
   });
   auctionSubscriber.on("error", (error) =>
-    console.warn("[SOCKET] Auction Redis subscriber unavailable; clients will refetch", error.message));
+    log.warn("[SOCKET] Auction Redis subscriber unavailable; clients will refetch", error.message),
+  );
   auctionSubscriber.on("message", (channel, value) => {
     if (channel !== "auction:committed:v1") return;
     try {
@@ -96,13 +113,14 @@ export async function startAdminSocket(io: Server): Promise<void> {
       if (!isBidSocketEvent(event)) throw new Error("Invalid committed auction event");
       emitBidUpdate(Number(event.productId), event);
     } catch (error) {
-      console.warn("[SOCKET] Ignored invalid auction Redis notification", {
+      log.warn("[SOCKET] Ignored invalid auction Redis notification", {
         message: error instanceof Error ? error.message : "unknown",
       });
     }
   });
-  await auctionSubscriber.subscribe("auction:committed:v1").catch((error) =>
-    console.warn("[SOCKET] Auction subscription failed; clients will refetch", error));
+  await auctionSubscriber
+    .subscribe("auction:committed:v1")
+    .catch((error) => log.warn("[SOCKET] Auction subscription failed; clients will refetch", error));
 }
 
 export async function stopAdminSocket(): Promise<void> {

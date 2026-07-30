@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { getLogger, safeError } from "@/infrastructure/observability/logger.ts";
+
+const log = getLogger({ component: "database" });
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
@@ -13,7 +16,7 @@ export async function checkPrismaConnection(): Promise<boolean> {
     await prisma.$queryRaw`SELECT 1`;
     return true;
   } catch (error) {
-    console.error("[DATABASE] Connection check failed:", error);
+    log.error({ err: safeError(error) }, "Database connection check failed");
     return false;
   }
 }

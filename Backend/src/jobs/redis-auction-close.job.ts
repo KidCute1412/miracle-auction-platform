@@ -1,3 +1,8 @@
+import { randomUUID } from "node:crypto";
+import { createComponentLogger, runWithLogContext } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("redis-auction-close.job");
+
 import { redisClient } from "@/config/redis.config.ts";
 import { MutateAuctionUseCase } from "@/modules/bids/application/mutate-auction.use-case.ts";
 import { redisAuctionKeys } from "@/modules/bids/infrastructure/redis/redis-auction.keys.ts";
@@ -28,7 +33,7 @@ export async function closeDueRedisAuctions(now = new Date(), limit = 100): Prom
         await mutations.close(productId, deadlineMs, now);
         closed += 1;
       } catch (error) {
-        console.error("[AUCTION_CLOSE] Mutation failed", { productId, error });
+        log.error("[AUCTION_CLOSE] Mutation failed", { productId, error });
       }
     }
     return closed;
@@ -41,7 +46,7 @@ export function startRedisAuctionCloseJob(intervalMs = 1_000): void {
   if (timer) return;
   timer = setInterval(() => {
     if (currentRun) return;
-    currentRun = closeDueRedisAuctions().finally(() => {
+    currentRun = runWithLogContext({ jobId: randomUUID() }, closeDueRedisAuctions).finally(() => {
       currentRun = undefined;
     });
   }, intervalMs);

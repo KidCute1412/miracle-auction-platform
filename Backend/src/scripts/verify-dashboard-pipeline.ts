@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("verify-dashboard-pipeline");
+
 import { closeKafkaConnection, initKafka } from "@/config/kafka.config.ts";
 import { closeRedisConnection } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
@@ -20,14 +24,16 @@ async function main(): Promise<void> {
       prisma.dashboard_event_receipts.findUnique({ where: { event_id: request.eventId } }),
     ]);
     if (receipt?.status === "processed" && summary.metadata.version > request.baselineVersion) {
-      console.log(JSON.stringify({
-        eventId: request.eventId,
-        baselineVersion: request.baselineVersion,
-        completedVersion: summary.metadata.version,
-        reason: summary.metadata.reason,
-        receiptStatus: receipt.status,
-        attempts: receipt.attempts,
-      }));
+      process.stdout.write(
+        `${JSON.stringify({
+          eventId: request.eventId,
+          baselineVersion: request.baselineVersion,
+          completedVersion: summary.metadata.version,
+          reason: summary.metadata.reason,
+          receiptStatus: receipt.status,
+          attempts: receipt.attempts,
+        })}\n`,
+      );
       return;
     }
     await wait(1_000);
@@ -37,13 +43,9 @@ async function main(): Promise<void> {
 
 main()
   .finally(async () => {
-    await Promise.allSettled([
-      closeKafkaConnection(),
-      closeRedisConnection(),
-      prisma.$disconnect(),
-    ]);
+    await Promise.allSettled([closeKafkaConnection(), closeRedisConnection(), prisma.$disconnect()]);
   })
   .catch((error: unknown) => {
-    console.error(error);
+    log.error(error);
     process.exitCode = 1;
   });

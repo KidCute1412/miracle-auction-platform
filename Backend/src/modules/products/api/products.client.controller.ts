@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("products.client.controller");
+
 import { Request, Response } from "express";
 import * as ProductsService from "@/modules/products/application/product.use-case.ts";
 import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
@@ -10,8 +14,10 @@ export async function getProductsPageList(req: Request, res: Response) {
       cat1_id: req.query.cat1_id ? Number(req.query.cat1_id) : undefined,
       cat2_id: req.query.cat2_id ? Number(req.query.cat2_id) : undefined,
       search,
-      min_price: req.query.min_price !== undefined && req.query.min_price !== "" ? Number(req.query.min_price) : undefined,
-      max_price: req.query.max_price !== undefined && req.query.max_price !== "" ? Number(req.query.max_price) : undefined,
+      min_price:
+        req.query.min_price !== undefined && req.query.min_price !== "" ? Number(req.query.min_price) : undefined,
+      max_price:
+        req.query.max_price !== undefined && req.query.max_price !== "" ? Number(req.query.max_price) : undefined,
       status: (req.query.status as string) || "active",
       sort_by: (req.query.sort_by as string) || (search ? "relevance" : "time_asc"),
       page: req.query.page ? Number(req.query.page) : 1,
@@ -40,7 +46,7 @@ export async function getProductsPageList(req: Request, res: Response) {
       },
     });
   } catch (error: unknown) {
-    console.error("CONTROLLER ERROR STACK:", error instanceof Error ? error.stack : error);
+    log.error("CONTROLLER ERROR STACK:", error instanceof Error ? error.stack : error);
     return res.status(500).json({ status: "error", message: error instanceof Error ? error.message : "Server error" });
   }
 }
@@ -63,7 +69,7 @@ export async function getProductDetailBySlugId(req: Request, res: Response) {
       data: productDetail,
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "Server error",
@@ -83,7 +89,7 @@ export async function postNewProduct(req: AccountRequest, res: Response) {
       message: "Product posted successfully",
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "Server error",
@@ -113,7 +119,7 @@ export async function getMyProductsList(req: AccountRequest, res: Response) {
       quantity: result.quantity,
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "Server error",
@@ -137,7 +143,7 @@ export async function getLoveStatus(req: AccountRequest, res: Response) {
       },
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "Server error",
@@ -158,7 +164,7 @@ export async function updateLoveStatus(req: AccountRequest, res: Response) {
       message: "Successfully updated love status",
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "Server error",
@@ -257,7 +263,7 @@ export async function updateProductDescription(req: AccountRequest, res: Respons
       message: "Successfully updated product description",
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "Server error",
@@ -284,7 +290,7 @@ export async function getProductDetailForWinner(req: AccountRequest, res: Respon
       infoSeller: detailResult.infoSeller,
     });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     return res.status(500).json({
       status: "error",
       message: "An error occurred, please try again later",

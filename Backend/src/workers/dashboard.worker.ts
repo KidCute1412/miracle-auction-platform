@@ -1,3 +1,7 @@
+import { createComponentLogger, runWithLogContext, type LogContext } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("dashboard.worker");
+
 import type { EachBatchPayload, KafkaMessage } from "kafkajs";
 import { createHash } from "node:crypto";
 import { kafka, kafkaTopics } from "@/config/kafka.config.ts";
@@ -37,12 +41,19 @@ async function singleFlightRefresh(input: Parameters<typeof refreshDashboardSnap
 }
 
 async function writeHeartbeat(): Promise<void> {
-  await redisClient.set("dashboard:worker:heartbeat", new Date().toISOString(), "EX", heartbeatTtlSeconds).catch((error) => {
-    console.warn("[DASHBOARD_WORKER] Redis heartbeat unavailable", error);
-  });
+  await redisClient
+    .set("dashboard:worker:heartbeat", new Date().toISOString(), "EX", heartbeatTtlSeconds)
+    .catch((error) => {
+      log.warn("[DASHBOARD_WORKER] Redis heartbeat unavailable", error);
+    });
 }
 
-async function receiptAttempts(event: EventEnvelope, topic: string, partition: number, offset: string): Promise<number> {
+async function receiptAttempts(
+  event: EventEnvelope,
+  topic: string,
+  partition: number,
+  offset: string,
+): Promise<number> {
   const row = await prisma.dashboard_event_receipts.upsert({
     where: { event_id: event.eventId },
     create: {
@@ -161,16 +172,16 @@ async function processMessage(
   while (!stopping) {
     try {
       const receipt = {
-          eventId: event.eventId,
-          topic,
-          eventType: event.eventType,
-          eventVersion: event.eventVersion,
-          aggregateId: event.aggregateId,
-          correlationId: event.correlationId,
-          payload: event.payload,
-          partition,
-          offset: message.offset,
-          attempts,
+        eventId: event.eventId,
+        topic,
+        eventType: event.eventType,
+        eventVersion: event.eventVersion,
+        aggregateId: event.aggregateId,
+        correlationId: event.correlationId,
+        payload: event.payload,
+        partition,
+        offset: message.offset,
+        attempts,
       };
       if (refreshRequired) {
         if (refreshFlight) await refreshFlight;
@@ -216,13 +227,37 @@ async function eachBatch({ batch, resolveOffset, heartbeat, isRunning, isStale }
   let refreshed = false;
   for (const message of batch.messages) {
     if (stopping || !isRunning() || isStale()) return;
-    refreshed = (await processMessage(batch.topic, batch.partition, message, heartbeat, !refreshed)) || refreshed;
-    resolveOffset(message.offset);
-    await dashboardConsumer?.commitOffsets([{
+    let context: LogContext = {
       topic: batch.topic,
       partition: batch.partition,
-      offset: (BigInt(message.offset) + 1n).toString(),
-    }]);
+      offset: message.offset,
+      consumerGroup: groupId,
+    };
+    try {
+      if (message.value) {
+        const event = parseEventEnvelope(message.value.toString());
+        context = {
+          ...context,
+          eventId: event.eventId,
+          correlationId: event.correlationId,
+          causationId: event.causationId,
+        };
+      }
+    } catch {
+      // Invalid events receive a deterministic ID inside processMessage.
+    }
+    refreshed =
+      (await runWithLogContext(context, () =>
+        processMessage(batch.topic, batch.partition, message, heartbeat, !refreshed),
+      )) || refreshed;
+    resolveOffset(message.offset);
+    await dashboardConsumer?.commitOffsets([
+      {
+        topic: batch.topic,
+        partition: batch.partition,
+        offset: (BigInt(message.offset) + 1n).toString(),
+      },
+    ]);
     await heartbeat();
   }
 }
@@ -230,10 +265,12 @@ async function eachBatch({ batch, resolveOffset, heartbeat, isRunning, isStale }
 export async function startDashboardConsumer(): Promise<void> {
   stopping = false;
   await singleFlightRefresh({ reason: "worker_startup" }).catch((error) =>
-    console.error("[DASHBOARD_WORKER] Startup refresh failed; scheduled recovery remains active", error));
+    log.error("[DASHBOARD_WORKER] Startup refresh failed; scheduled recovery remains active", error),
+  );
   recoveryTimer = setInterval(() => {
     void singleFlightRefresh({ reason: "scheduled_recovery" }).catch((error) =>
-      console.error("[DASHBOARD_WORKER] Scheduled refresh failed", error));
+      log.error("[DASHBOARD_WORKER] Scheduled refresh failed", error),
+    );
   }, recoveryMs);
   recoveryTimer.unref();
   heartbeatTimer = setInterval(() => void writeHeartbeat(), 30_000);
@@ -242,36 +279,38 @@ export async function startDashboardConsumer(): Promise<void> {
 
   dashboardConsumer = kafka.consumer({ groupId, allowAutoTopicCreation: false });
   dashboardConsumer.on(dashboardConsumer.events.CRASH, ({ payload }) => {
-    console.error("[DASHBOARD_WORKER] Kafka consumer crashed", payload.error);
+    log.error("[DASHBOARD_WORKER] Kafka consumer crashed", payload.error);
   });
   dashboardConsumer.on(dashboardConsumer.events.DISCONNECT, () => {
-    console.warn("[DASHBOARD_WORKER] Kafka consumer disconnected; scheduled recovery remains active");
+    log.warn("[DASHBOARD_WORKER] Kafka consumer disconnected; scheduled recovery remains active");
   });
   dashboardConsumer.on(dashboardConsumer.events.GROUP_JOIN, ({ payload }) => {
-    console.log("[DASHBOARD_WORKER] Kafka group joined", {
+    log.info("[DASHBOARD_WORKER] Kafka group joined", {
       groupId: payload.groupId,
       memberId: payload.memberId,
     });
   });
   try {
-    console.log("[DASHBOARD_WORKER] Connecting Kafka consumer", { groupId });
+    log.info("[DASHBOARD_WORKER] Connecting Kafka consumer", { groupId });
     await dashboardConsumer.connect();
     await dashboardConsumer.subscribe({
       topics: [kafkaTopics.bidding, kafkaTopics.domain, kafkaTopics.dashboard],
       fromBeginning: false,
     });
-    console.log("[DASHBOARD_WORKER] Kafka consumer subscribed", {
+    log.info("[DASHBOARD_WORKER] Kafka consumer subscribed", {
       groupId,
       topics: [kafkaTopics.bidding, kafkaTopics.domain, kafkaTopics.dashboard],
     });
-    void dashboardConsumer.run({
-      autoCommit: false,
-      eachBatchAutoResolve: false,
-      partitionsConsumedConcurrently: 1,
-      eachBatch,
-    }).catch((error) => console.error("[DASHBOARD_WORKER] Consumer stopped unexpectedly", error));
+    void dashboardConsumer
+      .run({
+        autoCommit: false,
+        eachBatchAutoResolve: false,
+        partitionsConsumedConcurrently: 1,
+        eachBatch,
+      })
+      .catch((error) => log.error("[DASHBOARD_WORKER] Consumer stopped unexpectedly", error));
   } catch (error) {
-    console.error("[DASHBOARD_WORKER] Kafka unavailable; scheduled PostgreSQL refresh remains active", error);
+    log.error("[DASHBOARD_WORKER] Kafka unavailable; scheduled PostgreSQL refresh remains active", error);
   }
 }
 

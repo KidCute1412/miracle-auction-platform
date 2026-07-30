@@ -69,7 +69,11 @@ export async function editRole(req: AccountRequest, res: Response) {
       return res.status(404).json({ code: "error", message: "User does not exist" });
     }
     await UsersService.editUserRoleAndStatus(
-      user_id, role, status, requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
+      user_id,
+      role,
+      status,
+      requireAuthenticatedUser(req).user_id,
+      req.requestId,
     );
     res.json({ code: "success", message: "Role updated successfully" });
   } catch {
@@ -140,7 +144,10 @@ export async function setStatus(req: AccountRequest, res: Response) {
     const applicationId = Number(req.params.id);
     const { status } = req.body;
     await UsersService.setApplicationStatus(
-      applicationId, status, requireAuthenticatedUser(req).user_id, req.header("x-request-id"),
+      applicationId,
+      status,
+      requireAuthenticatedUser(req).user_id,
+      req.requestId,
     );
     res.json({ code: "success", message: "Application confirmed successfully" });
   } catch {

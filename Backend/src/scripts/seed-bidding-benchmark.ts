@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("seed-bidding-benchmark");
+
 import "dotenv/config";
 import { redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
@@ -17,7 +21,7 @@ async function assertBenchmarkDatabase(): Promise<void> {
   const dbName = row?.current_database ?? "unknown";
   if (dbName !== "online_auction_benchmark_test" && process.env.ALLOW_DEV_BENCHMARK_SEED !== "true") {
     throw new Error(
-      `Refusing to seed database '${dbName}'. Benchmark seeding must run against 'online_auction_benchmark_test' or set ALLOW_DEV_BENCHMARK_SEED=true.`
+      `Refusing to seed database '${dbName}'. Benchmark seeding must run against 'online_auction_benchmark_test' or set ALLOW_DEV_BENCHMARK_SEED=true.`,
     );
   }
 }
@@ -97,21 +101,20 @@ async function main(): Promise<void> {
   });
   await clearRedisAuctionKeys();
   for (const productId of AUCTION_IDS) await bootstrapRedisAuction(Number(productId));
-  console.log(
-    JSON.stringify({
+  process.stdout.write(
+    `${JSON.stringify({
       users: BIDDER_IDS.length,
       auctions: AUCTION_IDS.length,
       startId: BENCHMARK_START_ID,
       startPriceVnd: "100000",
       stepPriceVnd: "10000",
-    })
+    })}\n`,
   );
 }
 
 main()
   .finally(async () => Promise.allSettled([prisma.$disconnect(), redisClient.quit()]))
   .catch((error: unknown) => {
-    console.error(error);
+    log.error(error);
     process.exitCode = 1;
   });
-

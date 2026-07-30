@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("settings.controller");
+
 import { Request, Response } from "express";
 import * as settingUseCase from "../application/setting.use-case.ts";
 
@@ -10,7 +14,7 @@ export async function getAutoExtendTimeSetting(_: Request, res: Response) {
       data,
     });
   } catch (error) {
-    console.error("Error fetching auto extend time setting:", error);
+    log.error("Error fetching auto extend time setting:", error);
     return res.status(500).json({
       status: "error",
       message: "Internal server error",

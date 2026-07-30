@@ -1,3 +1,7 @@
+import { createComponentLogger, runWithLogContext, type LogContext } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("notification-consumer.worker");
+
 import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import type { EachBatchPayload, KafkaMessage } from "kafkajs";
@@ -72,11 +76,7 @@ async function terminalReceipt(input: {
   });
 }
 
-async function processKafkaMessage(
-  topic: string,
-  partition: number,
-  message: KafkaMessage,
-): Promise<void> {
+async function processKafkaMessage(topic: string, partition: number, message: KafkaMessage): Promise<void> {
   let event: EventEnvelope;
   try {
     if (!message.value) throw new Error("Kafka event has no value");
@@ -147,13 +147,35 @@ async function processKafkaMessage(
 async function eachBatch({ batch, resolveOffset, heartbeat, isRunning, isStale }: EachBatchPayload): Promise<void> {
   for (const message of batch.messages) {
     if (stopping || !isRunning() || isStale()) return;
-    await processKafkaMessage(batch.topic, batch.partition, message);
-    resolveOffset(message.offset);
-    await consumer?.commitOffsets([{
+    let context: LogContext = {
       topic: batch.topic,
       partition: batch.partition,
-      offset: (BigInt(message.offset) + 1n).toString(),
-    }]);
+      offset: message.offset,
+      consumerGroup: groupId,
+    };
+    try {
+      if (message.value) {
+        const event = parseEventEnvelope(message.value.toString());
+        context = {
+          ...context,
+          eventId: event.eventId,
+          correlationId: event.correlationId,
+          causationId: event.causationId,
+        };
+      }
+    } catch {
+      const eventId = syntheticEventId(batch.topic, batch.partition, message.offset);
+      context = { ...context, eventId, correlationId: eventId };
+    }
+    await runWithLogContext(context, () => processKafkaMessage(batch.topic, batch.partition, message));
+    resolveOffset(message.offset);
+    await consumer?.commitOffsets([
+      {
+        topic: batch.topic,
+        partition: batch.partition,
+        offset: (BigInt(message.offset) + 1n).toString(),
+      },
+    ]);
     await heartbeat();
   }
 }
@@ -168,14 +190,18 @@ export async function startNotificationConsumer(): Promise<void> {
     // The compatibility dashboard subscription intentionally drains legacy seller-event backlog.
     fromBeginning: true,
   });
-  void consumer.run({
-    autoCommit: false,
-    eachBatchAutoResolve: false,
-    partitionsConsumedConcurrently: 1,
-    eachBatch,
-  }).catch((error) => console.error("[NOTIFICATION_CONSUMER] Consumer stopped", {
-    message: error instanceof Error ? error.message : "unknown",
-  }));
+  void consumer
+    .run({
+      autoCommit: false,
+      eachBatchAutoResolve: false,
+      partitionsConsumedConcurrently: 1,
+      eachBatch,
+    })
+    .catch((error) =>
+      log.error("[NOTIFICATION_CONSUMER] Consumer stopped", {
+        message: error instanceof Error ? error.message : "unknown",
+      }),
+    );
 }
 
 export async function stopNotificationConsumer(): Promise<void> {

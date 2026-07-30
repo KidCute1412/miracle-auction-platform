@@ -1,3 +1,7 @@
+import { createComponentLogger } from "@/infrastructure/observability/logger.ts";
+
+const log = createComponentLogger("check-bidding-invariants");
+
 import "dotenv/config";
 import { Prisma } from "@prisma/client";
 import type { Admin } from "kafkajs";
@@ -27,11 +31,15 @@ export function calculateConsumerLag(
 ): number {
   return topicEnds.reduce((total, topic) => {
     const committed = groupOffsets.find((item) => item.topic === topic.topic)?.partitions ?? [];
-    return total + topic.partitions.reduce((topicTotal, partition) => {
-      const offset = committed.find((item) => item.partition === partition.partition)?.offset ?? "-1";
-      const current = offset === "-1" && !fromBeginning ? Number(partition.high) : Number(offset === "-1" ? 0 : offset);
-      return topicTotal + Math.max(0, Number(partition.high) - current);
-    }, 0);
+    return (
+      total +
+      topic.partitions.reduce((topicTotal, partition) => {
+        const offset = committed.find((item) => item.partition === partition.partition)?.offset ?? "-1";
+        const current =
+          offset === "-1" && !fromBeginning ? Number(partition.high) : Number(offset === "-1" ? 0 : offset);
+        return topicTotal + Math.max(0, Number(partition.high) - current);
+      }, 0)
+    );
   }, 0);
 }
 
@@ -77,26 +85,33 @@ async function readPipelineHealth(admin: Admin): Promise<PipelineHealth> {
 }
 
 function pipelineConverged(health: PipelineHealth): boolean {
-  return health.streamPending === 0
-    && (health.streamLag === null || health.streamLag === 0)
-    && health.outboxPending === 0
-    && health.dashboardConsumerLag === 0
-    && health.notificationConsumerLag === 0;
+  return (
+    health.streamPending === 0 &&
+    (health.streamLag === null || health.streamLag === 0) &&
+    health.outboxPending === 0 &&
+    health.dashboardConsumerLag === 0 &&
+    health.notificationConsumerLag === 0
+  );
 }
 
 async function main(): Promise<void> {
   const violations: Violation[] = [];
-  const duplicateTransitions = await prisma.$queryRaw<Array<{ product_id: bigint; sequence: bigint; count: bigint }>>(Prisma.sql`
+  const duplicateTransitions = await prisma.$queryRaw<
+    Array<{ product_id: bigint; sequence: bigint; count: bigint }>
+  >(Prisma.sql`
     SELECT product_id, sequence, COUNT(*) AS count
     FROM auction_transitions GROUP BY product_id, sequence HAVING COUNT(*) > 1`);
-  if (duplicateTransitions.length) violations.push({ invariant: "unique transition sequence", details: duplicateTransitions });
+  if (duplicateTransitions.length)
+    violations.push({ invariant: "unique transition sequence", details: duplicateTransitions });
 
   const duplicateOrders = await prisma.$queryRaw<Array<{ product_id: bigint; count: bigint }>>(Prisma.sql`
     SELECT product_id, COUNT(*) AS count FROM orders
     WHERE product_id IS NOT NULL GROUP BY product_id HAVING COUNT(*) > 1`);
   if (duplicateOrders.length) violations.push({ invariant: "one order per auction", details: duplicateOrders });
 
-  const duplicateHistorySequences = await prisma.$queryRaw<Array<{ product_id: bigint; sequence: bigint; count: bigint }>>(Prisma.sql`
+  const duplicateHistorySequences = await prisma.$queryRaw<
+    Array<{ product_id: bigint; sequence: bigint; count: bigint }>
+  >(Prisma.sql`
     SELECT product_id, sequence, COUNT(*) AS count
     FROM bidding_history
     WHERE sequence IS NOT NULL
@@ -109,13 +124,16 @@ async function main(): Promise<void> {
   const reconciliation = [];
   let pipelineHealth: PipelineHealth | null = null;
   if ((process.env.BID_ENGINE ?? "postgres") === "redis") {
-    const projectionMismatch = await prisma.$queryRaw<Array<{ product_id: bigint; auction_sequence: bigint; projected_sequence: bigint }>>(Prisma.sql`
+    const projectionMismatch = await prisma.$queryRaw<
+      Array<{ product_id: bigint; auction_sequence: bigint; projected_sequence: bigint }>
+    >(Prisma.sql`
       SELECT p.product_id, p.auction_sequence, COALESCE(MAX(t.sequence), 0) AS projected_sequence
       FROM products p LEFT JOIN auction_transitions t ON t.product_id = p.product_id
       WHERE (p.product_id >= 900000 OR p.product_name LIKE 'Benchmark Auction%')
       GROUP BY p.product_id, p.auction_sequence
       HAVING p.auction_sequence <> COALESCE(MAX(t.sequence), 0)`);
-    if (projectionMismatch.length) violations.push({ invariant: "snapshot matches transition sequence", details: projectionMismatch });
+    if (projectionMismatch.length)
+      violations.push({ invariant: "snapshot matches transition sequence", details: projectionMismatch });
     const timeoutMs = Number(process.env.WAIT_FOR_CONVERGENCE_MS ?? 0);
     const deadline = Date.now() + timeoutMs;
     const benchmarkProducts = await prisma.products.findMany({
@@ -131,7 +149,8 @@ async function main(): Promise<void> {
       await delay(250);
     }
     for (const result of reconciliation) {
-      if (result.status !== "converged") violations.push({ invariant: "Redis/PostgreSQL convergence", details: result });
+      if (result.status !== "converged")
+        violations.push({ invariant: "Redis/PostgreSQL convergence", details: result });
     }
 
     const pipelineDeadline = Date.now() + timeoutMs;
@@ -181,11 +200,12 @@ async function main(): Promise<void> {
           SELECT 1 FROM bidding_history h
           WHERE h.product_id = p.product_id AND h.price_owner_id = p.price_owner_id
         )`);
-    if (baselineMismatch.length) violations.push({ invariant: "PostgreSQL snapshot has matching bid history", details: baselineMismatch });
+    if (baselineMismatch.length)
+      violations.push({ invariant: "PostgreSQL snapshot has matching bid history", details: baselineMismatch });
   }
   const output = { violations, reconciliation, pipelineHealth, passed: violations.length === 0 };
-  const serialized = JSON.stringify(output, (_key, value) => typeof value === "bigint" ? value.toString() : value, 2);
-  console.log(serialized);
+  const serialized = JSON.stringify(output, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2);
+  process.stdout.write(`${serialized}\n`);
   if (process.env.INVARIANT_OUTPUT) await writeFile(process.env.INVARIANT_OUTPUT, serialized, "utf8");
   if (violations.length > 0) process.exitCode = 1;
 }
@@ -195,7 +215,7 @@ if (import.meta.url === entrypoint) {
   void main()
     .finally(async () => Promise.allSettled([prisma.$disconnect(), redisClient.quit()]))
     .catch((error: unknown) => {
-      console.error(error);
+      log.error(error);
       process.exitCode = 1;
     });
 }

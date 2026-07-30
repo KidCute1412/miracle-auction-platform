@@ -13,6 +13,9 @@ import { checkKafkaConnection } from "./config/kafka.config.ts";
 import { csrfProtection } from "./middlewares/csrf.middleware.ts";
 import { requestId } from "./middlewares/request-id.middleware.ts";
 import { requestLogger } from "./middlewares/request-logger.middleware.ts";
+import { getLogger, safeError } from "./infrastructure/observability/logger.ts";
+
+const log = getLogger({ component: "api" });
 
 async function checkKafkaForReadiness(): Promise<boolean> {
   let timer: NodeJS.Timeout | undefined;
@@ -34,7 +37,7 @@ export function createApp() {
   app.set("trust proxy", 1);
   // PostgreSQL BIGINT values are represented as JavaScript bigint by Prisma.
   // JSON has no bigint type, so preserve exact values as strings in every API response.
-  app.set("json replacer", (_key: string, value: unknown) => typeof value === "bigint" ? value.toString() : value);
+  app.set("json replacer", (_key: string, value: unknown) => (typeof value === "bigint" ? value.toString() : value));
   app.use(requestId);
   app.use(requestLogger);
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
@@ -57,33 +60,35 @@ export function createApp() {
   app.use(express.json());
   app.use(cookieParser());
   app.use(csrfProtection);
-  app.use(rateLimit({
-    store: new RedisStore({
-      sendCommand: async (...args: string[]) => {
-        try {
-          return (await redisClient.call(args[0], ...args.slice(1))) as never;
-        } catch {
-          return undefined as never;
-        }
-      },
+  app.use(
+    rateLimit({
+      store: new RedisStore({
+        sendCommand: async (...args: string[]) => {
+          try {
+            return (await redisClient.call(args[0], ...args.slice(1))) as never;
+          } catch {
+            return undefined as never;
+          }
+        },
+      }),
+      passOnStoreError: true,
+      windowMs: 15 * 60 * 1000,
+      limit: 2000,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { message: "Too many requests from this IP, please try again later." },
     }),
-    passOnStoreError: true,
-    windowMs: 15 * 60 * 1000, limit: 2000, standardHeaders: true, legacyHeaders: false,
-    message: { message: "Too many requests from this IP, please try again later." },
-  }));
+  );
   app.use("/", clientRoutes);
   app.use(`/${variableConfig.pathAdmin}`, adminRoutes);
   app.use((error: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error("[API] Unhandled operational error", {
-      requestId: req.header("x-request-id"),
-      message: error instanceof Error ? error.message : "unknown",
-    });
+    log.error({ err: safeError(error) }, "Unhandled operational error");
     res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_ERROR",
         message: "An unexpected server error occurred",
-        requestId: req.header("x-request-id"),
+        requestId: req.requestId,
       },
     });
   });
