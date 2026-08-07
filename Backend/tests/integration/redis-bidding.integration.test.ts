@@ -146,6 +146,20 @@ describe("Redis-authoritative bidding integration", () => {
       .resolves.toBe("duplicate");
   });
 
+  it("reports Redis/PostgreSQL deadline and status divergence", async () => {
+    const seller = await createUser({ role: "seller" });
+    const auction = await createAuction(seller.user_id);
+    const productId = Number(auction.product_id);
+    await bootstrapRedisAuction(productId);
+
+    await expect(reconcileAuctionProjection(productId)).resolves.toMatchObject({ status: "converged" });
+    await redisClient.hset(redisAuctionKeys.state(productId), "endAtMs", String(auction.end_time!.getTime() + 60_000));
+    await expect(reconcileAuctionProjection(productId)).resolves.toMatchObject({
+      status: "diverged",
+      redisEndAtMs: String(auction.end_time!.getTime() + 60_000),
+    });
+  });
+
   it("serializes concurrent maxima with monotonic sequence and projects both exactly once", async () => {
     const seller = await createUser({ role: "seller" });
     const first = await createUser();
@@ -265,5 +279,40 @@ describe("Redis-authoritative bidding integration", () => {
     await runProjectorBatch("integration-mutations");
     await expect(prisma.products.findUniqueOrThrow({ where: { product_id: cancelledAuction.product_id } }))
       .resolves.toMatchObject({ auction_status: "CANCELLED", is_removed: true });
+  });
+
+  it("does not let bidder throttling block the system close mutation", async () => {
+    const previousRateLimit = process.env.BID_RATE_LIMIT;
+    process.env.BID_RATE_LIMIT = "0";
+    try {
+      const seller = await createUser({ role: "seller" });
+      const bidder = await createUser();
+      const auction = await createAuction(seller.user_id);
+      const productId = Number(auction.product_id);
+      await bootstrapRedisAuction(productId);
+
+      await expect(redisAuctionAuthority.mutate({
+        operation: "BID",
+        productId,
+        actorId: bidder.user_id,
+        actorRole: "user",
+        amountVnd: "120",
+        idempotencyKey: "rate-limited-bid",
+        correlationId: randomUUID(),
+      })).rejects.toMatchObject({ code: "RATE_LIMITED" });
+
+      await expect(redisAuctionAuthority.mutate({
+        operation: "CLOSE",
+        productId,
+        actorId: 0,
+        actorRole: "system",
+        idempotencyKey: "system-close-not-rate-limited",
+        correlationId: randomUUID(),
+        now: new Date(auction.end_time!.getTime() + 1),
+      })).resolves.toMatchObject({ status: "success" });
+    } finally {
+      if (previousRateLimit === undefined) delete process.env.BID_RATE_LIMIT;
+      else process.env.BID_RATE_LIMIT = previousRateLimit;
+    }
   });
 });

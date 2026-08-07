@@ -224,10 +224,15 @@ else
   return reject("UNKNOWN_OPERATION", "Unknown auction mutation", 400)
 end
 
-local rate = redis.call("INCR", rateKey)
-if rate == 1 then redis.call("PEXPIRE", rateKey, tonumber(request.rateWindowMs)) end
-if rate > tonumber(request.rateLimit) then
-  return reject("RATE_LIMITED", "Too many auction mutations", 429)
+-- User bid throttling must not block system close or authorized seller/admin
+-- mutations. Those operations are already protected by their authorization
+-- rules and close is driven by the worker scheduler.
+if operation == "BID" or operation == "BUY_NOW" then
+  local rate = redis.call("INCR", rateKey)
+  if rate == 1 then redis.call("PEXPIRE", rateKey, tonumber(request.rateWindowMs)) end
+  if rate > tonumber(request.rateLimit) then
+    return reject("RATE_LIMITED", "Too many auction mutations", 429)
+  end
 end
 
 if operation == "BID" then

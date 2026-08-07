@@ -1,6 +1,6 @@
 import http from "k6/http";
 import { check } from "k6";
-import { Rate } from "k6/metrics";
+import { Counter, Rate } from "k6/metrics";
 
 const scenario = __ENV.SCENARIO || "smoke";
 const baseUrl = __ENV.BASE_URL || "http://localhost:5000";
@@ -11,6 +11,8 @@ const stepPrice = BigInt(__ENV.STEP_PRICE_VND || "10000");
 const artifactPrefix = __ENV.ARTIFACT_PREFIX || `artifacts/${scenario}`;
 const tokens = JSON.parse(open("./tokens.json"));
 const systemErrors = new Rate("system_errors");
+const acceptedBids = new Counter("accepted_bids");
+const businessRejections = new Counter("business_rejections");
 
 const profiles = {
   smoke: { vus: 1, duration: "10s" },
@@ -78,6 +80,8 @@ export default function (setupData) {
 
   const infrastructureFailure = response.status >= 500 || response.status === 0;
   systemErrors.add(infrastructureFailure);
+  acceptedBids.add(response.status === 200);
+  businessRejections.add(!infrastructureFailure && response.status !== 200);
   check(response, {
     "business or success response": (result) => [200, 400, 403, 409, 429].includes(result.status),
     "no infrastructure error": () => !infrastructureFailure,
@@ -88,6 +92,8 @@ export function handleSummary(data) {
   const requests = data.metrics.http_reqs?.values?.count || 0;
   const p99 = data.metrics.http_req_duration?.values?.["p(99)"] || 0;
   const errorRate = data.metrics.system_errors?.values?.rate || 0;
+  const accepted = data.metrics.accepted_bids?.values?.count || 0;
+  const rejected = data.metrics.business_rejections?.values?.count || 0;
   const markdown = [
     `# k6 ${scenario} summary`,
     "",
@@ -96,6 +102,8 @@ export function handleSummary(data) {
     `- Throughput: ${data.metrics.http_reqs?.values?.rate || 0} req/s`,
     `- p99: ${p99} ms`,
     `- System error rate: ${(errorRate * 100).toFixed(4)}%`,
+    `- Accepted bids: ${accepted}`,
+    `- Business rejections: ${rejected}`,
     `- Dataset: products ${productIds.join(", ")}`,
     "",
     "Correctness and projection convergence must be checked after this run; HTTP metrics alone do not pass the benchmark.",

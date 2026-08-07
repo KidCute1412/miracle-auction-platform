@@ -1,6 +1,10 @@
 import request from "supertest";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+vi.unmock("@/config/redis.config.ts");
+
 import { createApp } from "../../src/app.ts";
+import { redisClient } from "../../src/config/redis.config.ts";
+import { runProjectorBatch } from "../../src/modules/bids/infrastructure/redis/redis-stream.projector.ts";
 import { prisma } from "../../src/infrastructure/database/prisma.client.ts";
 import { accessCookie, createAuction, createUser } from "../support/fixtures.ts";
 import { useIsolatedDatabase } from "../support/database.ts";
@@ -26,6 +30,10 @@ beforeAll(() => {
   process.env.CLIENT_URL = "http://localhost:5173";
 });
 
+beforeEach(async () => {
+  await redisClient.flushdb();
+});
+
 describe("bids API integration", () => {
   it("places an authenticated valid bid and preserves its legacy response envelope", async () => {
     const seller = await createUser({ role: "seller" });
@@ -38,7 +46,8 @@ describe("bids API integration", () => {
       .set("Idempotency-Key", "place-bid-success").send({ product_id: Number(auction.product_id), max_price: "120" });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: "success" });
+    expect(response.body).toMatchObject({ status: "success", data: { product_id: String(auction.product_id) } });
+    await runProjectorBatch("api-integration");
     await expect(prisma.bidding_history.count({ where: { product_id: auction.product_id } })).resolves.toBe(1);
   });
 
@@ -53,8 +62,8 @@ describe("bids API integration", () => {
     const invalid = await request(app).post("/bids")
       .set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", auth.csrf.token).set("Cookie", auth.cookie)
       .set("Idempotency-Key", "place-bid-invalid").send({ product_id: Number(auction.product_id), max_price: "105" });
-    expect(invalid.status).toBe(400);
-    expect(invalid.body).toMatchObject({ status: "error", message: "Invalid bid price" });
+    expect(invalid.status).toBe(409);
+    expect(invalid.body).toMatchObject({ status: "error", code: "BID_TOO_LOW" });
     await expect(prisma.bidding_history.count({ where: { product_id: auction.product_id } })).resolves.toBe(0);
     await expect(prisma.auction_outbox.count()).resolves.toBe(0);
   });
@@ -66,6 +75,7 @@ describe("bids API integration", () => {
     const auth = await authenticatedRequest(bidder);
     await request(app).post("/bids").set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", auth.csrf.token).set("Cookie", auth.cookie)
       .set("Idempotency-Key", "place-bid-history").send({ product_id: Number(auction.product_id), max_price: "120" }).expect(200);
+    await runProjectorBatch("api-integration");
 
     const history = await request(app).get(`/bids?product_id=${auction.product_id}`).set("Cookie", auth.cookie);
     expect(history.status).toBe(200);
@@ -84,11 +94,12 @@ describe("bids API integration", () => {
       .set("Idempotency-Key", "buy-now-success").send({ product_id: Number(auction.product_id), buy_price: "300" });
     expect(success.status).toBe(200);
     expect(success.body).toMatchObject({ status: "success" });
+    await runProjectorBatch("api-integration");
     await expect(prisma.orders.count({ where: { product_id: auction.product_id } })).resolves.toBe(1);
 
     const second = await request(app).post("/bids/purchase").set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", buyerAuth.csrf.token).set("Cookie", buyerAuth.cookie)
       .set("Idempotency-Key", "buy-now-second").send({ product_id: Number(auction.product_id), buy_price: "300" });
-    expect(second.status).toBe(400);
+    expect(second.status).toBe(409);
   });
 
   it("allows the seller to ban a bidder and rejects a non-owner", async () => {
@@ -107,7 +118,7 @@ describe("bids API integration", () => {
       .set("Idempotency-Key", "ban-success")
       .send({ product_id: Number(auction.product_id), banned_user_id: bidder.user_id, reason: "Policy breach" });
     expect(success.status).toBe(200);
-    expect(success.body).toMatchObject({ status: "success", data: { banned_user_id: bidder.user_id } });
+    expect(success.body).toMatchObject({ status: "success", data: { product_id: String(auction.product_id) } });
   });
 
   it("lets only the winner update the projector-created public order", async () => {
@@ -120,8 +131,9 @@ describe("bids API integration", () => {
       .set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", buyerAuth.csrf.token).set("Cookie", buyerAuth.cookie)
       .set("Idempotency-Key", "checkout-buy-now")
       .send({ product_id: Number(auction.product_id), buy_price: "300" });
-    const publicOrderId = purchase.body.order_id as string;
+    const publicOrderId = purchase.body.data?.order_id as string;
     expect(publicOrderId).toMatch(/^[0-9a-f-]{36}$/i);
+    await runProjectorBatch("api-integration");
 
     const strangerAuth = await authenticatedRequest(stranger);
     const forbidden = await request(app).post("/orders")

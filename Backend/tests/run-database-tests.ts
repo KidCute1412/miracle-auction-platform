@@ -176,6 +176,7 @@ async function main(): Promise<void> {
       TEST_DATABASE_HOST: reachableContainerHost(container),
       TEST_DATABASE_PORT: String(container.getMappedPort(postgresPort)),
       REDIS_URL: redisUrl,
+      BID_ENGINE: "redis",
     };
 
     console.log("[test-db] Applying committed Prisma migrations...");
