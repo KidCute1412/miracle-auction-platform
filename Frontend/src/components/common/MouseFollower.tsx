@@ -59,6 +59,7 @@ export const MouseFollower: React.FC = () => {
     document.head.appendChild(styleElement);
 
     let animationFrameId: number;
+    let isLoopActive = true;
     const particles: Particle[] = [];
     const ripples: ClickRipple[] = [];
 
@@ -100,6 +101,8 @@ export const MouseFollower: React.FC = () => {
       if (state.isOffScreen) {
         state.isOffScreen = false;
       }
+
+      startLoopIfNeeded();
 
       // Spawn dust trail
       const dist = Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y);
@@ -145,6 +148,8 @@ export const MouseFollower: React.FC = () => {
       const state = stateRef.current;
       if (state.isOffScreen) return;
 
+      startLoopIfNeeded();
+
       // Add a shockwave ripple
       ripples.push({
         x: e.clientX,
@@ -175,6 +180,7 @@ export const MouseFollower: React.FC = () => {
         stateRef.current.isHovered = true;
         // Check if it's a text input or textarea
         stateRef.current.isTextInput = !!interactive.closest("input, textarea");
+        startLoopIfNeeded();
       }
     };
 
@@ -189,6 +195,7 @@ export const MouseFollower: React.FC = () => {
       if (interactive) {
         stateRef.current.isHovered = false;
         stateRef.current.isTextInput = false;
+        startLoopIfNeeded();
       }
     };
 
@@ -198,6 +205,7 @@ export const MouseFollower: React.FC = () => {
 
     const handleMouseEnter = () => {
       stateRef.current.isOffScreen = false;
+      startLoopIfNeeded();
     };
 
     // Attach listeners
@@ -359,7 +367,7 @@ export const MouseFollower: React.FC = () => {
       c.restore();
     };
 
-    // Main animation loop
+    // Main animation loop (optimized and using arrow function so TS respects outer scope null-narrowing of canvas/ctx)
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -373,14 +381,15 @@ export const MouseFollower: React.FC = () => {
         state.opacity = Math.min(1, state.opacity + 0.08);
       }
 
-      // 1. Draw click shockwave ripples
-      ripples.forEach((ripple, idx) => {
+      // 1. Draw click shockwave ripples (iterated backward to avoid splice indexing skip bugs)
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const ripple = ripples[i];
         ripple.radius += (ripple.maxRadius - ripple.radius) * 0.12;
         ripple.alpha -= ripple.decay;
 
         if (ripple.alpha <= 0) {
-          ripples.splice(idx, 1);
-          return;
+          ripples.splice(i, 1);
+          continue;
         }
 
         ctx.save();
@@ -395,18 +404,19 @@ export const MouseFollower: React.FC = () => {
         ctx.shadowColor = shadowColor;
         ctx.stroke();
         ctx.restore();
-      });
+      }
 
-      // 2. Draw particle trail
-      particles.forEach((p, idx) => {
+      // 2. Draw particle trail (iterated backward to avoid splice indexing skip bugs)
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
         p.x += p.vx;
         p.y += p.vy + p.gravity;
         p.rotation += p.rotationSpeed;
         p.alpha -= p.decay;
 
         if (p.alpha <= 0) {
-          particles.splice(idx, 1);
-          return;
+          particles.splice(i, 1);
+          continue;
         }
 
         if (p.isStar) {
@@ -420,7 +430,7 @@ export const MouseFollower: React.FC = () => {
           ctx.fill();
           ctx.restore();
         }
-      });
+      }
 
       // 3. Draw custom cursor at exact mouse position
       if (state.opacity > 0) {
@@ -441,9 +451,24 @@ export const MouseFollower: React.FC = () => {
         ctx.restore();
       }
 
+      // Performance optimization: Pause the animation loop when off-screen and elements are fully decayed
+      if (state.isOffScreen && state.opacity === 0 && particles.length === 0 && ripples.length === 0) {
+        isLoopActive = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Make sure canvas is fully cleared
+        return;
+      }
+
       animationFrameId = requestAnimationFrame(animate);
     };
 
+    const startLoopIfNeeded = () => {
+      if (!isLoopActive) {
+        isLoopActive = true;
+        animate();
+      }
+    };
+
+    // Start the animation loop initially
     animate();
 
     // Clean up on component unmount
