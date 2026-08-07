@@ -49,7 +49,7 @@ Narrative: “Redis atomically decides the auction and appends an ordered event.
 
 ## 2:15–3:15 — Reliability path
 
-Open [the architecture diagram](overview_system_architecture.md) and follow:
+Open [the architecture diagram](../architecture/system-overview.md) and follow:
 
 1. API → Redis Lua mutation
 2. Redis Stream → single `auction-worker`
@@ -75,10 +75,10 @@ If the seed has no completed auction, use a deterministic test fixture instead o
 ## 4:00–5:00 — Evidence
 
 - Show the GitHub Actions backend, frontend, AgentService, Compose, and image gates.
-- Open [engineering evidence](engineering-evidence.md).
+- Open [engineering evidence](../testing/engineering-evidence.md).
 - Show the preserved three-run k6 comparison and invariant output.
 - Explicitly state that its optimized revision was dirty and is not a clean-release benchmark.
-- Close with the [roadmap](reflourish_plan.md).
+- Close with the [roadmap](../planning/roadmap.md).
 
 ## Screenshot and GIF checklist
 

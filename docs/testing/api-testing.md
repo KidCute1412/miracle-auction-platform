@@ -48,4 +48,4 @@ npm run test:coverage
 3. Admin: route contract cộng với thiếu token, sai role và admin hợp lệ trên router đã mount.
 4. Bids: đặt giá, history, buy-now, cấm bidder và concurrency với PostgreSQL thật.
 5. Khi thêm route vào frontend, ghi contract đầy đủ vào
-   `docs/api-route-contracts.md` trước khi đổi API.
+   `docs/contracts/api-routes.md` trước khi đổi API.

@@ -1,6 +1,8 @@
-# Admin Dashboard: CV-Ready Architecture and Implementation Plan
+# Admin Dashboard: Architecture and Implementation Plan
 
-> Runtime status (2026-07-29): the current dashboard consumer and scheduled recovery run inside `async-worker`. Redis is Oracle-local, outbox publication belongs to `outbox-relay`, and terminal events use `async_events_dlq`. Any older topology below is design history; [worker-process-architecture.md](worker-process-architecture.md) is canonical.
+> Status: Current | Owner: Backend | Last verified: 2026-08-07
+>
+> Runtime status: the dashboard consumer and scheduled recovery run inside `async-worker`. Redis is Oracle-local, outbox publication belongs to `outbox-relay`, and terminal events use `async_events_dlq`. [Worker processes](worker-processes.md) is canonical.
 
 ## 1. Goal
 
@@ -13,7 +15,7 @@ Build a **near-real-time, CQRS-style analytics read model** that demonstrates:
 - authenticated Socket.IO updates
 - operational monitoring, auditability, and measured performance
 
-The production pipeline uses Aiven Free Kafka. PostgreSQL remains the source of truth, and Kafka never decides whether a bid, payment, order, or user update is valid.
+The production pipeline uses Aiven Free Kafka. PostgreSQL remains the durable source of truth for committed business and analytics data, while Oracle-local Redis remains authoritative for active-auction mutation decisions. Kafka never decides whether a bid, payment, order, or user update is valid.
 
 ## 2. Target Production Architecture
 
@@ -30,7 +32,7 @@ flowchart LR
 
     PG[(Supabase PostgreSQL)]
     Kafka[(Aiven Kafka)]
-    Redis[(Upstash Redis)]
+    Redis[(Oracle-local Redis)]
 
     Admin -->|HTTPS / Socket.IO| Caddy
     Caddy --> API
@@ -60,6 +62,16 @@ flowchart LR
 | PostgreSQL | Business truth, transactional outbox, audit log, analytics snapshot |
 | Aiven Kafka | Event transport, consumer groups, short-term replay, dashboard DLQ |
 | Redis | Worker/API notification, debounce lock, heartbeat; not dashboard truth |
+
+The dashboard consumer deduplicates by `eventId`, processes partitions sequentially,
+debounces refresh work, and commits Kafka offsets only after receipt and snapshot
+persistence. Scheduled PostgreSQL refresh is the recovery path when Kafka is idle or
+unavailable. Operations data includes PostgreSQL/Redis/Kafka health, worker heartbeat
+ages, projection lag, outbox backlog, email delivery state, Kafka consumer lag, DLQ
+totals, and connected admin sockets. The legacy `workerHeartbeat` field aliases
+`asyncWorker` for one frontend compatibility release. Terminal dashboard events use
+`async_events_dlq` with consumer and source topic/partition/offset metadata;
+`dashboard_updates_dlq` remains only for the compatibility window.
 
 ## 3. Correct Event Flow
 

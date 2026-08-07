@@ -1,5 +1,7 @@
 # Four-process worker architecture
 
+> Status: Current | Owner: Backend/Platform | Last verified: 2026-08-07
+
 This is the canonical runtime architecture. Documents labelled historical or superseded are not deployment instructions.
 
 ## Topology and authority

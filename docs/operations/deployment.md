@@ -1,6 +1,8 @@
 # Deployment: Oracle VM, Supabase, Aiven and Vercel
 
-The current production topology is defined by [`compose.production.yml`](../compose.production.yml) and the canonical [worker-process architecture](worker-process-architecture.md).
+> Status: Current | Owner: Platform | Last verified: 2026-08-07
+
+The current production topology is defined by [`compose.production.yml`](../../compose.production.yml) and the canonical [worker-process architecture](../architecture/worker-processes.md).
 
 ## Services
 

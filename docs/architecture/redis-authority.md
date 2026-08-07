@@ -12,4 +12,4 @@ Kafka receives events only through the outbox relay. A Kafka outage grows the Po
 
 On Redis loss, bidding is unavailable; there is no PostgreSQL fallback that could split authority. Recovery keeps bidding in maintenance, starts from a verified PostgreSQL projection checkpoint, bootstraps Redis, drains/reconciles the Stream, verifies winner/price/sequence/version, and only then reopens traffic.
 
-See [worker-process-architecture.md](worker-process-architecture.md) for process ownership and [deployment.md](deployment.md) for AOF backup/restore.
+See [worker-processes.md](worker-processes.md) for process ownership and [deployment](../operations/deployment.md) for AOF backup/restore.

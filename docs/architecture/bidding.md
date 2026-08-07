@@ -1,6 +1,8 @@
 # Redis-authoritative bidding architecture
 
-The canonical process ownership and failure matrix are in [worker-process-architecture.md](worker-process-architecture.md).
+> Status: Current | Owner: Backend | Last verified: 2026-08-07
+
+The canonical process ownership and failure matrix are in [worker-processes.md](worker-processes.md).
 
 ## Synchronous hot path
 

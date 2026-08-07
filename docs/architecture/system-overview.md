@@ -129,4 +129,4 @@ Socket.IO has a different guarantee. Projection publishes through Redis Pub/Sub 
 - Worker heartbeats, projection lag, Stream pending entries, outbox state, email state, consumer lag, and DLQ totals support diagnosis.
 - Graceful shutdown stops new work before closing Redis, Kafka, Socket.IO, and database connections.
 
-See [worker-process-architecture.md](worker-process-architecture.md) for contracts and lifecycle, [bidding_architecture.md](bidding_architecture.md) for the hot path, and [deployment.md](deployment.md) for rollout and recovery.
+See [worker-processes.md](worker-processes.md) for contracts and lifecycle, [bidding.md](bidding.md) for the hot path, and [deployment](../operations/deployment.md) for rollout and recovery.
