@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 import { BreadcrumbProvider } from "@/contexts/BreadcrumbContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { MouseFollower } from "@/components/common/MouseFollower";
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <>
@@ -30,6 +31,7 @@ createRoot(document.getElementById("root") as HTMLElement).render(
               },
             }}
           />
+          <MouseFollower />
           <RouterProvider router={routers} />
         </BreadcrumbProvider>
       </ThemeProvider>
