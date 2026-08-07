@@ -463,8 +463,11 @@ export const MouseFollower: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[99999]"
-      style={{ mixBlendMode: theme === "dark" ? "screen" : "normal" }}
+      className="fixed inset-0 pointer-events-none"
+      style={{
+        mixBlendMode: theme === "dark" ? "screen" : "normal",
+        zIndex: 2147483647,
+      }}
     />
   );
 };
