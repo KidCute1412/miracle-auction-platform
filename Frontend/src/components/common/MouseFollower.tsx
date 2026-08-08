@@ -36,6 +36,7 @@ export const MouseFollower: React.FC = () => {
     isTextInput: false,
     isOffScreen: true,
     opacity: 0,
+    hoverProgress: 0, // Smooth transition for hover effects
   });
 
   useEffect(() => {
@@ -90,6 +91,8 @@ export const MouseFollower: React.FC = () => {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
+    let lastSpawnTime = 0;
+
     // Mouse movement handler
     const handleMouseMove = (e: MouseEvent) => {
       const mouse = mouseRef.current;
@@ -104,16 +107,20 @@ export const MouseFollower: React.FC = () => {
 
       startLoopIfNeeded();
 
-      // Spawn dust trail
-      const dist = Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y);
-      if (dist > 8) {
-        // Spawn 1-2 trail particles
-        const particleCount = dist > 25 ? 2 : 1;
-        for (let i = 0; i < particleCount; i++) {
-          particles.push(createParticle(e.clientX, e.clientY, false));
+      // Spawn dust trail with performance throttle (e.g. max once every 24ms)
+      const now = performance.now();
+      if (now - lastSpawnTime > 24) {
+        const dist = Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y);
+        if (dist > 10) {
+          // Spawn 1-2 trail particles
+          const particleCount = dist > 25 ? 2 : 1;
+          for (let i = 0; i < particleCount; i++) {
+            particles.push(createParticle(e.clientX, e.clientY, false));
+          }
+          mouse.x = e.clientX;
+          mouse.y = e.clientY;
+          lastSpawnTime = now;
         }
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
       }
     };
 
@@ -123,7 +130,8 @@ export const MouseFollower: React.FC = () => {
       const speed = isBurst 
         ? Math.random() * 3 + 1.5 
         : Math.random() * 0.8 + 0.2;
-      const isStar = Math.random() > 0.6;
+      // Reduce star ratio (only ~12% stars, 88% dust) to avoid cluttering
+      const isStar = Math.random() > 0.88;
       
       const color = goldColors[Math.floor(Math.random() * goldColors.length)];
 
@@ -132,7 +140,8 @@ export const MouseFollower: React.FC = () => {
         y,
         vx: Math.cos(angle) * speed + (isBurst ? 0 : (Math.random() - 0.5) * 0.5),
         vy: Math.sin(angle) * speed + (isBurst ? -1 : (Math.random() - 0.5) * 0.5),
-        size: isStar ? Math.random() * 4 + 3 : Math.random() * 2 + 1,
+        // Make particles slightly smaller and more elegant
+        size: isStar ? Math.random() * 3 + 2 : Math.random() * 1.5 + 0.5,
         alpha: 1,
         decay: isBurst ? Math.random() * 0.02 + 0.015 : Math.random() * 0.025 + 0.015,
         color,
@@ -160,8 +169,8 @@ export const MouseFollower: React.FC = () => {
         decay: 0.04,
       });
 
-      // Add golden star burst particles
-      const burstCount = 12 + Math.floor(Math.random() * 8);
+      // Add golden star burst particles (reduced count for cleaner burst)
+      const burstCount = 8 + Math.floor(Math.random() * 6);
       for (let i = 0; i < burstCount; i++) {
         particles.push(createParticle(e.clientX, e.clientY, true));
       }
@@ -259,80 +268,87 @@ export const MouseFollower: React.FC = () => {
       c.restore();
     };
 
-    // Draw a tiny decorative star/diamond next to the cursor when hovering
-    const drawMiniStar = (c: CanvasRenderingContext2D, cx: number, cy: number, color: string) => {
-      c.save();
-      c.fillStyle = color;
-      
-      // Shadow for star
-      if (!isDark) {
-        c.shadowBlur = 2;
-        c.shadowColor = "rgba(0, 0, 0, 0.15)";
-      }
 
-      c.beginPath();
-      c.moveTo(cx, cy - 5);
-      c.lineTo(cx + 3.5, cy);
-      c.lineTo(cx, cy + 5);
-      c.lineTo(cx - 3.5, cy);
-      c.closePath();
-      c.fill();
-      c.restore();
-    };
 
     // Draw custom luxury cursor chevron (improved light mode and angle rotation)
-    const drawCustomCursor = (c: CanvasRenderingContext2D, x: number, y: number, scale = 1.0, isHovered = false) => {
+    const drawCustomCursor = (c: CanvasRenderingContext2D, x: number, y: number, hoverProgress: number) => {
+      // Scale: very subtle growth (max 4%) to keep click precision perfect
+      const scale = 1.0 + hoverProgress * 0.04;
+
       c.save();
       
-      // Translate to cursor tip and apply rotation if hovering (pivots chevron slightly)
+      // Translate to cursor tip
       c.translate(x, y);
-      if (isHovered) {
-        c.rotate(-15 * Math.PI / 180);
-      }
       
       // Set premium drop shadow
       if (isDark) {
-        c.shadowBlur = isHovered ? 12 : 8;
+        c.shadowBlur = 8 + hoverProgress * 3;
         c.shadowColor = shadowColor;
       } else {
         // High-end dark drop shadow for Light Mode (Titanium Alabaster White background contrast)
-        c.shadowBlur = isHovered ? 6 : 4;
+        c.shadowBlur = 4 + hoverProgress * 1.5;
         c.shadowColor = "rgba(0, 0, 0, 0.18)";
         c.shadowOffsetX = 1.2;
         c.shadowOffsetY = 2.0;
       }
       
-      // Draw Chevron Arrow Path
+      // Draw Chevron Arrow Path (Adjusted to point more upright, matching standard OS cursor angle)
       c.beginPath();
       c.moveTo(0, 0);
-      c.lineTo(22 * scale, 7 * scale);
-      c.lineTo(8 * scale, 8 * scale);
-      c.lineTo(7 * scale, 22 * scale);
+      c.lineTo(18 * scale, 9 * scale);
+      c.lineTo(7 * scale, 9 * scale);
+      c.lineTo(3 * scale, 20 * scale);
       c.closePath();
 
-      // Configure beautiful premium theme colors
+      // Configure beautiful premium theme colors with smooth transitions
       if (isDark) {
         // Dark Mode: Solid golden fill, white border outline
-        c.fillStyle = isHovered ? "rgba(255, 235, 160, 1)" : "rgba(230, 194, 91, 1)";
+        // Gold transition: (230, 194, 91) -> (255, 235, 160)
+        const r = Math.round(230 + 25 * hoverProgress);
+        const g = Math.round(194 + 41 * hoverProgress);
+        const b = Math.round(91 + 69 * hoverProgress);
+        c.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`;
         c.fill();
         c.strokeStyle = "rgba(255, 255, 255, 0.95)";
       } else {
-        // Light Mode: Premium Ivory/Alabaster white fill, golden border outline (Stunning & contrasty)
-        c.fillStyle = isHovered ? "rgba(255, 255, 255, 1)" : "rgba(253, 248, 235, 0.98)";
+        // Light Mode: Premium Ivory/Alabaster white fill, golden border outline
+        // Ivory transition: (253, 248, 235, 0.98) -> (255, 255, 255, 1.0)
+        const r = Math.round(253 + 2 * hoverProgress);
+        const g = Math.round(248 + 7 * hoverProgress);
+        const b = Math.round(235 + 20 * hoverProgress);
+        const a = 0.98 + 0.02 * hoverProgress;
+        c.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
         c.fill();
-        c.strokeStyle = isHovered ? "rgba(180, 130, 30, 1)" : "rgba(197, 150, 60, 0.95)";
+        
+        // Gold outline transition: (197, 150, 60, 0.95) -> (180, 130, 30, 1.0)
+        const or = Math.round(197 - 17 * hoverProgress);
+        const og = Math.round(150 - 20 * hoverProgress);
+        const ob = Math.round(60 - 30 * hoverProgress);
+        const oa = 0.95 + 0.05 * hoverProgress;
+        c.strokeStyle = `rgba(${or}, ${og}, ${ob}, ${oa})`;
       }
 
       c.lineWidth = 1.35 * scale;
       c.stroke();
-      c.restore();
 
-      // Draw a tiny sparkling diamond next to the pointer when hovering
-      if (isHovered) {
-        const starX = x + 16 * scale;
-        const starY = y + 16 * scale;
-        drawMiniStar(c, starX, starY, isDark ? "rgba(230, 194, 91, 0.95)" : "rgba(180, 130, 30, 0.95)");
+      // Draw a sleek target halo ring around the cursor tip when hovering (Vanguard design accent)
+      if (hoverProgress > 0.01) {
+        c.beginPath();
+        // Ring expands from radius 10 to 14
+        c.arc(0, 0, 10 + 4 * hoverProgress, 0, Math.PI * 2);
+        c.strokeStyle = isDark 
+          ? `rgba(230, 194, 91, ${hoverProgress * 0.55})` 
+          : `rgba(180, 130, 30, ${hoverProgress * 0.45})`;
+        c.lineWidth = 1.0;
+        
+        // Disable shadow temporarily for the ring to keep it sharp and clean
+        c.shadowBlur = 0;
+        c.shadowOffsetX = 0;
+        c.shadowOffsetY = 0;
+        c.stroke();
       }
+
+      c.restore();
     };
 
     // Draw custom luxury I-Beam for text input elements
@@ -380,6 +396,20 @@ export const MouseFollower: React.FC = () => {
       } else {
         state.opacity = Math.min(1, state.opacity + 0.08);
       }
+      // Ensure state properties are valid numbers (resilient to HMR / NaN)
+      if (state.opacity === undefined || isNaN(state.opacity)) {
+        state.opacity = 0;
+      }
+      if (state.hoverProgress === undefined || isNaN(state.hoverProgress)) {
+        state.hoverProgress = 0;
+      }
+
+      // Smooth interpolation for hover progress
+      if (state.isHovered) {
+        state.hoverProgress += (1 - state.hoverProgress) * 0.15;
+      } else {
+        state.hoverProgress += (0 - state.hoverProgress) * 0.15;
+      }
 
       // 1. Draw click shockwave ripples (iterated backward to avoid splice indexing skip bugs)
       for (let i = ripples.length - 1; i >= 0; i--) {
@@ -422,15 +452,15 @@ export const MouseFollower: React.FC = () => {
         if (p.isStar) {
           drawStarShape(ctx, p.x, p.y, 4, p.size, p.size / 2.5, p.color, p.alpha * state.opacity, p.rotation);
         } else {
-          ctx.save();
+          // Optimized circle rendering: avoided slow ctx.save() & ctx.restore() inside loop
           ctx.globalAlpha = p.alpha * state.opacity;
           ctx.fillStyle = p.color;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           ctx.fill();
-          ctx.restore();
         }
       }
+      ctx.globalAlpha = 1.0; // Reset global alpha after the batch
 
       // 3. Draw custom cursor at exact mouse position
       if (state.opacity > 0) {
@@ -440,12 +470,9 @@ export const MouseFollower: React.FC = () => {
         if (state.isTextInput) {
           // If hovering over an input/textarea, render the custom gold I-Beam
           drawIBeamCursor(ctx, mouse.targetX, mouse.targetY);
-        } else if (state.isHovered) {
-          // If hovering over buttons/links, draw pivoted larger chevron with a sparkling mini star
-          drawCustomCursor(ctx, mouse.targetX, mouse.targetY, 1.35, true);
         } else {
-          // Normal cursor mode
-          drawCustomCursor(ctx, mouse.targetX, mouse.targetY, 1.0, false);
+          // Render the chevron cursor with smooth transitions
+          drawCustomCursor(ctx, mouse.targetX, mouse.targetY, state.hoverProgress);
         }
         
         ctx.restore();
