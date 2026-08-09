@@ -64,7 +64,7 @@ No coverage percentage was published because the failed run did not produce the 
 
 ## k6 evidence contract
 
-`PerformanceTests/bidding_stress_test.js` provides smoke, hot-auction, and distributed-auction profiles. PostgreSQL, Redis, Kafka, all workers, and the API run during measurement. External email delivery is disabled while projection, outbox, and dashboard work remain active.
+`PerformanceTests/scenarios/bidding.js` provides smoke, baseline, hot-auction, distributed-auction, spike and soak profiles. `npm --prefix PerformanceTests run benchmark` creates a dedicated Docker Compose project containing PostgreSQL, Redis, Kafka, the API and all workers; it never reuses the development stack. External email delivery is disabled while projection, outbox and dashboard work remain active.
 
 Every publishable suite must include:
 
@@ -72,7 +72,7 @@ Every publishable suite must include:
 - CPU, memory, OS, Docker, Compose, and Redis configuration;
 - deterministic seed and scenario;
 - three runs per profile and median results;
-- raw k6 output, summaries, and post-run invariants;
+- compressed raw k6 output, summaries, seed manifest, environment metadata and post-run invariants;
 - Redis/PostgreSQL sequence, version, price, leader, and winner agreement;
 - no duplicate orders, events, or history sequences;
 - drained Stream pending entries and outbox;
