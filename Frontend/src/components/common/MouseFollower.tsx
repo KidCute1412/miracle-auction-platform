@@ -14,6 +14,7 @@ interface Particle {
   rotation: number;
   rotationSpeed: number;
   gravity: number;
+  history?: { x: number; y: number }[];
 }
 
 interface ClickRipple {
@@ -30,13 +31,10 @@ export const MouseFollower: React.FC = () => {
   const { theme } = useTheme();
   
   // Track mouse coordinates
-  const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
+  const mouseRef = useRef<{ x: number; y: number; lastX?: number; lastY?: number }>({ x: 0, y: 0 });
   const stateRef = useRef({
-    isHovered: false,
-    isTextInput: false,
     isOffScreen: true,
     opacity: 0,
-    hoverProgress: 0, // Smooth transition for hover effects
   });
 
   useEffect(() => {
@@ -50,15 +48,6 @@ export const MouseFollower: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Inject global style to hide the default browser cursor completely on desktop
-    const styleElement = document.createElement("style");
-    styleElement.innerHTML = `
-      *, *::before, *::after {
-        cursor: none !important;
-      }
-    `;
-    document.head.appendChild(styleElement);
-
     let animationFrameId: number;
     let isLoopActive = true;
     const particles: Particle[] = [];
@@ -67,18 +56,21 @@ export const MouseFollower: React.FC = () => {
     const isDark = theme === "dark";
     const shadowColor = isDark ? "rgba(230, 194, 91, 0.6)" : "rgba(180, 130, 30, 0.45)";
 
+    // Elegant luxury cosmic Gold & Stardust palette
     const darkColors = [
-      "rgba(230, 194, 91, 1)",   // Champagne Gold Accent
-      "rgba(255, 239, 186, 1)",  // Light glow gold
-      "rgba(212, 175, 55, 1)",    // Premium Gold
-      "rgba(255, 255, 255, 0.9)"  // Sparkling white
+      "rgba(230, 194, 91, 1)",    // Champagne Gold Accent
+      "rgba(255, 235, 170, 1)",   // Radiant Light Gold
+      "rgba(255, 190, 150, 1)",   // Celestial Rose Gold
+      "rgba(224, 180, 255, 1)",   // Dreamy Violet Stardust
+      "rgba(255, 255, 255, 0.95)" // Sparkle Diamond White
     ];
 
     const lightColors = [
-      "rgba(197, 150, 60, 1)",   // Rich Gold/Amber
-      "rgba(139, 90, 43, 1)",    // Deep Bronze
-      "rgba(218, 165, 32, 1)",   // Goldenrod
-      "rgba(180, 130, 30, 0.95)" // Darker Gold for visibility
+      "rgba(197, 150, 60, 1)",    // Warm Honey Gold
+      "rgba(139, 90, 43, 1)",     // Deep Bronze
+      "rgba(110, 85, 200, 1)",    // Royal Indigo
+      "rgba(220, 105, 75, 1)",    // Sunrise Amber Gold
+      "rgba(255, 255, 255, 0.95)" // Pure Contrast White
     ];
 
     const goldColors = isDark ? darkColors : lightColors;
@@ -98,57 +90,50 @@ export const MouseFollower: React.FC = () => {
       const mouse = mouseRef.current;
       const state = stateRef.current;
 
-      mouse.targetX = e.clientX;
-      mouse.targetY = e.clientY;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
 
       if (state.isOffScreen) {
         state.isOffScreen = false;
+        mouse.lastX = e.clientX;
+        mouse.lastY = e.clientY;
       }
 
       startLoopIfNeeded();
-
-      // Spawn dust trail with performance throttle (e.g. max once every 24ms)
-      const now = performance.now();
-      if (now - lastSpawnTime > 24) {
-        const dist = Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y);
-        if (dist > 10) {
-          // Spawn 1-2 trail particles
-          const particleCount = dist > 25 ? 2 : 1;
-          for (let i = 0; i < particleCount; i++) {
-            particles.push(createParticle(e.clientX, e.clientY, false));
-          }
-          mouse.x = e.clientX;
-          mouse.y = e.clientY;
-          lastSpawnTime = now;
-        }
-      }
     };
 
     // Helper to create particles
-    const createParticle = (x: number, y: number, isBurst = false): Particle => {
+    const createParticle = (x: number, y: number, isBurst = false, extraVx = 0, extraVy = 0): Particle => {
       const angle = Math.random() * Math.PI * 2;
       const speed = isBurst 
-        ? Math.random() * 3 + 1.5 
-        : Math.random() * 0.8 + 0.2;
-      // Reduce star ratio (only ~12% stars, 88% dust) to avoid cluttering
-      const isStar = Math.random() > 0.88;
+        ? Math.random() * 3.5 + 1.5 
+        : Math.random() * 0.9 + 0.3;
+      
+      // Star ratio (28% stars during motion, 50% stars during click bursts)
+      const isStar = isBurst ? Math.random() > 0.5 : Math.random() > 0.72;
       
       const color = goldColors[Math.floor(Math.random() * goldColors.length)];
+
+      // Clamp extra velocity for smooth motion
+      const clampVal = 4;
+      const vxCarry = Math.max(-clampVal, Math.min(clampVal, extraVx * 0.12));
+      const vyCarry = Math.max(-clampVal, Math.min(clampVal, extraVy * 0.12));
 
       return {
         x,
         y,
-        vx: Math.cos(angle) * speed + (isBurst ? 0 : (Math.random() - 0.5) * 0.5),
-        vy: Math.sin(angle) * speed + (isBurst ? -1 : (Math.random() - 0.5) * 0.5),
-        // Make particles slightly smaller and more elegant
-        size: isStar ? Math.random() * 3 + 2 : Math.random() * 1.5 + 0.5,
+        vx: Math.cos(angle) * speed + (isBurst ? 0 : (Math.random() - 0.5) * 0.6) + vxCarry,
+        vy: Math.sin(angle) * speed + (isBurst ? -1.2 : (Math.random() - 0.5) * 0.6) + vyCarry,
+        // Make stars look prominent and dust particles fine & elegant
+        size: isStar ? Math.random() * 3.5 + 2.8 : Math.random() * 1.5 + 0.4,
         alpha: 1,
-        decay: isBurst ? Math.random() * 0.02 + 0.015 : Math.random() * 0.025 + 0.015,
+        decay: isBurst ? Math.random() * 0.016 + 0.012 : Math.random() * 0.022 + 0.014,
         color,
         isStar,
         rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.05,
-        gravity: isBurst ? 0.05 : 0.01,
+        rotationSpeed: (Math.random() - 0.5) * 0.09,
+        gravity: isBurst ? 0.04 : 0.008,
+        history: isStar ? [] : undefined,
       };
     };
 
@@ -159,52 +144,28 @@ export const MouseFollower: React.FC = () => {
 
       startLoopIfNeeded();
 
-      // Add a shockwave ripple
+      // Add double ripples (primary and echo ring) for tactile impact
       ripples.push({
         x: e.clientX,
         y: e.clientY,
         radius: 0,
-        maxRadius: state.isHovered ? 40 : 28,
-        alpha: 0.8,
-        decay: 0.04,
+        maxRadius: 36,
+        alpha: 0.85,
+        decay: 0.035,
+      });
+      ripples.push({
+        x: e.clientX,
+        y: e.clientY,
+        radius: 0,
+        maxRadius: 22,
+        alpha: 0.5,
+        decay: 0.05,
       });
 
-      // Add golden star burst particles (reduced count for cleaner burst)
-      const burstCount = 8 + Math.floor(Math.random() * 6);
+      // Add golden star burst particles (increased count for richer burst)
+      const burstCount = 14 + Math.floor(Math.random() * 8);
       for (let i = 0; i < burstCount; i++) {
         particles.push(createParticle(e.clientX, e.clientY, true));
-      }
-    };
-
-    // Handle element hovers
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-
-      const interactive = target.closest(
-        "a, button, input, select, textarea, [role='button'], .cursor-pointer, .interactive-card"
-      );
-      
-      if (interactive) {
-        stateRef.current.isHovered = true;
-        // Check if it's a text input or textarea
-        stateRef.current.isTextInput = !!interactive.closest("input, textarea");
-        startLoopIfNeeded();
-      }
-    };
-
-    const handleMouseOut = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-
-      const interactive = target.closest(
-        "a, button, input, select, textarea, [role='button'], .cursor-pointer, .interactive-card"
-      );
-
-      if (interactive) {
-        stateRef.current.isHovered = false;
-        stateRef.current.isTextInput = false;
-        startLoopIfNeeded();
       }
     };
 
@@ -214,172 +175,65 @@ export const MouseFollower: React.FC = () => {
 
     const handleMouseEnter = () => {
       stateRef.current.isOffScreen = false;
+      const mouse = mouseRef.current;
+      mouse.lastX = undefined;
+      mouse.lastY = undefined;
       startLoopIfNeeded();
     };
 
     // Attach listeners
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mouseover", handleMouseOver);
-    window.addEventListener("mouseout", handleMouseOut);
     document.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("mouseenter", handleMouseEnter);
 
-    // Draw star helper
-    const drawStarShape = (
+    // Draw diamond luxury lens flare helper
+    const drawDiamondFlare = (
       c: CanvasRenderingContext2D,
       cx: number,
       cy: number,
-      spikes: number,
-      outerRadius: number,
-      innerRadius: number,
+      size: number,
       color: string,
       alpha: number,
       rotation: number
     ) => {
-      let rot = (Math.PI / 2) * 3 + rotation;
-      let x = cx;
-      let y = cy;
-      const step = Math.PI / spikes;
-
       c.save();
+      c.translate(cx, cy);
+      c.rotate(rotation);
       c.globalAlpha = alpha;
-      c.fillStyle = color;
-      
-      c.shadowBlur = isDark ? 4 : 2;
-      c.shadowColor = shadowColor;
 
+      // Glow backing
+      const glow = c.createRadialGradient(0, 0, 0, 0, 0, size * 1.6);
+      glow.addColorStop(0, color);
+      const translucentColor = color.replace(/[\d.]+\)$/, "0.32)");
+      glow.addColorStop(0.3, translucentColor);
+      glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      c.fillStyle = glow;
       c.beginPath();
-      c.moveTo(cx, cy - outerRadius);
-      for (let i = 0; i < spikes; i++) {
-        x = cx + Math.cos(rot) * outerRadius;
-        y = cy + Math.sin(rot) * outerRadius;
-        c.lineTo(x, y);
-        rot += step;
-
-        x = cx + Math.cos(rot) * innerRadius;
-        y = cy + Math.sin(rot) * innerRadius;
-        c.lineTo(x, y);
-        rot += step;
-      }
-      c.lineTo(cx, cy - outerRadius);
-      c.closePath();
+      c.arc(0, 0, size * 1.6, 0, Math.PI * 2);
       c.fill();
-      c.restore();
-    };
 
-
-
-    // Draw custom luxury cursor chevron (improved light mode and angle rotation)
-    const drawCustomCursor = (c: CanvasRenderingContext2D, x: number, y: number, hoverProgress: number) => {
-      // Scale: very subtle growth (max 4%) to keep click precision perfect
-      const scale = 1.0 + hoverProgress * 0.04;
-
-      c.save();
-      
-      // Translate to cursor tip
-      c.translate(x, y);
-      
-      // Set premium drop shadow
-      if (isDark) {
-        c.shadowBlur = 8 + hoverProgress * 3;
-        c.shadowColor = shadowColor;
-      } else {
-        // High-end dark drop shadow for Light Mode (Titanium Alabaster White background contrast)
-        c.shadowBlur = 4 + hoverProgress * 1.5;
-        c.shadowColor = "rgba(0, 0, 0, 0.18)";
-        c.shadowOffsetX = 1.2;
-        c.shadowOffsetY = 2.0;
-      }
-      
-      // Draw Chevron Arrow Path (Adjusted to point more upright, matching standard OS cursor angle)
+      // Vertical lens flare spike
+      c.fillStyle = color;
       c.beginPath();
-      c.moveTo(0, 0);
-      c.lineTo(18 * scale, 9 * scale);
-      c.lineTo(7 * scale, 9 * scale);
-      c.lineTo(3 * scale, 20 * scale);
-      c.closePath();
+      c.moveTo(0, -size * 1.8);
+      c.quadraticCurveTo(size * 0.15, 0, 0, size * 1.8);
+      c.quadraticCurveTo(-size * 0.15, 0, 0, -size * 1.8);
+      c.fill();
 
-      // Configure beautiful premium theme colors with smooth transitions
-      if (isDark) {
-        // Dark Mode: Solid golden fill, white border outline
-        // Gold transition: (230, 194, 91) -> (255, 235, 160)
-        const r = Math.round(230 + 25 * hoverProgress);
-        const g = Math.round(194 + 41 * hoverProgress);
-        const b = Math.round(91 + 69 * hoverProgress);
-        c.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`;
-        c.fill();
-        c.strokeStyle = "rgba(255, 255, 255, 0.95)";
-      } else {
-        // Light Mode: Premium Ivory/Alabaster white fill, golden border outline
-        // Ivory transition: (253, 248, 235, 0.98) -> (255, 255, 255, 1.0)
-        const r = Math.round(253 + 2 * hoverProgress);
-        const g = Math.round(248 + 7 * hoverProgress);
-        const b = Math.round(235 + 20 * hoverProgress);
-        const a = 0.98 + 0.02 * hoverProgress;
-        c.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-        c.fill();
-        
-        // Gold outline transition: (197, 150, 60, 0.95) -> (180, 130, 30, 1.0)
-        const or = Math.round(197 - 17 * hoverProgress);
-        const og = Math.round(150 - 20 * hoverProgress);
-        const ob = Math.round(60 - 30 * hoverProgress);
-        const oa = 0.95 + 0.05 * hoverProgress;
-        c.strokeStyle = `rgba(${or}, ${og}, ${ob}, ${oa})`;
-      }
-
-      c.lineWidth = 1.35 * scale;
-      c.stroke();
-
-      // Draw a sleek target halo ring around the cursor tip when hovering (Vanguard design accent)
-      if (hoverProgress > 0.01) {
-        c.beginPath();
-        // Ring expands from radius 10 to 14
-        c.arc(0, 0, 10 + 4 * hoverProgress, 0, Math.PI * 2);
-        c.strokeStyle = isDark 
-          ? `rgba(230, 194, 91, ${hoverProgress * 0.55})` 
-          : `rgba(180, 130, 30, ${hoverProgress * 0.45})`;
-        c.lineWidth = 1.0;
-        
-        // Disable shadow temporarily for the ring to keep it sharp and clean
-        c.shadowBlur = 0;
-        c.shadowOffsetX = 0;
-        c.shadowOffsetY = 0;
-        c.stroke();
-      }
-
-      c.restore();
-    };
-
-    // Draw custom luxury I-Beam for text input elements
-    const drawIBeamCursor = (c: CanvasRenderingContext2D, x: number, y: number) => {
-      c.save();
-      
-      if (isDark) {
-        c.strokeStyle = "rgba(255, 235, 160, 1)";
-        c.shadowBlur = 6;
-        c.shadowColor = shadowColor;
-      } else {
-        c.strokeStyle = "rgba(139, 90, 43, 1)"; // Warm dark bronze for high light-mode contrast
-        c.shadowBlur = 3;
-        c.shadowColor = "rgba(0, 0, 0, 0.15)";
-        c.shadowOffsetX = 0.5;
-        c.shadowOffsetY = 1.0;
-      }
-
-      c.lineWidth = 1.8;
+      // Horizontal lens flare spike
       c.beginPath();
-      // Top horizontal cap
-      c.moveTo(x - 4, y - 8);
-      c.lineTo(x + 4, y - 8);
-      // Center vertical bar
-      c.moveTo(x, y - 8);
-      c.lineTo(x, y + 8);
-      // Bottom horizontal cap
-      c.moveTo(x - 4, y + 8);
-      c.lineTo(x + 4, y + 8);
-      
-      c.stroke();
+      c.moveTo(-size * 1.8, 0);
+      c.quadraticCurveTo(0, size * 0.15, size * 1.8, 0);
+      c.quadraticCurveTo(0, -size * 0.15, -size * 1.8, 0);
+      c.fill();
+
+      // Diamond core center
+      c.fillStyle = "#ffffff";
+      c.beginPath();
+      c.arc(0, 0, size * 0.42, 0, Math.PI * 2);
+      c.fill();
+
       c.restore();
     };
 
@@ -389,6 +243,45 @@ export const MouseFollower: React.FC = () => {
 
       const mouse = mouseRef.current;
       const state = stateRef.current;
+      const now = performance.now();
+
+      // Continuous spawning with interpolation for fast movements
+      if (!state.isOffScreen) {
+        if (mouse.lastX === undefined) mouse.lastX = mouse.x;
+        if (mouse.lastY === undefined) mouse.lastY = mouse.y;
+
+        const dx = mouse.x - mouse.lastX;
+        const dy = mouse.y - mouse.lastY;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > 1) {
+          // Spawn particles along the path of movement
+          // Spawn one particle per 14px of movement
+          const steps = Math.min(5, Math.floor(dist / 14));
+          if (steps > 0) {
+            const vx = dx / steps;
+            const vy = dy / steps;
+
+            for (let k = 1; k <= steps; k++) {
+              const ratio = k / steps;
+              const ix = mouse.lastX + dx * ratio;
+              const iy = mouse.lastY + dy * ratio;
+              
+              particles.push(createParticle(ix, iy, false, vx, vy));
+            }
+            mouse.lastX = mouse.x;
+            mouse.lastY = mouse.y;
+            lastSpawnTime = now;
+          }
+        }
+        
+        // Steady idle spawn: if mouse is stationary or moving slow,
+        // spawn a beautiful sparkle every 70ms to keep the trail fluid and alive
+        if (now - lastSpawnTime > 70) {
+          particles.push(createParticle(mouse.x, mouse.y, false));
+          lastSpawnTime = now;
+        }
+      }
 
       // Handle visibility fade
       if (state.isOffScreen) {
@@ -399,16 +292,6 @@ export const MouseFollower: React.FC = () => {
       // Ensure state properties are valid numbers (resilient to HMR / NaN)
       if (state.opacity === undefined || isNaN(state.opacity)) {
         state.opacity = 0;
-      }
-      if (state.hoverProgress === undefined || isNaN(state.hoverProgress)) {
-        state.hoverProgress = 0;
-      }
-
-      // Smooth interpolation for hover progress
-      if (state.isHovered) {
-        state.hoverProgress += (1 - state.hoverProgress) * 0.15;
-      } else {
-        state.hoverProgress += (0 - state.hoverProgress) * 0.15;
       }
 
       // 1. Draw click shockwave ripples (iterated backward to avoid splice indexing skip bugs)
@@ -428,7 +311,8 @@ export const MouseFollower: React.FC = () => {
         ctx.strokeStyle = isDark 
           ? `rgba(230, 194, 91, ${ripple.alpha})` 
           : `rgba(180, 130, 30, ${ripple.alpha})`;
-        ctx.lineWidth = 1.8;
+        // Fading linewidth for realism
+        ctx.lineWidth = 1.8 * ripple.alpha;
         
         ctx.shadowBlur = isDark ? 8 : 4;
         ctx.shadowColor = shadowColor;
@@ -439,6 +323,18 @@ export const MouseFollower: React.FC = () => {
       // 2. Draw particle trail (iterated backward to avoid splice indexing skip bugs)
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
+        
+        // Update trajectory history for starry comet/shooting star trail effect
+        if (p.isStar) {
+          if (!p.history) p.history = [];
+          p.history.unshift({ x: p.x, y: p.y });
+          if (p.history.length > 7) {
+            p.history.pop();
+          }
+          // Organic floating wave wind drift
+          p.vx += Math.sin(p.y * 0.016 + p.rotation) * 0.04;
+        }
+
         p.x += p.vx;
         p.y += p.vy + p.gravity;
         p.rotation += p.rotationSpeed;
@@ -450,7 +346,41 @@ export const MouseFollower: React.FC = () => {
         }
 
         if (p.isStar) {
-          drawStarShape(ctx, p.x, p.y, 4, p.size, p.size / 2.5, p.color, p.alpha * state.opacity, p.rotation);
+          // Draw comet tail trail with custom linear gradient
+          if (p.history && p.history.length > 1) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            for (let j = 0; j < p.history.length; j++) {
+              ctx.lineTo(p.history[j].x, p.history[j].y);
+            }
+            
+            const tailGlow = ctx.createLinearGradient(
+              p.x, p.y, 
+              p.history[p.history.length - 1].x, 
+              p.history[p.history.length - 1].y
+            );
+            tailGlow.addColorStop(0, p.color);
+            tailGlow.addColorStop(1, "rgba(255, 255, 255, 0)");
+            
+            ctx.strokeStyle = tailGlow;
+            ctx.lineWidth = p.size * 0.55;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.globalAlpha = p.alpha * state.opacity * 0.42;
+            
+            ctx.shadowBlur = isDark ? 6 : 3;
+            ctx.shadowColor = shadowColor;
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Twinkle effect (oscillate size dynamically based on rotation)
+          const twinkle = 0.82 + 0.32 * Math.sin(p.rotation * 3.5);
+          const drawSize = p.size * twinkle;
+
+          // Draw sharper diamond lens flare
+          drawDiamondFlare(ctx, p.x, p.y, drawSize, p.color, p.alpha * state.opacity, p.rotation);
         } else {
           // Optimized circle rendering: avoided slow ctx.save() & ctx.restore() inside loop
           ctx.globalAlpha = p.alpha * state.opacity;
@@ -461,22 +391,6 @@ export const MouseFollower: React.FC = () => {
         }
       }
       ctx.globalAlpha = 1.0; // Reset global alpha after the batch
-
-      // 3. Draw custom cursor at exact mouse position
-      if (state.opacity > 0) {
-        ctx.save();
-        ctx.globalAlpha = state.opacity;
-        
-        if (state.isTextInput) {
-          // If hovering over an input/textarea, render the custom gold I-Beam
-          drawIBeamCursor(ctx, mouse.targetX, mouse.targetY);
-        } else {
-          // Render the chevron cursor with smooth transitions
-          drawCustomCursor(ctx, mouse.targetX, mouse.targetY, state.hoverProgress);
-        }
-        
-        ctx.restore();
-      }
 
       // Performance optimization: Pause the animation loop when off-screen and elements are fully decayed
       if (state.isOffScreen && state.opacity === 0 && particles.length === 0 && ripples.length === 0) {
@@ -500,12 +414,9 @@ export const MouseFollower: React.FC = () => {
 
     // Clean up on component unmount
     return () => {
-      document.head.removeChild(styleElement);
       window.removeEventListener("resize", resizeCanvas);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mouseover", handleMouseOver);
-      window.removeEventListener("mouseout", handleMouseOut);
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("mouseenter", handleMouseEnter);
       cancelAnimationFrame(animationFrameId);
