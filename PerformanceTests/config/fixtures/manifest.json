@@ -1,0 +1,6 @@
+{
+  "runId": "inspect-only",
+  "productIds": [900001],
+  "startPriceVnd": "100000",
+  "stepPriceVnd": "10000"
+}

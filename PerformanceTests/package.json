@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Repeatable local k6 comparison for PostgreSQL and Redis bidding engines.",
+  "description": "Isolated, reproducible local k6 benchmark for the Redis-authoritative auction pipeline.",
   "scripts": {
-    "tokens": "node generate_tokens.js",
-    "compare": "node compare-results.js"
+    "tokens": "node setup/generate-tokens.js",
+    "benchmark": "node cli/index.js benchmark",
+    "benchmark:smoke": "node cli/index.js benchmark --scenario=smoke",
+    "benchmark:hot": "node cli/index.js benchmark --scenario=hot --runs=3",
+    "benchmark:distributed": "node cli/index.js benchmark --scenario=distributed --runs=3",
+    "compare": "node cli/index.js compare",
+    "test": "node --test tests/metrics.test.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

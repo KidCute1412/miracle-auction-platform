@@ -1,68 +1,66 @@
-# Local process-split bidding benchmark
+# Isolated auction benchmark
 
-Benchmarks run only against local deterministic data. Never point k6 at Aiven, Supabase, Oracle Free Tier or shared production.
+This folder runs repeatable local k6 benchmarks for the Redis-authoritative bidding pipeline. It never connects to production, Oracle, Aiven, Supabase, or the development Docker stack.
 
-## Runtime under test
+## Prerequisites
 
-Run PostgreSQL, Redis, Kafka, `auction-worker`, `outbox-relay`, `async-worker` and API. Set `EMAIL_DELIVERY_MODE=disabled`. Background projection, outbox and dashboard work remain enabled so results include production-like contention.
+- Docker Desktop with Compose v2
+- Node.js 20+
+- k6 installed and available on `PATH`
+- `npm ci` in `PerformanceTests`
+- At least 4 Docker CPUs and 6 GiB Docker/WSL2 RAM for the official distributed three-run suite
 
-```powershell
-docker compose up -d postgres redis kafka
-cd Backend
-npm run prisma:migrate:deploy
-$env:NODE_ENV="benchmark"; $env:DATABASE_URL="postgresql://postgres:my_local_password@localhost:15432/online_auction_benchmark_test?schema=public"; npm run benchmark:seed
-cd ..
-docker compose -f docker-compose.yml -f PerformanceTests/docker-compose.benchmark.override.yml up -d auction-worker outbox-relay async-worker
-```
+The runner builds an independent Compose project containing PostgreSQL, Redis, Kafka, the API, `auction-worker`, `outbox-relay`, and `async-worker`. Every measured attempt gets its own project, volumes, network, migrations, deterministic seed, and temporary host port; that stack is removed before the next attempt starts. This prevents Kafka backlog, database pressure, and cache state from leaking between runs.
 
-Start the API separately with `BID_ENGINE=redis`, `REDIS_URL=redis://127.0.0.1:16379/1`,
-`DATABASE_URL=postgresql://postgres:my_local_password@localhost:15432/online_auction_benchmark_test?schema=public`,
-`NODE_ENV=benchmark` and `EMAIL_DELIVERY_MODE=disabled`. Generate tokens from
-`PerformanceTests`, then run `smoke` before every measured suite. After benchmarking,
-run `npm run benchmark:clean` to reset benchmark data, and recreate workers without the override to return local development to Redis DB 0.
-
-## Before/after artifact contract
-
-For each revision, create:
-
-```text
-artifacts/process-split/
-  before/<commit>/
-  after/<commit>/
-```
-
-Each directory must contain environment metadata (commit SHA, CPU/RAM/OS, Docker versions/config, Redis config and `docker stats`), losslessly compressed raw k6 JSON (`*-raw.json.gz`), summary Markdown/JSON and invariant output. Reset the deterministic seed before every run.
-
-Run `hot` and `distributed` at least three times each:
+## Run a benchmark
 
 ```powershell
-$env:SCENARIO = "smoke"
-k6 run bidding_stress_test.js
+cd PerformanceTests
+npm ci
 
-npm --prefix ../Backend run benchmark:seed
-$env:SCENARIO = "hot"
-$env:ARTIFACT_PREFIX = "artifacts/process-split/after/<commit>/hot-1"
-k6 run --out json=artifacts/process-split/after/<commit>/hot-1-raw.json bidding_stress_test.js
+# Fast correctness and wiring check
+npm run benchmark:smoke
 
-npm --prefix ../Backend run benchmark:invariants
+# Measured workload: three independent seeded runs
+npm run benchmark:hot
+npm run benchmark:distributed
 ```
 
-Repeat for `hot-2`, `hot-3`, `distributed-1..3`, and the baseline revision in `before/`.
-Compress each raw JSON file with gzip after the suite; do not commit multi-hundred-megabyte
-uncompressed traces.
+The normal commands are official fail-fast runs: the first latency, infrastructure, or invariant failure stops the suite, so an incomplete suite is never aggregated. To run all configured attempts for exploratory capacity analysis, explicitly enable diagnostic continuation:
 
-## Acceptance gate
+```powershell
+# Continue all three hot runs after a gate failure; report is diagnostic-only
+npm.cmd run benchmark:hot -- --continue=true
 
-Compare medians of three runs on the same machine/dataset/profile:
+# Continue all three distributed runs after a gate failure; report is diagnostic-only
+npm.cmd run benchmark:distributed -- --continue=true
+```
 
-- throughput regression no worse than 5%;
-- p99 regression no worse than 5%;
-- infrastructure error rate below 1%;
-- zero invariant violations;
-- projection converges within the configured timeout.
+Diagnostic continuation still records each failed run and computes descriptive median statistics, but it never turns a failed suite into an official claim. A bidding-core invariant failure must still be investigated; continuing does not make the run valid. Dashboard and notification Kafka freshness is reported as a separate downstream gate because those consumers are side effects, not bid acceptance or winner state. Non-smoke attempts warm up for 30 seconds by default before reseeding the measured fixture; override this with `--warmup-duration=60s` when needed. Reports include throughput CV and p95 spread; CV above 10% is an instability warning, not an automatic gate failure. Use `--keep-env=true` only to investigate a failed run. The CLI prints the artifact directory. Results are written to `artifacts/runs/<run-id>/`; raw k6 output is gzip-compressed and ignored by Git.
 
-The invariant checker must verify Redis/PostgreSQL sequence and version convergence, winner/current price agreement, no duplicate order/event/history sequence, Redis Stream PEL zero, drained outbox, and converged Kafka/dashboard lag.
+## Compare clean revisions
 
-Do not claim a performance improvement without repeatable artifacts. The separate Redis-vs-PostgreSQL engine comparison may claim success only when Redis reaches at least 2x throughput or at least 50% lower p99 with zero correctness violations.
+```powershell
+npm run compare -- --baseline <clean-git-sha> --scenarios hot,distributed --runs 3
+```
 
-If either before or after evidence is missing, the performance milestone remains unverified.
+The command refuses a dirty current worktree, creates a temporary detached worktree for the baseline, runs both revisions through the same benchmark tooling and emits median comparison data. It passes only when every run has valid invariants, infrastructure errors stay below 1%, throughput does not regress more than 5%, and p99 does not increase more than 5%.
+
+## Configuration
+
+Profiles are in `config/profiles.js`:
+
+- `smoke`: one VU, pipeline validation.
+- `baseline`: steady low-contention reference.
+- `hot`: concurrent bids on one auction.
+- `distributed`: deterministic traffic across auctions.
+- `spike`: abrupt burst and recovery.
+- `soak`: long stability run.
+
+For custom runs, call Node directly (this avoids npm argument-forwarding differences between shells): `node cli/index.js benchmark --scenario=hot --runs=5 --duration=30s`. Optional parameters include `--duration`, `--warmup-duration`, `--runs`, `--output`, `--projector-concurrency`, `--keep-env`, and `--continue=true` (the longer `--continue-on-gate-failure=true` name is also supported). The official distributed command refuses an undersized Docker allocation; `--allow-low-resources=true` is only for non-claim profiling. Use `--allow-competing-stacks=true` only after verifying the other containers cannot distort the result. The benchmark manifest determines product IDs, bidder IDs and bid prices; k6 does not hard-code a dataset.
+
+## Evidence and interpretation
+
+Each attempt saves its k6 summary/report, compressed raw events, seed manifest and invariant result. Invariant artifacts expose `corePassed` and `downstreamPassed` separately; `corePassed` covers Redis/PostgreSQL auction state, Stream, outbox and ordering, while `downstreamPassed` covers dashboard/notification Kafka consumer freshness. The suite also saves periodic container CPU/memory/I/O samples and `/ready` metrics for auth cache, Redis mutation and replica ACK latency. Final metadata includes Docker CPU and memory allocation. A request is a **bid attempt**; `accepted_bids` and `business_rejections` are reported separately. HTTP 400/403/409/429 are expected business outcomes, while 5xx/network failures are infrastructure errors.
+
+Do not publish a CV performance claim until a clean three-run report has passed and its report, metadata, summary and invariants have been copied to `docs/testing/benchmarks/<revision>/`. Historical `artifacts/process-split` results are retained only for audit.
