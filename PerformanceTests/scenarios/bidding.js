@@ -17,6 +17,9 @@ const stepPrice = BigInt(manifest.stepPriceVnd);
 const artifactPrefix = __ENV.ARTIFACT_PREFIX || `artifacts/runs/${scenario}`;
 
 const systemErrors = new Rate("system_errors");
+const serverErrors = new Counter("system_error_server");
+const networkErrors = new Counter("system_error_network");
+const durabilityErrors = new Counter("system_error_durability_unconfirmed");
 const acceptedBids = new Counter("accepted_bids");
 const businessRejections = new Counter("business_rejections");
 const acceptedRatio = new Rate("accepted_ratio");
@@ -56,7 +59,11 @@ export default function (setupData) {
     },
   });
   const infrastructureFailure = response.status === 0 || response.status >= 500;
+  const durabilityUnconfirmed = response.status === 503 && String(response.body ?? "").includes("BID_DURABILITY_UNCONFIRMED");
   systemErrors.add(infrastructureFailure);
+  serverErrors.add(response.status >= 500 ? 1 : 0);
+  networkErrors.add(response.status === 0 ? 1 : 0);
+  durabilityErrors.add(durabilityUnconfirmed ? 1 : 0);
   acceptedBids.add(response.status === 200);
   acceptedRatio.add(response.status === 200);
   businessRejections.add(!infrastructureFailure && response.status !== 200);
@@ -74,6 +81,9 @@ export function handleSummary(data) {
     `- p95: ${data.metrics.http_req_duration?.values?.["p(95)"] ?? 0} ms`,
     `- p99: ${data.metrics.http_req_duration?.values?.["p(99)"] ?? 0} ms`,
     `- System error rate: ${((data.metrics.system_errors?.values?.rate ?? 0) * 100).toFixed(4)}%`,
+    `- Server errors: ${data.metrics.system_error_server?.values?.count ?? 0}`,
+    `- Network errors: ${data.metrics.system_error_network?.values?.count ?? 0}`,
+    `- Durability-unconfirmed errors: ${data.metrics.system_error_durability_unconfirmed?.values?.count ?? 0}`,
     `- Accepted bids: ${data.metrics.accepted_bids?.values?.count ?? 0}`,
     `- Accepted bids/s: ${data.metrics.accepted_bids?.values?.rate ?? 0}`,
     `- Acceptance ratio: ${((data.metrics.accepted_ratio?.values?.rate ?? 0) * 100).toFixed(2)}%`,

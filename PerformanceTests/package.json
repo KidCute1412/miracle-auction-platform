@@ -8,8 +8,9 @@
     "tokens": "node setup/generate-tokens.js",
     "benchmark": "node cli/index.js benchmark",
     "benchmark:smoke": "node cli/index.js benchmark --scenario=smoke",
-    "benchmark:hot": "node cli/index.js benchmark --scenario=hot --runs=3",
-    "benchmark:distributed": "node cli/index.js benchmark --scenario=distributed --runs=3",
+    "benchmark:hot": "node cli/index.js benchmark --scenario=hot --runs=3 --continue=true",
+    "benchmark:distributed": "node cli/index.js benchmark --scenario=distributed --runs=3 --continue=true",
+    "benchmark:bid-path": "node cli/index.js benchmark --scenario=bid-path --runs=3 --continue=true",
     "compare": "node cli/index.js compare",
     "test": "node --test tests/metrics.test.js"
   },

@@ -5,7 +5,7 @@ import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, officialResourceEligibility, summarizeRuns } from "../lib/metrics.js";
+import { compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, metric, officialResourceEligibility, summarizeRuns } from "../lib/metrics.js";
 import { resolveProfile } from "../config/profiles.js";
 
 const performanceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -41,14 +41,30 @@ function command(commandName, commandArgs, options = {}) {
     });
     let stdout = "";
     let stderr = "";
+    let settled = false;
+    let timeout;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      callback(value);
+    };
     if (options.quiet) {
       child.stdout.on("data", (chunk) => { stdout += chunk; });
       child.stderr.on("data", (chunk) => { stderr += chunk; });
     }
-    child.on("error", rejectCommand);
+    timeout = options.timeoutMs && options.timeoutMs > 0
+      ? setTimeout(() => {
+        child.kill();
+        const error = new Error(`${commandName} ${commandArgs.join(" ")} timed out after ${options.timeoutMs}ms`);
+        error.code = "COMMAND_TIMEOUT";
+        finish(rejectCommand, error);
+      }, options.timeoutMs)
+      : undefined;
+    child.on("error", (error) => finish(rejectCommand, error));
     child.on("close", (code) => {
-      if (code === 0 || options.allowFailure) resolveCommand({ code, stdout, stderr });
-      else rejectCommand(new Error(`${commandName} ${commandArgs.join(" ")} failed with exit code ${code}${stderr ? `: ${stderr}` : ""}${stdout ? `\n${stdout}` : ""}`));
+      if (code === 0 || options.allowFailure) finish(resolveCommand, { code, stdout, stderr });
+      else finish(rejectCommand, new Error(`${commandName} ${commandArgs.join(" ")} failed with exit code ${code}${stderr ? `: ${stderr}` : ""}${stdout ? `\n${stdout}` : ""}`));
     });
   });
 }
@@ -57,14 +73,33 @@ function dockerCompose(project, sourceRoot, runId, args, quiet = false, options 
   return command("docker", ["compose", "-p", project, "-f", composeFile, ...args], {
     quiet,
     allowFailure: options.allowFailure,
+    timeoutMs: options.timeoutMs,
     env: {
       BENCHMARK_SOURCE_ROOT: sourceRoot,
       BENCHMARK_RUN_ID: runId,
       BENCHMARK_IMAGE_TAG: options.imageTag ?? imageTagFor(runId),
       BID_DURABILITY_REPLICAS: options.durabilityReplicas ?? process.env.BID_DURABILITY_REPLICAS,
       BID_PROJECTOR_CONCURRENCY: options.projectorConcurrency ?? process.env.BID_PROJECTOR_CONCURRENCY,
+      COMPOSE_PROFILES: options.downstream === false ? "" : "downstream",
     },
   });
+}
+
+async function cleanupBenchmarkProject(project, sourceRoot, runId, options = {}) {
+  if (!project) return true;
+  const result = await dockerCompose(
+    project,
+    sourceRoot,
+    runId,
+    ["down", "--volumes", "--remove-orphans"],
+    true,
+    { ...options, allowFailure: true },
+  );
+  if (result.code !== 0) {
+    process.stderr.write(`[benchmark] cleanup failed for ${project}; run docker compose -p ${project} -f PerformanceTests/compose/benchmark.compose.yml down --volumes --remove-orphans\n`);
+    return false;
+  }
+  return true;
 }
 
 function asBoolean(value) {
@@ -76,6 +111,36 @@ function runIdFor(prefix = "run") {
   return `${prefix}-${timestamp}-${Math.random().toString(16).slice(2, 8)}`;
 }
 
+function benchmarkRunIdFromProject(project) {
+  const match = /^auction-benchmark-(.+)-r\d+$/.exec(project);
+  return match?.[1];
+}
+
+function runnerOwnerPath(runId) {
+  return resolve(performanceRoot, "artifacts/runs", runId, "runner-owner.json");
+}
+
+function isProcessAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+async function isActiveBenchmarkProject(project) {
+  const runId = benchmarkRunIdFromProject(project);
+  if (!runId) return false;
+  try {
+    const owner = JSON.parse(await readFile(runnerOwnerPath(runId), "utf8"));
+    return isProcessAlive(Number(owner.pid));
+  } catch {
+    return false;
+  }
+}
+
 async function preflight(options = {}) {
   for (const [binary, args] of [["docker", ["version", "--format", "{{.Client.Version}}"]], ["k6", ["version"]], ["git", ["--version"]]]) {
     await command(binary, args, { quiet: true });
@@ -83,7 +148,18 @@ async function preflight(options = {}) {
   if (!asBoolean(options["allow-competing-stacks"])) {
     const running = await command("docker", ["ps", "--filter", "label=com.docker.compose.project", "--format", "{{.Label \"com.docker.compose.project\"}}"], { quiet: true });
     const competitors = [...new Set(running.stdout.split(/\r?\n/).filter((name) => name === "online-auction" || name.startsWith("auction-benchmark-")))];
-    if (competitors.length) throw new Error(`Competing auction stack detected (${competitors.join(", ")}). Stop it or pass --allow-competing-stacks=true.`);
+    const staleProjects = [];
+    const activeCompetitors = [];
+    for (const project of competitors) {
+      if (project.startsWith("auction-benchmark-") && !await isActiveBenchmarkProject(project)) staleProjects.push(project);
+      else activeCompetitors.push(project);
+    }
+    const sourceRoot = resolve(options["source-root"] ?? repositoryRoot);
+    for (const staleProject of staleProjects) {
+      process.stdout.write(`[benchmark] removing orphaned benchmark stack ${staleProject}\n`);
+      await cleanupBenchmarkProject(staleProject, sourceRoot, staleProject, { allowFailure: true });
+    }
+    if (activeCompetitors.length) throw new Error(`Competing auction stack detected (${activeCompetitors.join(", ")}). Wait for it to finish or pass --allow-competing-stacks=true.`);
   }
   const officialDistributed = (options.scenario ?? "smoke") === "distributed" &&
     options.duration === undefined && Number(options.runs ?? 3) === 3;
@@ -113,20 +189,25 @@ async function getApiUrl(project, sourceRoot, runId, composeOptions = {}) {
   return `http://127.0.0.1:${port}`;
 }
 
-async function waitForReady(baseUrl, timeoutMs = 90_000) {
+async function waitForReady(baseUrl, timeoutMs = 300_000) {
   const deadline = Date.now() + timeoutMs;
   let lastError = "not checked";
   let attempts = 0;
   while (Date.now() < deadline) {
     attempts += 1;
+    let timeout;
     try {
-      const response = await fetch(`${baseUrl}/ready`, { signal: AbortSignal.timeout(5_000) });
+      const controller = new AbortController();
+      timeout = setTimeout(() => controller.abort(), 5_000);
+      const response = await fetch(`${baseUrl}/ready`, { signal: controller.signal });
       if (response.status === 200) return;
       lastError = `ready returned ${response.status}`;
     } catch (error) {
       lastError = error instanceof Error ? error.message : "unknown request error";
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
-    if (attempts % 5 === 0) process.stdout.write(`[benchmark] waiting for API readiness (${lastError})\n`);
+    if (attempts % 5 === 0) process.stdout.write(`[benchmark] waiting for API readiness (${Math.round((Date.now() - (deadline - timeoutMs)) / 1000)}s/${Math.round(timeoutMs / 1000)}s; ${lastError})\n`);
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 1000));
   }
   throw new Error(`Benchmark API did not become ready: ${lastError}`);
@@ -239,18 +320,26 @@ async function executeSuite(options) {
   );
   const composeOptions = {
     durabilityReplicas: profile.durable === false ? "0" : "1",
-    projectorConcurrency: String(options["projector-concurrency"] ?? 8),
+    projectorConcurrency: String(options["projector-concurrency"] ?? 16),
+    downstream: profile.downstream !== false,
   };
-  const warmupDuration = options["warmup-duration"] ?? (scenario === "smoke" ? "5s" : "30s");
+  // Keep warm-up intentionally lightweight: a full 100-VU warm-up creates
+  // database/Kafka backlog on local runners and depresses the measured run.
+  const warmupDuration = options["warmup-duration"] ?? "5s";
+  const convergenceTimeoutMs = Number(options["convergence-timeout-ms"] ?? 30_000);
+  if (!Number.isFinite(convergenceTimeoutMs) || convergenceTimeoutMs < 0) throw new Error("--convergence-timeout-ms must be a non-negative number");
   const runRecords = [];
+  const projectsCreated = new Set();
   process.stdout.write(`[benchmark] scenario=${scenario} runs=${runs} profile=${profile.productMode}${options.duration ? ` duration=${options.duration}` : ""}\n`);
   await mkdir(outputRoot, { recursive: true });
+  await writeJson(runnerOwnerPath(runId), { pid: process.pid, runId, startedAt: new Date().toISOString() });
   await writeJson(resolve(outputRoot, "run-config.json"), {
     runId, scenario, runs, profile, sourceRoot, project,
     continueOnGateFailure,
     diagnosticOnly: continueOnGateFailure,
     isolation: "fresh-stack-per-run",
     warmupDuration,
+    convergenceTimeoutMs,
   });
   try {
     await recordRunnerPhase(outputRoot, "building-runtime-images");
@@ -262,10 +351,19 @@ async function executeSuite(options) {
     for (let attempt = 1; attempt <= runs; attempt += 1) {
       const attemptRunId = `${runId}-r${attempt}`;
       const attemptProject = `auction-benchmark-${attemptRunId}`.replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+      projectsCreated.add(attemptProject);
       let baseUrl;
       await recordRunnerPhase(outputRoot, "starting-compose", { attempt, runs, project: attemptProject });
       try {
-        await dockerCompose(attemptProject, sourceRoot, attemptRunId, ["up", "-d", "--no-build"], false, attemptComposeOptions);
+        try {
+          await dockerCompose(attemptProject, sourceRoot, attemptRunId, ["up", "-d", "--no-build"], false, {
+            ...attemptComposeOptions,
+            timeoutMs: 120_000,
+          });
+        } catch (error) {
+          if (error?.code !== "COMMAND_TIMEOUT") throw error;
+          process.stdout.write(`[benchmark] compose up timed out for attempt ${attempt}; checking the started stack instead\n`);
+        }
         await recordRunnerPhase(outputRoot, "resolving-api", { attempt, runs, project: attemptProject });
         baseUrl = await getApiUrl(attemptProject, sourceRoot, attemptRunId, attemptComposeOptions);
         await recordRunnerPhase(outputRoot, "waiting-for-api", { attempt, runs, project: attemptProject, baseUrl });
@@ -287,7 +385,7 @@ async function executeSuite(options) {
           cwd: performanceRoot,
           allowFailure: true,
           env: {
-            SCENARIO: scenario, DURATION: warmupDuration, BASE_URL: baseUrl, CLIENT_URL: "http://benchmark.local",
+            SCENARIO: "smoke", DURATION: warmupDuration, BASE_URL: baseUrl, CLIENT_URL: "http://benchmark.local",
             MANIFEST_PATH: warmupManifestPath, TOKENS_PATH: warmupTokensPath,
             ARTIFACT_PREFIX: resolve(outputRoot, `${scenario}-${attempt}-warmup`),
           },
@@ -295,7 +393,7 @@ async function executeSuite(options) {
         await recordRunnerPhase(outputRoot, "checking-warmup-invariants", { attempt, runs, project: attemptProject });
         await dockerCompose(attemptProject, sourceRoot, attemptRunId, [
           "exec", "-T", "api", "sh", "-lc",
-          "NODE_ENV=benchmark BID_ENGINE=redis WAIT_FOR_CONVERGENCE_MS=30000 npm run benchmark:invariants",
+          `NODE_ENV=benchmark BID_ENGINE=redis WAIT_FOR_CONVERGENCE_MS=${convergenceTimeoutMs} npm run benchmark:invariants`,
         ], true, { ...attemptComposeOptions, allowFailure: true });
         await recordRunnerPhase(outputRoot, "starting-measured-run", { attempt, runs, project: attemptProject, baseUrl });
       const prefix = resolve(outputRoot, `${scenario}-${attempt}`);
@@ -335,7 +433,7 @@ async function executeSuite(options) {
       const invariantContainerPath = "/tmp/benchmark-invariants.json";
       const invariantResult = await dockerCompose(attemptProject, sourceRoot, attemptRunId, [
         "exec", "-T", "api", "sh", "-lc",
-        `NODE_ENV=benchmark BID_ENGINE=redis WAIT_FOR_CONVERGENCE_MS=30000 INVARIANT_OUTPUT=${invariantContainerPath} npm run benchmark:invariants`,
+        `NODE_ENV=benchmark BID_ENGINE=redis WAIT_FOR_CONVERGENCE_MS=${convergenceTimeoutMs} INVARIANT_OUTPUT=${invariantContainerPath} npm run benchmark:invariants`,
       ], true, { ...attemptComposeOptions, allowFailure: true });
       const invariantPath = `${prefix}-invariants.json`;
       await dockerCompose(attemptProject, sourceRoot, attemptRunId, ["cp", `api:${invariantContainerPath}`, invariantPath]);
@@ -379,7 +477,7 @@ async function executeSuite(options) {
       }
       } finally {
         if (!keepEnvironment) {
-          await dockerCompose(attemptProject, sourceRoot, attemptRunId, ["down", "--volumes", "--remove-orphans"], true).catch(() => undefined);
+          await cleanupBenchmarkProject(attemptProject, sourceRoot, attemptRunId, attemptComposeOptions);
         } else {
           process.stdout.write(`[benchmark] keeping environment for attempt ${attempt}: ${attemptProject}\n`);
         }
@@ -387,12 +485,29 @@ async function executeSuite(options) {
     }
     await recordRunnerPhase(outputRoot, "collecting-metadata");
     const aggregate = summarizeRuns(runRecords);
-    const officialGate = scenario !== "distributed" || (
+    const officialGate = scenario === "bid-path" ? false : scenario !== "distributed" || (
       aggregate.throughput >= 300 && aggregate.acceptedBidsPerSecond >= 150 &&
       aggregate.acceptanceRatio >= 0.5 && aggregate.p95Ms < 500 && aggregate.p99Ms < 1000
     );
     const passed = officialGate && aggregate.invariantsPassed && aggregate.maxSystemErrorRate === 0 &&
       runRecords.every((record) => record.k6Passed && record.invariantCommandPassed);
+    const runMetrics = runRecords.map((record) => ({
+      attempt: record.attempt,
+      throughput: metric(record.summary, "http_reqs", "rate"),
+      p95Ms: metric(record.summary, "http_req_duration", "p(95)"),
+      p99Ms: metric(record.summary, "http_req_duration", "p(99)"),
+      systemErrorRate: metric(record.summary, "system_errors", "rate"),
+      acceptedBidsPerSecond: metric(record.summary, "accepted_bids", "rate"),
+      acceptanceRatio: metric(record.summary, "accepted_ratio", "rate"),
+      k6Passed: record.k6Passed,
+      corePassed: record.invariants.corePassed ?? record.invariants.passed,
+      downstreamPassed: record.invariants.downstreamPassed ?? record.invariants.passed,
+    }));
+    const runTable = [
+      "| Run | Throughput | Accepted/s | p95 | p99 | Errors | Acceptance | Core | Downstream | k6 |",
+      "|---:|---:|---:|---:|---:|---:|---:|:---:|:---:|:---:|",
+      ...runMetrics.map((run) => `| ${run.attempt} | ${run.throughput.toFixed(2)} req/s | ${run.acceptedBidsPerSecond.toFixed(2)} | ${run.p95Ms.toFixed(2)} ms | ${run.p99Ms.toFixed(2)} ms | ${(run.systemErrorRate * 100).toFixed(4)}% | ${(run.acceptanceRatio * 100).toFixed(2)}% | ${run.corePassed ? "PASS" : "FAIL"} | ${run.downstreamPassed ? "PASS" : "FAIL"} | ${run.k6Passed ? "PASS" : "FAIL"} |`),
+    ];
     const report = [
       `# Auction bidding benchmark: ${scenario}`, "",
       `- Run ID: \`${runId}\``, `- Revision: \`${(await command("git", ["-C", sourceRoot, "rev-parse", "HEAD"], { quiet: true })).stdout.trim()}\``,
@@ -408,14 +523,26 @@ async function executeSuite(options) {
       `- p95 range: ${aggregate.p95Stability.min.toFixed(2)}-${aggregate.p95Stability.max.toFixed(2)} ms`,
       `- Stability: ${runs < 2 ? "INSUFFICIENT SAMPLES" : aggregate.stabilityWarning ? "UNSTABLE (warning; not an automatic gate failure)" : "STABLE"}`,
       `- Bidding core invariants: ${aggregate.corePassed ? "PASS" : "FAIL"}`,
-      `- Downstream Kafka freshness: ${aggregate.downstreamPassed ? "PASS" : "FAIL"}`,
-      `- Benchmark gate: ${passed ? "PASS" : "FAIL"}`, "",
+      `- Downstream Kafka freshness: ${profile.downstream === false ? "SKIPPED (bid-path diagnostic)" : aggregate.downstreamPassed ? "PASS" : "FAIL"}`,
+      `- Benchmark gate: ${profile.downstream === false ? "DIAGNOSTIC ONLY" : passed ? "PASS" : "FAIL"}`, "",
+      "## Per-run results", "", ...runTable, "",
       "This report is valid only with its paired manifest, invariant reports and environment metadata.", "",
     ].join("\n");
-    await writeJson(resolve(outputRoot, "summary.json"), { runId, scenario, profile, aggregate, passed, runs: runRecords.map(({ summary, invariants, ...record }) => record) });
+    await writeJson(resolve(outputRoot, "summary.json"), { runId, scenario, profile, aggregate, passed, runMetrics, runs: runRecords.map(({ summary, invariants, ...record }) => record) });
     await writeFile(resolve(outputRoot, "report.md"), report + (continueOnGateFailure
       ? "\nDiagnostic continuation was enabled. This report must not be used as an official benchmark claim.\n"
       : ""), "utf8");
+    process.stdout.write([
+      "",
+      `[benchmark] FINAL SUMMARY (${scenario}, ${runs} runs)`,
+      `median throughput=${aggregate.throughput.toFixed(2)} req/s; accepted=${aggregate.acceptedBidsPerSecond.toFixed(2)} bids/s; p95=${aggregate.p95Ms.toFixed(2)} ms; p99=${aggregate.p99Ms.toFixed(2)} ms`,
+      `throughput range=${aggregate.throughputStability.min.toFixed(2)}-${aggregate.throughputStability.max.toFixed(2)} req/s; CV=${(aggregate.throughputStability.coefficientOfVariation * 100).toFixed(2)}%; infra errors=${(aggregate.maxSystemErrorRate * 100).toFixed(4)}%`,
+      `gates: core=${aggregate.corePassed ? "PASS" : "FAIL"}, downstream=${profile.downstream === false ? "SKIPPED" : aggregate.downstreamPassed ? "PASS" : "FAIL"}, benchmark=${profile.downstream === false ? "DIAGNOSTIC" : passed ? "PASS" : "FAIL"}`,
+      "run | req/s | accepted/s | p95 ms | p99 ms | core | downstream",
+      ...runMetrics.map((run) => `${run.attempt} | ${run.throughput.toFixed(2)} | ${run.acceptedBidsPerSecond.toFixed(2)} | ${run.p95Ms.toFixed(2)} | ${run.p99Ms.toFixed(2)} | ${run.corePassed ? "PASS" : "FAIL"} | ${profile.downstream === false ? "SKIPPED" : run.downstreamPassed ? "PASS" : "FAIL"}`),
+      `report: ${resolve(outputRoot, "report.md")}`,
+      "",
+    ].join("\n"));
     await recordRunnerPhase(outputRoot, "completed", { passed, runs: runRecords.length });
     return { outputRoot, runId, scenario, aggregate, passed };
   } catch (error) {
@@ -426,7 +553,17 @@ async function executeSuite(options) {
     }).catch(() => undefined);
     throw error;
   } finally {
-    if (!keepEnvironment) await dockerCompose(project, sourceRoot, runId, ["down", "--volumes", "--remove-orphans"], true).catch(() => undefined);
+    if (!keepEnvironment) {
+      // A failed compose/k6/invariant step can bypass the normal per-attempt
+      // cleanup path. Sweep every project created by this invocation as well
+      // as the parent project so the next benchmark is never blocked by a
+      // leftover container.
+      projectsCreated.add(project);
+      for (const staleProject of projectsCreated) {
+        await cleanupBenchmarkProject(staleProject, sourceRoot, runId, { allowFailure: true });
+      }
+    }
+    await rm(runnerOwnerPath(runId), { force: true });
   }
 }
 

@@ -36,7 +36,7 @@ export function stability(values, threshold = 0.1) {
 export function summarizeRuns(runs) {
   const corePassed = runs.every((run) => {
     const invariants = run.invariants ?? {};
-    return (invariants.corePassed ?? invariants.passed) === true && run.k6Passed !== false && run.invariantCommandPassed !== false;
+    return (invariants.corePassed ?? invariants.passed) === true && run.invariantCommandPassed !== false;
   });
   const downstreamPassed = runs.every((run) => (run.invariants?.downstreamPassed ?? run.invariants?.passed) === true);
   const throughputValues = runs.map((run) => metric(run.summary, "http_reqs", "rate"));

@@ -29,6 +29,16 @@ export const profiles = {
     minimumAcceptanceRatio: 0.5,
     thresholds: { p95Ms: 500, p99Ms: 1000 },
   },
+  "bid-path": {
+    description: "Diagnostic durable bid-path workload without dashboard or notification consumers competing for local resources.",
+    vus: 100,
+    duration: "75s",
+    productMode: "distributed",
+    durable: true,
+    downstream: false,
+    minimumAcceptanceRatio: 0.5,
+    thresholds: { p95Ms: 500, p99Ms: 1000 },
+  },
   fast: {
     description: "Non-official profile without replica acknowledgement, used only to measure durability overhead.",
     vus: 100,

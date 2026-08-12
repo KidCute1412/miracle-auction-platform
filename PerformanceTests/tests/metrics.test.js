@@ -60,6 +60,13 @@ test("hot and distributed profiles use the same peak VU count for comparison", (
   assert.equal(peak(resolveProfile("distributed")), 100);
 });
 
+test("bid-path remains durable while excluding downstream consumers from its diagnostic scope", () => {
+  const profile = resolveProfile("bid-path");
+  assert.equal(profile.durable, true);
+  assert.equal(profile.downstream, false);
+  assert.equal(profile.vus, 100);
+});
+
 test("official resource gate rejects undersized Docker and accepts the documented floor", () => {
   assert.equal(officialResourceEligibility(2, 2 * 1024 ** 3).passed, false);
   assert.equal(officialResourceEligibility(4, 6 * 1024 ** 3).passed, true);
@@ -81,6 +88,17 @@ test("downstream Kafka lag does not fail the bidding core aggregate", () => {
   assert.equal(aggregate.corePassed, true);
   assert.equal(aggregate.invariantsPassed, true);
   assert.equal(aggregate.downstreamPassed, false);
+});
+
+test("latency threshold failure does not masquerade as a core correctness failure", () => {
+  const aggregate = summarizeRuns([{
+    summary: summary(150, 400),
+    invariants: { corePassed: true, downstreamPassed: true },
+    k6Passed: false,
+    invariantCommandPassed: true,
+  }]);
+  assert.equal(aggregate.corePassed, true);
+  assert.equal(aggregate.invariantsPassed, true);
 });
 
 test("run gate failure explains the required threshold and actual value", () => {

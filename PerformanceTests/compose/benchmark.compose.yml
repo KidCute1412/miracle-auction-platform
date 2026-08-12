@@ -110,7 +110,7 @@ services:
       <<: *backend_environment
       DATABASE_URL: postgresql://benchmark:benchmark@postgres:5432/online_auction_benchmark?schema=public&connection_limit=16
       BID_PROJECTOR_READ_COUNT: 200
-      BID_PROJECTOR_CONCURRENCY: ${BID_PROJECTOR_CONCURRENCY:-8}
+      BID_PROJECTOR_CONCURRENCY: ${BID_PROJECTOR_CONCURRENCY:-16}
       AUCTION_CLOSE_INTERVAL_MS: 1000
       AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: 90
 
@@ -126,14 +126,19 @@ services:
 
   async-worker:
     <<: *backend
+    profiles: ["downstream"]
     command: node dist/async-worker.js
     ports: []
     environment:
       <<: *backend_environment
-      DATABASE_URL: postgresql://benchmark:benchmark@postgres:5432/online_auction_benchmark?schema=public&connection_limit=12
-      DASHBOARD_DEBOUNCE_MS: 1000
-      DASHBOARD_BATCH_CONCURRENCY: ${DASHBOARD_BATCH_CONCURRENCY:-8}
-      NOTIFICATION_BATCH_CONCURRENCY: ${NOTIFICATION_BATCH_CONCURRENCY:-8}
+      DATABASE_URL: postgresql://benchmark:benchmark@postgres:5432/online_auction_benchmark?schema=public&connection_limit=16
+      # Benchmark events are already batch-coalesced below. Waiting before
+      # every Kafka batch creates artificial consumer lag and competes with
+      # the bidding path without improving dashboard correctness.
+      DASHBOARD_DEBOUNCE_MS: "0"
+      DASHBOARD_BATCH_CONCURRENCY: ${DASHBOARD_BATCH_CONCURRENCY:-16}
+      DASHBOARD_KAFKA_MAX_BYTES_PER_PARTITION: ${DASHBOARD_KAFKA_MAX_BYTES_PER_PARTITION:-131072}
+      NOTIFICATION_BATCH_CONCURRENCY: ${NOTIFICATION_BATCH_CONCURRENCY:-16}
 
 volumes:
   postgres:
