@@ -84,6 +84,7 @@ export const MouseFollower: React.FC = () => {
     window.addEventListener("resize", resizeCanvas);
 
     let lastSpawnTime = 0;
+    let lastMouseMoveTime = 0;
 
     // Mouse movement handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -92,6 +93,7 @@ export const MouseFollower: React.FC = () => {
 
       mouse.x = e.clientX;
       mouse.y = e.clientY;
+      lastMouseMoveTime = performance.now();
 
       if (state.isOffScreen) {
         state.isOffScreen = false;
@@ -178,6 +180,7 @@ export const MouseFollower: React.FC = () => {
       const mouse = mouseRef.current;
       mouse.lastX = undefined;
       mouse.lastY = undefined;
+      lastMouseMoveTime = performance.now();
       startLoopIfNeeded();
     };
 
@@ -275,9 +278,9 @@ export const MouseFollower: React.FC = () => {
           }
         }
         
-        // Steady idle spawn: if mouse is stationary or moving slow,
+        // Steady idle spawn: only if mouse has moved very recently (within 200ms) but is moving slow,
         // spawn a beautiful sparkle every 70ms to keep the trail fluid and alive
-        if (now - lastSpawnTime > 70) {
+        if (now - lastMouseMoveTime < 200 && now - lastSpawnTime > 70) {
           particles.push(createParticle(mouse.x, mouse.y, false));
           lastSpawnTime = now;
         }
