@@ -4,7 +4,7 @@ import { Counter, Rate } from "k6/metrics";
 import { resolveProfile } from "../config/profiles.js";
 
 const scenario = __ENV.SCENARIO || "smoke";
-const profile = resolveProfile(scenario, __ENV.DURATION);
+const profile = resolveProfile(scenario, __ENV.DURATION, __ENV.VUS);
 const baseUrl = __ENV.BASE_URL || "http://127.0.0.1:5000";
 const clientUrl = __ENV.CLIENT_URL || baseUrl;
 const manifestPath = __ENV.MANIFEST_PATH || "../config/fixtures/manifest.json";

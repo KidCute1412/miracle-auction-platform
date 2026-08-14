@@ -4,7 +4,7 @@ const log = createComponentLogger("redis-stream.projector");
 
 import { Prisma } from "@prisma/client";
 import type { BidSocketEvent } from "api-contracts";
-import { redisClient } from "@/config/redis.config.ts";
+import { getAuctionRedisClients, redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { canonicalAuctionEventType } from "@/infrastructure/events/auction-event-contract.ts";
 import { redisAuctionKeys } from "./redis-auction.keys.ts";
@@ -15,17 +15,19 @@ const COMMITTED_CHANNEL = "auction:committed:v1";
 const RECLAIM_INTERVAL_MS = Number(process.env.BID_PROJECTOR_RECLAIM_INTERVAL_MS ?? 30_000);
 const READ_COUNT = Number(process.env.BID_PROJECTOR_READ_COUNT ?? 200);
 const CONCURRENCY = Math.max(1, Number(process.env.BID_PROJECTOR_CONCURRENCY ?? 8));
-let blockingRedisClient: ReturnType<typeof redisClient.duplicate> | undefined;
+const blockingRedisClients = new Map<number, ReturnType<typeof redisClient.duplicate>>();
 let projectorGroupReady = false;
 let lastReclaimAt = 0;
-const blockingClient = (): ReturnType<typeof redisClient.duplicate> => {
-  if (!blockingRedisClient) {
-    blockingRedisClient = redisClient.duplicate();
-    blockingRedisClient.on("error", (error: Error) => {
+const blockingClient = (shard: number): ReturnType<typeof redisClient.duplicate> => {
+  let client = blockingRedisClients.get(shard);
+  if (!client) {
+    client = getAuctionRedisClients()[shard]!.duplicate();
+    client.on("error", (error: Error) => {
       log.error("[REDIS PROJECTOR] Connection error:", error.message);
     });
+    blockingRedisClients.set(shard, client);
   }
-  return blockingRedisClient;
+  return client;
 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DECIMAL = /^(0|[1-9]\d{0,18})$/;
@@ -44,6 +46,13 @@ export class InvalidAuctionEventError extends Error {}
 export interface RedisStreamEntry {
   id: string;
   payload: string;
+  shard?: number;
+}
+
+/** Redis stream IDs are only unique inside a Redis instance. Persist the
+ * shard alongside the ID so receipts from independent shards cannot collide. */
+export function streamReceiptId(entry: Pick<RedisStreamEntry, "id" | "shard">): string {
+  return `shard:${entry.shard ?? 0}:${entry.id}`;
 }
 
 export async function runKeyedLanes<T>(
@@ -241,7 +250,7 @@ export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"app
     await tx.auction_processed_events.create({
       data: {
         event_id: event.eventId,
-        redis_entry_id: entry.id,
+        redis_entry_id: streamReceiptId(entry),
         product_id: productId,
         sequence,
         version,
@@ -401,7 +410,7 @@ export async function projectAuctionLane(entries: readonly RedisStreamEntry[]): 
       if (event.orderId && leaderId !== null && (event.type === "BUY_NOW_COMPLETED" || event.type === "AUCTION_CLOSED")) {
         orders.push({ public_order_id: event.orderId, product_id: productId, user_id: Number(leaderId), auction_sequence: sequence });
       }
-      receipts.push({ event_id: event.eventId, redis_entry_id: entry.id, product_id: productId, sequence, version });
+      receipts.push({ event_id: event.eventId, redis_entry_id: streamReceiptId(entry), product_id: productId, sequence, version });
       outbox.push({
         event_id: event.eventId,
         event_type: canonicalAuctionEventType(event.type),
@@ -448,15 +457,17 @@ export async function projectAuctionLane(entries: readonly RedisStreamEntry[]): 
 
 export async function ensureProjectorGroup(): Promise<void> {
   if (projectorGroupReady) return;
-  try {
-    await redisClient.xgroup("CREATE", redisAuctionKeys.results, GROUP, "0", "MKSTREAM");
-  } catch (error) {
-    if (!(error instanceof Error) || !error.message.includes("BUSYGROUP")) throw error;
+  for (const redis of getAuctionRedisClients()) {
+    try {
+      await redis.xgroup("CREATE", redisAuctionKeys.results, GROUP, "0", "MKSTREAM");
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes("BUSYGROUP")) throw error;
+    }
   }
   projectorGroupReady = true;
 }
 
-function entriesFromRead(raw: unknown): RedisStreamEntry[] {
+function entriesFromRead(raw: unknown, shard = 0): RedisStreamEntry[] {
   if (!Array.isArray(raw)) return [];
   const result: RedisStreamEntry[] = [];
   for (const stream of raw) {
@@ -465,7 +476,7 @@ function entriesFromRead(raw: unknown): RedisStreamEntry[] {
       if (!Array.isArray(item) || typeof item[0] !== "string" || !Array.isArray(item[1])) continue;
       const fieldIndex = item[1].indexOf("event");
       if (fieldIndex >= 0 && typeof item[1][fieldIndex + 1] === "string") {
-        result.push({ id: item[0], payload: item[1][fieldIndex + 1] });
+        result.push({ id: item[0], payload: item[1][fieldIndex + 1], shard });
       }
     }
   }
@@ -473,9 +484,10 @@ function entriesFromRead(raw: unknown): RedisStreamEntry[] {
 }
 
 export async function readNewProjectorEntries(consumer: string, count = 50): Promise<RedisStreamEntry[]> {
-  let raw: unknown;
-  try {
-    raw = await blockingClient().xreadgroup(
+  const reads = getAuctionRedisClients().map(async (_redis, shard) => {
+    let raw: unknown;
+    try {
+      raw = await blockingClient(shard).xreadgroup(
       "GROUP",
       GROUP,
       consumer,
@@ -487,11 +499,11 @@ export async function readNewProjectorEntries(consumer: string, count = 50): Pro
       redisAuctionKeys.results,
       ">",
     );
-  } catch (error) {
-    if (!isMissingGroup(error)) throw error;
-    projectorGroupReady = false;
-    await ensureProjectorGroup();
-    raw = await blockingClient().xreadgroup(
+    } catch (error) {
+      if (!isMissingGroup(error)) throw error;
+      projectorGroupReady = false;
+      await ensureProjectorGroup();
+      raw = await blockingClient(shard).xreadgroup(
       "GROUP",
       GROUP,
       consumer,
@@ -502,14 +514,18 @@ export async function readNewProjectorEntries(consumer: string, count = 50): Pro
       "STREAMS",
       redisAuctionKeys.results,
       ">",
-    );
-  }
-  return entriesFromRead(raw);
+      );
+    }
+    return entriesFromRead(raw, shard);
+  });
+  return (await Promise.all(reads)).flat();
 }
 
 export async function closeProjectorRedisConnection(): Promise<void> {
-  if (blockingRedisClient && blockingRedisClient.status !== "end") await blockingRedisClient.quit();
-  blockingRedisClient = undefined;
+  await Promise.all([...blockingRedisClients.values()].map(async (client) => {
+    if (client.status !== "end") await client.quit();
+  }));
+  blockingRedisClients.clear();
   projectorGroupReady = false;
   lastReclaimAt = 0;
 }
@@ -519,30 +535,33 @@ export async function autoClaimProjectorEntries(
   minIdleMs = 30_000,
   count = 50,
 ): Promise<RedisStreamEntry[]> {
-  let raw: unknown;
-  try {
-    raw = await redisClient.xautoclaim(redisAuctionKeys.results, GROUP, consumer, minIdleMs, "0-0", "COUNT", count);
-  } catch (error) {
-    if (!isMissingGroup(error)) throw error;
-    projectorGroupReady = false;
-    await ensureProjectorGroup();
-    return [];
-  }
-  if (!Array.isArray(raw) || !Array.isArray(raw[1])) return [];
-  return entriesFromRead([[redisAuctionKeys.results, raw[1]]]);
+  const claimed = await Promise.all(getAuctionRedisClients().map(async (redis, shard) => {
+    try {
+      const raw = await redis.xautoclaim(redisAuctionKeys.results, GROUP, consumer, minIdleMs, "0-0", "COUNT", count);
+      return Array.isArray(raw) && Array.isArray(raw[1]) ? entriesFromRead([[redisAuctionKeys.results, raw[1]]], shard) : [];
+    } catch (error) {
+      if (!isMissingGroup(error)) throw error;
+      projectorGroupReady = false;
+      await ensureProjectorGroup();
+      return [];
+    }
+  }));
+  return claimed.flat();
 }
 
-export async function acknowledgeProjectedEntry(entryId: string): Promise<void> {
-  await redisClient.xack(redisAuctionKeys.results, GROUP, entryId);
-  await redisClient.hdel(redisAuctionKeys.projectorRetries, entryId);
+export async function acknowledgeProjectedEntry(entryId: string, shard = 0): Promise<void> {
+  const redis = getAuctionRedisClients()[shard]!;
+  await redis.xack(redisAuctionKeys.results, GROUP, entryId);
+  await redis.hdel(redisAuctionKeys.projectorRetries, entryId);
 }
 
 export async function recordProjectionFailure(entry: RedisStreamEntry, error: unknown): Promise<"retry" | "dlq"> {
-  const attempts = await redisClient.hincrby(redisAuctionKeys.projectorRetries, entry.id, 1);
+  const redis = getAuctionRedisClients()[entry.shard ?? 0]!;
+  const attempts = await redis.hincrby(redisAuctionKeys.projectorRetries, entry.id, 1);
   const maxAttempts = Number(process.env.BID_PROJECTOR_MAX_ATTEMPTS ?? 10);
   if (attempts < maxAttempts) return "retry";
   const message = error instanceof Error ? error.message : "Unknown projection error";
-  await redisClient.xadd(
+  await redis.xadd(
     redisAuctionKeys.dlq,
     "*",
     "sourceEntryId",
@@ -554,7 +573,7 @@ export async function recordProjectionFailure(entry: RedisStreamEntry, error: un
     "event",
     entry.payload,
   );
-  await acknowledgeProjectedEntry(entry.id);
+  await acknowledgeProjectedEntry(entry.id, entry.shard);
   return "dlq";
 }
 
@@ -565,7 +584,7 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
   const claimed = shouldReclaim ? await autoClaimProjectorEntries(consumer, 30_000, READ_COUNT) : [];
   if (shouldReclaim) lastReclaimAt = now;
   const fresh = await readNewProjectorEntries(consumer, READ_COUNT);
-  const entries = [...claimed, ...fresh.filter((entry) => !claimed.some((item) => item.id === entry.id))];
+  const entries = [...claimed, ...fresh.filter((entry) => !claimed.some((item) => item.id === entry.id && item.shard === entry.shard))];
   const entryKey = (entry: RedisStreamEntry): string => {
     let key = `invalid:${entry.id}`;
     try {
@@ -592,7 +611,7 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
     await runWithLogContext(context, async () => {
       try {
         await projectAuctionEntry(entry);
-        await acknowledgeProjectedEntry(entry.id);
+        await acknowledgeProjectedEntry(entry.id, entry.shard);
         runtimeStats.processed += 1;
       } catch (error) {
         const outcome = await recordProjectionFailure(entry, error);
@@ -617,7 +636,7 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
       try {
         await projectAuctionLane(lane);
         for (const entry of lane) {
-          await acknowledgeProjectedEntry(entry.id);
+          await acknowledgeProjectedEntry(entry.id, entry.shard);
           runtimeStats.processed += 1;
         }
       } catch (error) {
@@ -651,7 +670,8 @@ export interface ProjectorStreamHealth {
 
 export async function getProjectorStreamHealth(): Promise<ProjectorStreamHealth> {
   await ensureProjectorGroup();
-  const groups = await redisClient.xinfo("GROUPS", redisAuctionKeys.results);
+  const health = await Promise.all(getAuctionRedisClients().map(async (redis) => {
+  const groups = await redis.xinfo("GROUPS", redisAuctionKeys.results);
   if (!Array.isArray(groups)) return { pending: 0, lag: null };
   for (const raw of groups) {
     if (!Array.isArray(raw)) continue;
@@ -666,4 +686,9 @@ export async function getProjectorStreamHealth(): Promise<ProjectorStreamHealth>
     }
   }
   return { pending: 0, lag: null };
+  }));
+  return {
+    pending: health.reduce((total, item) => total + item.pending, 0),
+    lag: health.some((item) => item.lag === null) ? null : health.reduce((total, item) => total + (item.lag ?? 0), 0),
+  };
 }

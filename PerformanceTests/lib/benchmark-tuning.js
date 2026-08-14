@@ -1,8 +1,8 @@
 const tuningFields = [
   ["mutationConnections", "BID_MUTATION_CONNECTIONS", "mutation-connections", 16],
   ["projectorConcurrency", "BID_PROJECTOR_CONCURRENCY", "projector-concurrency", 16],
-  ["dashboardBatchConcurrency", "DASHBOARD_BATCH_CONCURRENCY", "dashboard-batch-concurrency", 16],
-  ["notificationBatchConcurrency", "NOTIFICATION_BATCH_CONCURRENCY", "notification-batch-concurrency", 16],
+  ["dashboardBatchConcurrency", "DASHBOARD_BATCH_CONCURRENCY", "dashboard-batch-concurrency", 2],
+  ["notificationBatchConcurrency", "NOTIFICATION_BATCH_CONCURRENCY", "notification-batch-concurrency", 2],
 ];
 
 function positiveInteger(value, label) {

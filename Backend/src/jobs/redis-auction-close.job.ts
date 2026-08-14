@@ -3,7 +3,7 @@ import { createComponentLogger, runWithLogContext } from "@/infrastructure/obser
 
 const log = createComponentLogger("redis-auction-close.job");
 
-import { redisClient } from "@/config/redis.config.ts";
+import { getAuctionRedisClients } from "@/config/redis.config.ts";
 import { MutateAuctionUseCase } from "@/modules/bids/application/mutate-auction.use-case.ts";
 import { redisAuctionKeys } from "@/modules/bids/infrastructure/redis/redis-auction.keys.ts";
 
@@ -16,24 +16,18 @@ export async function closeDueRedisAuctions(now = new Date(), limit = 100): Prom
   if (running) return 0;
   running = true;
   try {
-    const due = await redisClient.zrangebyscore(
-      redisAuctionKeys.deadlines,
-      0,
-      now.getTime(),
-      "WITHSCORES",
-      "LIMIT",
-      0,
-      limit,
-    );
     let closed = 0;
-    for (let index = 0; index < due.length; index += 2) {
-      const productId = Number(due[index]);
-      const deadlineMs = due[index + 1];
-      try {
-        await mutations.close(productId, deadlineMs, now);
-        closed += 1;
-      } catch (error) {
-        log.error("[AUCTION_CLOSE] Mutation failed", { productId, error });
+    for (const redis of getAuctionRedisClients()) {
+      const due = await redis.zrangebyscore(redisAuctionKeys.deadlines, 0, now.getTime(), "WITHSCORES", "LIMIT", 0, limit);
+      for (let index = 0; index < due.length; index += 2) {
+        const productId = Number(due[index]);
+        const deadlineMs = due[index + 1];
+        try {
+          await mutations.close(productId, deadlineMs, now);
+          closed += 1;
+        } catch (error) {
+          log.error("[AUCTION_CLOSE] Mutation failed", { productId, error });
+        }
       }
     }
     return closed;

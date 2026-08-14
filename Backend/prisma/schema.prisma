@@ -278,7 +278,7 @@ model admin_audit_logs {
 
 model auction_processed_events {
   event_id       String   @id @db.Uuid
-  redis_entry_id String   @unique @db.VarChar(64)
+  redis_entry_id String   @unique @db.VarChar(80)
   product_id     BigInt
   sequence       BigInt
   version        BigInt

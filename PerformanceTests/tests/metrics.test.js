@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { compareBidEngines, compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, median, officialResourceEligibility, sampleStandardDeviation, stability, summarizeRuns } from "../lib/metrics.js";
 import { resolveProfile } from "../config/profiles.js";
 import { benchmarkTuningEnvironment, resolveBenchmarkTuning } from "../lib/benchmark-tuning.js";
+import { benchmarkResourceProfileEnvironment, resolveBenchmarkResourceProfile } from "../lib/benchmark-resource-profile.js";
+import { auctionRedisUrls, redisShardResourceEnvironment, resolveRedisShards } from "../lib/benchmark-redis-shards.js";
 
 const summary = (rate, p99, errors = 0) => ({ metrics: {
   http_reqs: { values: { rate } }, http_req_duration: { values: { "p(95)": p99 / 2, "p(99)": p99 } },
@@ -70,6 +72,16 @@ test("profile override preserves profile thresholds while changing duration", ()
   assert.equal(profile.thresholds.p95Ms, 1000);
 });
 
+test("distributed profile accepts a fixed VU override without changing latency thresholds", () => {
+  const profile = resolveProfile("distributed", undefined, "150");
+  assert.equal(profile.vus, 150);
+  assert.equal(profile.thresholds.p95Ms, 500);
+});
+
+test("staged profiles reject a VU override", () => {
+  assert.throws(() => resolveProfile("hot", undefined, "150"), /fixed-VU/);
+});
+
 test("hot and distributed profiles use the same peak VU count for comparison", () => {
   const peak = (profile) => profile.vus ?? Math.max(...profile.stages.map((stage) => stage.target));
   assert.equal(peak(resolveProfile("hot")), 100);
@@ -123,6 +135,47 @@ test("benchmark tuning uses explicit CLI values and preserves them for Compose",
 
 test("benchmark tuning rejects unsafe concurrency values", () => {
   assert.throws(() => resolveBenchmarkTuning({ "projector-concurrency": "0" }, {}), /projector-concurrency/);
+});
+
+test("bid-priority resource profile moves fixed benchmark CPU to the bid path", () => {
+  const profile = resolveBenchmarkResourceProfile("bid-priority", {});
+  assert.equal(profile.limits.api, "1.8");
+  assert.equal(profile.limits.redis, "0.65");
+  assert.equal(profile.limits.asyncWorker, "0.15");
+  assert.deepEqual(benchmarkResourceProfileEnvironment(profile), {
+    BENCHMARK_POSTGRES_CPU_LIMIT: "0.75",
+    BENCHMARK_REDIS_CPU_LIMIT: "0.65",
+    BENCHMARK_REDIS_REPLICA_CPU_LIMIT: "0.35",
+    BENCHMARK_KAFKA_CPU_LIMIT: "0.35",
+    BENCHMARK_API_CPU_LIMIT: "1.8",
+    BENCHMARK_AUCTION_WORKER_CPU_LIMIT: "1.25",
+    BENCHMARK_OUTBOX_RELAY_CPU_LIMIT: "0.25",
+    BENCHMARK_ASYNC_WORKER_CPU_LIMIT: "0.15",
+  });
+});
+
+test("resource profile rejects unknown names", () => {
+  assert.throws(() => resolveBenchmarkResourceProfile("unbounded", {}), /resource-profile/);
+});
+
+test("Redis shard topology preserves the active Redis CPU budget", () => {
+  const profile = resolveBenchmarkResourceProfile("balanced", {});
+  assert.equal(resolveRedisShards(1), 1);
+  assert.equal(resolveRedisShards(2), 2);
+  assert.throws(() => resolveRedisShards(3), /redis-shards/);
+  assert.equal(auctionRedisUrls(2), "redis://redis-0:6379/0,redis://redis-1:6379/0");
+  assert.deepEqual(redisShardResourceEnvironment(profile, 1), {
+    BENCHMARK_REDIS_0_CPU_LIMIT: "0.4",
+    BENCHMARK_REDIS_REPLICA_0_CPU_LIMIT: "0.25",
+    BENCHMARK_REDIS_1_CPU_LIMIT: "0.01",
+    BENCHMARK_REDIS_REPLICA_1_CPU_LIMIT: "0.01",
+  });
+  assert.deepEqual(redisShardResourceEnvironment(profile, 2), {
+    BENCHMARK_REDIS_0_CPU_LIMIT: "0.2",
+    BENCHMARK_REDIS_REPLICA_0_CPU_LIMIT: "0.125",
+    BENCHMARK_REDIS_1_CPU_LIMIT: "0.2",
+    BENCHMARK_REDIS_REPLICA_1_CPU_LIMIT: "0.125",
+  });
 });
 
 test("latency threshold failure does not masquerade as a core correctness failure", () => {

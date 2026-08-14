@@ -1,4 +1,4 @@
-import { redisClient } from "@/config/redis.config.ts";
+import { auctionRedisClientForProduct } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { redisAuctionKeys } from "./redis-auction.keys.ts";
 
@@ -23,7 +23,7 @@ export interface ProjectionReconciliation {
 
 export async function reconcileAuctionProjection(productId: number): Promise<ProjectionReconciliation> {
   const [redisState, product] = await Promise.all([
-    redisClient.hmget(
+    auctionRedisClientForProduct(productId).hmget(
       redisAuctionKeys.state(productId),
       "version",
       "sequence",

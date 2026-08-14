@@ -3,7 +3,7 @@ import { createComponentLogger } from "@/infrastructure/observability/logger.ts"
 const log = createComponentLogger("seed-bidding-benchmark");
 
 import "dotenv/config";
-import { authRedisClient, closeRedisConnection, redisClient } from "@/config/redis.config.ts";
+import { authRedisClient, closeRedisConnection, getAuctionRedisClients, redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { bootstrapRedisAuction } from "@/modules/bids/infrastructure/redis/redis-auction.bootstrap.ts";
 import { writeFile } from "node:fs/promises";
@@ -36,7 +36,7 @@ async function clearRedisAuctionKeys(): Promise<void> {
   if (database <= 0 && process.env.BENCHMARK_ISOLATED !== "true") {
     throw new Error("Benchmark seeding requires an isolated Redis service or a dedicated non-zero Redis database");
   }
-  await redisClient.flushdb();
+  await Promise.all(getAuctionRedisClients().map((client) => client.flushdb()));
 }
 
 async function main(): Promise<void> {
@@ -108,6 +108,8 @@ async function main(): Promise<void> {
     runId: process.env.BENCHMARK_RUN_ID ?? "manual",
     database: process.env.BENCHMARK_DATABASE_NAME ?? "online_auction_benchmark",
     redisDatabase: Number(redisClient.options.db ?? 0),
+    redisShardCount: getAuctionRedisClients().length,
+    redisUrls: (process.env.AUCTION_REDIS_URLS ?? process.env.AUCTION_REDIS_URL ?? process.env.REDIS_URL ?? "").split(","),
     users: BIDDER_IDS.length,
     auctions: AUCTION_IDS.length,
     sellerId: BENCHMARK_SELLER_ID.toString(),

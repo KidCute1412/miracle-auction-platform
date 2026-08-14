@@ -7,6 +7,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compareBidEngines, compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, metric, officialResourceEligibility, summarizeRuns } from "../lib/metrics.js";
 import { benchmarkTuningEnvironment, resolveBenchmarkTuning } from "../lib/benchmark-tuning.js";
+import { benchmarkResourceProfileEnvironment, resolveBenchmarkResourceProfile } from "../lib/benchmark-resource-profile.js";
+import { auctionRedisUrls, redisShardResourceEnvironment, resolveRedisShards } from "../lib/benchmark-redis-shards.js";
 import { resolveProfile } from "../config/profiles.js";
 
 const performanceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -91,8 +93,11 @@ function dockerCompose(project, sourceRoot, runId, args, quiet = false, options 
       BENCHMARK_RUN_ID: runId,
       BENCHMARK_IMAGE_TAG: options.imageTag ?? imageTagFor(runId),
       BID_DURABILITY_REPLICAS: options.durabilityReplicas ?? process.env.BID_DURABILITY_REPLICAS,
+      ...benchmarkResourceProfileEnvironment(options.resourceProfile ?? resolveBenchmarkResourceProfile(undefined, process.env)),
+      ...redisShardResourceEnvironment(options.resourceProfile ?? resolveBenchmarkResourceProfile(undefined, process.env), options.redisShards ?? 1),
       ...benchmarkTuningEnvironment(options.tuning ?? resolveBenchmarkTuning({}, process.env)),
       BID_ENGINE: options.bidEngine ?? process.env.BID_ENGINE ?? "redis",
+      AUCTION_REDIS_URLS: auctionRedisUrls(options.redisShards ?? 1),
       COMPOSE_PROFILES: options.downstream === false ? "" : "downstream",
     },
   });
@@ -279,6 +284,8 @@ async function collectMetadata(project, sourceRoot, runId, destination, baseUrl,
     dockerMemoryBytes: Number(dockerMemory.stdout.trim()),
     sourceRoot,
     isolated: true,
+    redisShards: composeOptions.redisShards ?? 1,
+    auctionRedisUrls: auctionRedisUrls(composeOptions.redisShards ?? 1).split(","),
   });
 }
 
@@ -320,7 +327,7 @@ async function startStatsSampler(project, sourceRoot, runId, destination, baseUr
 
 async function executeSuite(options) {
   const scenario = options.scenario ?? "smoke";
-  const profile = resolveProfile(scenario, options.duration);
+  const profile = resolveProfile(scenario, options.duration, options.vus);
   const runs = Number(options.runs ?? (scenario === "smoke" ? 1 : 3));
   if (!Number.isInteger(runs) || runs < 1) throw new Error("--runs must be a positive integer");
   const sourceRoot = resolve(options["source-root"] ?? repositoryRoot);
@@ -333,10 +340,14 @@ async function executeSuite(options) {
     options.continue ?? options["continue-on-gate-failure"],
   );
   const tuning = resolveBenchmarkTuning(options);
+  const resourceProfile = resolveBenchmarkResourceProfile(options["resource-profile"]);
+  const redisShards = resolveRedisShards(options["redis-shards"] ?? process.env.BENCHMARK_REDIS_SHARDS ?? 1);
   const composeOptions = {
     bidEngine,
     durabilityReplicas: profile.durable === false ? "0" : "1",
     tuning,
+    resourceProfile,
+    redisShards,
     downstream: profile.downstream !== false,
   };
   // Keep warm-up intentionally lightweight: a full 100-VU warm-up creates
@@ -346,7 +357,7 @@ async function executeSuite(options) {
   if (!Number.isFinite(convergenceTimeoutMs) || convergenceTimeoutMs < 0) throw new Error("--convergence-timeout-ms must be a non-negative number");
   const runRecords = [];
   const projectsCreated = new Set();
-  process.stdout.write(`[benchmark] scenario=${scenario} runs=${runs} profile=${profile.productMode}${options.duration ? ` duration=${options.duration}` : ""}\n`);
+  process.stdout.write(`[benchmark] scenario=${scenario} runs=${runs} redis-shards=${redisShards} profile=${profile.productMode}${options.duration ? ` duration=${options.duration}` : ""}\n`);
   await mkdir(outputRoot, { recursive: true });
   await writeJson(runnerOwnerPath(runId), { pid: process.pid, runId, startedAt: new Date().toISOString() });
   await writeJson(resolve(outputRoot, "run-config.json"), {
@@ -357,6 +368,9 @@ async function executeSuite(options) {
     warmupDuration,
     convergenceTimeoutMs,
     tuning,
+    resourceProfile,
+    redisShards,
+    auctionRedisUrls: auctionRedisUrls(redisShards).split(","),
   });
   try {
     await recordRunnerPhase(outputRoot, "building-runtime-images");
@@ -433,6 +447,7 @@ async function executeSuite(options) {
           env: {
             SCENARIO: scenario,
             DURATION: options.duration ?? "",
+            VUS: profile.vus === undefined ? "" : String(profile.vus),
             BENCHMARK_BIDDER_COUNT: String(manifest.users),
             BENCHMARK_START_ID: String(manifest.startId),
             BASE_URL: baseUrl,
@@ -527,6 +542,8 @@ async function executeSuite(options) {
       `# Auction bidding benchmark: ${scenario}`, "",
       `- Run ID: \`${runId}\``, `- Revision: \`${(await command("git", ["-C", sourceRoot, "rev-parse", "HEAD"], { quiet: true })).stdout.trim()}\``,
       `- Runs: ${runs}`, `- Throughput median: ${aggregate.throughput.toFixed(2)} req/s`,
+      `- Redis auction shards: ${redisShards} (${auctionRedisUrls(redisShards)})`,
+      `- Resource profile: ${resourceProfile.name} (${Object.entries(resourceProfile.limits).map(([name, limit]) => `${name}=${limit}`).join(", ")} CPU)`,
       `- Tuning: mutation=${tuning.mutationConnections}; projector=${tuning.projectorConcurrency}; dashboard=${tuning.dashboardBatchConcurrency}; notification=${tuning.notificationBatchConcurrency}`,
       `- p95 median: ${aggregate.p95Ms.toFixed(2)} ms`, `- p99 median: ${aggregate.p99Ms.toFixed(2)} ms`,
       `- Max infrastructure error rate: ${(aggregate.maxSystemErrorRate * 100).toFixed(4)}%`,
@@ -544,7 +561,7 @@ async function executeSuite(options) {
       "## Per-run results", "", ...runTable, "",
       "This report is valid only with its paired manifest, invariant reports and environment metadata.", "",
     ].join("\n");
-    await writeJson(resolve(outputRoot, "summary.json"), { runId, scenario, profile, bidEngine, tuning, aggregate, passed, runMetrics, runs: runRecords.map(({ summary, invariants, ...record }) => record) });
+    await writeJson(resolve(outputRoot, "summary.json"), { runId, scenario, profile, bidEngine, tuning, resourceProfile, redisShards, auctionRedisUrls: auctionRedisUrls(redisShards).split(","), aggregate, passed, runMetrics, runs: runRecords.map(({ summary, invariants, ...record }) => record) });
     await writeFile(resolve(outputRoot, "report.md"), report + (continueOnGateFailure
       ? "\nDiagnostic continuation was enabled. This report must not be used as an official benchmark claim.\n"
       : ""), "utf8");

@@ -13,7 +13,7 @@ services:
     volumes: ["postgres:/var/lib/postgresql/data"]
     cpus: "${BENCHMARK_POSTGRES_CPU_LIMIT:-0.75}"
 
-  redis:
+  redis-0:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
     healthcheck:
@@ -21,20 +21,45 @@ services:
       interval: 3s
       timeout: 3s
       retries: 30
-    volumes: ["redis:/data"]
-    cpus: "${BENCHMARK_REDIS_CPU_LIMIT:-0.4}"
+    volumes: ["redis-0:/data"]
+    cpus: "${BENCHMARK_REDIS_0_CPU_LIMIT:-0.2}"
 
-  redis-replica:
+  redis-replica-0:
     image: redis:7-alpine
-    command: ["redis-server", "--replicaof", "redis", "6379", "--appendonly", "yes", "--appendfsync", "everysec"]
+    command: ["redis-server", "--replicaof", "redis-0", "6379", "--appendonly", "yes", "--appendfsync", "everysec"]
     depends_on:
-      redis: { condition: service_healthy }
+      redis-0: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
       timeout: 3s
       retries: 30
-    cpus: "${BENCHMARK_REDIS_REPLICA_CPU_LIMIT:-0.25}"
+    volumes: ["redis-replica-0:/data"]
+    cpus: "${BENCHMARK_REDIS_REPLICA_0_CPU_LIMIT:-0.125}"
+
+  redis-1:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    volumes: ["redis-1:/data"]
+    cpus: "${BENCHMARK_REDIS_1_CPU_LIMIT:-0.2}"
+
+  redis-replica-1:
+    image: redis:7-alpine
+    command: ["redis-server", "--replicaof", "redis-1", "6379", "--appendonly", "yes", "--appendfsync", "everysec"]
+    depends_on:
+      redis-1: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    volumes: ["redis-replica-1:/data"]
+    cpus: "${BENCHMARK_REDIS_REPLICA_1_CPU_LIMIT:-0.125}"
 
   kafka:
     image: apache/kafka:3.7.0
@@ -82,7 +107,8 @@ services:
       PORT: 5000
       DATABASE_URL: postgresql://benchmark:benchmark@postgres:5432/online_auction_benchmark?schema=public&connection_limit=10
       DIRECT_URL: postgresql://benchmark:benchmark@postgres:5432/online_auction_benchmark?schema=public
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis-0:6379/0
+      AUCTION_REDIS_URLS: ${AUCTION_REDIS_URLS:-redis://redis-0:6379/0}
       BID_DURABILITY_REPLICAS: ${BID_DURABILITY_REPLICAS:-1}
       BID_DURABILITY_WAIT_MS: "100"
       BID_MUTATION_CONNECTIONS: ${BID_MUTATION_CONNECTIONS:-16}
@@ -105,8 +131,10 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
-      redis-replica: { condition: service_healthy }
+      redis-0: { condition: service_healthy }
+      redis-replica-0: { condition: service_healthy }
+      redis-1: { condition: service_healthy }
+      redis-replica-1: { condition: service_healthy }
       kafka-init: { condition: service_completed_successfully }
     cpus: "${BENCHMARK_API_CPU_LIMIT:-1.5}"
 
@@ -155,6 +183,8 @@ services:
 
 volumes:
   postgres:
-  redis:
-  redis-replica:
+  redis-0:
+  redis-replica-0:
+  redis-1:
+  redis-replica-1:
   kafka:

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
-import { redisClient } from "@/config/redis.config.ts";
+import { auctionRedisClientForProduct } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { redisAuctionKeys } from "./redis-auction.keys.ts";
 
@@ -24,13 +24,14 @@ const pad = (value: bigint): string => value.toString().padStart(19, "0");
 const rankMember = (amount: bigint, userId: number): string => `${pad(amount)}:${pad(BigInt(userId))}`;
 
 export async function bootstrapRedisAuction(productId: number): Promise<boolean> {
+  const redis = auctionRedisClientForProduct(productId);
   const stateKey = redisAuctionKeys.state(productId);
   const lockKey = `auction:bootstrap-lock:${productId}`;
   const lockToken = randomUUID();
-  const acquired = await redisClient.set(lockKey, lockToken, "PX", 30_000, "NX");
+  const acquired = await redis.set(lockKey, lockToken, "PX", 30_000, "NX");
   if (acquired !== "OK") return false;
   try {
-    if (await redisClient.exists(stateKey)) return false;
+    if (await redis.exists(stateKey)) return false;
 
     const [rows, settings, bans, maxima] = await Promise.all([
     prisma.$queryRaw<AuctionSeedRow[]>(Prisma.sql`
@@ -60,7 +61,7 @@ export async function bootstrapRedisAuction(productId: number): Promise<boolean>
       (auction.end_time?.getTime() ?? 0) > now
     ? "ACTIVE"
     : auction.auction_status;
-  const transaction = redisClient.multi();
+  const transaction = redis.multi();
   transaction.hset(stateKey, {
     productId: auction.product_id.toString(),
     sellerId: auction.seller_id.toString(),
@@ -94,7 +95,7 @@ export async function bootstrapRedisAuction(productId: number): Promise<boolean>
     await transaction.exec();
     return true;
   } finally {
-    await redisClient.eval(
+    await redis.eval(
       "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0",
       1,
       lockKey,

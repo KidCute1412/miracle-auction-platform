@@ -62,8 +62,24 @@ export const profiles = {
   },
 };
 
-export function resolveProfile(name, durationOverride) {
+function positiveIntegerOverride(value, label) {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) throw new Error(`${label} must be a positive integer`);
+  return parsed;
+}
+
+export function resolveProfile(name, durationOverride, vusOverride) {
   const profile = profiles[name];
   if (!profile) throw new Error(`Unknown scenario '${name}'. Expected one of: ${Object.keys(profiles).join(", ")}`);
-  return durationOverride ? { ...profile, duration: durationOverride, stages: undefined } : profile;
+  const vus = positiveIntegerOverride(vusOverride, "VUS");
+  if (vus !== undefined && profile.stages) {
+    throw new Error("VUS override is supported only by fixed-VU profiles, not staged profiles");
+  }
+  if (!durationOverride && vus === undefined) return profile;
+  return {
+    ...profile,
+    ...(durationOverride ? { duration: durationOverride, stages: undefined } : {}),
+    ...(vus === undefined ? {} : { vus, stages: undefined }),
+  };
 }

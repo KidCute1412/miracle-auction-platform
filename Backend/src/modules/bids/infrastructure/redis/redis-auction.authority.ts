@@ -5,14 +5,14 @@ const log = createComponentLogger("redis-auction.authority");
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { Redis } from "ioredis";
-import { auctionMutationRedisClient, createAuctionMutationRedisClient } from "@/config/redis.config.ts";
+import { auctionMutationRedisClient, auctionRedisShardForProduct, createAuctionMutationRedisClientForProduct } from "@/config/redis.config.ts";
 import { BidDomainError, BidDurabilityUnconfirmedError, BidInfrastructureError } from "../../domain/bid.errors.ts";
 import { parseMoneyVnd } from "../../domain/money.ts";
 import { mutationKeys } from "./redis-auction.keys.ts";
 import type { AuctionMutationCommand, AuctionMutationResult } from "./redis-auction.types.ts";
 
 const SCRIPT_URL = new URL("./auction-mutate.lua", import.meta.url);
-let scriptSha: string | undefined;
+const scriptShas = new WeakMap<Redis, string>();
 const mutationLatencyMs: number[] = [];
 const poolAcquireLatencyMs: number[] = [];
 const luaEvalLatencyMs: number[] = [];
@@ -29,28 +29,39 @@ interface MutationPoolEntry {
   busy: boolean;
 }
 
-const mutationPool: MutationPoolEntry[] = [{ client: auctionMutationRedisClient, busy: false }];
-const mutationWaiters: Array<(lease: MutationLease) => void> = [];
+const mutationPools = new Map<number, MutationPoolEntry[]>([[0, [{ client: auctionMutationRedisClient, busy: false }]]]);
+const mutationWaiters = new Map<number, Array<(lease: MutationLease) => void>>();
 
 function mutationPoolSize(): number {
   const configured = Number(process.env.BID_MUTATION_CONNECTIONS ?? 8);
   return Number.isInteger(configured) && configured > 0 ? Math.min(configured, 64) : 8;
 }
 
-function ensureMutationPool(): void {
-  while (mutationPool.length < mutationPoolSize()) {
-    mutationPool.push({ client: createAuctionMutationRedisClient(), busy: false });
+function poolFor(shard: number): MutationPoolEntry[] {
+  let pool = mutationPools.get(shard);
+  if (!pool) {
+    pool = [{ client: createAuctionMutationRedisClientForProduct(shard), busy: false }];
+    mutationPools.set(shard, pool);
+  }
+  return pool;
+}
+
+function ensureMutationPool(shard: number, productId: number): void {
+  const pool = poolFor(shard);
+  while (pool.length < mutationPoolSize()) {
+    pool.push({ client: createAuctionMutationRedisClientForProduct(productId), busy: false });
   }
 }
 
-function leaseEntry(entry: MutationPoolEntry): MutationLease {
+function leaseEntry(entry: MutationPoolEntry, shard: number): MutationLease {
   entry.busy = true;
   return {
     client: entry.client,
     release: () => {
-      const waiter = mutationWaiters.shift();
+      const waiters = mutationWaiters.get(shard) ?? [];
+      const waiter = waiters.shift();
       if (waiter) {
-        waiter(leaseEntry(entry));
+        waiter(leaseEntry(entry, shard));
         return;
       }
       entry.busy = false;
@@ -58,11 +69,16 @@ function leaseEntry(entry: MutationPoolEntry): MutationLease {
   };
 }
 
-async function acquireMutationClient(): Promise<MutationLease> {
-  ensureMutationPool();
-  const available = mutationPool.find((entry) => !entry.busy);
-  if (available) return leaseEntry(available);
-  return new Promise((resolve) => mutationWaiters.push(resolve));
+async function acquireMutationClient(productId: number): Promise<MutationLease> {
+  const shard = auctionRedisShardForProduct(productId);
+  ensureMutationPool(shard, productId);
+  const available = poolFor(shard).find((entry) => !entry.busy);
+  if (available) return leaseEntry(available, shard);
+  return new Promise((resolve) => {
+    const waiters = mutationWaiters.get(shard) ?? [];
+    waiters.push(resolve);
+    mutationWaiters.set(shard, waiters);
+  });
 }
 
 function recordSample(samples: number[], value: number): void {
@@ -101,12 +117,13 @@ function fingerprint(command: AuctionMutationCommand): string {
 
 async function loadScript(client: Redis): Promise<string> {
   const source = await readFile(SCRIPT_URL, "utf8");
-  scriptSha = (await client.script("LOAD", source)) as string;
+  const scriptSha = (await client.script("LOAD", source)) as string;
+  scriptShas.set(client, scriptSha);
   return scriptSha;
 }
 
 async function evaluate(client: Redis, keys: string[], payload: string): Promise<unknown> {
-  const sha = scriptSha ?? (await loadScript(client));
+  const sha = scriptShas.get(client) ?? (await loadScript(client));
   try {
     return await client.evalsha(sha, keys.length, ...keys, payload);
   } catch (error) {
@@ -139,7 +156,7 @@ export class RedisAuctionAuthority {
     });
 
     const poolAcquireStartedAt = performance.now();
-    const lease = await acquireMutationClient();
+    const lease = await acquireMutationClient(command.productId);
     recordSample(poolAcquireLatencyMs, performance.now() - poolAcquireStartedAt);
     let raw: unknown;
     try {

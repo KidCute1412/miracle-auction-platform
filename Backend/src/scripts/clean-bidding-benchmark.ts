@@ -3,7 +3,7 @@ import { createComponentLogger } from "@/infrastructure/observability/logger.ts"
 const log = createComponentLogger("clean-bidding-benchmark");
 
 import "dotenv/config";
-import { closeRedisConnection, redisClient } from "@/config/redis.config.ts";
+import { closeRedisConnection, getAuctionRedisClients, redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 
 async function assertBenchmarkEnvironment(): Promise<void> {
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
   });
 
   const database = Number(redisClient.options.db ?? 0);
-  await redisClient.flushdb();
+  await Promise.all(getAuctionRedisClients().map((client) => client.flushdb()));
   log.info(`Flushed Redis DB ${database}`);
 
   log.info("Cleanup completed successfully.");
