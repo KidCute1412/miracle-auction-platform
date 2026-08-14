@@ -13,6 +13,8 @@ import type { AuctionStreamEvent } from "./redis-auction.types.ts";
 const GROUP = process.env.BID_PROJECTOR_GROUP ?? "postgres-projector-v1";
 const COMMITTED_CHANNEL = "auction:committed:v1";
 const RECLAIM_INTERVAL_MS = Number(process.env.BID_PROJECTOR_RECLAIM_INTERVAL_MS ?? 30_000);
+const READ_COUNT = Number(process.env.BID_PROJECTOR_READ_COUNT ?? 200);
+const CONCURRENCY = Math.max(1, Number(process.env.BID_PROJECTOR_CONCURRENCY ?? 8));
 let blockingRedisClient: ReturnType<typeof redisClient.duplicate> | undefined;
 let projectorGroupReady = false;
 let lastReclaimAt = 0;
@@ -43,6 +45,46 @@ export interface RedisStreamEntry {
   id: string;
   payload: string;
 }
+
+export async function runKeyedLanes<T>(
+  items: readonly T[],
+  keyOf: (item: T) => string,
+  handler: (item: T) => Promise<void>,
+  concurrency: number,
+): Promise<void> {
+  const lanes = new Map<string, T[]>();
+  for (const item of items) {
+    const key = keyOf(item);
+    const lane = lanes.get(key) ?? [];
+    lane.push(item);
+    lanes.set(key, lane);
+  }
+  const pendingLanes = [...lanes.values()];
+  let cursor = 0;
+  await Promise.all(Array.from({ length: Math.min(Math.max(1, concurrency), pendingLanes.length) }, async () => {
+    while (cursor < pendingLanes.length) {
+      const lane = pendingLanes[cursor++];
+      if (!lane) continue;
+      for (const item of lane) await handler(item);
+    }
+  }));
+}
+
+export interface ProjectorRuntimeStats {
+  processed: number;
+  failed: number;
+  batches: number;
+  lastBatchSize: number;
+  transactionLatencyMs: number[];
+}
+
+const runtimeStats: ProjectorRuntimeStats = {
+  processed: 0,
+  failed: 0,
+  batches: 0,
+  lastBatchSize: 0,
+  transactionLatencyMs: [],
+};
 
 function parseEvent(payload: string): AuctionStreamEvent {
   let value: unknown;
@@ -100,6 +142,7 @@ const jsonPayload = (event: AuctionStreamEvent): Prisma.InputJsonObject => ({
 });
 
 export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"applied" | "duplicate"> {
+  const startedAt = performance.now();
   const event = parseEvent(entry.payload);
   const productId = BigInt(event.productId);
   const sequence = BigInt(event.sequence);
@@ -243,7 +286,164 @@ export async function projectAuctionEntry(entry: RedisStreamEntry): Promise<"app
       });
     });
   }
+  runtimeStats.transactionLatencyMs.push(performance.now() - startedAt);
+  if (runtimeStats.transactionLatencyMs.length > 1_000) runtimeStats.transactionLatencyMs.shift();
   return result;
+}
+
+type ParsedLaneEntry = { entry: RedisStreamEntry; event: AuctionStreamEvent };
+
+async function publishCommittedEvent(event: AuctionStreamEvent): Promise<void> {
+  const notification: BidSocketEvent = {
+    eventId: event.eventId,
+    productId: event.productId,
+    currentPriceVnd: event.currentPriceVnd,
+    leaderId: event.leaderId ?? null,
+    endTimeMs: event.endAtMs,
+    sequence: event.sequence,
+    version: event.version,
+    orderId: event.orderId ?? null,
+    status: event.status,
+  };
+  await redisClient.publish(COMMITTED_CHANNEL, JSON.stringify(notification)).catch((error: unknown) => {
+    log.warn("[BID_PROJECTOR] Post-commit socket notification unavailable", {
+      eventId: event.eventId,
+      productId: event.productId,
+      message: error instanceof Error ? error.message : "unknown",
+    });
+  });
+}
+
+/** Projects one product lane in one transaction. Redis Stream order is retained
+ * by validating a rolling sequence/version fence before any bulk write. */
+export async function projectAuctionLane(entries: readonly RedisStreamEntry[]): Promise<Map<string, "applied" | "duplicate">> {
+  if (entries.length === 0) return new Map();
+  const startedAt = performance.now();
+  const parsed: ParsedLaneEntry[] = entries.map((entry) => ({ entry, event: parseEvent(entry.payload) }));
+  const productId = BigInt(parsed[0]!.event.productId);
+  if (parsed.some(({ event }) => BigInt(event.productId) !== productId)) {
+    throw new InvalidAuctionEventError("A projector lane contains more than one auction");
+  }
+
+  const outcomes = new Map<string, "applied" | "duplicate">();
+  const applied = await prisma.$transaction(async (tx) => {
+    const eventIds = parsed.map(({ event }) => event.eventId);
+    const sequences = parsed.map(({ event }) => BigInt(event.sequence));
+    const [processed, sequenceOwners, product] = await Promise.all([
+      tx.auction_processed_events.findMany({ where: { event_id: { in: eventIds } }, select: { event_id: true } }),
+      tx.auction_processed_events.findMany({
+        where: { product_id: productId, sequence: { in: sequences } },
+        select: { event_id: true, sequence: true },
+      }),
+      tx.products.findUnique({
+        where: { product_id: productId },
+        select: { auction_sequence: true, auction_version: true },
+      }),
+    ]);
+    if (!product) throw new InvalidAuctionEventError(`Auction ${productId} does not exist`);
+
+    const processedIds = new Set(processed.map((row) => row.event_id));
+    const sequenceOwnerBySequence = new Map(sequenceOwners.map((row) => [row.sequence.toString(), row.event_id]));
+    let rollingSequence = product.auction_sequence;
+    let rollingVersion = product.auction_version;
+    let finalEvent: AuctionStreamEvent | undefined;
+    const appliedEntries: ParsedLaneEntry[] = [];
+    const transitions: Prisma.auction_transitionsCreateManyInput[] = [];
+    const histories: Prisma.bidding_historyCreateManyInput[] = [];
+    const receipts: Prisma.auction_processed_eventsCreateManyInput[] = [];
+    const outbox: Prisma.auction_outboxCreateManyInput[] = [];
+    const orders: Prisma.ordersCreateManyInput[] = [];
+    const bans: Prisma.bidding_ban_userCreateManyInput[] = [];
+
+    for (const item of parsed) {
+      const { entry, event } = item;
+      if (processedIds.has(event.eventId)) {
+        outcomes.set(entry.id, "duplicate");
+        continue;
+      }
+      const sequence = BigInt(event.sequence);
+      const version = BigInt(event.version);
+      const owner = sequenceOwnerBySequence.get(event.sequence);
+      if (owner && owner !== event.eventId) {
+        throw new InvalidAuctionEventError(`Sequence ${event.sequence} belongs to another event`);
+      }
+      if (sequence !== rollingSequence + 1n || version <= rollingVersion) {
+        throw new ProjectionGapError(
+          `Projection fence rejected auction=${event.productId} sequence=${event.sequence} version=${event.version}`,
+        );
+      }
+      const leaderId = event.leaderId ? BigInt(event.leaderId) : null;
+      const payload = jsonPayload(event);
+      transitions.push({ event_id: event.eventId, product_id: productId, event_type: event.type, sequence, version, payload });
+      if (event.type === "BID_ACCEPTED") {
+        if (!event.requestedMaxPriceVnd) throw new InvalidAuctionEventError("Accepted bid has no maximum");
+        histories.push({
+          event_id: event.eventId,
+          product_id: productId,
+          user_id: Number(event.actorId),
+          max_price: BigInt(event.requestedMaxPriceVnd),
+          product_price: BigInt(event.currentPriceVnd),
+          price_owner_id: leaderId,
+          sequence,
+          version,
+        });
+      } else if (event.type === "BIDDER_BANNED" && event.targetUserId) {
+        const bannedUserId = Number(event.targetUserId);
+        bans.push({ product_id: productId, user_id: bannedUserId, reason: event.reason });
+        for (const history of histories) {
+          if (history.user_id === bannedUserId && history.status == null) history.status = "BANNED";
+        }
+        await tx.bidding_history.updateMany({
+          where: { product_id: productId, user_id: bannedUserId, status: null },
+          data: { status: "BANNED" },
+        });
+      }
+      if (event.orderId && leaderId !== null && (event.type === "BUY_NOW_COMPLETED" || event.type === "AUCTION_CLOSED")) {
+        orders.push({ public_order_id: event.orderId, product_id: productId, user_id: Number(leaderId), auction_sequence: sequence });
+      }
+      receipts.push({ event_id: event.eventId, redis_entry_id: entry.id, product_id: productId, sequence, version });
+      outbox.push({
+        event_id: event.eventId,
+        event_type: canonicalAuctionEventType(event.type),
+        event_version: 1,
+        aggregate_id: event.productId,
+        payload,
+      });
+      rollingSequence = sequence;
+      rollingVersion = version;
+      finalEvent = event;
+      appliedEntries.push(item);
+      outcomes.set(entry.id, "applied");
+    }
+
+    if (!finalEvent) return appliedEntries;
+    if (transitions.length) await tx.auction_transitions.createMany({ data: transitions });
+    if (histories.length) await tx.bidding_history.createMany({ data: histories });
+    if (bans.length) await tx.bidding_ban_user.createMany({ data: bans, skipDuplicates: true });
+    if (orders.length) await tx.orders.createMany({ data: orders });
+    if (receipts.length) await tx.auction_processed_events.createMany({ data: receipts });
+    if (outbox.length) await tx.auction_outbox.createMany({ data: outbox });
+    const finalLeaderId = finalEvent.leaderId ? BigInt(finalEvent.leaderId) : null;
+    const updated = await tx.products.updateMany({
+      where: { product_id: productId, auction_version: { lt: rollingVersion } },
+      data: {
+        current_price: BigInt(finalEvent.currentPriceVnd),
+        price_owner_id: finalLeaderId,
+        end_time: new Date(Number(finalEvent.endAtMs)),
+        auction_status: finalEvent.status,
+        is_removed: finalEvent.status === "CANCELLED",
+        auction_sequence: rollingSequence,
+        auction_version: rollingVersion,
+      },
+    });
+    if (updated.count !== 1) throw new ProjectionGapError("Projection version fence rejected the snapshot update");
+    return appliedEntries;
+  }, { maxWait: 10_000, timeout: 30_000 });
+
+  for (const { event } of applied) await publishCommittedEvent(event);
+  runtimeStats.transactionLatencyMs.push(performance.now() - startedAt);
+  if (runtimeStats.transactionLatencyMs.length > 1_000) runtimeStats.transactionLatencyMs.shift();
+  return outcomes;
 }
 
 export async function ensureProjectorGroup(): Promise<void> {
@@ -362,11 +562,21 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
   await ensureProjectorGroup();
   const now = Date.now();
   const shouldReclaim = now - lastReclaimAt >= RECLAIM_INTERVAL_MS;
-  const claimed = shouldReclaim ? await autoClaimProjectorEntries(consumer) : [];
+  const claimed = shouldReclaim ? await autoClaimProjectorEntries(consumer, 30_000, READ_COUNT) : [];
   if (shouldReclaim) lastReclaimAt = now;
-  const fresh = await readNewProjectorEntries(consumer);
+  const fresh = await readNewProjectorEntries(consumer, READ_COUNT);
   const entries = [...claimed, ...fresh.filter((entry) => !claimed.some((item) => item.id === entry.id))];
-  for (const entry of entries) {
+  const entryKey = (entry: RedisStreamEntry): string => {
+    let key = `invalid:${entry.id}`;
+    try {
+      key = parseEvent(entry.payload).productId;
+    } catch {
+      // Malformed entries receive an isolated lane and follow retry/DLQ handling.
+    }
+    return key;
+  };
+
+  async function processEntry(entry: RedisStreamEntry): Promise<void> {
     let context: LogContext = { jobId: entry.id, consumerGroup: GROUP };
     try {
       const event = parseEvent(entry.payload);
@@ -383,13 +593,55 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
       try {
         await projectAuctionEntry(entry);
         await acknowledgeProjectedEntry(entry.id);
+        runtimeStats.processed += 1;
       } catch (error) {
         const outcome = await recordProjectionFailure(entry, error);
+        runtimeStats.failed += 1;
         log.error("Projection failed", { error, outcome });
       }
     });
   }
+
+  const lanes = new Map<string, RedisStreamEntry[]>();
+  for (const entry of entries) {
+    const key = entryKey(entry);
+    const lane = lanes.get(key) ?? [];
+    lane.push(entry);
+    lanes.set(key, lane);
+  }
+  const laneList = [...lanes.entries()].map(([key, lane]) => ({ key, lane }));
+  await runKeyedLanes(
+    laneList,
+    ({ key }) => key,
+    async ({ lane }) => {
+      try {
+        await projectAuctionLane(lane);
+        for (const entry of lane) {
+          await acknowledgeProjectedEntry(entry.id);
+          runtimeStats.processed += 1;
+        }
+      } catch (error) {
+        // Isolate the failing entry without sacrificing the fast batch path for
+        // healthy lanes. Each fallback keeps its own retry/DLQ semantics.
+        log.warn("Projector lane batch failed; isolating entries", {
+          error,
+          entries: lane.length,
+          productId: entryKey(lane[0]!),
+        });
+        for (const entry of lane) await processEntry(entry);
+      }
+    },
+    CONCURRENCY,
+  );
+  runtimeStats.batches += 1;
+  runtimeStats.lastBatchSize = entries.length;
   return entries.length;
+}
+
+export function getProjectorRuntimeStats(): ProjectorRuntimeStats & { transactionP95Ms: number } {
+  const samples = [...runtimeStats.transactionLatencyMs].sort((left, right) => left - right);
+  const index = Math.max(0, Math.ceil(samples.length * 0.95) - 1);
+  return { ...runtimeStats, transactionLatencyMs: samples, transactionP95Ms: samples[index] ?? 0 };
 }
 
 export interface ProjectorStreamHealth {

@@ -71,6 +71,35 @@ export function compareRevisionSummaries(baseline, target, tolerance = 0.05) {
   return { throughputChange, p99Change, passed };
 }
 
+function percentChange(value, baseline) {
+  return baseline === 0 ? null : value / baseline - 1;
+}
+
+export function compareBidEngines(redis, postgres) {
+  const valid = [redis, postgres].every((aggregate) =>
+    aggregate.runs > 0 && aggregate.corePassed && aggregate.maxSystemErrorRate < 0.01,
+  );
+  const delta = {
+    throughput: percentChange(redis.throughput, postgres.throughput),
+    acceptedBidsPerSecond: percentChange(redis.acceptedBidsPerSecond, postgres.acceptedBidsPerSecond),
+    p95Ms: percentChange(redis.p95Ms, postgres.p95Ms),
+    p99Ms: percentChange(redis.p99Ms, postgres.p99Ms),
+  };
+  if (!valid) return { valid, delta, verdict: "INVALID" };
+
+  const redisFaster = redis.throughput > postgres.throughput &&
+    redis.acceptedBidsPerSecond >= postgres.acceptedBidsPerSecond &&
+    redis.p95Ms <= postgres.p95Ms * 1.05 && redis.p99Ms <= postgres.p99Ms * 1.05;
+  const postgresFaster = postgres.throughput > redis.throughput &&
+    postgres.acceptedBidsPerSecond >= redis.acceptedBidsPerSecond &&
+    postgres.p95Ms <= redis.p95Ms * 1.05 && postgres.p99Ms <= redis.p99Ms * 1.05;
+  return {
+    valid,
+    delta,
+    verdict: redisFaster ? "VALID — Redis faster" : postgresFaster ? "VALID — PostgreSQL faster" : "VALID — no measured improvement",
+  };
+}
+
 export function officialResourceEligibility(cpus, memoryBytes) {
   const minimumCpus = 4;
   const minimumMemoryBytes = 6 * 1024 ** 3;

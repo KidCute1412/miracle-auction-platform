@@ -7,13 +7,15 @@ import RedisStore from "rate-limit-redis";
 import clientRoutes from "./routes/client/index.route.ts";
 import adminRoutes from "./routes/admin/index.route.ts";
 import variableConfig from "./config/variable.config.ts";
-import { redisClient, checkRedisConnection } from "./config/redis.config.ts";
+import { redisClient, checkRedisConnection, checkRedisDurability } from "./config/redis.config.ts";
 import { checkPrismaConnection } from "./infrastructure/database/prisma.client.ts";
 import { checkKafkaConnection } from "./config/kafka.config.ts";
 import { csrfProtection } from "./middlewares/csrf.middleware.ts";
 import { requestId } from "./middlewares/request-id.middleware.ts";
 import { requestLogger } from "./middlewares/request-logger.middleware.ts";
 import { getLogger, safeError } from "./infrastructure/observability/logger.ts";
+import { getAuthSnapshotMetrics } from "./modules/accounts/infrastructure/auth-snapshot.cache.ts";
+import { getRedisMutationMetrics } from "./modules/bids/infrastructure/redis/redis-auction.authority.ts";
 
 const log = getLogger({ component: "api" });
 
@@ -42,18 +44,23 @@ export function createApp() {
   app.use(requestLogger);
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
   app.get("/ready", async (_req, res) => {
-    const [database, redis, kafka, heartbeat] = await Promise.all([
+    const [database, redis, durability, kafka, heartbeat] = await Promise.all([
       checkPrismaConnection(),
       checkRedisConnection(),
+      checkRedisDurability(),
       checkKafkaForReadiness(),
       redisClient.get("auction:worker:heartbeat").catch(() => null),
     ]);
     const heartbeatAt = heartbeat ? Date.parse(heartbeat) : Number.NaN;
     const heartbeatTtlMs = Number(process.env.AUCTION_WORKER_HEARTBEAT_TTL_SECONDS ?? 90) * 1_000;
     const auctionWorker = Number.isFinite(heartbeatAt) && Date.now() - heartbeatAt < heartbeatTtlMs;
-    const dependencies = { database, redis, auctionWorker, kafka };
-    const ready = database && redis && auctionWorker;
-    res.status(ready ? 200 : 503).json({ status: ready ? "ready" : "not_ready", dependencies });
+    const dependencies = { database, redis, redisDurability: durability, auctionWorker, kafka };
+    const ready = database && redis && durability.ready && auctionWorker;
+    res.status(ready ? 200 : 503).json({
+      status: ready ? "ready" : "not_ready",
+      dependencies,
+      metrics: { authSnapshot: getAuthSnapshotMetrics(), redisMutation: getRedisMutationMetrics() },
+    });
   });
   app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
   app.use(helmet());
@@ -73,7 +80,9 @@ export function createApp() {
       }),
       passOnStoreError: true,
       windowMs: 15 * 60 * 1000,
-      limit: 2000,
+      // A benchmark stack is isolated and may legitimately generate more traffic
+      // than the public-IP protection intended for normal deployments.
+      limit: Number(process.env.API_RATE_LIMIT ?? 2000),
       standardHeaders: true,
       legacyHeaders: false,
       message: { message: "Too many requests from this IP, please try again later." },

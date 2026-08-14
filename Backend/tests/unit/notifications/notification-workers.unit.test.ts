@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emailRetryDelayMs } from "../../../src/modules/notifications/email-delivery.worker.ts";
 import { stableMessageId } from "../../../src/modules/notifications/notification.service.ts";
+import { requiresNotification } from "../../../src/modules/notifications/notification-consumer.worker.ts";
 
 describe("notification delivery policy", () => {
   it("creates a stable RFC Message-ID for an idempotent delivery", () => {
@@ -19,5 +20,12 @@ describe("notification delivery policy", () => {
       1_800_000,
       7_200_000,
     ]);
+  });
+
+  it("does not create notification work for ordinary bid updates", () => {
+    expect(requiresNotification("bid.accepted.v1")).toBe(false);
+    expect(requiresNotification("dashboard.refresh_requested.v1")).toBe(false);
+    expect(requiresNotification("auction.closed.v1")).toBe(true);
+    expect(requiresNotification("product.question_created.v1")).toBe(true);
   });
 });

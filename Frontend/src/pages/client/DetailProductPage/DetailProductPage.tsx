@@ -11,7 +11,6 @@ import RelatedProductsSection from "./components/RelatedProductsSection";
 import ProductImageGallery from "./components/ProductImageGallery";
 import FloatingQuickBidBar from "./components/FloatingQuickBidBar";
 import VictoryVaultReveal from "./components/VictoryVaultReveal";
-import CursorStarTrail from "./components/CursorStarTrail";
 import { Clock, Calendar, User, Star, Award, TrendingUp, Sparkles } from "lucide-react";
 import { useAuth } from "@/routes/ProtectedRouter";
 import useSocketBidding from "@/hooks/useSocketBidding";
@@ -244,7 +243,6 @@ function DetailProductPage() {
     <Loading />
   ) : (
     <div className="mx-auto px-4 py-8 bg-background text-foreground transition-colors duration-300 relative">
-      <CursorStarTrail />
       {/* Product Name */}
       <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-foreground mb-6">
         {products?.product_name}

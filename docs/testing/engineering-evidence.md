@@ -53,16 +53,19 @@ Backend tests include pure unit tests, route contract tests, isolated PostgreSQL
 | Date | Revision | Worktree | Verification |
 |---|---|---|---|
 | 2026-07-30 | `e7ceb2a80ebf330d084a5b4a6dba8602c97d9b44` | Documentation changes present | Backend build passed; 89/89 unit and 94/94 contract tests passed; full database coverage run passed 217/224 and failed 7; frontend lint completed with 72 warnings, 7/7 tests passed, build passed; AgentService 10/10 passed; both Compose configurations passed |
+| 2026-08-10 | working tree (performance implementation) | Uncommitted implementation changes | Backend production build passed; 107/107 unit, 95/95 contract, 42/42 integration and concurrency suites passed; PerformanceTests 6/6 passed; frontend lint/build and three Compose validations passed. Official performance claim remains blocked by the resource gate and missing three qualifying durable runs. |
 
-### Current failing gate
+### Resolved historical test gap
 
-The 7 failing backend tests are all Redis-authority integration/concurrency cases. They receive HTTP 503 because the test Redis client exposed to `redis-auction.authority.ts` does not implement `script()`. This affects six bid API integration tests and one concurrent bid-placement test.
-
-`tests/run-database-tests.ts coverage` returned process exit code 0 even though Vitest reported those failures. Until the wrapper propagates the failing Vitest exit code, CI can incorrectly accept a failed coverage run. The current suite must therefore be read from its test output, not inferred from the command exit status.
-
-No coverage percentage was published because the failed run did not produce the expected `Backend/coverage` artifact.
+The July Redis scripting mock gap is resolved. The August integration runner exercised Redis Lua, AOF restart validation, batch Stream projection and PostgreSQL invariants against isolated real services. No coverage percentage is published without its matching coverage artifact.
 
 ## k6 evidence contract
+
+### 2026-08-10 constrained-machine profiling (not a CV claim)
+
+The production-image runner detected only 2 Docker CPUs and 1.86 GiB RAM for PostgreSQL, Redis primary/replica, Kafka, API and three workers. A durable 20-second diagnostic run (`distributed-20260810134832-635b12`) produced 37.50 req/s, p95 4,173 ms, p99 4,429 ms, 100% accepted bids, zero infrastructure errors, and fully converged Stream/outbox/Kafka invariants. Replica ACK p95 was 459–547 ms. A no-ACK diagnostic was also below target, so no gain is attributed solely to compiled runtime or `WAIT` removal.
+
+These artifacts identify a constrained resource/latency bottleneck and demonstrate convergence; they do **not** satisfy the 300 req/s gate. The official three-run command now requires at least 4 Docker CPUs and 6 GiB RAM unless a non-claim profiling override is explicit.
 
 `PerformanceTests/scenarios/bidding.js` provides smoke, baseline, hot-auction, distributed-auction, spike and soak profiles. `npm --prefix PerformanceTests run benchmark` creates a dedicated Docker Compose project containing PostgreSQL, Redis, Kafka, the API and all workers; it never reuses the development stack. External email delivery is disabled while projection, outbox and dashboard work remain active.
 
@@ -120,4 +123,3 @@ The standalone [smoke report](../PerformanceTests/artifacts/smoke-report.md) is 
 - Real screenshots/GIFs must be refreshed from a running seeded environment.
 - Live provider behavior is intentionally excluded from deterministic tests.
 - Coverage percentages should be published only from the matching coverage artifact.
-- The database-test wrapper currently fails to propagate Vitest failures, and the Redis test client is missing the scripting method required by the production authority adapter.

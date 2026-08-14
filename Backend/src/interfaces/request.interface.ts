@@ -2,16 +2,9 @@ import type { Request } from "express";
 
 export interface AuthenticatedAccount {
   user_id: number;
-  email: string;
-  username: string;
   role: string;
-  rating: number | null;
-  rating_count: number | null;
-  full_name?: string | null;
-  address?: string | null;
-  date_of_birth?: string | Date | null;
-  avatar?: string | null;
-  [key: string]: unknown;
+  status: string;
+  auth_version: number;
 }
 
 export interface AccountRequest extends Request {

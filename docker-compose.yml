@@ -1,14 +1,15 @@
 x-backend-worker: &backend-worker
   build:
-    context: ./Backend
-    dockerfile: Dockerfile
-  volumes:
-    - ./Backend:/app
-    - /app/node_modules
+    context: .
+    dockerfile: Backend/Dockerfile
   environment: &backend-worker-environment
     DATABASE_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
     DIRECT_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
     REDIS_URL: redis://redis:6379
+    BID_DURABILITY_REPLICAS: "1"
+    BID_DURABILITY_WAIT_MS: "100"
+    BID_MUTATION_CONNECTIONS: "8"
+    AUTH_SNAPSHOT_TTL_SECONDS: "30"
     BID_ENGINE: redis
     KAFKA_BROKERS: kafka:9092
     KAFKA_SSL: "false"
@@ -51,6 +52,19 @@ services:
     command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis-replica:
+    image: redis:7-alpine
+    container_name: online-auction-redis-replica
+    command: ["redis-server", "--replicaof", "redis", "6379", "--appendonly", "yes", "--appendfsync", "everysec"]
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -102,6 +116,8 @@ services:
       BID_PROJECTOR_GROUP: postgres-projector-v1
       BID_PROJECTOR_MAX_ATTEMPTS: 10
       BID_PROJECTOR_RECLAIM_INTERVAL_MS: 30000
+      BID_PROJECTOR_READ_COUNT: 200
+      BID_PROJECTOR_CONCURRENCY: 8
       AUCTION_CLOSE_INTERVAL_MS: 1000
       AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: 90
     depends_on:
@@ -135,6 +151,8 @@ services:
       DASHBOARD_KAFKA_GROUP_ID: dashboard-analytics-v1
       NOTIFICATION_KAFKA_GROUP_ID: notification-intake-v1
       DASHBOARD_DEBOUNCE_MS: 15000
+      DASHBOARD_BATCH_CONCURRENCY: 8
+      NOTIFICATION_BATCH_CONCURRENCY: 8
       DASHBOARD_RECOVERY_INTERVAL_MS: 60000
       DASHBOARD_STALE_THRESHOLD_MS: 120000
       DASHBOARD_RETRY_LIMIT: 5

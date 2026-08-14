@@ -1,6 +1,6 @@
 # Deployment: Oracle VM, Supabase, Aiven and Vercel
 
-> Status: Current | Owner: Platform | Last verified: 2026-08-07
+> Status: Current | Owner: Platform | Last verified: 2026-08-10
 
 The current production topology is defined by [`compose.production.yml`](../../compose.production.yml) and the canonical [worker-process architecture](../architecture/worker-processes.md).
 
@@ -8,8 +8,8 @@ The current production topology is defined by [`compose.production.yml`](../../c
 
 - Vercel hosts the Vite frontend.
 - Caddy terminates TLS and proxies the API on the Oracle VM.
-- One backend image runs `api`, `auction-worker`, `outbox-relay` and `async-worker`.
-- Redis 7 runs only on the Docker private network on Oracle with password auth, AOF `appendfsync everysec`, a 768 MiB data cap and `noeviction`.
+- One multi-stage backend build produces a production-only runtime image; API and workers run compiled `node dist/*.js`. The separate migrator target retains Prisma CLI.
+- Redis 7 primary and replica run only on the Docker private network. The API requires one replica acknowledgement by default. Primary AOF remains the persistence mechanism; replica ACK alone is not an fsync guarantee.
 - Supabase hosts PostgreSQL; Aiven hosts Kafka.
 - `migrate` is a one-shot service and is not an application process.
 
@@ -44,7 +44,7 @@ For a move from another Redis authority, enable bidding maintenance, drain the o
 ## Smoke checks
 
 1. `/health` returns 200.
-2. `/ready` returns 200 with database, Redis and auction worker true; Kafka may be false without changing readiness.
+2. `/ready` returns 200 with database, Redis primary, required replica count and auction worker true; Kafka may be false without changing readiness.
 3. Create an auction and immediately place a bid.
 4. Verify Redis mutation response, PostgreSQL projection, one outbox event and a post-commit Socket event.
 5. Complete buy-now/close and verify exactly one order.

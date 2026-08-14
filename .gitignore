@@ -70,3 +70,5 @@ Thumbs.db
 # k6 / PerformanceTests generated files
 # ============================================================
 PerformanceTests/tokens.json
+PerformanceTests/artifacts/runs/
+PerformanceTests/artifacts/raw/

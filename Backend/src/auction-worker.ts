@@ -6,6 +6,7 @@ import { startRedisAuctionCloseJob, stopRedisAuctionCloseJob } from "@/jobs/redi
 import { bootstrapActiveRedisAuctions } from "@/modules/bids/infrastructure/redis/redis-auction.bootstrap.ts";
 import {
   ensureProjectorGroup,
+  getProjectorRuntimeStats,
   getProjectorStreamHealth,
 } from "@/modules/bids/infrastructure/redis/redis-stream.projector.ts";
 import { startBidProjector, stopBidProjector } from "@/workers/bid-projector.worker.ts";
@@ -21,6 +22,7 @@ async function writeHeartbeat(): Promise<void> {
   const transaction = redisClient.multi();
   transaction.set("auction:worker:heartbeat", new Date().toISOString(), "EX", ttl);
   transaction.set("auction:worker:projection-lag", String(health.lag ?? health.pending), "EX", ttl);
+  transaction.set("auction:worker:projector-stats", JSON.stringify(getProjectorRuntimeStats()), "EX", ttl);
   await transaction.exec();
 }
 

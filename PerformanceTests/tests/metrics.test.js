@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, median, officialResourceEligibility, sampleStandardDeviation, stability, summarizeRuns } from "../lib/metrics.js";
+import { compareBidEngines, compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, median, officialResourceEligibility, sampleStandardDeviation, stability, summarizeRuns } from "../lib/metrics.js";
 import { resolveProfile } from "../config/profiles.js";
+import { benchmarkTuningEnvironment, resolveBenchmarkTuning } from "../lib/benchmark-tuning.js";
 
 const summary = (rate, p99, errors = 0) => ({ metrics: {
   http_reqs: { values: { rate } }, http_req_duration: { values: { "p(95)": p99 / 2, "p(99)": p99 } },
@@ -48,6 +49,21 @@ test("revision comparison rejects infrastructure errors and correctness failures
   assert.equal(compareRevisionSummaries(baseline, invalid).passed, false);
 });
 
+test("engine comparison reports a valid Redis improvement only with healthy pipelines", () => {
+  const redis = summarizeRuns([{ summary: summary(160, 700), invariants: { corePassed: true, downstreamPassed: true } }]);
+  const postgres = summarizeRuns([{ summary: summary(100, 1000), invariants: { corePassed: true, downstreamPassed: true } }]);
+  const result = compareBidEngines(redis, postgres);
+  assert.equal(result.valid, true);
+  assert.equal(result.verdict, "VALID — Redis faster");
+  assert.ok(Math.abs(result.delta.throughput - 0.6) < 1e-12);
+});
+
+test("engine comparison remains valid when downstream freshness lags but bidding core is healthy", () => {
+  const redis = summarizeRuns([{ summary: summary(160, 700), invariants: { corePassed: true, downstreamPassed: true } }]);
+  const postgres = summarizeRuns([{ summary: summary(100, 1000), invariants: { corePassed: true, downstreamPassed: false } }]);
+  assert.equal(compareBidEngines(redis, postgres).valid, true);
+});
+
 test("profile override preserves profile thresholds while changing duration", () => {
   const profile = resolveProfile("smoke", "2s");
   assert.equal(profile.duration, "2s");
@@ -88,6 +104,25 @@ test("downstream Kafka lag does not fail the bidding core aggregate", () => {
   assert.equal(aggregate.corePassed, true);
   assert.equal(aggregate.invariantsPassed, true);
   assert.equal(aggregate.downstreamPassed, false);
+});
+
+test("benchmark tuning uses explicit CLI values and preserves them for Compose", () => {
+  const tuning = resolveBenchmarkTuning({
+    "mutation-connections": "8",
+    "projector-concurrency": "6",
+    "dashboard-batch-concurrency": "4",
+    "notification-batch-concurrency": "4",
+  }, {});
+  assert.deepEqual(benchmarkTuningEnvironment(tuning), {
+    BID_MUTATION_CONNECTIONS: "8",
+    BID_PROJECTOR_CONCURRENCY: "6",
+    DASHBOARD_BATCH_CONCURRENCY: "4",
+    NOTIFICATION_BATCH_CONCURRENCY: "4",
+  });
+});
+
+test("benchmark tuning rejects unsafe concurrency values", () => {
+  assert.throws(() => resolveBenchmarkTuning({ "projector-concurrency": "0" }, {}), /projector-concurrency/);
 });
 
 test("latency threshold failure does not masquerade as a core correctness failure", () => {

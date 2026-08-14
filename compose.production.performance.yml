@@ -1,0 +1,15 @@
+# Optional resource-isolation profile for a six-CPU host. Apply after the base
+# production Compose file; override these environment values for other hosts.
+services:
+  redis:
+    cpus: "${REDIS_CPU_LIMIT:-0.4}"
+  redis-replica:
+    cpus: "${REDIS_REPLICA_CPU_LIMIT:-0.25}"
+  auction-worker:
+    cpus: "${AUCTION_WORKER_CPU_LIMIT:-1.25}"
+  outbox-relay:
+    cpus: "${OUTBOX_RELAY_CPU_LIMIT:-0.5}"
+  async-worker:
+    cpus: "${ASYNC_WORKER_CPU_LIMIT:-0.75}"
+  api:
+    cpus: "${API_CPU_LIMIT:-1.5}"

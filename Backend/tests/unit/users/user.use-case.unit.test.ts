@@ -13,17 +13,24 @@ const tx = vi.hoisted(() => ({
   admin_audit_logs: { create: vi.fn() },
 }));
 const addOutboxEvent = vi.hoisted(() => vi.fn());
+const accountRepository = vi.hoisted(() => ({ findAuthPrincipalById: vi.fn() }));
+const invalidateAuthSnapshotBestEffort = vi.hoisted(() => vi.fn());
 vi.mock("../../../src/modules/users/infrastructure/user.repository.ts", () => repo);
 vi.mock("@/helpers/mail.helper.ts", () => ({ sendMail }));
 vi.mock("@/infrastructure/database/prisma.client.ts", () => ({
   prisma: { $transaction: (operation: (client: typeof tx) => unknown) => operation(tx) },
 }));
 vi.mock("@/infrastructure/events/outbox.repository.ts", () => ({ addOutboxEvent }));
+vi.mock("@/modules/accounts/infrastructure/account.repository.ts", () => ({ accountRepository }));
+vi.mock("@/modules/accounts/infrastructure/auth-snapshot.cache.ts", () => ({ invalidateAuthSnapshotBestEffort }));
 
 import * as useCase from "../../../src/modules/users/application/user.use-case.ts";
 
 describe("user use cases", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    accountRepository.findAuthPrincipalById.mockResolvedValue({ user_id: 1, role: "user", status: "active", auth_version: 1 });
+  });
 
   it("delegates common user and rating operations", async () => {
     repo.getUserById.mockResolvedValue({ user_id: 1 }); repo.checkRegisterSellerRequest.mockResolvedValue(true);

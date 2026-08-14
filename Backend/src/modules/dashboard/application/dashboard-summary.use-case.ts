@@ -135,37 +135,32 @@ export async function refreshDashboardSnapshot(input: {
 }
 
 export async function completeDashboardReceipt(receipt: ReceiptContext): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    await tx.dashboard_stats.updateMany({
-      where: { key: "summary" },
-      data: { source_event_count: { increment: 1 } },
-    });
-    await tx.dashboard_event_receipts.upsert({
-      where: { event_id: receipt.eventId },
-      create: {
-        event_id: receipt.eventId,
-        topic: receipt.topic,
-        event_type: receipt.eventType,
-        event_version: receipt.eventVersion,
-        aggregate_id: receipt.aggregateId,
-        correlation_id: receipt.correlationId,
-        payload: receipt.payload,
-        status: "processed",
-        attempts: receipt.attempts,
-        partition: receipt.partition,
-        offset: receipt.offset,
-        processed_at: new Date(),
-      },
-      update: {
-        status: "processed",
-        attempts: receipt.attempts,
-        partition: receipt.partition,
-        offset: receipt.offset,
-        processed_at: new Date(),
-        last_error: null,
-        updated_at: new Date(),
-      },
-    });
+  const processedAt = new Date();
+  await prisma.dashboard_event_receipts.upsert({
+    where: { event_id: receipt.eventId },
+    create: {
+      event_id: receipt.eventId,
+      topic: receipt.topic,
+      event_type: receipt.eventType,
+      event_version: receipt.eventVersion,
+      aggregate_id: receipt.aggregateId,
+      correlation_id: receipt.correlationId,
+      payload: receipt.payload as Prisma.InputJsonValue,
+      status: "processed",
+      attempts: receipt.attempts,
+      partition: receipt.partition,
+      offset: receipt.offset,
+      processed_at: processedAt,
+    },
+    update: {
+      status: "processed",
+      attempts: receipt.attempts,
+      partition: receipt.partition,
+      offset: receipt.offset,
+      processed_at: processedAt,
+      last_error: null,
+      updated_at: processedAt,
+    },
   });
 }
 

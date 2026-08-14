@@ -25,6 +25,9 @@ npm run benchmark:smoke
 npm run benchmark:hot
 npm run benchmark:distributed
 npm run benchmark:bid-path
+
+# One Redis-versus-PostgreSQL pessimistic-lock A/B sample
+npm run benchmark:compare:redis-pessimistic
 ```
 
 The normal hot and distributed commands always run all three configured attempts and produce a diagnostic aggregate even when latency thresholds fail. They never turn a failed suite into an official claim. A strict fail-fast run can be invoked through the generic CLI with continuation disabled. The normal commands are:
@@ -39,9 +42,12 @@ npm.cmd run benchmark:distributed
 # Durable HTTP bid path (Redis replica ACK + auction projection), with dashboard
 # and notification consumers excluded during measurement. This is diagnostic-only.
 npm.cmd run benchmark:bid-path
+
+# One isolated Redis versus PostgreSQL FOR UPDATE comparison
+npm.cmd run benchmark:compare:redis-pessimistic
 ```
 
-Diagnostic continuation still records each failed run and computes descriptive median statistics, but it never turns a failed suite into an official claim. A bidding-core invariant failure must still be investigated; continuing does not make the run valid. Dashboard and notification Kafka freshness is reported as a separate downstream gate because those consumers are side effects, not bid acceptance or winner state. Every measured attempt uses a lightweight 5-second smoke warm-up so local workers and PostgreSQL are not overloaded before measurement. Invariant checks wait up to 30 seconds for convergence by default. Reports include throughput CV and p95 spread; CV above 10% is an instability warning, not an automatic gate failure. Use `--keep-env=true` only to investigate a failed run. The CLI prints the artifact directory. Results are written to `artifacts/runs/<run-id>/`; raw k6 output is gzip-compressed and ignored by Git.
+Diagnostic continuation still records each failed run and computes descriptive median statistics, but it never turns a failed suite into an official claim. A bidding-core invariant failure must still be investigated; continuing does not make the run valid. Dashboard and notification Kafka freshness is retained as an observation, not a benchmark gate: their consumers remain enabled but have a deliberately bounded CPU/concurrency budget so they cannot dominate durable bid-path latency. Every measured attempt uses a lightweight 5-second smoke warm-up so local workers and PostgreSQL are not overloaded before measurement. Invariant checks wait up to 30 seconds for convergence by default. Reports include throughput CV and p95 spread; CV above 10% is an instability warning, not an automatic gate failure. Use `--keep-env=true` only to investigate a failed run. The CLI prints the artifact directory. Results are written to `artifacts/runs/<run-id>/`; raw k6 output is gzip-compressed and ignored by Git.
 
 ## Compare clean revisions
 
@@ -50,6 +56,10 @@ npm run compare -- --baseline <clean-git-sha> --scenarios hot,distributed --runs
 ```
 
 The command refuses a dirty current worktree, creates a temporary detached worktree for the baseline, runs both revisions through the same benchmark tooling and emits median comparison data. It passes only when every run has valid invariants, infrastructure errors stay below 1%, throughput does not regress more than 5%, and p99 does not increase more than 5%.
+
+## Compare bid engines
+
+`npm run benchmark:compare:redis-pessimistic` compares the current compiled backend twice without changing its normal runtime configuration. It runs the production-like `distributed` workload once with `BID_ENGINE=redis`, then once with `BID_ENGINE=postgres`, using a fresh isolated stack for each. Redis remains the default everywhere outside this temporary benchmark stack. The report is saved below `artifacts/runs/compare-redis-pessimistic-*/comparison.md` and includes throughput, accepted bids/s, latency, errors, core invariants and Kafka convergence for both engines. One pair is diagnostic evidence only; repeat it on a stable machine before making a percentage-improvement claim.
 
 ## Configuration
 
@@ -69,6 +79,6 @@ The default benchmark topology uses 16 keyed projector lanes and 16 dashboard re
 
 ## Evidence and interpretation
 
-Each attempt saves its k6 summary/report, compressed raw events, seed manifest and invariant result. The final `report.md` includes a per-run table plus median, range, CV, latency, acceptance, correctness and downstream gate overview; `summary.json` also exposes machine-readable `runMetrics`. Invariant artifacts expose `corePassed` and `downstreamPassed` separately; `corePassed` covers Redis/PostgreSQL auction state, Stream, outbox and ordering, while `downstreamPassed` covers dashboard/notification Kafka consumer freshness. The suite also saves periodic container CPU/memory/I/O samples and `/ready` metrics for auth cache, Redis mutation and replica ACK latency. Final metadata includes Docker CPU and memory allocation. A request is a **bid attempt**; `accepted_bids` and `business_rejections` are reported separately. HTTP 400/403/409/429 are expected business outcomes, while 5xx/network failures are infrastructure errors.
+Each attempt saves its k6 summary/report, compressed raw events, seed manifest and invariant result. The final `report.md` includes a per-run table plus median, range, CV, latency, acceptance, core-correctness and downstream-observation overview; `summary.json` also exposes machine-readable `runMetrics`. Invariant artifacts expose `corePassed` and `downstreamPassed` separately; `corePassed` covers Redis/PostgreSQL auction state, Stream, outbox and ordering, while `downstreamPassed` reports dashboard/notification Kafka consumer freshness without changing the benchmark outcome. The suite also saves periodic container CPU/memory/I/O samples and `/ready` metrics for auth cache, Redis mutation and replica ACK latency. Final metadata includes Docker CPU and memory allocation. A request is a **bid attempt**; `accepted_bids` and `business_rejections` are reported separately. HTTP 400/403/409/429 are expected business outcomes, while 5xx/network failures are infrastructure errors.
 
 Do not publish a CV performance claim until a clean three-run report has passed and its report, metadata, summary and invariants have been copied to `docs/testing/benchmarks/<revision>/`. Historical `artifacts/process-split` results are retained only for audit.

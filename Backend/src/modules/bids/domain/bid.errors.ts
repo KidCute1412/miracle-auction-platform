@@ -15,3 +15,10 @@ export class BidInfrastructureError extends BidDomainError {
     this.name = "BidInfrastructureError";
   }
 }
+
+export class BidDurabilityUnconfirmedError extends BidDomainError {
+  constructor(message = "Bid mutation was accepted by Redis primary but replica acknowledgement was not confirmed") {
+    super(message, 503, "BID_DURABILITY_UNCONFIRMED");
+    this.name = "BidDurabilityUnconfirmedError";
+  }
+}

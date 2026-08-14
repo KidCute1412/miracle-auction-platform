@@ -11,6 +11,7 @@ services:
       timeout: 3s
       retries: 30
     volumes: ["postgres:/var/lib/postgresql/data"]
+    cpus: "${BENCHMARK_POSTGRES_CPU_LIMIT:-0.75}"
 
   redis:
     image: redis:7-alpine
@@ -21,6 +22,7 @@ services:
       timeout: 3s
       retries: 30
     volumes: ["redis:/data"]
+    cpus: "${BENCHMARK_REDIS_CPU_LIMIT:-0.4}"
 
   redis-replica:
     image: redis:7-alpine
@@ -32,6 +34,7 @@ services:
       interval: 3s
       timeout: 3s
       retries: 30
+    cpus: "${BENCHMARK_REDIS_REPLICA_CPU_LIMIT:-0.25}"
 
   kafka:
     image: apache/kafka:3.7.0
@@ -49,6 +52,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     volumes: ["kafka:/var/lib/kafka/data"]
+    cpus: "${BENCHMARK_KAFKA_CPU_LIMIT:-0.5}"
 
   kafka-init:
     image: apache/kafka:3.7.0
@@ -84,7 +88,10 @@ services:
       BID_MUTATION_CONNECTIONS: ${BID_MUTATION_CONNECTIONS:-16}
       KAFKA_BROKERS: kafka:9092
       KAFKA_SSL: "false"
-      BID_ENGINE: redis
+      # Redis remains the default runtime engine. The isolated A/B benchmark
+      # can override this to postgres without touching development/production
+      # Compose files.
+      BID_ENGINE: ${BID_ENGINE:-redis}
       BID_PROJECTOR_GROUP: benchmark-projector-v1
       EMAIL_DELIVERY_MODE: disabled
       JWT_SECRET: benchmark-local-secret-only
@@ -101,6 +108,7 @@ services:
       redis: { condition: service_healthy }
       redis-replica: { condition: service_healthy }
       kafka-init: { condition: service_completed_successfully }
+    cpus: "${BENCHMARK_API_CPU_LIMIT:-1.5}"
 
   auction-worker:
     <<: *backend
@@ -113,6 +121,7 @@ services:
       BID_PROJECTOR_CONCURRENCY: ${BID_PROJECTOR_CONCURRENCY:-16}
       AUCTION_CLOSE_INTERVAL_MS: 1000
       AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: 90
+    cpus: "${BENCHMARK_AUCTION_WORKER_CPU_LIMIT:-1.25}"
 
   outbox-relay:
     <<: *backend
@@ -123,6 +132,7 @@ services:
       DATABASE_URL: postgresql://benchmark:benchmark@postgres:5432/online_auction_benchmark?schema=public&connection_limit=5
       OUTBOX_BATCH_SIZE: 100
       OUTBOX_IDLE_POLL_MS: 250
+    cpus: "${BENCHMARK_OUTBOX_RELAY_CPU_LIMIT:-0.5}"
 
   async-worker:
     <<: *backend
@@ -136,9 +146,12 @@ services:
       # every Kafka batch creates artificial consumer lag and competes with
       # the bidding path without improving dashboard correctness.
       DASHBOARD_DEBOUNCE_MS: "0"
-      DASHBOARD_BATCH_CONCURRENCY: ${DASHBOARD_BATCH_CONCURRENCY:-16}
-      DASHBOARD_KAFKA_MAX_BYTES_PER_PARTITION: ${DASHBOARD_KAFKA_MAX_BYTES_PER_PARTITION:-131072}
-      NOTIFICATION_BATCH_CONCURRENCY: ${NOTIFICATION_BATCH_CONCURRENCY:-16}
+      # Side effects remain on for realistic event production, but are intentionally
+      # constrained so dashboard aggregation/email intake cannot dominate bid latency.
+      DASHBOARD_BATCH_CONCURRENCY: ${DASHBOARD_BATCH_CONCURRENCY:-2}
+      DASHBOARD_KAFKA_MAX_BYTES_PER_PARTITION: ${DASHBOARD_KAFKA_MAX_BYTES_PER_PARTITION:-524288}
+      NOTIFICATION_BATCH_CONCURRENCY: ${NOTIFICATION_BATCH_CONCURRENCY:-2}
+    cpus: "${BENCHMARK_ASYNC_WORKER_CPU_LIMIT:-0.4}"
 
 volumes:
   postgres:

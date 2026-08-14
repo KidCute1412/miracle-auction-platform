@@ -41,11 +41,11 @@ Supabase PostgreSQL is the durable projection and business store. Redis is autho
 | Process | Owns | Must not own |
 |---|---|---|
 | `api` | HTTP, auth/security email, Socket.IO, Redis Lua mutations, bootstrap of a newly created auction | Projector, close scheduler, Kafka producer, outbox relay, auction email cron |
-| `auction-worker` | Stream group initialization, missing-state bootstrap, single sequential projector, PEL reclaim, close scheduler, reconciliation heartbeat | Kafka consumption, SMTP |
+| `auction-worker` | Stream group initialization, missing-state bootstrap, single keyed-concurrent projector, PEL reclaim, close scheduler, reconciliation heartbeat | Kafka consumption, SMTP |
 | `outbox-relay` | PostgreSQL outbox lease and Kafka batch publication | Socket.IO, SMTP, auction decisions |
 | `async-worker` | Dashboard consumer/recovery, notification intake, durable email delivery/recovery | Auction close scheduling, bid decisions |
 
-Only one `auction-worker` replica is supported. The current global Redis Stream ordering strategy is intentionally sequential; scaling it horizontally can apply sequences for one auction out of order.
+Only one `auction-worker` replica is supported. Inside it, product lanes are parallel but events for one product remain sequential. Horizontal workers still require explicit sharding/rebalance correctness.
 
 ## Lifecycle
 
@@ -84,7 +84,7 @@ Every envelope contains `eventId`, `eventType`, `eventVersion`, `aggregateId`, `
 
 ## Health and operations
 
-`/health` is API liveness. `/ready` requires PostgreSQL, Redis and a fresh `auction:worker:heartbeat`. Kafka is reported but does not determine readiness. Operations reports three worker heartbeats, projection lag, pending/retrying/terminal outbox counts and oldest age, email queue states, Kafka consumer lag and DLQ totals.
+`/health` is API liveness. `/ready` requires PostgreSQL, Redis primary/replica durability readiness and a fresh `auction:worker:heartbeat`. Kafka is reported but does not determine readiness. Operations reports three worker heartbeats, projection lag, pending/retrying/terminal outbox counts and oldest age, email queue states, Kafka consumer lag and DLQ totals.
 
 Redis keys:
 
@@ -100,7 +100,7 @@ All processes need `DATABASE_URL`/`DIRECT_URL`; API, auction worker and async wo
 
 - Auction: `BID_ENGINE`, `BID_PROJECTOR_GROUP`, `BID_PROJECTOR_MAX_ATTEMPTS`, `BID_PROJECTOR_RECLAIM_INTERVAL_MS`, `AUCTION_CLOSE_INTERVAL_MS`, `AUCTION_WORKER_HEARTBEAT_TTL_SECONDS`.
 - Relay: Kafka connection variables, `OUTBOX_BATCH_SIZE`, `OUTBOX_IDLE_POLL_MS`, `OUTBOX_MAX_BACKOFF_MS`, `OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS`.
-- Async: Kafka connection variables, `DASHBOARD_KAFKA_GROUP_ID`, `NOTIFICATION_KAFKA_GROUP_ID`, `EMAIL_DELIVERY_MODE`, `EMAIL_DELIVERY_CONCURRENCY`, `EMAIL_DELIVERY_MAX_ATTEMPTS`, `EMAIL_DELIVERY_LEASE_MS`, `ASYNC_WORKER_HEARTBEAT_TTL_SECONDS`.
+- Async: Kafka connection variables, `DASHBOARD_KAFKA_GROUP_ID`, `NOTIFICATION_KAFKA_GROUP_ID`, `DASHBOARD_BATCH_CONCURRENCY`, `NOTIFICATION_BATCH_CONCURRENCY`, `EMAIL_DELIVERY_MODE`, `EMAIL_DELIVERY_CONCURRENCY`, `EMAIL_DELIVERY_MAX_ATTEMPTS`, `EMAIL_DELIVERY_LEASE_MS`, `ASYNC_WORKER_HEARTBEAT_TTL_SECONDS`. Kafka offsets are committed once a whole batch has completed durable receipt/enqueue work; dashboard refreshes are coalesced per batch.
 - Topics: `KAFKA_BIDDING_TOPIC`, `KAFKA_DOMAIN_TOPIC`, `KAFKA_DASHBOARD_TOPIC`, `KAFKA_ASYNC_DLQ_TOPIC`, and temporary `KAFKA_DASHBOARD_DLQ_TOPIC`.
 
 ## Rollout and rollback

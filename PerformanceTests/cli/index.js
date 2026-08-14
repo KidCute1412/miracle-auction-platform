@@ -5,7 +5,8 @@ import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, metric, officialResourceEligibility, summarizeRuns } from "../lib/metrics.js";
+import { compareBidEngines, compareRevisionSummaries, describeRunGateFailures, diagnosticContinuationEnabled, metric, officialResourceEligibility, summarizeRuns } from "../lib/metrics.js";
+import { benchmarkTuningEnvironment, resolveBenchmarkTuning } from "../lib/benchmark-tuning.js";
 import { resolveProfile } from "../config/profiles.js";
 
 const performanceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -16,6 +17,17 @@ class BenchmarkGateError extends Error {}
 
 function imageTagFor(runId) {
   return runId.replace(/[^a-z0-9_.-]/gi, "-").toLowerCase();
+}
+
+function resolveBidEngine(value = "redis") {
+  if (value === "redis" || value === "postgres") return value;
+  throw new Error(`Unsupported benchmark bid engine '${value}'. Expected redis or postgres.`);
+}
+
+async function buildRuntimeImages(sourceRoot, imageTag) {
+  const dockerfile = resolve(sourceRoot, "Backend/Dockerfile");
+  await command("docker", ["build", "--target", "runtime", "-t", `online-auction-benchmark-runtime:${imageTag}`, "-f", dockerfile, sourceRoot]);
+  await command("docker", ["build", "--target", "migrator", "-t", `online-auction-benchmark-migrator:${imageTag}`, "-f", dockerfile, sourceRoot]);
 }
 
 function parseArgs(values) {
@@ -79,7 +91,8 @@ function dockerCompose(project, sourceRoot, runId, args, quiet = false, options 
       BENCHMARK_RUN_ID: runId,
       BENCHMARK_IMAGE_TAG: options.imageTag ?? imageTagFor(runId),
       BID_DURABILITY_REPLICAS: options.durabilityReplicas ?? process.env.BID_DURABILITY_REPLICAS,
-      BID_PROJECTOR_CONCURRENCY: options.projectorConcurrency ?? process.env.BID_PROJECTOR_CONCURRENCY,
+      ...benchmarkTuningEnvironment(options.tuning ?? resolveBenchmarkTuning({}, process.env)),
+      BID_ENGINE: options.bidEngine ?? process.env.BID_ENGINE ?? "redis",
       COMPOSE_PROFILES: options.downstream === false ? "" : "downstream",
     },
   });
@@ -315,12 +328,15 @@ async function executeSuite(options) {
   const project = `auction-benchmark-${runId}`.replace(/[^a-z0-9_-]/gi, "").toLowerCase();
   const outputRoot = resolve(options.output ?? resolve(performanceRoot, "artifacts/runs"), runId);
   const keepEnvironment = asBoolean(options["keep-env"]);
+  const bidEngine = resolveBidEngine(options["bid-engine"] ?? options.bidEngine);
   const continueOnGateFailure = diagnosticContinuationEnabled(
     options.continue ?? options["continue-on-gate-failure"],
   );
+  const tuning = resolveBenchmarkTuning(options);
   const composeOptions = {
+    bidEngine,
     durabilityReplicas: profile.durable === false ? "0" : "1",
-    projectorConcurrency: String(options["projector-concurrency"] ?? 16),
+    tuning,
     downstream: profile.downstream !== false,
   };
   // Keep warm-up intentionally lightweight: a full 100-VU warm-up creates
@@ -334,19 +350,18 @@ async function executeSuite(options) {
   await mkdir(outputRoot, { recursive: true });
   await writeJson(runnerOwnerPath(runId), { pid: process.pid, runId, startedAt: new Date().toISOString() });
   await writeJson(resolve(outputRoot, "run-config.json"), {
-    runId, scenario, runs, profile, sourceRoot, project,
+    runId, scenario, runs, profile, sourceRoot, project, bidEngine,
     continueOnGateFailure,
     diagnosticOnly: continueOnGateFailure,
     isolation: "fresh-stack-per-run",
     warmupDuration,
     convergenceTimeoutMs,
+    tuning,
   });
   try {
     await recordRunnerPhase(outputRoot, "building-runtime-images");
-    const imageTag = imageTagFor(runId);
-    const dockerfile = resolve(sourceRoot, "Backend/Dockerfile");
-    await command("docker", ["build", "--target", "runtime", "-t", `online-auction-benchmark-runtime:${imageTag}`, "-f", dockerfile, sourceRoot]);
-    await command("docker", ["build", "--target", "migrator", "-t", `online-auction-benchmark-migrator:${imageTag}`, "-f", dockerfile, sourceRoot]);
+    const imageTag = options["image-tag"] ?? imageTagFor(runId);
+    if (!asBoolean(options["skip-build"])) await buildRuntimeImages(sourceRoot, imageTag);
     const attemptComposeOptions = { ...composeOptions, imageTag };
     for (let attempt = 1; attempt <= runs; attempt += 1) {
       const attemptRunId = `${runId}-r${attempt}`;
@@ -393,7 +408,7 @@ async function executeSuite(options) {
         await recordRunnerPhase(outputRoot, "checking-warmup-invariants", { attempt, runs, project: attemptProject });
         await dockerCompose(attemptProject, sourceRoot, attemptRunId, [
           "exec", "-T", "api", "sh", "-lc",
-          `NODE_ENV=benchmark BID_ENGINE=redis WAIT_FOR_CONVERGENCE_MS=${convergenceTimeoutMs} npm run benchmark:invariants`,
+          `NODE_ENV=benchmark BID_ENGINE=${bidEngine} WAIT_FOR_CONVERGENCE_MS=${convergenceTimeoutMs} npm run benchmark:invariants`,
         ], true, { ...attemptComposeOptions, allowFailure: true });
         await recordRunnerPhase(outputRoot, "starting-measured-run", { attempt, runs, project: attemptProject, baseUrl });
       const prefix = resolve(outputRoot, `${scenario}-${attempt}`);
@@ -433,7 +448,7 @@ async function executeSuite(options) {
       const invariantContainerPath = "/tmp/benchmark-invariants.json";
       const invariantResult = await dockerCompose(attemptProject, sourceRoot, attemptRunId, [
         "exec", "-T", "api", "sh", "-lc",
-        `NODE_ENV=benchmark BID_ENGINE=redis WAIT_FOR_CONVERGENCE_MS=${convergenceTimeoutMs} INVARIANT_OUTPUT=${invariantContainerPath} npm run benchmark:invariants`,
+        `NODE_ENV=benchmark BID_ENGINE=${bidEngine} WAIT_FOR_CONVERGENCE_MS=${convergenceTimeoutMs} INVARIANT_OUTPUT=${invariantContainerPath} npm run benchmark:invariants`,
       ], true, { ...attemptComposeOptions, allowFailure: true });
       const invariantPath = `${prefix}-invariants.json`;
       await dockerCompose(attemptProject, sourceRoot, attemptRunId, ["cp", `api:${invariantContainerPath}`, invariantPath]);
@@ -453,7 +468,7 @@ async function executeSuite(options) {
       const coreInvariantsPassed = invariants.corePassed ?? invariants.passed;
       const downstreamInvariantsPassed = invariants.downstreamPassed ?? invariants.passed;
       if (!downstreamInvariantsPassed) {
-        process.stderr.write(`Benchmark run ${attempt}: downstream Kafka freshness did not converge; continuing bid-path evaluation.\n`);
+        process.stderr.write(`Benchmark run ${attempt}: downstream Kafka freshness did not converge; recorded as an observation and excluded from the bid-path gate.\n`);
       }
       if (k6Result.code !== 0 || invariantResult.code !== 0 || coreInvariantsPassed !== true) {
         const failures = describeRunGateFailures({
@@ -512,6 +527,7 @@ async function executeSuite(options) {
       `# Auction bidding benchmark: ${scenario}`, "",
       `- Run ID: \`${runId}\``, `- Revision: \`${(await command("git", ["-C", sourceRoot, "rev-parse", "HEAD"], { quiet: true })).stdout.trim()}\``,
       `- Runs: ${runs}`, `- Throughput median: ${aggregate.throughput.toFixed(2)} req/s`,
+      `- Tuning: mutation=${tuning.mutationConnections}; projector=${tuning.projectorConcurrency}; dashboard=${tuning.dashboardBatchConcurrency}; notification=${tuning.notificationBatchConcurrency}`,
       `- p95 median: ${aggregate.p95Ms.toFixed(2)} ms`, `- p99 median: ${aggregate.p99Ms.toFixed(2)} ms`,
       `- Max infrastructure error rate: ${(aggregate.maxSystemErrorRate * 100).toFixed(4)}%`,
       `- Accepted bids: ${aggregate.acceptedBids}`, `- Business rejections: ${aggregate.businessRejections}`,
@@ -523,12 +539,12 @@ async function executeSuite(options) {
       `- p95 range: ${aggregate.p95Stability.min.toFixed(2)}-${aggregate.p95Stability.max.toFixed(2)} ms`,
       `- Stability: ${runs < 2 ? "INSUFFICIENT SAMPLES" : aggregate.stabilityWarning ? "UNSTABLE (warning; not an automatic gate failure)" : "STABLE"}`,
       `- Bidding core invariants: ${aggregate.corePassed ? "PASS" : "FAIL"}`,
-      `- Downstream Kafka freshness: ${profile.downstream === false ? "SKIPPED (bid-path diagnostic)" : aggregate.downstreamPassed ? "PASS" : "FAIL"}`,
-      `- Benchmark gate: ${profile.downstream === false ? "DIAGNOSTIC ONLY" : passed ? "PASS" : "FAIL"}`, "",
+      `- Downstream Kafka freshness (observation only): ${profile.downstream === false ? "SKIPPED (bid-path diagnostic)" : aggregate.downstreamPassed ? "PASS" : "LAGGING"}`,
+      `- Benchmark gate (bid core only): ${profile.downstream === false ? "DIAGNOSTIC ONLY" : passed ? "PASS" : "FAIL"}`, "",
       "## Per-run results", "", ...runTable, "",
       "This report is valid only with its paired manifest, invariant reports and environment metadata.", "",
     ].join("\n");
-    await writeJson(resolve(outputRoot, "summary.json"), { runId, scenario, profile, aggregate, passed, runMetrics, runs: runRecords.map(({ summary, invariants, ...record }) => record) });
+    await writeJson(resolve(outputRoot, "summary.json"), { runId, scenario, profile, bidEngine, tuning, aggregate, passed, runMetrics, runs: runRecords.map(({ summary, invariants, ...record }) => record) });
     await writeFile(resolve(outputRoot, "report.md"), report + (continueOnGateFailure
       ? "\nDiagnostic continuation was enabled. This report must not be used as an official benchmark claim.\n"
       : ""), "utf8");
@@ -537,14 +553,14 @@ async function executeSuite(options) {
       `[benchmark] FINAL SUMMARY (${scenario}, ${runs} runs)`,
       `median throughput=${aggregate.throughput.toFixed(2)} req/s; accepted=${aggregate.acceptedBidsPerSecond.toFixed(2)} bids/s; p95=${aggregate.p95Ms.toFixed(2)} ms; p99=${aggregate.p99Ms.toFixed(2)} ms`,
       `throughput range=${aggregate.throughputStability.min.toFixed(2)}-${aggregate.throughputStability.max.toFixed(2)} req/s; CV=${(aggregate.throughputStability.coefficientOfVariation * 100).toFixed(2)}%; infra errors=${(aggregate.maxSystemErrorRate * 100).toFixed(4)}%`,
-      `gates: core=${aggregate.corePassed ? "PASS" : "FAIL"}, downstream=${profile.downstream === false ? "SKIPPED" : aggregate.downstreamPassed ? "PASS" : "FAIL"}, benchmark=${profile.downstream === false ? "DIAGNOSTIC" : passed ? "PASS" : "FAIL"}`,
+      `gates: core=${aggregate.corePassed ? "PASS" : "FAIL"}, downstream=${profile.downstream === false ? "SKIPPED" : aggregate.downstreamPassed ? "PASS" : "LAGGING (observation)"}, benchmark=${profile.downstream === false ? "DIAGNOSTIC" : passed ? "PASS" : "FAIL"}`,
       "run | req/s | accepted/s | p95 ms | p99 ms | core | downstream",
       ...runMetrics.map((run) => `${run.attempt} | ${run.throughput.toFixed(2)} | ${run.acceptedBidsPerSecond.toFixed(2)} | ${run.p95Ms.toFixed(2)} | ${run.p99Ms.toFixed(2)} | ${run.corePassed ? "PASS" : "FAIL"} | ${profile.downstream === false ? "SKIPPED" : run.downstreamPassed ? "PASS" : "FAIL"}`),
       `report: ${resolve(outputRoot, "report.md")}`,
       "",
     ].join("\n"));
     await recordRunnerPhase(outputRoot, "completed", { passed, runs: runRecords.length });
-    return { outputRoot, runId, scenario, aggregate, passed };
+    return { outputRoot, runId, scenario, bidEngine, aggregate, passed };
   } catch (error) {
     await writeJson(resolve(outputRoot, "runner-error.json"), {
       message: error instanceof Error ? error.message : String(error),
@@ -606,6 +622,109 @@ async function compare(args) {
   }
 }
 
+function formatPercent(value) {
+  return value === null ? "n/a" : `${(value * 100).toFixed(2)}%`;
+}
+
+function engineRunRow(name, result) {
+  if (!result) return `| ${name} | unavailable | unavailable | unavailable | unavailable | unavailable | FAIL | FAIL |`;
+  const aggregate = result.aggregate;
+  return `| ${name} | ${aggregate.throughput.toFixed(2)} | ${aggregate.acceptedBidsPerSecond.toFixed(2)} | ${aggregate.p95Ms.toFixed(2)} | ${aggregate.p99Ms.toFixed(2)} | ${(aggregate.maxSystemErrorRate * 100).toFixed(4)}% | ${aggregate.corePassed ? "PASS" : "FAIL"} | ${aggregate.downstreamPassed ? "PASS" : "FAIL"} |`;
+}
+
+async function compareEngines(args) {
+  await preflight(args);
+  const scenario = args.scenario ?? "distributed";
+  if (scenario !== "distributed") throw new Error("compare-engines supports only the distributed profile so both engines share the full topology");
+  const runs = Number(args.runs ?? 1);
+  if (!Number.isInteger(runs) || runs < 1) throw new Error("--runs must be a positive integer");
+
+  const comparisonId = args["run-id"] ?? runIdFor("compare-redis-pessimistic");
+  const outputRoot = resolve(args.output ?? resolve(performanceRoot, "artifacts/runs"), comparisonId);
+  const imageTag = imageTagFor(comparisonId);
+  await mkdir(outputRoot, { recursive: true });
+  const [revision, dirty] = await Promise.all([
+    command("git", ["rev-parse", "HEAD"], { quiet: true }),
+    command("git", ["status", "--porcelain"], { quiet: true }),
+  ]);
+  await writeJson(resolve(outputRoot, "comparison-config.json"), {
+    comparisonId,
+    scenario,
+    runs,
+    engines: ["redis", "postgres"],
+    revision: revision.stdout.trim(),
+    dirty: Boolean(dirty.stdout.trim()),
+    sourceRoot: repositoryRoot,
+    measuredAt: new Date().toISOString(),
+  });
+
+  process.stdout.write(`[benchmark] comparing Redis authority with PostgreSQL pessimistic lock (${runs} run per engine)\n`);
+  await buildRuntimeImages(repositoryRoot, imageTag);
+
+  const results = {};
+  const errors = {};
+  for (const bidEngine of ["redis", "postgres"]) {
+    try {
+      results[bidEngine] = await executeSuite({
+        ...args,
+        scenario,
+        runs,
+        "bid-engine": bidEngine,
+        "run-id": `${comparisonId}-${bidEngine}`,
+        output: resolve(outputRoot, bidEngine),
+        "image-tag": imageTag,
+        "skip-build": true,
+        continue: true,
+      });
+    } catch (error) {
+      errors[bidEngine] = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) };
+      process.stderr.write(`[benchmark] ${bidEngine} comparison side failed to execute; continuing with the other engine.\n`);
+    }
+  }
+
+  const comparison = results.redis && results.postgres
+    ? compareBidEngines(results.redis.aggregate, results.postgres.aggregate)
+    : { valid: false, delta: { throughput: null, acceptedBidsPerSecond: null, p95Ms: null, p99Ms: null }, verdict: "INVALID" };
+  await writeJson(resolve(outputRoot, "comparison.json"), {
+    comparisonId,
+    scenario,
+    runs,
+    revision: revision.stdout.trim(),
+    dirty: Boolean(dirty.stdout.trim()),
+    redis: results.redis?.aggregate,
+    postgres: results.postgres?.aggregate,
+    errors,
+    comparison,
+  });
+  const report = [
+    "# Redis authority vs PostgreSQL pessimistic-lock benchmark", "",
+    `- Revision: \`${revision.stdout.trim()}\``, `- Dirty worktree: ${dirty.stdout.trim() ? "yes" : "no"}`,
+    `- Profile: \`${scenario}\`; runs per engine: ${runs}`, "",
+    "| Engine | req/s | Accepted/s | p95 ms | p99 ms | Infra errors | Core | Downstream |",
+    "|---|---:|---:|---:|---:|---:|:---:|:---:|",
+    engineRunRow("Redis authority", results.redis),
+    engineRunRow("PostgreSQL FOR UPDATE", results.postgres),
+    "", "## Redis delta vs PostgreSQL", "",
+    `- Throughput: ${formatPercent(comparison.delta.throughput)}`,
+    `- Accepted bids/s: ${formatPercent(comparison.delta.acceptedBidsPerSecond)}`,
+    `- p95 latency: ${formatPercent(comparison.delta.p95Ms)}`,
+    `- p99 latency: ${formatPercent(comparison.delta.p99Ms)}`,
+    `- Comparison: **${comparison.verdict}**`, "",
+    "Redis responds after Lua/XADD and replica acknowledgement; PostgreSQL responds after its locked transaction commits. This is an end-to-end architecture comparison, not a lock-only microbenchmark.", "",
+  ].join("\n");
+  await writeFile(resolve(outputRoot, "comparison.md"), report, "utf8");
+  process.stdout.write([
+    "", "[benchmark] REDIS vs POSTGRES PESSIMISTIC-LOCK",
+    "engine | req/s | accepted/s | p95 ms | p99 ms | infra errors | core | downstream",
+    engineRunRow("redis", results.redis),
+    engineRunRow("postgres", results.postgres),
+    `delta Redis vs PostgreSQL: throughput=${formatPercent(comparison.delta.throughput)}; accepted=${formatPercent(comparison.delta.acceptedBidsPerSecond)}; p95=${formatPercent(comparison.delta.p95Ms)}; p99=${formatPercent(comparison.delta.p99Ms)}`,
+    `comparison: ${comparison.verdict}`,
+    `report: ${resolve(outputRoot, "comparison.md")}`, "",
+  ].join("\n"));
+  if (!comparison.valid) process.exitCode = 1;
+}
+
 const [action = "benchmark", ...rawArgs] = process.argv.slice(2);
 const args = parseArgs(rawArgs);
 // npm can expose arguments after `--` as npm_config_* environment variables
@@ -614,8 +733,8 @@ const args = parseArgs(rawArgs);
 if (args["allow-low-resources"] === undefined && process.env.npm_config_allow_low_resources !== undefined) {
   args["allow-low-resources"] = process.env.npm_config_allow_low_resources;
 }
-const actions = { benchmark, compare };
-if (!actions[action]) throw new Error(`Unknown command '${action}'. Use benchmark or compare.`);
+const actions = { benchmark, compare, "compare-engines": compareEngines };
+if (!actions[action]) throw new Error(`Unknown command '${action}'. Use benchmark, compare or compare-engines.`);
 actions[action](args).catch((error) => {
   const output = error instanceof BenchmarkGateError ? error.message : error instanceof Error ? error.stack : error;
   process.stderr.write(`${output}\n`);

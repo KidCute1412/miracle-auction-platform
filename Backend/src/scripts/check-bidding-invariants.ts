@@ -6,7 +6,7 @@ import "dotenv/config";
 import { Prisma } from "@prisma/client";
 import type { Admin } from "kafkajs";
 import { kafka, kafkaTopics } from "@/config/kafka.config.ts";
-import { redisClient } from "@/config/redis.config.ts";
+import { closeRedisConnection } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { reconcileAuctionProjection } from "@/modules/bids/infrastructure/redis/redis-projection.reconciliation.ts";
 import { getProjectorStreamHealth } from "@/modules/bids/infrastructure/redis/redis-stream.projector.ts";
@@ -16,7 +16,7 @@ import { pathToFileURL } from "node:url";
 
 type Violation = { invariant: string; details: unknown };
 type PipelineHealth = {
-  streamPending: number;
+  streamPending: number | null;
   streamLag: number | null;
   outboxPending: number;
   dashboardConsumerLag: number | null;
@@ -57,10 +57,10 @@ async function readConsumerLag(
   return calculateConsumerLag(topicEnds, groupOffsets, fromBeginning);
 }
 
-async function readPipelineHealth(admin: Admin): Promise<PipelineHealth> {
+async function readPipelineHealth(admin: Admin, includeRedisStream: boolean): Promise<PipelineHealth> {
   const topics = [kafkaTopics.bidding, kafkaTopics.domain, kafkaTopics.dashboard];
   const [stream, outboxPending] = await Promise.all([
-    getProjectorStreamHealth(),
+    includeRedisStream ? getProjectorStreamHealth() : Promise.resolve({ pending: null, lag: null }),
     prisma.auction_outbox.count({ where: { delivered_at: null, terminal_at: null } }),
   ]);
   const dashboardConsumerLag = await readConsumerLag(
@@ -84,17 +84,66 @@ async function readPipelineHealth(admin: Admin): Promise<PipelineHealth> {
   };
 }
 
-function pipelineConverged(health: PipelineHealth): boolean {
+export function pipelineConverged(health: PipelineHealth, includeRedisStream: boolean): boolean {
   return (
-    health.streamPending === 0 &&
-    (health.streamLag === null || health.streamLag === 0) &&
+    (!includeRedisStream || (health.streamPending === 0 && (health.streamLag === null || health.streamLag === 0))) &&
     health.outboxPending === 0 &&
     health.dashboardConsumerLag === 0 &&
     health.notificationConsumerLag === 0
   );
 }
 
+async function waitForPipelineHealth(timeoutMs: number, includeRedisStream: boolean): Promise<{ health: PipelineHealth | null; error?: string }> {
+  const deadline = Date.now() + timeoutMs;
+  let pipelineHealth: PipelineHealth | null = null;
+  let lastError: string | undefined;
+  for (;;) {
+    const admin = kafka.admin();
+    try {
+      await admin.connect();
+      for (;;) {
+        pipelineHealth = await readPipelineHealth(admin, includeRedisStream);
+        lastError = undefined;
+        if (pipelineConverged(pipelineHealth, includeRedisStream) || Date.now() >= deadline) break;
+        await delay(500);
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "unknown";
+    } finally {
+      await admin.disconnect().catch(() => undefined);
+    }
+    if (pipelineHealth && pipelineConverged(pipelineHealth, includeRedisStream)) break;
+    if (Date.now() >= deadline) break;
+    await delay(500);
+  }
+  return { health: pipelineHealth, error: lastError };
+}
+
+function appendPipelineViolations(violations: Violation[], health: PipelineHealth | null, error: string | undefined, includeRedisStream: boolean): void {
+  if (!health) {
+    violations.push({ invariant: "Pipeline health measurable", details: { message: error ?? "unavailable" } });
+    return;
+  }
+  if (includeRedisStream && (health.streamPending !== 0 || (health.streamLag !== null && health.streamLag !== 0))) {
+    violations.push({ invariant: "Redis Stream PEL and lag drained", details: health });
+  }
+  if (health.outboxPending !== 0) violations.push({ invariant: "PostgreSQL outbox drained", details: health });
+  if (health.dashboardConsumerLag !== 0 || health.notificationConsumerLag !== 0) {
+    violations.push({ invariant: "Kafka consumer lag converged", details: health });
+  }
+}
+
+export function isDownstreamViolation(violation: Violation): boolean {
+  return violation.invariant === "Kafka consumer lag converged";
+}
+
 async function main(): Promise<void> {
+  if (process.env.NODE_ENV !== "benchmark") throw new Error("NODE_ENV=benchmark is required");
+  const [database] = await prisma.$queryRaw<Array<{ current_database: string }>>`SELECT current_database()`;
+  const expectedDatabase = process.env.BENCHMARK_DATABASE_NAME ?? "online_auction_benchmark";
+  if (database?.current_database !== expectedDatabase) {
+    throw new Error(`Refusing invariant check outside '${expectedDatabase}'`);
+  }
   const violations: Violation[] = [];
   const duplicateTransitions = await prisma.$queryRaw<
     Array<{ product_id: bigint; sequence: bigint; count: bigint }>
@@ -153,43 +202,6 @@ async function main(): Promise<void> {
         violations.push({ invariant: "Redis/PostgreSQL convergence", details: result });
     }
 
-    const pipelineDeadline = Date.now() + timeoutMs;
-    let lastPipelineError: string | undefined;
-    for (;;) {
-      const admin = kafka.admin();
-      try {
-        await admin.connect();
-        for (;;) {
-          pipelineHealth = await readPipelineHealth(admin);
-          lastPipelineError = undefined;
-          if (pipelineConverged(pipelineHealth) || Date.now() >= pipelineDeadline) break;
-          await delay(500);
-        }
-      } catch (error) {
-        lastPipelineError = error instanceof Error ? error.message : "unknown";
-      } finally {
-        await admin.disconnect().catch(() => undefined);
-      }
-      if (pipelineHealth && pipelineConverged(pipelineHealth)) break;
-      if (Date.now() >= pipelineDeadline) break;
-      await delay(500);
-    }
-    if (!pipelineHealth) {
-      violations.push({
-        invariant: "Pipeline health measurable",
-        details: { message: lastPipelineError ?? "unavailable" },
-      });
-    } else {
-      if (pipelineHealth.streamPending !== 0 || (pipelineHealth.streamLag !== null && pipelineHealth.streamLag !== 0)) {
-        violations.push({ invariant: "Redis Stream PEL and lag drained", details: pipelineHealth });
-      }
-      if (pipelineHealth.outboxPending !== 0) {
-        violations.push({ invariant: "PostgreSQL outbox drained", details: pipelineHealth });
-      }
-      if (pipelineHealth.dashboardConsumerLag !== 0 || pipelineHealth.notificationConsumerLag !== 0) {
-        violations.push({ invariant: "Kafka consumer lag converged", details: pipelineHealth });
-      }
-    }
   } else {
     const baselineMismatch = await prisma.$queryRaw<Array<{ product_id: bigint }>>(Prisma.sql`
       SELECT p.product_id
@@ -203,17 +215,35 @@ async function main(): Promise<void> {
     if (baselineMismatch.length)
       violations.push({ invariant: "PostgreSQL snapshot has matching bid history", details: baselineMismatch });
   }
-  const output = { violations, reconciliation, pipelineHealth, passed: violations.length === 0 };
+  const usesRedisAuthority = (process.env.BID_ENGINE ?? "postgres") === "redis";
+  const pipelineResult = await waitForPipelineHealth(Number(process.env.WAIT_FOR_CONVERGENCE_MS ?? 0), usesRedisAuthority);
+  pipelineHealth = pipelineResult.health;
+  appendPipelineViolations(violations, pipelineHealth, pipelineResult.error, usesRedisAuthority);
+  const downstreamViolations = violations.filter(isDownstreamViolation);
+  const coreViolations = violations.filter((violation) => !isDownstreamViolation(violation));
+  const output = {
+    violations,
+    coreViolations,
+    downstreamViolations,
+    reconciliation,
+    pipelineHealth,
+    corePassed: coreViolations.length === 0,
+    downstreamPassed: downstreamViolations.length === 0,
+    passed: violations.length === 0,
+  };
   const serialized = JSON.stringify(output, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2);
   process.stdout.write(`${serialized}\n`);
   if (process.env.INVARIANT_OUTPUT) await writeFile(process.env.INVARIANT_OUTPUT, serialized, "utf8");
-  if (violations.length > 0) process.exitCode = 1;
+  // Bidding benchmarks gate on core mutation/projection correctness. Kafka
+  // dashboard/notification freshness is reported separately and must not
+  // make the bid path appear incorrect.
+  if (coreViolations.length > 0) process.exitCode = 1;
 }
 
 const entrypoint = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : undefined;
 if (import.meta.url === entrypoint) {
   void main()
-    .finally(async () => Promise.allSettled([prisma.$disconnect(), redisClient.quit()]))
+    .finally(async () => Promise.allSettled([prisma.$disconnect(), closeRedisConnection()]))
     .catch((error: unknown) => {
       log.error(error);
       process.exitCode = 1;

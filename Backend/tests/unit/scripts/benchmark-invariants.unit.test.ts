@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateConsumerLag } from "../../../src/scripts/check-bidding-invariants.ts";
+import { calculateConsumerLag, isDownstreamViolation, pipelineConverged } from "../../../src/scripts/check-bidding-invariants.ts";
 
 describe("benchmark invariant helpers", () => {
   it("sums consumer lag across topics and treats an uncommitted partition as offset zero", () => {
@@ -30,5 +30,22 @@ describe("benchmark invariant helpers", () => {
       [{ topic: "bidding_events", partitions: [{ partition: 0, offset: "12" }] }],
       true,
     )).toBe(0);
+  });
+
+  it("classifies Kafka freshness separately from bidding core invariants", () => {
+    expect(isDownstreamViolation({ invariant: "Kafka consumer lag converged", details: {} })).toBe(true);
+    expect(isDownstreamViolation({ invariant: "snapshot matches transition sequence", details: {} })).toBe(false);
+  });
+
+  it("does not require a Redis Stream when checking the PostgreSQL pessimistic-lock baseline", () => {
+    const health = {
+      streamPending: null,
+      streamLag: null,
+      outboxPending: 0,
+      dashboardConsumerLag: 0,
+      notificationConsumerLag: 0,
+    };
+    expect(pipelineConverged(health, false)).toBe(true);
+    expect(pipelineConverged({ ...health, streamPending: 1 }, true)).toBe(false);
   });
 });

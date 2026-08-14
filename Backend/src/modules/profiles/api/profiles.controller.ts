@@ -6,6 +6,7 @@ import { Response } from "express";
 import * as profileUseCase from "../application/profile.use-case.ts";
 import { AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 import type { EditProfileInput } from "../infrastructure/profile.repository.ts";
+import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 
 // Handle user profile edit requests
 export async function editUserProfile(req: AccountRequest, res: Response) {
@@ -71,20 +72,22 @@ export async function getUserProfileDetail(req: AccountRequest, res: Response) {
 }
 
 // Retrieve private profile metadata for the authenticated user
-export function getMeInfo(req: AccountRequest, res: Response) {
+export async function getMeInfo(req: AccountRequest, res: Response) {
   const user = requireAuthenticatedUser(req);
+  const profile = await accountRepository.findById(user.user_id);
+  if (!profile) return res.status(404).json({ status: "error", message: "User profile not found" });
   res.json({
     data: {
-      user_id: user.user_id,
-      role: user.role,
-      email: user.email,
-      full_name: user.full_name,
-      username: user.username,
-      rating: user.rating,
-      rating_count: user.rating_count,
-      address: user.address,
-      date_of_birth: user.date_of_birth,
-      avatar: user.avatar,
+      user_id: profile.user_id,
+      role: profile.role,
+      email: profile.email,
+      full_name: profile.full_name,
+      username: profile.username,
+      rating: profile.rating,
+      rating_count: profile.rating_count,
+      address: profile.address,
+      date_of_birth: profile.date_of_birth,
+      avatar: profile.avatar,
     },
   });
 }

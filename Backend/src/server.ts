@@ -6,6 +6,7 @@ import { setSocketServer, startAdminSocket, stopAdminSocket } from "./socket.ts"
 import { closeRedisConnection } from "./config/redis.config.ts";
 import { prisma } from "./infrastructure/database/prisma.client.ts";
 import { getLogger } from "./infrastructure/observability/logger.ts";
+import { startAuthSnapshotInvalidationSubscriber, stopAuthSnapshotInvalidationSubscriber } from "./modules/accounts/infrastructure/auth-snapshot.cache.ts";
 
 const log = getLogger({ component: "api-server" });
 
@@ -17,6 +18,7 @@ export const io = new Server(httpServer, {
   cors: { origin: process.env.CLIENT_URL || "http://localhost:5173", methods: ["GET", "POST"], credentials: true },
 });
 setSocketServer(io);
+void startAuthSnapshotInvalidationSubscriber();
 void startAdminSocket(io);
 io.on("connection", (socket) => {
   socket.on("join_bidding_channel", (productId: number) => socket.join(`bidding_room_${productId}`));
@@ -34,7 +36,7 @@ async function gracefulShutdown(signal: string) {
   log.info({ signal }, "Graceful shutdown started");
   await new Promise<void>((resolve) => io.close(() => resolve()));
   await new Promise<void>((resolve) => httpServer.close(() => resolve()));
-  await Promise.allSettled([stopAdminSocket(), prisma.$disconnect(), closeRedisConnection()]);
+  await Promise.allSettled([stopAdminSocket(), stopAuthSnapshotInvalidationSubscriber(), prisma.$disconnect(), closeRedisConnection()]);
   log.info({ signal }, "Graceful shutdown completed");
   process.exit(0);
 }

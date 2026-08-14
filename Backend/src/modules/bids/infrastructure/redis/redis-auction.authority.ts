@@ -4,14 +4,89 @@ const log = createComponentLogger("redis-auction.authority");
 
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { redisClient } from "@/config/redis.config.ts";
-import { BidDomainError, BidInfrastructureError } from "../../domain/bid.errors.ts";
+import type { Redis } from "ioredis";
+import { auctionMutationRedisClient, createAuctionMutationRedisClient } from "@/config/redis.config.ts";
+import { BidDomainError, BidDurabilityUnconfirmedError, BidInfrastructureError } from "../../domain/bid.errors.ts";
 import { parseMoneyVnd } from "../../domain/money.ts";
 import { mutationKeys } from "./redis-auction.keys.ts";
 import type { AuctionMutationCommand, AuctionMutationResult } from "./redis-auction.types.ts";
 
 const SCRIPT_URL = new URL("./auction-mutate.lua", import.meta.url);
 let scriptSha: string | undefined;
+const mutationLatencyMs: number[] = [];
+const poolAcquireLatencyMs: number[] = [];
+const luaEvalLatencyMs: number[] = [];
+const replicaAckLatencyMs: number[] = [];
+let durabilityUnconfirmed = 0;
+
+interface MutationLease {
+  client: Redis;
+  release: () => void;
+}
+
+interface MutationPoolEntry {
+  client: Redis;
+  busy: boolean;
+}
+
+const mutationPool: MutationPoolEntry[] = [{ client: auctionMutationRedisClient, busy: false }];
+const mutationWaiters: Array<(lease: MutationLease) => void> = [];
+
+function mutationPoolSize(): number {
+  const configured = Number(process.env.BID_MUTATION_CONNECTIONS ?? 8);
+  return Number.isInteger(configured) && configured > 0 ? Math.min(configured, 64) : 8;
+}
+
+function ensureMutationPool(): void {
+  while (mutationPool.length < mutationPoolSize()) {
+    mutationPool.push({ client: createAuctionMutationRedisClient(), busy: false });
+  }
+}
+
+function leaseEntry(entry: MutationPoolEntry): MutationLease {
+  entry.busy = true;
+  return {
+    client: entry.client,
+    release: () => {
+      const waiter = mutationWaiters.shift();
+      if (waiter) {
+        waiter(leaseEntry(entry));
+        return;
+      }
+      entry.busy = false;
+    },
+  };
+}
+
+async function acquireMutationClient(): Promise<MutationLease> {
+  ensureMutationPool();
+  const available = mutationPool.find((entry) => !entry.busy);
+  if (available) return leaseEntry(available);
+  return new Promise((resolve) => mutationWaiters.push(resolve));
+}
+
+function recordSample(samples: number[], value: number): void {
+  samples.push(value);
+  if (samples.length > 1_000) samples.shift();
+}
+
+function percentile95(samples: readonly number[]): number {
+  const ordered = [...samples].sort((left, right) => left - right);
+  return ordered[Math.max(0, Math.ceil(ordered.length * 0.95) - 1)] ?? 0;
+}
+
+export function getRedisMutationMetrics() {
+  return {
+    samples: mutationLatencyMs.length,
+    poolAcquireP95Ms: percentile95(poolAcquireLatencyMs),
+    luaEvalP95Ms: percentile95(luaEvalLatencyMs),
+    totalMutationP95Ms: percentile95(mutationLatencyMs),
+    // Compatibility for existing readiness consumers.
+    mutationP95Ms: percentile95(mutationLatencyMs),
+    replicaAckP95Ms: percentile95(replicaAckLatencyMs),
+    durabilityUnconfirmed,
+  };
+}
 
 function fingerprint(command: AuctionMutationCommand): string {
   return [
@@ -24,19 +99,19 @@ function fingerprint(command: AuctionMutationCommand): string {
   ].join(":");
 }
 
-async function loadScript(): Promise<string> {
+async function loadScript(client: Redis): Promise<string> {
   const source = await readFile(SCRIPT_URL, "utf8");
-  scriptSha = (await redisClient.script("LOAD", source)) as string;
+  scriptSha = (await client.script("LOAD", source)) as string;
   return scriptSha;
 }
 
-async function evaluate(keys: string[], payload: string): Promise<unknown> {
-  const sha = scriptSha ?? (await loadScript());
+async function evaluate(client: Redis, keys: string[], payload: string): Promise<unknown> {
+  const sha = scriptSha ?? (await loadScript(client));
   try {
-    return await redisClient.evalsha(sha, keys.length, ...keys, payload);
+    return await client.evalsha(sha, keys.length, ...keys, payload);
   } catch (error) {
     if (error instanceof Error && error.message.includes("NOSCRIPT")) {
-      return redisClient.evalsha(await loadScript(), keys.length, ...keys, payload);
+      return client.evalsha(await loadScript(client), keys.length, ...keys, payload);
     }
     throw error;
   }
@@ -44,6 +119,7 @@ async function evaluate(keys: string[], payload: string): Promise<unknown> {
 
 export class RedisAuctionAuthority {
   async mutate(command: AuctionMutationCommand): Promise<Extract<AuctionMutationResult, { status: "success" }>> {
+    const mutationStartedAt = performance.now();
     if (!command.idempotencyKey || command.idempotencyKey.length > 255) {
       throw new BidDomainError("A valid idempotency key is required", 400, "IDEMPOTENCY_KEY_REQUIRED");
     }
@@ -62,28 +138,58 @@ export class RedisAuctionAuthority {
       idempotencyTtlMs: Number(process.env.BID_IDEMPOTENCY_TTL_MS ?? 86_400_000),
     });
 
+    const poolAcquireStartedAt = performance.now();
+    const lease = await acquireMutationClient();
+    recordSample(poolAcquireLatencyMs, performance.now() - poolAcquireStartedAt);
     let raw: unknown;
     try {
-      raw = await evaluate(mutationKeys(command.productId, command.actorId), payload);
+      const luaEvalStartedAt = performance.now();
+      raw = await evaluate(lease.client, mutationKeys(command.productId, command.actorId), payload);
+      recordSample(luaEvalLatencyMs, performance.now() - luaEvalStartedAt);
     } catch (error) {
+      lease.release();
       log.error("[BIDDING] Redis authority failure", error);
       throw new BidInfrastructureError();
     }
-    if (typeof raw !== "string") throw new BidInfrastructureError("Bidding authority returned an invalid result");
+    if (typeof raw !== "string") {
+      lease.release();
+      throw new BidInfrastructureError("Bidding authority returned an invalid result");
+    }
 
     let result: AuctionMutationResult;
     try {
       result = JSON.parse(raw) as AuctionMutationResult;
     } catch {
+      lease.release();
       throw new BidInfrastructureError("Bidding authority returned malformed JSON");
     }
     if (result.status === "error") {
+      lease.release();
       if (result.code === "AUCTION_STATE_NOT_READY") {
         throw new BidDomainError(result.message, result.statusCode, result.code);
       }
       if (result.statusCode >= 500) throw new BidInfrastructureError(result.message);
       throw new BidDomainError(result.message, result.statusCode, result.code);
     }
+    const replicas = Number(process.env.BID_DURABILITY_REPLICAS ?? 0);
+    if (replicas > 0) {
+      const timeoutMs = Number(process.env.BID_DURABILITY_WAIT_MS ?? 100);
+      const waitStartedAt = performance.now();
+      let acknowledged: number;
+      try {
+        acknowledged = await lease.client.wait(replicas, timeoutMs);
+      } finally {
+        lease.release();
+      }
+      recordSample(replicaAckLatencyMs, performance.now() - waitStartedAt);
+      if (acknowledged < replicas) {
+        durabilityUnconfirmed += 1;
+        throw new BidDurabilityUnconfirmedError();
+      }
+    } else {
+      lease.release();
+    }
+    recordSample(mutationLatencyMs, performance.now() - mutationStartedAt);
     return result;
   }
 }

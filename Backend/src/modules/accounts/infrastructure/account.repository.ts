@@ -1,5 +1,6 @@
 import { Prisma, type users } from "@prisma/client";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
+import { invalidateAuthSnapshotBestEffort, type AuthPrincipal } from "./auth-snapshot.cache.ts";
 
 export type NewAccount = {
   full_name: string;
@@ -28,6 +29,13 @@ export class AccountRepository {
     return mapAccount(await prisma.users.findUnique({ where: { user_id: userId } }));
   }
 
+  async findAuthPrincipalById(userId: number): Promise<AuthPrincipal | null> {
+    return prisma.users.findUnique({
+      where: { user_id: userId },
+      select: { user_id: true, role: true, status: true, auth_version: true },
+    }).then((account) => account ? { ...account, role: account.role ?? "user", status: account.status ?? "active" } : null);
+  }
+
   async findDetailedById(userId: number): Promise<DetailedAccount | undefined> {
     const rows = await prisma.$queryRaw<DetailedAccount[]>(Prisma.sql`
       SELECT email, password, full_name
@@ -36,7 +44,12 @@ export class AccountRepository {
   }
 
   async updatePassword(email: string, password: string): Promise<void> {
-    await prisma.users.update({ where: { email }, data: { password, auth_version: { increment: 1 } } });
+    const account = await prisma.users.update({
+      where: { email },
+      data: { password, auth_version: { increment: 1 } },
+      select: { user_id: true, role: true, status: true, auth_version: true },
+    });
+    await invalidateAuthSnapshotBestEffort({ ...account, role: account.role ?? "user", status: account.status ?? "active" });
   }
 
   async createOtp(email: string, otp: string): Promise<void> {

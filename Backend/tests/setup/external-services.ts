@@ -2,6 +2,10 @@ import { vi } from "vitest";
 
 vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Unexpected external HTTP request during automated tests")));
 
+const auctionMutationRedisClient = vi.hoisted(() => ({
+  script: vi.fn(), evalsha: vi.fn(), wait: vi.fn(), info: vi.fn(), status: "end", quit: vi.fn(),
+}));
+
 /**
  * Integration tests exercise Express and PostgreSQL, never real providers.
  * Keep these mocks at the process boundary so importing createApp is safe in CI.
@@ -11,7 +15,13 @@ vi.mock("@/config/redis.config.ts", () => ({
     call: vi.fn(), status: "end", ping: vi.fn().mockResolvedValue("PONG"), quit: vi.fn(),
     publish: vi.fn().mockResolvedValue(1), get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue("OK"),
   },
+  authRedisClient: { hmget: vi.fn(), eval: vi.fn(), status: "end", quit: vi.fn() },
+  auctionMutationRedisClient,
+  createAuctionMutationRedisClient: vi.fn(() => auctionMutationRedisClient),
   checkRedisConnection: vi.fn().mockResolvedValue(true),
+  checkRedisDurability: vi.fn().mockResolvedValue({
+    primary: true, replicasConnected: 0, replicasRequired: 0, mode: "primary-only", ready: true,
+  }),
   closeRedisConnection: vi.fn().mockResolvedValue(undefined),
 }));
 

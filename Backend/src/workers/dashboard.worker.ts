@@ -14,11 +14,23 @@ import {
   completeDashboardReceipt,
   refreshDashboardSnapshot,
 } from "@/modules/dashboard/application/dashboard-summary.use-case.ts";
+import { mapWithConcurrency } from "@/infrastructure/concurrency/bounded-map.ts";
 
 const groupId = process.env.DASHBOARD_KAFKA_GROUP_ID || "dashboard-analytics-v1";
 const retryLimit = Number(process.env.DASHBOARD_RETRY_LIMIT || 5);
-const debounceMs = Number(process.env.DASHBOARD_DEBOUNCE_MS || 15_000);
+export function nonNegativeIntegerEnv(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : fallback;
+}
+
+const debounceMs = nonNegativeIntegerEnv(process.env.DASHBOARD_DEBOUNCE_MS, 15_000);
 const recoveryMs = Number(process.env.DASHBOARD_RECOVERY_INTERVAL_MS || 60_000);
+const batchConcurrency = Math.max(1, nonNegativeIntegerEnv(process.env.DASHBOARD_BATCH_CONCURRENCY, 8));
+const maxBytesPerPartition = Math.max(16 * 1024, nonNegativeIntegerEnv(
+  process.env.DASHBOARD_KAFKA_MAX_BYTES_PER_PARTITION,
+  256 * 1024,
+));
 const heartbeatTtlSeconds = 90;
 
 let dashboardConsumer: ReturnType<typeof kafka.consumer> | undefined;
@@ -224,41 +236,52 @@ async function eachBatch({ batch, resolveOffset, heartbeat, isRunning, isStale }
       await heartbeat();
     }
   }
-  let refreshed = false;
-  for (const message of batch.messages) {
-    if (stopping || !isRunning() || isStale()) return;
-    let context: LogContext = {
-      topic: batch.topic,
-      partition: batch.partition,
-      offset: message.offset,
-      consumerGroup: groupId,
-    };
-    try {
-      if (message.value) {
-        const event = parseEventEnvelope(message.value.toString());
-        context = {
-          ...context,
-          eventId: event.eventId,
-          correlationId: event.correlationId,
-          causationId: event.causationId,
-        };
-      }
-    } catch {
-      // Invalid events receive a deterministic ID inside processMessage.
-    }
-    refreshed =
-      (await runWithLogContext(context, () =>
-        processMessage(batch.topic, batch.partition, message, heartbeat, !refreshed),
-      )) || refreshed;
-    resolveOffset(message.offset);
-    await dashboardConsumer?.commitOffsets([
-      {
+  const heartbeatTimer = setInterval(() => void heartbeat().catch(() => undefined), 3_000);
+  try {
+    await mapWithConcurrency(batch.messages, batchConcurrency, async (message) => {
+      if (stopping || !isRunning() || isStale()) return;
+      let context: LogContext = {
         topic: batch.topic,
         partition: batch.partition,
-        offset: (BigInt(message.offset) + 1n).toString(),
-      },
-    ]);
+        offset: message.offset,
+        consumerGroup: groupId,
+      };
+      try {
+        if (message.value) {
+          const event = parseEventEnvelope(message.value.toString());
+          context = {
+            ...context,
+            eventId: event.eventId,
+            correlationId: event.correlationId,
+            causationId: event.causationId,
+          };
+        }
+      } catch {
+        // Invalid events receive a deterministic ID inside processMessage.
+      }
+      await runWithLogContext(context, () =>
+        processMessage(batch.topic, batch.partition, message, heartbeat, false),
+      );
+    });
+
+    // One refresh per Kafka batch avoids running the expensive dashboard
+    // aggregation once per bid while retaining durable receipts for every event.
+    await singleFlightRefresh({
+      reason: "kafka_batch",
+      sourceEventCount: batch.messages.length,
+      correlationId: `${batch.topic}:${batch.partition}:${batch.messages.at(-1)?.offset ?? "empty"}`,
+    });
+    const lastMessage = batch.messages.at(-1);
+    if (!lastMessage) return;
+    resolveOffset(lastMessage.offset);
+    await dashboardConsumer?.commitOffsets([{
+      topic: batch.topic,
+      partition: batch.partition,
+      offset: (BigInt(lastMessage.offset) + 1n).toString(),
+    }]);
     await heartbeat();
+  } finally {
+    clearInterval(heartbeatTimer);
   }
 }
 
@@ -277,7 +300,14 @@ export async function startDashboardConsumer(): Promise<void> {
   heartbeatTimer.unref();
   await writeHeartbeat();
 
-  dashboardConsumer = kafka.consumer({ groupId, allowAutoTopicCreation: false });
+  dashboardConsumer = kafka.consumer({
+    groupId,
+    allowAutoTopicCreation: false,
+    // Commit happens only after a whole batch is durable. Keep benchmark
+    // batches bounded so a large burst cannot hold a committed offset behind
+    // thousands of receipt writes and falsely report permanent consumer lag.
+    maxBytesPerPartition,
+  });
   dashboardConsumer.on(dashboardConsumer.events.CRASH, ({ payload }) => {
     log.error("[DASHBOARD_WORKER] Kafka consumer crashed", payload.error);
   });
@@ -305,7 +335,7 @@ export async function startDashboardConsumer(): Promise<void> {
       .run({
         autoCommit: false,
         eachBatchAutoResolve: false,
-        partitionsConsumedConcurrently: 1,
+        partitionsConsumedConcurrently: Math.max(1, Number(process.env.DASHBOARD_PARTITIONS_CONCURRENTLY || 1)),
         eachBatch,
       })
       .catch((error) => log.error("[DASHBOARD_WORKER] Consumer stopped unexpectedly", error));

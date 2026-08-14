@@ -2,6 +2,15 @@ import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
 import { AccountRequest } from "../interfaces/request.interface.ts";
+import { resolveAuthPrincipal } from "@/modules/accounts/infrastructure/auth-snapshot.cache.ts";
+
+async function authenticateToken(token: string) {
+  const decoded = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
+  if (typeof decoded.user_id !== "number" || typeof decoded.auth_version !== "number") return null;
+  const principal = await resolveAuthPrincipal(decoded.user_id, (userId) => accountRepository.findAuthPrincipalById(userId));
+  if (!principal || principal.status === "inactive" || principal.auth_version !== decoded.auth_version) return null;
+  return principal;
+}
 
 export async function verifyToken(req: AccountRequest, res: Response, next: NextFunction) {
   const token = req.cookies.accessToken;
@@ -10,9 +19,8 @@ export async function verifyToken(req: AccountRequest, res: Response, next: Next
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
-    const account = await accountRepository.findById(decoded?.user_id);
-    if (!account || account.status === "inactive" || account.auth_version !== decoded.auth_version) {
+    const account = await authenticateToken(token);
+    if (!account) {
       return res.status(401).json({ message: "Invalid access token" });
     }
     req.user = account;
@@ -43,9 +51,8 @@ export async function justDecodeToken(req: Request, _: Response, next: NextFunct
     return next();
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ["HS256"], issuer: "online-auction", audience: "online-auction-api" }) as JwtPayload;
-    const account = await accountRepository.findById(decoded?.user_id);
-    if (account && account.status !== "inactive" && account.auth_version === decoded.auth_version) {
+    const account = await authenticateToken(token);
+    if (account) {
       (req as AccountRequest).user = account;
     }
     next();

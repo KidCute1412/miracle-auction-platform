@@ -28,7 +28,7 @@ export async function editUserProfile(data: EditProfileInput) {
 
 // Update user authentication role
 export async function updateUserRole(user_id: number, role: string) {
-  return prisma.users.update({ where: { user_id }, data: { role } });
+  return prisma.users.update({ where: { user_id }, data: { role, auth_version: { increment: 1 } } });
 }
 
 // Fetch user profile detail and identify ownership

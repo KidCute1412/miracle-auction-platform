@@ -8,7 +8,8 @@ Miracle Auction is a modular monolith with four Node.js composition roots built 
 flowchart TB
     BROWSER["React + Vite<br/>storefront and admin"]
     API["API<br/>HTTP, auth, Socket.IO,<br/>Redis auction commands"]
-    REDIS[("Redis authority<br/>Lua + Stream + Pub/Sub<br/>AOF, noeviction")]
+    REDIS[("Redis primary authority<br/>Lua + Stream + Pub/Sub<br/>AOF, noeviction")]
+    REPLICA[("Redis replica<br/>request-path ACK")]
     PROJECTOR["auction-worker<br/>bootstrap, close scheduler,<br/>single ordered projector"]
     DB[("PostgreSQL<br/>business data + projection")]
     OUTBOX[("outbox_events")]
@@ -19,6 +20,7 @@ flowchart TB
 
     BROWSER -->|HTTPS / Socket.IO| API
     API -->|EVALSHA| REDIS
+    REDIS -->|replication + WAIT acknowledgement| REPLICA
     REDIS -->|Redis Stream| PROJECTOR
     PROJECTOR -->|projection transaction| DB
     DB --- OUTBOX
@@ -39,7 +41,7 @@ Local development uses Docker Compose for PostgreSQL, Redis, Kafka, and the thre
 | Process | Owns | Does not own |
 |---|---|---|
 | `api` | HTTP, authentication/security, Socket.IO, Redis Lua mutations, new-auction bootstrap | Stream projection, close scheduling, Kafka production, auction email delivery |
-| `auction-worker` | missing-state bootstrap, close scheduler, sequential projection, pending-entry reclaim, heartbeat | HTTP, Kafka consumption, SMTP |
+| `auction-worker` | missing-state bootstrap, close scheduler, bounded keyed projection, pending-entry reclaim, heartbeat | HTTP, Kafka consumption, SMTP |
 | `outbox-relay` | outbox leasing, retry scheduling, Kafka publication, heartbeat | auction decisions, Socket.IO, email rendering |
 | `async-worker` | dashboard consumption, notification intake, durable email delivery and recovery | bid decisions, closing, Stream projection |
 
@@ -125,7 +127,7 @@ Socket.IO has a different guarantee. Projection publishes through Redis Pub/Sub 
 ## Operations
 
 - `/health` reports API liveness.
-- `/ready` checks PostgreSQL, Redis, and a fresh auction-worker heartbeat; Kafka status is reported but does not control readiness.
+- `/ready` checks PostgreSQL, Redis primary role, the configured replica count, and a fresh auction-worker heartbeat; Kafka status is reported but does not control readiness.
 - Worker heartbeats, projection lag, Stream pending entries, outbox state, email state, consumer lag, and DLQ totals support diagnosis.
 - Graceful shutdown stops new work before closing Redis, Kafka, Socket.IO, and database connections.
 

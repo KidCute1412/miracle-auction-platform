@@ -1,5 +1,9 @@
 x-backend-process: &backend-process
   image: online-auction-backend:latest
+  build:
+    context: .
+    dockerfile: Backend/Dockerfile
+    target: runtime
   restart: unless-stopped
   stop_grace_period: 30s
   logging: &rotated-logs
@@ -14,6 +18,10 @@ x-database-environment: &database-environment
   DIRECT_URL: ${DIRECT_URL}
   REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
   BID_ENGINE: redis
+  BID_DURABILITY_REPLICAS: ${BID_DURABILITY_REPLICAS:-1}
+  BID_DURABILITY_WAIT_MS: ${BID_DURABILITY_WAIT_MS:-100}
+  BID_MUTATION_CONNECTIONS: ${BID_MUTATION_CONNECTIONS:-8}
+  AUTH_SNAPSHOT_TTL_SECONDS: ${AUTH_SNAPSHOT_TTL_SECONDS:-30}
 
 x-kafka-environment: &kafka-environment
   KAFKA_BROKERS: ${KAFKA_BROKERS}
@@ -48,11 +56,33 @@ services:
       retries: 30
     logging: *rotated-logs
 
+  redis-replica:
+    image: redis:7-alpine
+    command:
+      - /bin/sh
+      - -ec
+      - exec redis-server --replicaof redis 6379 --masterauth "$$REDIS_PASSWORD" --requirepass "$$REDIS_PASSWORD" --appendonly yes --appendfsync everysec
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    restart: unless-stopped
+    volumes:
+      - redis_replica_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *rotated-logs
+
   migrate:
     build:
-      context: ./Backend
-    image: online-auction-backend:latest
-    command: npx prisma migrate deploy
+      context: .
+      dockerfile: Backend/Dockerfile
+      target: migrator
+    image: online-auction-migrator:latest
     restart: "no"
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -60,7 +90,7 @@ services:
 
   auction-worker:
     <<: *backend-process
-    command: npm run auction-worker:prod
+    command: node dist/auction-worker.js
     mem_limit: 512m
     cpu_shares: 768
     environment:
@@ -68,12 +98,16 @@ services:
       BID_PROJECTOR_GROUP: ${BID_PROJECTOR_GROUP:-postgres-projector-v1}
       BID_PROJECTOR_MAX_ATTEMPTS: ${BID_PROJECTOR_MAX_ATTEMPTS:-10}
       BID_PROJECTOR_RECLAIM_INTERVAL_MS: ${BID_PROJECTOR_RECLAIM_INTERVAL_MS:-30000}
+      BID_PROJECTOR_READ_COUNT: ${BID_PROJECTOR_READ_COUNT:-200}
+      BID_PROJECTOR_CONCURRENCY: ${BID_PROJECTOR_CONCURRENCY:-8}
       AUCTION_CLOSE_INTERVAL_MS: ${AUCTION_CLOSE_INTERVAL_MS:-1000}
       AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: ${AUCTION_WORKER_HEARTBEAT_TTL_SECONDS:-90}
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      redis-replica:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "node -e \"import('ioredis').then(async({default:R})=>{const r=new R(process.env.REDIS_URL);const v=await r.get('auction:worker:heartbeat');await r.quit();process.exit(v?0:1)})\""]
@@ -83,7 +117,7 @@ services:
 
   outbox-relay:
     <<: *backend-process
-    command: npm run outbox-relay:prod
+    command: node dist/outbox-relay.js
     mem_limit: 256m
     cpu_shares: 384
     environment:
@@ -98,7 +132,7 @@ services:
 
   async-worker:
     <<: *backend-process
-    command: npm run async-worker:prod
+    command: node dist/async-worker.js
     mem_limit: 512m
     cpu_shares: 384
     environment:
@@ -106,6 +140,8 @@ services:
       CLIENT_URL: ${CLIENT_URL}
       DASHBOARD_KAFKA_GROUP_ID: ${DASHBOARD_KAFKA_GROUP_ID:-dashboard-analytics-v1}
       NOTIFICATION_KAFKA_GROUP_ID: ${NOTIFICATION_KAFKA_GROUP_ID:-notification-intake-v1}
+      DASHBOARD_BATCH_CONCURRENCY: ${DASHBOARD_BATCH_CONCURRENCY:-8}
+      NOTIFICATION_BATCH_CONCURRENCY: ${NOTIFICATION_BATCH_CONCURRENCY:-8}
       EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-smtp}
       EMAIL_DELIVERY_CONCURRENCY: ${EMAIL_DELIVERY_CONCURRENCY:-2}
       EMAIL_DELIVERY_MAX_ATTEMPTS: ${EMAIL_DELIVERY_MAX_ATTEMPTS:-5}
@@ -121,7 +157,7 @@ services:
 
   api:
     <<: *backend-process
-    command: npm run start:prod
+    command: node dist/server.js
     mem_limit: 768m
     cpu_shares: 1024
     environment:
@@ -142,6 +178,8 @@ services:
       migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      redis-replica:
         condition: service_healthy
       auction-worker:
         condition: service_healthy
@@ -169,5 +207,6 @@ services:
 
 volumes:
   redis_authority_data:
+  redis_replica_data:
   caddy_data:
   caddy_config:

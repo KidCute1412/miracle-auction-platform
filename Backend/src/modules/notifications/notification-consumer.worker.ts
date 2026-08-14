@@ -11,11 +11,33 @@ import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
 import { parseEventEnvelope, type EventEnvelope } from "@/infrastructure/events/event-envelope.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { enqueueNotificationEvent } from "./notification.service.ts";
+import { mapWithConcurrency } from "@/infrastructure/concurrency/bounded-map.ts";
 
 const groupId = process.env.NOTIFICATION_KAFKA_GROUP_ID || "notification-intake-v1";
 const retryLimit = Number(process.env.NOTIFICATION_RETRY_LIMIT ?? 5);
+const batchConcurrency = Number(process.env.NOTIFICATION_BATCH_CONCURRENCY ?? 8);
 let consumer: ReturnType<typeof kafka.consumer> | undefined;
 let stopping = false;
+
+const notificationEventTypes = new Set([
+  "auction.closed.v1",
+  "auction.buy_now_completed.v1",
+  "product.question_created.v1",
+  "product.question_answered.v1",
+  "product.description_changed.v1",
+  "seller.approved.v1",
+  "seller.rejected.v1",
+]);
+
+/**
+ * The notification group consumes shared domain topics to receive a small set
+ * of email-worthy events. Most bid updates are dashboard concerns, not email
+ * notifications; recording a PostgreSQL receipt for each one turns normal
+ * bidding traffic into avoidable downstream database contention.
+ */
+export function requiresNotification(eventType: string): boolean {
+  return notificationEventTypes.has(eventType);
+}
 
 function syntheticEventId(topic: string, partition: number, offset: string): string {
   const hash = createHash("sha256").update(`${topic}:${partition}:${offset}`).digest("hex");
@@ -102,6 +124,8 @@ async function processKafkaMessage(topic: string, partition: number, message: Ka
     return;
   }
 
+  if (!requiresNotification(event.eventType)) return;
+
   try {
     await enqueueNotificationEvent(event, { topic, partition, offset: message.offset });
   } catch (error) {
@@ -145,38 +169,44 @@ async function processKafkaMessage(topic: string, partition: number, message: Ka
 }
 
 async function eachBatch({ batch, resolveOffset, heartbeat, isRunning, isStale }: EachBatchPayload): Promise<void> {
-  for (const message of batch.messages) {
-    if (stopping || !isRunning() || isStale()) return;
-    let context: LogContext = {
-      topic: batch.topic,
-      partition: batch.partition,
-      offset: message.offset,
-      consumerGroup: groupId,
-    };
-    try {
-      if (message.value) {
-        const event = parseEventEnvelope(message.value.toString());
-        context = {
-          ...context,
-          eventId: event.eventId,
-          correlationId: event.correlationId,
-          causationId: event.causationId,
-        };
-      }
-    } catch {
-      const eventId = syntheticEventId(batch.topic, batch.partition, message.offset);
-      context = { ...context, eventId, correlationId: eventId };
-    }
-    await runWithLogContext(context, () => processKafkaMessage(batch.topic, batch.partition, message));
-    resolveOffset(message.offset);
-    await consumer?.commitOffsets([
-      {
+  const heartbeatTimer = setInterval(() => void heartbeat().catch(() => undefined), 3_000);
+  try {
+    await mapWithConcurrency(batch.messages, batchConcurrency, async (message) => {
+      if (stopping || !isRunning() || isStale()) return;
+      let context: LogContext = {
         topic: batch.topic,
         partition: batch.partition,
-        offset: (BigInt(message.offset) + 1n).toString(),
-      },
-    ]);
+        offset: message.offset,
+        consumerGroup: groupId,
+      };
+      try {
+        if (message.value) {
+          const event = parseEventEnvelope(message.value.toString());
+          context = {
+            ...context,
+            eventId: event.eventId,
+            correlationId: event.correlationId,
+            causationId: event.causationId,
+          };
+        }
+      } catch {
+        const eventId = syntheticEventId(batch.topic, batch.partition, message.offset);
+        context = { ...context, eventId, correlationId: eventId };
+      }
+      await runWithLogContext(context, () => processKafkaMessage(batch.topic, batch.partition, message));
+    });
+
+    const lastMessage = batch.messages.at(-1);
+    if (!lastMessage) return;
+    resolveOffset(lastMessage.offset);
+    await consumer?.commitOffsets([{
+      topic: batch.topic,
+      partition: batch.partition,
+      offset: (BigInt(lastMessage.offset) + 1n).toString(),
+    }]);
     await heartbeat();
+  } finally {
+    clearInterval(heartbeatTimer);
   }
 }
 
@@ -194,7 +224,7 @@ export async function startNotificationConsumer(): Promise<void> {
     .run({
       autoCommit: false,
       eachBatchAutoResolve: false,
-      partitionsConsumedConcurrently: 1,
+      partitionsConsumedConcurrently: Math.max(1, Number(process.env.NOTIFICATION_PARTITIONS_CONCURRENTLY || 1)),
       eachBatch,
     })
     .catch((error) =>

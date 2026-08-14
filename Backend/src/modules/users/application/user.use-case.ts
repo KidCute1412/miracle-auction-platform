@@ -6,6 +6,8 @@ import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
 import { kafkaTopics } from "@/config/kafka-topics.config.ts";
 import { randomUUID } from "node:crypto";
+import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
+import { invalidateAuthSnapshotBestEffort } from "@/modules/accounts/infrastructure/auth-snapshot.cache.ts";
 
 const NEW_PASSWORD = "OnlineAuction123@";
 const SALT_ROUNDS = 10;
@@ -88,6 +90,8 @@ export async function editUserRoleAndStatus(
       },
     });
   });
+  const principal = await accountRepository.findAuthPrincipalById(user_id);
+  if (principal) await invalidateAuthSnapshotBestEffort(principal);
 }
 
 // Reset password to default value and notify user by email
@@ -101,6 +105,8 @@ export async function resetUserPassword(user_id: number): Promise<boolean> {
   sendMail(user.email, title, content);
   const hashedPassword = await hashPassword(NEW_PASSWORD);
   await UsersModel.resetUserPassword(user_id, hashedPassword);
+  const principal = await accountRepository.findAuthPrincipalById(user_id);
+  if (principal) await invalidateAuthSnapshotBestEffort(principal);
   return true;
 }
 
@@ -143,7 +149,7 @@ export async function setApplicationStatus(
   actorId?: number,
   correlationId: string = randomUUID(),
 ): Promise<boolean> {
-  await prisma.$transaction(async (tx) => {
+  const changedUserId = await prisma.$transaction(async (tx) => {
     const application = await tx.upgrade_to_sellers.update({
       where: { id: BigInt(applicationId) },
       data: { status },
@@ -169,6 +175,11 @@ export async function setApplicationStatus(
         metadata: { userId: application.user_id },
       },
     });
+    return status === "accepted" ? application.user_id : null;
   });
+  if (changedUserId !== null) {
+    const principal = await accountRepository.findAuthPrincipalById(changedUserId);
+    if (principal) await invalidateAuthSnapshotBestEffort(principal);
+  }
   return true;
 }
