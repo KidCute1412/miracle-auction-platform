@@ -26,7 +26,8 @@ The backend is one modular-monolith codebase and image with four composition roo
 ```mermaid
 flowchart LR
     UI["React 19 + Vite<br/>storefront and admin"] -->|HTTPS / Socket.IO| API["API process<br/>Express 5"]
-    API -->|atomic EVALSHA| REDIS[("Redis 7<br/>active-auction authority")]
+    API -->|EVALSHA + WAIT 1| REDIS[("Redis 7 primary<br/>active-auction authority")]
+    REDIS -.->|AOF replication| REPLICA[("Redis replica")]
     REDIS -->|ordered Stream| AW["auction-worker<br/>single projector"]
     AW -->|transaction| PG[("PostgreSQL<br/>durable projection")]
     PG --> OUTBOX[("transactional outbox")]
@@ -54,10 +55,11 @@ sequenceDiagram
     participant X as async-worker
 
     C->>A: Submit bid
-    A->>R: Atomic Lua mutation
+    A->>R: Atomic Lua mutation (EVALSHA)
     R->>R: Validate window, role, ban, step,<br/>proxy maximum, idempotency, anti-sniping
     R->>R: Update authority + append Stream event
-    R-->>A: Authoritative result
+    A->>R: WAIT 1 replica acknowledgement
+    R-->>A: Durable authoritative result
     A-->>C: HTTP response
     W->>R: Read ordered Stream entry
     W->>P: Project state/history/order + outbox
@@ -73,7 +75,7 @@ sequenceDiagram
     X->>P: Idempotent effect
 ```
 
-The synchronous bid request ends at Redis. PostgreSQL, Kafka, Socket.IO, dashboards, and email are not part of bid HTTP latency. See the [system overview](docs/overview_system_architecture.md), [bid architecture](docs/bidding_architecture.md), and [worker failure model](docs/worker-process-architecture.md).
+The synchronous bid request ends after Redis accepts the Lua mutation **and** the configured replica acknowledgement succeeds (`WAIT 1` in the benchmark). PostgreSQL, Kafka, Socket.IO, dashboards, and email are not part of bid HTTP latency. See the [system overview](docs/overview_system_architecture.md), [bid architecture](docs/bidding_architecture.md), and [worker failure model](docs/worker-process-architecture.md).
 
 ## Reliability model
 
@@ -81,7 +83,7 @@ The synchronous bid request ends at Redis. PostgreSQL, Kafka, Socket.IO, dashboa
 |---|---|
 | Active-auction decisions | Redis is authoritative. A Lua script validates and mutates the complete state atomically. |
 | Durable business view | PostgreSQL stores users, products, bid history, orders, outbox rows, and consumer receipts as an eventually convergent projection. |
-| Ordering | One `auction-worker` sequentially projects the global Redis Stream. |
+| Ordering | One `auction-worker` consumes Redis Stream entries and projects per-auction keyed lanes; sequence/version fences preserve each auction's order. |
 | Projection retries | Database failure leaves the entry pending for idempotent reclaim and retry. |
 | Event publication | Projection and outbox insert commit together; delivery is recorded only after Kafka acknowledges publication. |
 | Duplicate delivery | Event IDs, sequence constraints, consumer receipts, and effect-specific unique constraints suppress duplicates. |
@@ -217,13 +219,20 @@ This is not a security certification. Refresh-token reuse tests, broader audit c
 
 ## Performance evidence
 
-The preserved three-run k6 comparison measured:
+The selected bid-core benchmark is a three-run local, isolated Docker/k6 measurement using **100 VUs for 75 seconds**, one Redis auction shard, Redis AOF, Lua validation, idempotency, replica acknowledgement (`WAIT 1`), projection, and post-run core invariants:
 
-- Hot-auction median: **1,463.60 req/s**, **81.11 ms p99**, **0% infrastructure errors**
-- Distributed median: **1,468.67 req/s**, **116.77 ms p99**, **0% infrastructure errors**
-- Extended invariants: Redis/PostgreSQL agreement, zero pending Stream entries, drained outbox, and zero dashboard/notification Kafka lag
+| Scenario | Throughput median | Accepted bids/s | p95 | p99 | Infrastructure errors | Throughput CV |
+|---|---:|---:|---:|---:|---:|---:|
+| `bid-path` + `bid-priority` | **309.33 req/s** | **275.16** | **536.57 ms** | **689.85 ms** | **0%** | **1.89%** |
 
-The optimized run came from a preserved dirty revision, so these are **historical measurements, not a clean-release benchmark claim**. See [engineering evidence](docs/engineering-evidence.md). New claims require a clean commit, deterministic data, three-run medians, and post-run invariant convergence.
+All three runs passed Redis/PostgreSQL convergence, Stream/outbox drain, ordering, and idempotency invariants. `bid-path` excludes dashboard and notification consumers, so it measures the durable bidding core rather than end-to-end downstream capacity. It is local benchmark evidence, not a production SLA or a claim of unlimited scale. Reproduce it with:
+
+```powershell
+cd PerformanceTests
+npm.cmd run benchmark:bid-path -- --resource-profile=bid-priority --redis-shards=1
+```
+
+`distributed` keeps downstream consumers enabled and is the production-like companion scenario. See [PerformanceTests](PerformanceTests/README.md) and [engineering evidence](docs/engineering-evidence.md) for thresholds, artifacts, and interpretation.
 
 ## Demo and media
 
