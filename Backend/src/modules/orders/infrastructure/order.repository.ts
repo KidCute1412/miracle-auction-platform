@@ -41,7 +41,7 @@ export async function getOrderDetail(userId: number, productId: number) {
 }
 
 // Retrieve order details combined with product and bidder info for the seller
-export async function getSellerOrderView(productId: number) {
+export async function getSellerOrderView(productId: number, sellerId: number) {
   const rows = await prisma.$queryRaw<Record<string, unknown>[]>(Prisma.sql`
     SELECT
       o.*,
@@ -57,28 +57,10 @@ export async function getSellerOrderView(productId: number) {
     FROM orders o
     JOIN products p ON o.product_id = p.product_id
     JOIN users u ON o.user_id = u.user_id
-    WHERE o.product_id = ${BigInt(productId)}
+    WHERE o.product_id = ${BigInt(productId)} AND p.seller_id = ${BigInt(sellerId)}
     LIMIT 1
   `);
   return rows[0];
 }
 
 // Fetch order details by product ID
-export async function getOrderByProductId(productId: number) {
-  return prisma.orders.findFirst({ where: { product_id: BigInt(productId) } });
-}
-
-// Update order status and optional shipping label URL
-export async function updateOrderStatus(
-  orderId: bigint,
-  status: "rejected" | "finished",
-  shippingLabelImageUrl?: string,
-) {
-  return prisma.orders.update({
-    where: { order_id: orderId },
-    data: {
-      order_status: status,
-      ...(shippingLabelImageUrl ? { shipping_label_image_url: shippingLabelImageUrl } : {}),
-    },
-  });
-}

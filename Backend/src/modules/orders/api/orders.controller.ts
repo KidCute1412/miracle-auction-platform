@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import * as orderUseCase from "../application/order.use-case.ts";
 import { type AccountRequest, requireAuthenticatedUser } from "@/interfaces/request.interface.ts";
 import type { CreateOrderData } from "../application/order.use-case.ts";
@@ -31,8 +31,8 @@ export async function createOrder(req: AccountRequest, res: Response) {
 export async function getOrderDetail(req: AccountRequest, res: Response) {
   try {
     const user_id = requireAuthenticatedUser(req).user_id;
-    const product_id = req.query.product_id as string;
-    const orderDetail = await orderUseCase.getOrderDetail(user_id, Number(product_id));
+    const product_id = res.locals.validated?.query as { product_id: number };
+    const orderDetail = await orderUseCase.getOrderDetail(user_id, product_id.product_id);
     return res.status(200).json({
       status: "success",
       message: "Successfully retrieved order details",
@@ -47,66 +47,64 @@ export async function getOrderDetail(req: AccountRequest, res: Response) {
 }
 
 // Fetch order details from the seller perspective
-export async function getSellerOrderView(req: Request, res: Response) {
+export async function getSellerOrderView(req: AccountRequest, res: Response) {
   try {
-    const product_id = req.query.product_id as string;
-    const orderDetail = await orderUseCase.getSellerOrderView(Number(product_id));
+    const actor = requireAuthenticatedUser(req);
+    if (actor.role !== "seller") throw new OrderDomainError("Seller access is required", 403, "SELLER_ACCESS_REQUIRED");
+    const query = res.locals.validated?.query as { product_id: number };
+    const orderDetail = await orderUseCase.getSellerOrderView(query.product_id, actor.user_id);
     return res.status(200).json({
       status: "success",
       message: "Successfully retrieved seller order details",
       data: orderDetail,
     });
-  } catch {
-    return res.status(500).json({
+  } catch (error) {
+    return res.status(error instanceof OrderDomainError ? error.statusCode : 500).json({
       status: "error",
-      message: "Error retrieving seller order details",
+      code: error instanceof OrderDomainError ? error.code : "INTERNAL_ERROR",
+      message: error instanceof OrderDomainError ? error.message : "Error retrieving seller order details",
     });
   }
 }
 
 // Reject a pending order
-export async function rejectOrder(req: Request, res: Response) {
+export async function rejectOrder(req: AccountRequest, res: Response) {
   try {
-    const product_id = req.query.product_id as string;
-    const result = await orderUseCase.rejectOrder(Number(product_id));
-    if (!result.success) {
-      return res.status(result.message.includes("exist") ? 404 : 400).json({
-        status: "error",
-        message: result.message,
-      });
-    }
+    const actor = requireAuthenticatedUser(req);
+    if (actor.role !== "seller") throw new OrderDomainError("Seller access is required", 403, "SELLER_ACCESS_REQUIRED");
+    const { id } = res.locals.validated?.params as { id: number };
+    const { reason } = res.locals.validated?.body as { reason: string };
+    await orderUseCase.rejectOrder(id, actor.user_id, reason);
     return res.status(200).json({
       status: "success",
-      message: result.message,
+      message: "Order rejected successfully",
     });
-  } catch {
-    return res.status(500).json({
+  } catch (error) {
+    return res.status(error instanceof OrderDomainError ? error.statusCode : 500).json({
       status: "error",
-      message: "Error rejecting order",
+      code: error instanceof OrderDomainError ? error.code : "INTERNAL_ERROR",
+      message: error instanceof OrderDomainError ? error.message : "Error rejecting order",
     });
   }
 }
 
 // Approve a pending order and save shipping label
-export async function approveOrder(req: Request, res: Response) {
+export async function approveOrder(req: AccountRequest, res: Response) {
   try {
-    const product_id = req.query.product_id as string;
+    const actor = requireAuthenticatedUser(req);
+    if (actor.role !== "seller") throw new OrderDomainError("Seller access is required", 403, "SELLER_ACCESS_REQUIRED");
     const file = req.file as Express.Multer.File;
-    const result = await orderUseCase.approveOrder(Number(product_id), file);
-    if (!result.success) {
-      return res.status(result.message.includes("exist") ? 404 : 400).json({
-        status: "error",
-        message: result.message,
-      });
-    }
+    const { id } = res.locals.validated?.params as { id: number };
+    await orderUseCase.approveOrder(id, actor.user_id, file);
     return res.status(200).json({
       status: "success",
-      message: result.message,
+      message: "Order approved successfully",
     });
-  } catch {
-    return res.status(500).json({
+  } catch (error) {
+    return res.status(error instanceof OrderDomainError ? error.statusCode : 500).json({
       status: "error",
-      message: "Error approving order",
+      code: error instanceof OrderDomainError ? error.code : "INTERNAL_ERROR",
+      message: error instanceof OrderDomainError ? error.message : "Error approving order",
     });
   }
 }

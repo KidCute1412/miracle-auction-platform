@@ -250,7 +250,7 @@ Follow the [five-minute demo guide](docs/demo-guide.md) to present product disco
 - Pub/Sub can lose transient updates; reconnecting clients refetch canonical state.
 - Kafka and SMTP are at-least-once. Idempotency prevents duplicate business effects, but email acceptance cannot be transactional with PostgreSQL.
 - Fixed-date catalog seeds must be refreshed when their auction windows no longer fit the demonstration date.
-- A complete operator-facing Redis/PostgreSQL reconciliation and repair tool remains planned.
+- Admins can run a read-only Redis/PostgreSQL reconciliation for an active auction; automated repair remains deliberately out of scope until a maintenance-mode workflow and verified checkpoint are in place.
 - The frontend does not yet have the complete Playwright workflow suite in the roadmap.
 
 ## Documentation

@@ -176,6 +176,25 @@ export interface DashboardOperations {
   adminSocketCount: number;
 }
 export interface DashboardOperationsResponse extends ApiSuccess<DashboardOperations> {}
+export interface AuctionProjectionReconciliation {
+  productId: string;
+  redisVersion: string;
+  postgresVersion: string;
+  redisSequence: string;
+  postgresSequence: string;
+  redisCurrentPriceVnd: string;
+  postgresCurrentPriceVnd: string;
+  redisEndAtMs: string;
+  postgresEndAtMs: string;
+  redisStatus: string;
+  postgresStatus: string;
+  redisLeaderId: string | null;
+  postgresLeaderId: string | null;
+  redisExpectedOrderCount: number;
+  postgresOrderCount: number;
+  status: "converged" | "projection_lag" | "diverged";
+}
+export interface AuctionProjectionReconciliationResponse extends ApiSuccess<AuctionProjectionReconciliation> {}
 export interface DashboardUpdatedEvent {
   version: number;
   updatedAt: string;
@@ -221,7 +240,7 @@ export interface ProductStatusResponse extends LegacyStatusSuccess { message?: s
 
 export interface CreateOrderRequest { public_order_id: string; shipping_address?: string; phone_number?: string; }
 export interface OrderQuery { product_id: number; }
-export type OrderStatus = "pending" | "finished" | "rejected";
+export type OrderStatus = "pending" | "payment_verified" | "rejected";
 export interface OrderRecord {
   order_id: number | string;
   public_order_id: string;
@@ -237,6 +256,7 @@ export interface OrderRecord {
   shipping_label_image?: string;
   phone_number?: string;
   shipping_address?: string;
+  rejection_reason?: string;
   winner_id?: number;
   winner_name?: string;
   winner_email?: string;

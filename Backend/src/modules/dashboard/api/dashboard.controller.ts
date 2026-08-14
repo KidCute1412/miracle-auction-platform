@@ -46,6 +46,21 @@ export async function getOperations(_req: AccountRequest, res: Response): Promis
   res.json({ success: true, data: await DashboardService.getOperations(getAdminSocketCount()) });
 }
 
+export async function getAuctionReconciliation(_req: AccountRequest, res: Response): Promise<void> {
+  const { productId } = query<{ productId: number }>(res);
+  try {
+    res.json({ success: true, data: await DashboardService.getAuctionReconciliation(productId) });
+  } catch {
+    res.status(503).json({
+      success: false,
+      error: {
+        code: "AUCTION_RECONCILIATION_UNAVAILABLE",
+        message: "Auction reconciliation is unavailable until Redis authority and projection state are readable.",
+      },
+    });
+  }
+}
+
 export async function getDlq(_req: AccountRequest, res: Response): Promise<void> {
   const { page, limit } = query<PaginationQuery>(res);
   const { kind } = query<PaginationQuery>(res);

@@ -2,6 +2,9 @@ import Joi from "joi";
 
 const ranges = ["7d", "30d", "3m", "6m", "1y"];
 export const summaryQuerySchema = Joi.object({ range: Joi.string().valid(...ranges).default("6m") });
+export const reconciliationQuerySchema = Joi.object({
+  productId: Joi.number().integer().positive().max(2_147_483_647).required(),
+});
 export const paginationQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(20),
