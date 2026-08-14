@@ -157,7 +157,9 @@ jobs:
       - name: Build production backend image with GHA caching
         uses: docker/build-push-action@v5
         with:
-          context: ./Backend
+          # The Dockerfile copies shared API contracts from /packages, so the
+          # build context must be the repository root rather than Backend/.
+          context: .
           file: ./Backend/Dockerfile
           push: false
           cache-from: type=gha
