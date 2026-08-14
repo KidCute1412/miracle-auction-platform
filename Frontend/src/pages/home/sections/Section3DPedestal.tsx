@@ -8,11 +8,12 @@ import Card3DTilt from "@/components/common/Card3DTilt";
 
 export const Section3DPedestal: React.FC = () => {
   const [product, setProduct] = useState<any>(null);
-  const [rotationY, setRotationY] = useState(15);
   const [isDragging, setIsDragging] = useState(false);
+  const rotationYRef = useRef(15);
   const startXRef = useRef(0);
   const startRotRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +30,12 @@ export const Section3DPedestal: React.FC = () => {
     fetchSpotlight();
   }, []);
 
+  const updateTransform = (deg: number) => {
+    if (frameRef.current) {
+      frameRef.current.style.transform = `rotateY(${deg}deg) rotateX(6deg) translateZ(30px)`;
+    }
+  };
+
   // Smooth continuous rotation using requestAnimationFrame
   useEffect(() => {
     if (isDragging) return;
@@ -37,7 +44,8 @@ export const Section3DPedestal: React.FC = () => {
     const animate = (now: number) => {
       const delta = now - lastTime;
       lastTime = now;
-      setRotationY((prev) => (prev + delta * 0.015) % 360);
+      rotationYRef.current = (rotationYRef.current + delta * 0.015) % 360;
+      updateTransform(rotationYRef.current);
       rafRef.current = requestAnimationFrame(animate);
     };
 
@@ -50,13 +58,14 @@ export const Section3DPedestal: React.FC = () => {
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     startXRef.current = e.clientX;
-    startRotRef.current = rotationY;
+    startRotRef.current = rotationYRef.current;
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     const deltaX = e.clientX - startXRef.current;
-    setRotationY((startRotRef.current + deltaX * 0.3) % 360);
+    rotationYRef.current = (startRotRef.current + deltaX * 0.3) % 360;
+    updateTransform(rotationYRef.current);
   };
 
   const handleMouseUp = () => {
@@ -164,9 +173,10 @@ export const Section3DPedestal: React.FC = () => {
               >
                 {/* 3D Floating Product Image Frame */}
                 <div
+                  ref={frameRef}
                   className="relative w-64 h-64 rounded-2xl p-2.5 bg-card border border-accent/30 shadow-2xl transition-transform duration-75 preserve-3d"
                   style={{
-                    transform: `rotateY(${rotationY}deg) rotateX(6deg) translateZ(30px)`,
+                    transform: `rotateY(${rotationYRef.current}deg) rotateX(6deg) translateZ(30px)`,
                     willChange: "transform",
                   }}
                 >

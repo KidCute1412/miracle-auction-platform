@@ -1,9 +1,19 @@
+import React, { Suspense, lazy } from "react";
 import Section1 from "@/pages/home/sections/Section1";
 import SectionCategoryQuickNav from "@/pages/home/sections/SectionCategoryQuickNav";
-import Section3DPedestal from "@/pages/home/sections/Section3DPedestal";
-import SectionLiveTerminal from "@/pages/home/sections/SectionLiveTerminal";
-import Section2 from "@/pages/home/sections/Section2";
-import SectionVault3D from "@/pages/home/sections/SectionVault3D";
+
+// Lazy-loaded below-the-fold components
+const Section3DPedestal = lazy(() => import("@/pages/home/sections/Section3DPedestal"));
+const SectionLiveTerminal = lazy(() => import("@/pages/home/sections/SectionLiveTerminal"));
+const Section2 = lazy(() => import("@/pages/home/sections/Section2"));
+const SectionVault3D = lazy(() => import("@/pages/home/sections/SectionVault3D"));
+
+// Loading skeleton fallback helper
+const SectionFallback = () => (
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="h-64 rounded-3xl bg-card/20 border border-accent/10 animate-pulse" />
+  </div>
+);
 
 function Home() {
   return (
@@ -19,10 +29,18 @@ function Home() {
       <div className="relative z-10 space-y-4">
         <Section1 />
         <SectionCategoryQuickNav />
-        <Section3DPedestal />
-        <SectionLiveTerminal />
-        <Section2 />
-        <SectionVault3D />
+        <Suspense fallback={<SectionFallback />}>
+          <Section3DPedestal />
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <SectionLiveTerminal />
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <Section2 />
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <SectionVault3D />
+        </Suspense>
       </div>
     </div>
   );

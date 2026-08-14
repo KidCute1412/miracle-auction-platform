@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 interface Card3DTiltProps {
@@ -19,15 +19,7 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
   disabled = false,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [style, setStyle] = useState<React.CSSProperties>({
-    transform: "perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
-    transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-    willChange: "transform",
-  });
-  const [glareStyle, setGlareStyle] = useState<React.CSSProperties>({
-    opacity: 0,
-  });
-
+  const glareRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
   const handleMouseMove = useCallback(
@@ -54,18 +46,16 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
         const rotateX = -yPct * maxTiltDeg;
         const rotateY = xPct * maxTiltDeg;
 
-        setStyle({
-          transform: `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(${scale}, ${scale}, ${scale})`,
-          transition: "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
-          willChange: "transform",
-        });
+        cardRef.current.style.transform = `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(${scale}, ${scale}, ${scale})`;
+        cardRef.current.style.transition = "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)";
+        cardRef.current.style.willChange = "transform";
 
-        const angle = Math.atan2(mouseY - height / 2, mouseX - width / 2) * (180 / Math.PI) + 180;
-        setGlareStyle({
-          opacity: glareOpacity,
-          background: `linear-gradient(${angle}deg, rgba(226, 184, 59, 0.12) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 80%)`,
-          transition: "opacity 0.3s ease-out",
-        });
+        if (glareRef.current) {
+          const angle = Math.atan2(mouseY - height / 2, mouseX - width / 2) * (180 / Math.PI) + 180;
+          glareRef.current.style.opacity = `${glareOpacity}`;
+          glareRef.current.style.background = `linear-gradient(${angle}deg, rgba(226, 184, 59, 0.12) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 80%)`;
+          glareRef.current.style.transition = "opacity 0.3s ease-out";
+        }
       });
     },
     [disabled, maxTiltDeg, scale, glareOpacity]
@@ -76,29 +66,33 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }
-    setStyle({
-      transform: "perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
-      transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
-      willChange: "transform",
-    });
-    setGlareStyle({
-      opacity: 0,
-      transition: "opacity 0.4s ease-out",
-    });
+    if (cardRef.current) {
+      cardRef.current.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
+      cardRef.current.style.transition = "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+    }
+    if (glareRef.current) {
+      glareRef.current.style.opacity = "0";
+      glareRef.current.style.transition = "opacity 0.4s ease-out";
+    }
   }, [disabled]);
 
   return (
     <div
       ref={cardRef}
       className={cn("relative preserve-3d group/tilt", className)}
-      style={style}
+      style={{
+        transform: "perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
+        transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        willChange: "transform",
+      }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
       {/* Specular Glare Layer */}
       <div
+        ref={glareRef}
         className="absolute inset-0 rounded-[inherit] pointer-events-none z-30 transition-opacity"
-        style={glareStyle}
+        style={{ opacity: 0 }}
       />
       {children}
     </div>
