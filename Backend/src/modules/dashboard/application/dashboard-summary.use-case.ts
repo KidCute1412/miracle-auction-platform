@@ -16,6 +16,10 @@ import { kafka, kafkaTopics, measureKafkaLatency } from "@/config/kafka.config.t
 import { redisClient } from "@/config/redis.config.ts";
 import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { addOutboxEvent } from "@/infrastructure/events/outbox.repository.ts";
+import {
+  reconcileAuctionProjection,
+  type ProjectionReconciliation,
+} from "@/modules/bids/infrastructure/redis/redis-projection.reconciliation.ts";
 import * as DashboardRepository from "../infrastructure/dashboard.repository.ts";
 
 export const dashboardRanges: DashboardRange[] = ["7d", "30d", "3m", "6m", "1y"];
@@ -326,6 +330,15 @@ export async function getOperations(adminSocketCount: number): Promise<Dashboard
     dlqCount: dashboardDlqCount + notificationDlqCount + outboxTerminal + emailTerminal,
     adminSocketCount,
   };
+}
+
+/**
+ * Read-only diagnostic for an active auction. Reconciliation intentionally
+ * reports a mismatch; it never modifies either authority from an admin HTTP
+ * request. Recovery remains a maintenance-only procedure.
+ */
+export async function getAuctionReconciliation(productId: number): Promise<ProjectionReconciliation> {
+  return reconcileAuctionProjection(productId);
 }
 
 export interface AuditFilters {

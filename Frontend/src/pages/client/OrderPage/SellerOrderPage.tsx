@@ -203,7 +203,7 @@ export default function SellerOrderPage() {
               className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
                 orderInfo.order_status === "pending"
                   ? "bg-yellow-500/15 text-yellow-600"
-                  : orderInfo.order_status === "finished"
+                  : orderInfo.order_status === "payment_verified"
                   ? "bg-emerald-500/15 text-emerald-500"
                   : orderInfo.order_status === "rejected"
                   ? "bg-red-500/15 text-red-500"
@@ -212,7 +212,7 @@ export default function SellerOrderPage() {
             >
               {orderInfo.order_status === "pending"
                 ? "Pending Approval"
-                : orderInfo.order_status === "finished"
+                : orderInfo.order_status === "payment_verified"
                 ? "Completed"
                 : orderInfo.order_status === "rejected"
                 ? "Rejected"
@@ -434,7 +434,7 @@ export default function SellerOrderPage() {
             )}
 
             {/* Order Completed */}
-            {orderInfo.order_status === "finished" && (
+            {orderInfo.order_status === "payment_verified" && (
               <div className="bg-card rounded-xl shadow-md border border-border p-6 text-center space-y-6">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-500/15 rounded-full">
                   <CheckCircle className="text-emerald-500" size={40} />

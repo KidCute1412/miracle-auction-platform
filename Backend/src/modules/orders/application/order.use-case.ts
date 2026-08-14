@@ -34,80 +34,64 @@ export async function getOrderDetail(user_id: number, product_id: number) {
 }
 
 // Fetch seller order view details
-export async function getSellerOrderView(product_id: number) {
-  return orderRepository.getSellerOrderView(product_id);
+export async function getSellerOrderView(productId: number, sellerId: number) {
+  return orderRepository.getSellerOrderView(productId, sellerId);
 }
 
-// Fetch order by product ID
-export async function getOrderByProductId(product_id: number) {
-  return orderRepository.getOrderByProductId(product_id);
-}
-
-// Reject order if pending status
-export async function rejectOrder(product_id: number): Promise<{ success: boolean; message: string }> {
-  const existedOrder = await orderRepository.getOrderByProductId(product_id);
-  if (!existedOrder) {
-    return { success: false, message: "Order does not exist" };
-  }
-  if (existedOrder.order_status !== "pending") {
-    return { success: false, message: "Can only reject pending orders" };
-  }
+async function transitionSellerOrder(
+  orderId: number,
+  sellerId: number,
+  nextStatus: "rejected" | "payment_verified",
+  shippingLabelImageUrl?: string,
+  rejectionReason?: string,
+): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await tx.orders.update({
-      where: { order_id: existedOrder.order_id },
-      data: { order_status: "rejected" },
+    const order = await tx.orders.findUnique({
+      where: { order_id: BigInt(orderId) },
+      select: { order_id: true, product_id: true, order_status: true, products: { select: { seller_id: true, current_price: true } } },
     });
+    if (!order || !order.products || order.products.seller_id !== BigInt(sellerId)) {
+      throw new OrderDomainError("Order was not found for this seller", 404, "SELLER_ORDER_NOT_FOUND");
+    }
+    if (order.order_status !== "pending") {
+      throw new OrderDomainError("Only pending orders can change state", 409, "ORDER_TRANSITION_INVALID");
+    }
+    const updated = await tx.orders.updateMany({
+      where: { order_id: order.order_id, order_status: "pending" },
+      data: {
+        order_status: nextStatus,
+        ...(nextStatus === "payment_verified" ? { completed_at: new Date(), amount_vnd: order.products.current_price } : {}),
+        ...(shippingLabelImageUrl ? { shipping_label_image_url: shippingLabelImageUrl } : {}),
+        ...(rejectionReason ? { rejection_reason: rejectionReason } : {}),
+      },
+    });
+    if (updated.count !== 1) throw new OrderDomainError("Order state changed concurrently", 409, "ORDER_TRANSITION_CONFLICT");
     await addOutboxEvent(tx, {
       topic: kafkaTopics.domain,
-      eventType: "order.rejected.v1",
-      aggregateId: existedOrder.order_id.toString(),
-      payload: { orderId: existedOrder.order_id.toString(), productId: existedOrder.product_id?.toString() ?? null },
+      eventType: nextStatus === "payment_verified" ? "order.payment_verified.v1" : "order.rejected.v1",
+      aggregateId: order.order_id.toString(),
+      payload: { orderId: order.order_id.toString(), productId: order.product_id?.toString() ?? null },
     });
   });
-  return { success: true, message: "Order rejected successfully" };
 }
 
-// Approve order, upload shipping label, and set status to finished
+export async function rejectOrder(orderId: number, sellerId: number, reason: string): Promise<void> {
+  await transitionSellerOrder(orderId, sellerId, "rejected", undefined, reason);
+}
+
 export async function approveOrder(
-  product_id: number,
+  orderId: number,
+  sellerId: number,
   file?: Express.Multer.File,
-): Promise<{ success: boolean; message: string }> {
-  const existedOrder = await orderRepository.getOrderByProductId(product_id);
-  if (!existedOrder) {
-    return { success: false, message: "Order does not exist" };
-  }
-  if (existedOrder.order_status !== "pending") {
-    return { success: false, message: "Can only approve pending orders" };
-  }
+): Promise<void> {
   let shipping_label_image_url = "";
   if (file) {
     const uploadResult = await uploadToCloudinary(file.path, "shipping_label");
     fs.unlinkSync(file.path);
     shipping_label_image_url = uploadResult.secure_url;
   }
-  await prisma.$transaction(async (tx) => {
-    const product = existedOrder.product_id
-      ? await tx.products.findUnique({ where: { product_id: existedOrder.product_id }, select: { current_price: true } })
-      : null;
-    await tx.orders.update({
-      where: { order_id: existedOrder.order_id },
-      data: {
-        order_status: "finished",
-        completed_at: new Date(),
-        amount_vnd: existedOrder.amount_vnd ?? product?.current_price,
-        ...(shipping_label_image_url ? { shipping_label_image_url } : {}),
-      },
-    });
-    await addOutboxEvent(tx, {
-      topic: kafkaTopics.domain,
-      eventType: "order.finished.v1",
-      aggregateId: existedOrder.order_id.toString(),
-      payload: {
-        orderId: existedOrder.order_id.toString(),
-        productId: existedOrder.product_id?.toString() ?? null,
-        amountVnd: (existedOrder.amount_vnd ?? product?.current_price)?.toString() ?? null,
-      },
-    });
-  });
-  return { success: true, message: "Order approved successfully" };
+  if (!shipping_label_image_url) {
+    throw new OrderDomainError("A shipping label is required to verify payment", 400, "SHIPPING_LABEL_REQUIRED");
+  }
+  await transitionSellerOrder(orderId, sellerId, "payment_verified", shipping_label_image_url || undefined);
 }

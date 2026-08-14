@@ -5,3 +5,6 @@ export const winnerCheckoutSchema = Joi.object({
   shipping_address: Joi.string().trim().max(500).required(),
   phone_number: Joi.string().trim().max(30).required(),
 });
+export const orderIdParamsSchema = Joi.object({ id: Joi.number().integer().positive().required() });
+export const orderProductQuerySchema = Joi.object({ product_id: Joi.number().integer().positive().required() });
+export const rejectionSchema = Joi.object({ reason: Joi.string().trim().min(3).max(500).required() });

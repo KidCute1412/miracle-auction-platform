@@ -73,8 +73,8 @@ No major architecture rewrite is currently required. Keep the modular monolith a
 
 ### Near-Term Architecture Improvements
 
-- [ ] Add reconciliation tooling that compares Redis auction authority with the PostgreSQL projection.
-- [ ] Make reconciliation report differences in sequence, version, price, leader, winner, deadline, and order state.
+- [x] Add read-only reconciliation tooling that compares Redis auction authority with the PostgreSQL projection.
+- [ ] Extend reconciliation from its current sequence, version, price, leader, deadline, status, and expected-order checks to explicit winner and order-state comparisons.
 - [ ] Require maintenance mode and explicit verification before any automated repair changes authoritative state.
 - [ ] Add failure-recovery tests for crashes between:
   - [ ] Redis mutation and Stream append.
@@ -110,7 +110,7 @@ Implement these only after the near-term correctness and evidence work is comple
 - [ ] Add a payment lifecycle with pending, paid, failed, expired, cancelled, and refunded states.
 - [ ] Handle payment webhooks with signature validation, replay protection, idempotency, and transactional order updates.
 - [ ] Add a searchable audit trail for moderation, bidder bans, account changes, order transitions, DLQ retries, and administrative actions.
-- [ ] Add an operational reconciliation view for Redis/PostgreSQL agreement, Stream lag, outbox backlog, Kafka lag, and worker health.
+- [x] Add an operational reconciliation view for Redis/PostgreSQL agreement, Stream lag, outbox backlog, Kafka lag, and worker health.
 - [ ] Add controlled maintenance, Redis rebuild, event replay, and post-recovery verification commands.
 - [ ] Add notification preferences, unsubscribe behavior, template versioning, and delivery history.
 

@@ -215,11 +215,18 @@ Every status must come from a real check. Remove hard-coded "Operational" labels
 GET  /api/admin/dashboard?range=30d
 POST /api/admin/dashboard/sync
 GET  /api/admin/dashboard/operations
+GET  /api/admin/dashboard/operations/reconciliation?productId=123
 GET  /api/admin/audit-logs
 GET  /api/admin/dashboard/dlq
 POST /api/admin/dashboard/dlq/:eventId/retry
 GET  /api/admin/dashboard/export.csv
 ```
+
+`/operations/reconciliation` is a read-only, admin-only diagnostic for one
+active auction. It compares Redis authority and the PostgreSQL projection's
+sequence, version, price, leader, deadline, status, and expected order count;
+it returns `converged`, `projection_lag`, or `diverged`. It never repairs data:
+recovery remains a deliberate maintenance procedure with a verified checkpoint.
 
 All routes require the admin role.
 

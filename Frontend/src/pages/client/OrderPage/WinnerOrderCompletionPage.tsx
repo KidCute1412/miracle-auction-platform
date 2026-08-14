@@ -88,7 +88,7 @@ export default function WinnerOrderCompletionPage() {
             if (orderDataResult.data.shipping_address) {
               setAddress(orderDataResult.data.shipping_address);
             }
-          } else if (orderDataResult.data.order_status === "finished") {
+          } else if (orderDataResult.data.order_status === "payment_verified") {
             setCurrentStep(3);
             if (orderDataResult.data.payment_proof_image) {
               setPaymentProofPreview(orderDataResult.data.payment_proof_image);
