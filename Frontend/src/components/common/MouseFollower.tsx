@@ -17,15 +17,6 @@ interface Particle {
   history?: { x: number; y: number }[];
 }
 
-interface ClickRipple {
-  x: number;
-  y: number;
-  radius: number;
-  maxRadius: number;
-  alpha: number;
-  decay: number;
-}
-
 export const MouseFollower: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { theme } = useTheme();
@@ -51,7 +42,6 @@ export const MouseFollower: React.FC = () => {
     let animationFrameId: number;
     let isLoopActive = true;
     const particles: Particle[] = [];
-    const ripples: ClickRipple[] = [];
 
     const isDark = theme === "dark";
     const shadowColor = isDark ? "rgba(230, 194, 91, 0.6)" : "rgba(180, 130, 30, 0.45)";
@@ -111,8 +101,8 @@ export const MouseFollower: React.FC = () => {
         ? Math.random() * 3.5 + 1.5 
         : Math.random() * 0.9 + 0.3;
       
-      // Star ratio (28% stars during motion, 50% stars during click bursts)
-      const isStar = isBurst ? Math.random() > 0.5 : Math.random() > 0.72;
+      // Star ratio (28% stars during motion)
+      const isStar = Math.random() > 0.72;
       
       const color = goldColors[Math.floor(Math.random() * goldColors.length)];
 
@@ -124,51 +114,18 @@ export const MouseFollower: React.FC = () => {
       return {
         x,
         y,
-        vx: Math.cos(angle) * speed + (isBurst ? 0 : (Math.random() - 0.5) * 0.6) + vxCarry,
-        vy: Math.sin(angle) * speed + (isBurst ? -1.2 : (Math.random() - 0.5) * 0.6) + vyCarry,
-        // Make stars look prominent and dust particles fine & elegant
+        vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 0.6 + vxCarry,
+        vy: Math.sin(angle) * speed + (Math.random() - 0.5) * 0.6 + vyCarry,
         size: isStar ? Math.random() * 3.5 + 2.8 : Math.random() * 1.5 + 0.4,
         alpha: 1,
-        decay: isBurst ? Math.random() * 0.016 + 0.012 : Math.random() * 0.022 + 0.014,
+        decay: Math.random() * 0.022 + 0.014,
         color,
         isStar,
         rotation: Math.random() * Math.PI * 2,
         rotationSpeed: (Math.random() - 0.5) * 0.09,
-        gravity: isBurst ? 0.04 : 0.008,
+        gravity: 0.008,
         history: isStar ? [] : undefined,
       };
-    };
-
-    // Handle clicks for burst effect & shockwave ripple
-    const handleMouseDown = (e: MouseEvent) => {
-      const state = stateRef.current;
-      if (state.isOffScreen) return;
-
-      startLoopIfNeeded();
-
-      // Add double ripples (primary and echo ring) for tactile impact
-      ripples.push({
-        x: e.clientX,
-        y: e.clientY,
-        radius: 0,
-        maxRadius: 36,
-        alpha: 0.85,
-        decay: 0.035,
-      });
-      ripples.push({
-        x: e.clientX,
-        y: e.clientY,
-        radius: 0,
-        maxRadius: 22,
-        alpha: 0.5,
-        decay: 0.05,
-      });
-
-      // Add golden star burst particles (increased count for richer burst)
-      const burstCount = 14 + Math.floor(Math.random() * 8);
-      for (let i = 0; i < burstCount; i++) {
-        particles.push(createParticle(e.clientX, e.clientY, true));
-      }
     };
 
     const handleMouseLeave = () => {
@@ -186,7 +143,6 @@ export const MouseFollower: React.FC = () => {
 
     // Attach listeners
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("mouseenter", handleMouseEnter);
 
@@ -297,33 +253,7 @@ export const MouseFollower: React.FC = () => {
         state.opacity = 0;
       }
 
-      // 1. Draw click shockwave ripples (iterated backward to avoid splice indexing skip bugs)
-      for (let i = ripples.length - 1; i >= 0; i--) {
-        const ripple = ripples[i];
-        ripple.radius += (ripple.maxRadius - ripple.radius) * 0.12;
-        ripple.alpha -= ripple.decay;
-
-        if (ripple.alpha <= 0) {
-          ripples.splice(i, 1);
-          continue;
-        }
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = isDark 
-          ? `rgba(230, 194, 91, ${ripple.alpha})` 
-          : `rgba(180, 130, 30, ${ripple.alpha})`;
-        // Fading linewidth for realism
-        ctx.lineWidth = 1.8 * ripple.alpha;
-        
-        ctx.shadowBlur = isDark ? 8 : 4;
-        ctx.shadowColor = shadowColor;
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // 2. Draw particle trail (iterated backward to avoid splice indexing skip bugs)
+      // 1. Draw particle trail (iterated backward to avoid splice indexing skip bugs)
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         
@@ -396,7 +326,7 @@ export const MouseFollower: React.FC = () => {
       ctx.globalAlpha = 1.0; // Reset global alpha after the batch
 
       // Performance optimization: Pause the animation loop when off-screen and elements are fully decayed
-      if (state.isOffScreen && state.opacity === 0 && particles.length === 0 && ripples.length === 0) {
+      if (state.isOffScreen && state.opacity === 0 && particles.length === 0) {
         isLoopActive = false;
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Make sure canvas is fully cleared
         return;
@@ -419,7 +349,6 @@ export const MouseFollower: React.FC = () => {
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mousedown", handleMouseDown);
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("mouseenter", handleMouseEnter);
       cancelAnimationFrame(animationFrameId);

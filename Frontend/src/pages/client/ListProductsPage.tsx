@@ -122,7 +122,7 @@ export default function ListProductsPage() {
       setLoading(true);
       const params: ProductFilterParams = {
         page: Number(searchParams.get("page")) || 1,
-        limit: 6,
+        limit: Number(searchParams.get("limit")) || 12,
         search: searchParams.get("search") || searchParams.get("query") || undefined,
         cat1_id: searchParams.get("cat1_id") || undefined,
         cat2_id: searchParams.get("cat2_id") || undefined,
