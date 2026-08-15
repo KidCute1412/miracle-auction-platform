@@ -40,60 +40,53 @@ function ProductCard({
   const [isUrgent, setIsUrgent] = useState(false);
   const { auth } = useAuth();
 
-  const startDate = DateTime.fromISO(start_time, { zone: "Asia/Ho_Chi_Minh" });
-  const endDate = DateTime.fromISO(end_time, { zone: "Asia/Ho_Chi_Minh" });
-
   const handleClickProduct = (productId?: number, productName?: string) => {
     const slug = slugify(productName ?? "");
     navigate(`/product/${slug}-${productId}`);
   };
 
-  const formatStartTime = () => {
-    if (start_time) {
-      setFormatStartTime(startDate.toFormat("dd-MM-yyyy HH:mm"));
-    }
-  };
-
-  const formatEndTime = () => {
-    if (!end_time) return;
-
-    const present_time = DateTime.now().setZone("Asia/Ho_Chi_Minh");
-    const endDateValid = DateTime.isDateTime(endDate)
-      ? endDate
-      : DateTime.fromISO(end_time, { zone: "Asia/Ho_Chi_Minh" });
-
-    if (!endDateValid.isValid) {
-      setTimeLeft("");
-      return;
-    }
-
-    const diff = endDateValid.diff(present_time, ["days", "hours", "minutes", "seconds"]).toObject();
-    const diffSeconds = endDateValid.diff(present_time, "seconds").seconds;
-
-    const days = diff.days ?? 0;
-    const hours = diff.hours ?? 0;
-    const minutes = diff.minutes ?? 0;
-    const seconds = diff.seconds ?? 0;
-
-    setIsUrgent(diffSeconds > 0 && diffSeconds < 300);
-
-    if (diffSeconds <= 0) {
-      setTimeLeft("Ended");
-    } else if (days >= 1) {
-      setTimeLeft(`${Math.floor(days)}d ${Math.floor(hours)}h left`);
-    } else if (hours >= 1) {
-      setTimeLeft(`${Math.floor(hours)}h ${Math.floor(minutes)}m left`);
-    } else {
-      setTimeLeft(`${Math.floor(minutes)}m ${Math.floor(seconds)}s left`);
-    }
-  };
-
   useEffect(() => {
-    formatStartTime();
+    if (start_time) {
+      const startDate = DateTime.fromISO(start_time, { zone: "Asia/Ho_Chi_Minh" });
+      if (startDate.isValid) {
+        setFormatStartTime(startDate.toFormat("dd-MM-yyyy HH:mm"));
+      }
+    }
+
+    const formatEndTime = () => {
+      if (!end_time) return;
+
+      const present_time = DateTime.now().setZone("Asia/Ho_Chi_Minh");
+      const endDateValid = DateTime.fromISO(end_time, { zone: "Asia/Ho_Chi_Minh" });
+
+      if (!endDateValid.isValid) {
+        setTimeLeft("");
+        return;
+      }
+
+      const diff = endDateValid.diff(present_time, ["days", "hours", "minutes", "seconds"]).toObject();
+      const diffSeconds = endDateValid.diff(present_time, "seconds").seconds;
+
+      const days = diff.days ?? 0;
+      const hours = diff.hours ?? 0;
+      const minutes = diff.minutes ?? 0;
+      const seconds = diff.seconds ?? 0;
+
+      setIsUrgent(diffSeconds > 0 && diffSeconds < 300);
+
+      if (diffSeconds <= 0) {
+        setTimeLeft("Ended");
+      } else if (days >= 1) {
+        setTimeLeft(`${Math.floor(days)}d ${Math.floor(hours)}h left`);
+      } else if (hours >= 1) {
+        setTimeLeft(`${Math.floor(hours)}h ${Math.floor(minutes)}m left`);
+      } else {
+        setTimeLeft(`${Math.floor(minutes)}m ${Math.floor(seconds)}s left`);
+      }
+    };
+
     formatEndTime();
-    const timer = setInterval(() => {
-      formatEndTime();
-    }, 1000);
+    const timer = setInterval(formatEndTime, 1000);
     return () => clearInterval(timer);
   }, [start_time, end_time]);
 
