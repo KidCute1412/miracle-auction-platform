@@ -36,12 +36,32 @@ export const Section3DPedestal: React.FC = () => {
     }
   };
 
-  // Smooth continuous rotation using requestAnimationFrame
+  // Smooth continuous rotation using requestAnimationFrame only when visible in viewport
   useEffect(() => {
     if (isDragging) return;
+    let isVisible = true;
     let lastTime = performance.now();
 
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        if (isVisible && !rafRef.current) {
+          lastTime = performance.now();
+          rafRef.current = requestAnimationFrame(animate);
+        } else if (!isVisible && rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (frameRef.current) {
+      observer.observe(frameRef.current);
+    }
+
     const animate = (now: number) => {
+      if (!isVisible) return;
       const delta = now - lastTime;
       lastTime = now;
       rotationYRef.current = (rotationYRef.current + delta * 0.015) % 360;
@@ -51,6 +71,7 @@ export const Section3DPedestal: React.FC = () => {
 
     rafRef.current = requestAnimationFrame(animate);
     return () => {
+      observer.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [isDragging]);

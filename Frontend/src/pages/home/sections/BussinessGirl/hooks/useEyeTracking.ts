@@ -8,24 +8,18 @@ export const useEyeTracking = (
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
+    // Disable on touch devices to conserve CPU
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+
     let targetX = 0;
     let targetY = 0;
     let currentX = 0;
     let currentY = 0;
-    let animationFrameId: number;
+    let animationFrameId: number | null = null;
     let hasMoved = false;
+    let isRunning = false;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-
-      const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
-      targetX = clamp(x, -1, 1) * 0.6;
-      targetY = clamp(y, -1, 1) * 0.4;
-      hasMoved = true;
-    };
+    const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
 
     const updatePosition = () => {
       let tx = 0;
@@ -42,19 +36,46 @@ export const useEyeTracking = (
       const dx = tx - currentX;
       const dy = ty - currentY;
 
-      currentX += dx * 0.12;
-      currentY += dy * 0.12;
-
-      setEyeOffset({ x: currentX, y: currentY });
-      animationFrameId = requestAnimationFrame(updatePosition);
+      // Only update if movement is significant
+      if (Math.abs(dx) > 0.002 || Math.abs(dy) > 0.002) {
+        currentX += dx * 0.15;
+        currentY += dy * 0.15;
+        setEyeOffset({ x: currentX, y: currentY });
+        animationFrameId = requestAnimationFrame(updatePosition);
+      } else {
+        currentX = tx;
+        currentY = ty;
+        setEyeOffset({ x: currentX, y: currentY });
+        isRunning = false;
+        animationFrameId = null;
+      }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    animationFrameId = requestAnimationFrame(updatePosition);
+    const startLoop = () => {
+      if (!isRunning) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(updatePosition);
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+
+      targetX = clamp(x, -1, 1) * 0.6;
+      targetY = clamp(y, -1, 1) * 0.4;
+      hasMoved = true;
+      startLoop();
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    startLoop();
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, [containerRef, idleEyeOffset, isGlancingRef]);
 

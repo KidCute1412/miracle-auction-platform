@@ -89,13 +89,13 @@ function ProductCard({
   };
 
   useEffect(() => {
+    formatStartTime();
+    formatEndTime();
     const timer = setInterval(() => {
       formatEndTime();
     }, 1000);
-    formatStartTime();
-    formatEndTime();
     return () => clearInterval(timer);
-  });
+  }, [start_time, end_time]);
 
   const maskName = (name: string) => {
     const len = name.length;

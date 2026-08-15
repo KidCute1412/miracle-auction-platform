@@ -205,7 +205,7 @@ const Hero = () => {
             </div>
           </div>
 
-          <div className={`lg:col-span-5 flex justify-center items-center relative ${hasIntersected ? "animate-elegant-reveal delay-500" : "opacity-0"}`}>
+          <div className={`lg:col-span-5 hidden lg:flex justify-center items-center relative ${hasIntersected ? "animate-elegant-reveal delay-500" : "opacity-0"}`}>
             <BussinessGirl isSmiling={isSmiling} containerRef={heroRef} />
           </div>
 
