@@ -18,6 +18,7 @@ Complete these first:
 - Vercel owns `lok1412.site`. In the Vercel **frontend project** go to **Settings** -> **Domains** -> add `auction.lok1412.site`; Vercel creates or tells you the required DNS record. Wait for it to show **Valid Configuration**.
 - In `Backend/.env.production`, set exactly `NODE_ENV=production`, `CLIENT_URL=https://auction.lok1412.site`, and `API_DOMAIN=api.lok1412.site`.
 - Supabase values are in `Backend/.env.production`: `DATABASE_URL` and `DIRECT_URL`.
+- For the Supabase Free Session pooler, append `connection_limit=2` to both URLs (use `?connection_limit=2`, or `&connection_limit=2` if the URL already has `?`). This caps the four Node processes below Supabase's small session limit.
 - Aiven values are in that file: Kafka broker, CA, service username/password, and the four topics.
 - Fill `REDIS_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `CSRF_SECRET` with different long random values.
 - Never commit `Backend/.env.production`; Git ignores it.

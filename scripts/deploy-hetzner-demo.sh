@@ -20,6 +20,10 @@ compose=(docker compose --env-file "$env_file" -f "$compose_file")
 
 "${compose[@]}" config -q
 "${compose[@]}" build
+# Supabase Free Session pooler accepts only a small number of concurrent
+# client sessions. Release the previous API/worker Prisma pools before
+# starting the migration connection.
+"${compose[@]}" stop api auction-worker outbox-relay async-worker || true
 "${compose[@]}" run --rm migrate
 
 # These files are the same catalog data that start.bat imports locally.
@@ -34,7 +38,6 @@ if "${compose[@]}" run --rm --no-deps api node --input-type=module -e '
   process.exit(count === 0 ? 0 : 1);
 '; then
   echo "Empty database detected; importing local demo catalog."
-  "${compose[@]}" stop api auction-worker outbox-relay async-worker || true
   "${compose[@]}" run --rm -v "$repo_dir/data:/seed:ro" migrate \
     npx prisma db execute --schema prisma/schema.prisma --file /seed/category/category.insert.sql
   "${compose[@]}" run --rm -v "$repo_dir/data:/seed:ro" migrate \
