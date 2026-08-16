@@ -1,5 +1,6 @@
 import Cristiano from "@/assets/images/Cristiano.jpg";
 import { cn } from "@/lib/utils";
+import SafeImage from "@/components/common/SafeImage";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 
 interface CategoryCardProps {
@@ -36,7 +37,7 @@ function CategoryCard({ name = "Cristiano", image, onClick, className }: Categor
 
       {/* Image container */}
       <div className="relative h-[72%] overflow-hidden rounded-t-3xl border-b border-border/60">
-        <img
+        <SafeImage
           src={displayImage}
           alt={name}
           className="w-full h-full object-cover transition-all duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 group-hover:brightness-105 group-hover:saturate-[1.15]"

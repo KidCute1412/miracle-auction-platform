@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { slugify } from "@/utils/make_slug";
 import AddToLove from "@/components/common/AddToLove";
+import SafeImage from "@/components/common/SafeImage";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { formatVnd } from "@/lib/money";
@@ -133,7 +134,7 @@ function ProductCard({
           <AddToLove product_id={product_id ?? 1} className="min-w-[70px]" />
         </div>
 
-        <img
+        <SafeImage
           src={product_image}
           loading="lazy"
           alt={product_name}
