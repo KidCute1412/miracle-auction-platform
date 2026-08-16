@@ -11,7 +11,7 @@ A real-time auction platform engineered for concurrent bidding: atomic Redis Lua
 
 Miracle Auction combines a React storefront and administration console with a TypeScript modular monolith built to preserve ordering, correctness, and recoverability under concurrent bid traffic.
 
-**Live demo:** [Auction storefront](https://auction.lok1412.site) · [API health](https://miracle-auction-platform.api.lok1412.site/health)
+**Live demo:** [Auction storefront](https://auction.lok1412.site) · [API health](https://miracle-auction-platform.lok1412.site/health)
 
 > This is an engineering portfolio project. It demonstrates production-oriented patterns and their tradeoffs, but does not claim unlimited scale or exactly-once delivery.
 
