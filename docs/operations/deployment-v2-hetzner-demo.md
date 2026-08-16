@@ -3,8 +3,8 @@
 > Small public demo. Do not run benchmarks on this server.
 
 ```text
-auction.lok1412.site                      -> Vercel frontend
-miracle-auction-platform.lok1412.site     -> Hetzner EU VPS: Caddy, API, 3 workers, Redis
+miracle-auction-platform.lok1412.site       -> Vercel frontend
+miracle-auction-platform.lok1412.site/api/* -> Hetzner API, 3 workers, Redis
 Supabase                                  -> PostgreSQL
 Aiven Free                                -> Kafka
 ```
@@ -17,8 +17,8 @@ After the first deployment, use the [Hetzner Demo Operations Cheat Sheet](./hetz
 
 Complete these first:
 
-- Vercel owns `lok1412.site`. In the Vercel **frontend project** go to **Settings** -> **Domains** -> add `auction.lok1412.site`; Vercel creates or tells you the required DNS record. Wait for it to show **Valid Configuration**.
-- In `Backend/.env.production`, set exactly `NODE_ENV=production`, `CLIENT_URL=https://auction.lok1412.site`, and `API_DOMAIN=miracle-auction-platform.lok1412.site`.
+- Vercel owns `lok1412.site`. In the Vercel **frontend project** go to **Settings** -> **Domains** -> add `miracle-auction-platform.lok1412.site`; Vercel creates or tells you the required DNS record. Wait for it to show **Valid Configuration**.
+- In `Backend/.env.production`, set exactly `NODE_ENV=production`, `CLIENT_URL=https://miracle-auction-platform.lok1412.site`, and `API_DOMAIN=miracle-auction-platform.lok1412.site`.
 - Supabase values are in `Backend/.env.production`: `DATABASE_URL` and `DIRECT_URL`.
 - For the Supabase Free Session pooler, append `connection_limit=2` to both URLs (use `?connection_limit=2`, or `&connection_limit=2` if the URL already has `?`). This caps the four Node processes below Supabase's small session limit.
 - Aiven values are in that file: Kafka broker, CA, service username/password, and the four topics.
@@ -153,16 +153,16 @@ The script pulls `main`, builds, migrates, imports the same local `start.bat` de
 1. Vercel frontend project → **Settings** → **Environment Variables** → add Production value:
 
    ```text
-   VITE_API_URL=https://miracle-auction-platform.lok1412.site
+   VITE_API_URL=https://miracle-auction-platform.lok1412.site/api
    ```
 
 2. Redeploy the frontend.
 3. Confirm in a private browser:
 
    ```text
-   https://miracle-auction-platform.lok1412.site/health  -> 200
-   https://miracle-auction-platform.lok1412.site/ready   -> 200
-   https://auction.lok1412.site     -> login, product, bid, live update
+   https://miracle-auction-platform.lok1412.site/api/health  -> 200
+   https://miracle-auction-platform.lok1412.site/api/ready   -> 200
+   https://miracle-auction-platform.lok1412.site -> login, product, bid, live update
    ```
 
 4. On failure:

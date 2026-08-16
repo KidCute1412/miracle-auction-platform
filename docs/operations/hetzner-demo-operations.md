@@ -1,6 +1,6 @@
 # Hetzner Demo Operations Cheat Sheet
 
-> Server: `online-auction-demo` | Frontend: `auction.lok1412.site` | API: `miracle-auction-platform.lok1412.site`
+> Server: `online-auction-demo` | Frontend: `miracle-auction-platform.lok1412.site` | API: `miracle-auction-platform.lok1412.site/api`
 
 Read [Deployment v2: Hetzner Portfolio Demo](./deployment-v2-hetzner-demo.md) for first setup. This file is the short operating guide afterwards.
 
@@ -50,9 +50,9 @@ sudo -u deploy docker compose --env-file /opt/online-auction/demo.env -f compose
 ```
 
 ```text
-https://miracle-auction-platform.lok1412.site/health
-https://miracle-auction-platform.lok1412.site/ready
-https://auction.lok1412.site
+https://miracle-auction-platform.lok1412.site/api/health
+https://miracle-auction-platform.lok1412.site/api/ready
+https://miracle-auction-platform.lok1412.site
 ```
 
 Never run more than one `auction-worker`.
@@ -65,7 +65,7 @@ Important values:
 
 ```env
 NODE_ENV=production
-CLIENT_URL=https://auction.lok1412.site
+CLIENT_URL=https://miracle-auction-platform.lok1412.site
 API_DOMAIN=miracle-auction-platform.lok1412.site
 BID_DURABILITY_REPLICAS=0
 ```
@@ -88,12 +88,12 @@ Those files contain `TRUNCATE`. The script imports them only when `categories` i
 
 ## DNS, email and OAuth
 
-- Vercel project domain: `auction.lok1412.site`.
+- Vercel project domain: `miracle-auction-platform.lok1412.site`.
 - Vercel DNS A record `api`: Hetzner IPv4.
 - Hetzner firewall must keep TCP 80 and 443 open; Caddy obtains HTTPS automatically.
 - OTP requires `GMAIL_ADDRESS` and `GMAIL_APP_PASSWORD`.
 - `EMAIL_DELIVERY_MODE=smtp` enables async auction notification emails.
-- Google OAuth needs the same client ID in backend `GOOGLE_CLIENT_ID` and Vercel `VITE_GOOGLE_CLIENT_ID`; Google Cloud must authorize `https://auction.lok1412.site`.
+- Google OAuth needs the same client ID in backend `GOOGLE_CLIENT_ID` and Vercel `VITE_GOOGLE_CLIENT_ID`; Google Cloud must authorize `https://miracle-auction-platform.lok1412.site`.
 
 ## Cost and deletion
 
