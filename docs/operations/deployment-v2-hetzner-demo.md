@@ -11,6 +11,8 @@ Aiven Free             -> Kafka
 
 Use a Hetzner EU `CX23` (2 vCPU, 4 GiB). It is paid, normally about EUR 4-5/month including a public IPv4 before any card/VAT difference. Do not choose Hetzner Singapore for this low-cost plan. This demo uses one local Redis primary and `BID_DURABILITY_REPLICAS=0`; do not alter `compose.production.yml`.
 
+After the first deployment, use the [Hetzner Demo Operations Cheat Sheet](./hetzner-demo-operations.md) for daily operation, automatic deployment, logs, secret updates, rollback, and shutdown.
+
 ## Before creating the server
 
 Complete these first:
@@ -171,7 +173,7 @@ The script pulls `main`, builds, migrates, imports the same local `start.bat` de
 
 ## 10. Turn on GitHub auto-deploy
 
-`.github/workflows/deploy-hetzner.yml` deploys only a successful `push` to `main`. It checks out that exact tested commit, rebuilds the services, migrates, then checks `/health` and `/ready`.
+The `Deploy Hetzner demo` job at the end of `.github/workflows/ci.yml` deploys only a successful `push` to `main`. It checks out that exact tested commit, rebuilds the services, migrates, then checks `/health` and `/ready`.
 
 Create a separate SSH key on Windows for GitHub Actions. At both passphrase prompts, press Enter (this restricted key is stored as a GitHub secret):
 
