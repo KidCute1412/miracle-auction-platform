@@ -41,13 +41,5 @@ jobs:
             "DEPLOY_COMMIT='$DEPLOY_COMMIT' bash -s" <<'REMOTE'
           set -euo pipefail
           cd /opt/online-auction/repo
-          git fetch --prune origin
-          git checkout --detach "$DEPLOY_COMMIT"
-          docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml build
-          docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml run --rm migrate
-          docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml up -d --remove-orphans
-          docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml exec -T api \
-            wget -q -O - http://localhost:5000/health
-          docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml exec -T api \
-            wget -q -O - http://localhost:5000/ready
+          bash scripts/deploy-hetzner-demo.sh
           REMOTE

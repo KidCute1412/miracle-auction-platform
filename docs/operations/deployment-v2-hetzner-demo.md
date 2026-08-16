@@ -137,15 +137,13 @@ The Compose commands use `/opt/online-auction/demo.env`; do not put its content 
 
 `compose.hetzner-demo.yml` is committed at the repository root. It builds from the repository root with `Backend/Dockerfile` (the image copies `packages/api-contracts`) and runs one Redis, `api`, exactly one `auction-worker`, `outbox-relay`, `async-worker`, `migrate`, and `caddy`. It intentionally does not run `redis-replica`.
 
-When the file exists, run on the server:
+Run the complete first deployment on the server with one command:
 
 ```bash
-cd /opt/online-auction/repo
-sudo -u deploy docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml config -q
-sudo -u deploy docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml build
-sudo -u deploy docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml run --rm migrate
-sudo -u deploy docker compose --env-file /opt/online-auction/demo.env -f compose.hetzner-demo.yml up -d
+sudo -u deploy bash /opt/online-auction/repo/scripts/deploy-hetzner-demo.sh
 ```
+
+The script pulls `main`, builds, migrates, imports the same local `start.bat` demo catalog only when the `categories` table is empty, starts all services, and checks `/health` and `/ready`. It never re-imports the destructive seed after data exists.
 
 ## 9. Finish Vercel and test
 
