@@ -1,10 +1,17 @@
 # Miracle Auction Platform
 
 [![CI/CD Pipeline](https://github.com/KidCute1412/miracle-auction-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/KidCute1412/miracle-auction-platform/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Kafka](https://img.shields.io/badge/Kafka-3.7-231F20?logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
 
-A full-stack auction platform built around one difficult requirement: accepting concurrent bids quickly without losing ordering, correctness, or recoverability.
+A real-time auction platform engineered for concurrent bidding: atomic Redis Lua decisions, ordered durable projection, transactional outbox delivery, Kafka consumers, and post-commit Socket.IO updates.
 
-Miracle Auction combines a React storefront and administration console with a TypeScript modular monolith. Active-auction decisions are atomic in Redis; PostgreSQL stores the durable business projection; a transactional outbox and Kafka carry asynchronous work; Socket.IO delivers post-commit updates.
+Miracle Auction combines a React storefront and administration console with a TypeScript modular monolith built to preserve ordering, correctness, and recoverability under concurrent bid traffic.
+
+**Live demo:** [Auction storefront](https://auction.lok1412.site) · [API health](https://miracle-auction-platform.api.lok1412.site/health)
 
 > This is an engineering portfolio project. It demonstrates production-oriented patterns and their tradeoffs, but does not claim unlimited scale or exactly-once delivery.
 
@@ -18,6 +25,12 @@ Miracle Auction combines a React storefront and administration console with a Ty
 - Socket.IO updates emitted only after projection commits
 - Cookie authentication, CSRF, CORS, Helmet, rate limits, RBAC, and request IDs
 - Unit, API contract, integration, concurrency, frontend, and k6 test assets
+
+## Why this project stands out
+
+- **Concurrency-safe bidding:** Redis Lua scripts validate and mutate each active auction atomically, with ordered Stream events for projection.
+- **Durable recovery path:** Redis Streams, idempotent PostgreSQL projection, and a transactional outbox make failed work observable and retryable.
+- **Correct realtime UX:** Socket.IO events are emitted only after the authoritative state has committed, so clients do not receive speculative updates.
 
 ## Architecture
 
@@ -75,7 +88,7 @@ sequenceDiagram
     X->>P: Idempotent effect
 ```
 
-The synchronous bid request ends after Redis accepts the Lua mutation **and** the configured replica acknowledgement succeeds (`WAIT 1` in the benchmark). PostgreSQL, Kafka, Socket.IO, dashboards, and email are not part of bid HTTP latency. See the [system overview](docs/overview_system_architecture.md), [bid architecture](docs/bidding_architecture.md), and [worker failure model](docs/worker-process-architecture.md).
+The synchronous bid request ends after Redis accepts the Lua mutation **and** the configured replica acknowledgement succeeds (`WAIT 1` in the benchmark). PostgreSQL, Kafka, Socket.IO, dashboards, and email are not part of bid HTTP latency. See the [system overview](docs/architecture/system-overview.md), [bid architecture](docs/architecture/bidding.md), and [worker failure model](docs/architecture/worker-processes.md).
 
 ## Reliability model
 
@@ -109,12 +122,19 @@ The system provides **at-least-once delivery with idempotent effects**, not exac
 ```text
 Backend/             API, modules, Prisma schema, workers, and tests
 Frontend/            React storefront and administration console
-AgentService/        Repository-scoped agent service
+AgentService/        Development automation tooling, outside the auction runtime
 PerformanceTests/    Repeatable k6 scenarios and benchmark artifacts
 data/                Local demonstration seed data
 docs/                Architecture, demo, evidence, and operating notes
 .github/workflows/   CI quality gates
 ```
+
+## Quick reviewer path
+
+1. Open the [live auction storefront](https://auction.lok1412.site).
+2. Follow the [five-minute demo guide](docs/product/demo-guide.md).
+3. Inspect the [bidding architecture](docs/architecture/bidding.md) and [engineering evidence](docs/testing/engineering-evidence.md).
+4. Run the complete local demo with `start.bat`.
 
 ## Local development
 
@@ -203,7 +223,7 @@ docker compose config
 docker compose --env-file Backend/.env.example -f compose.production.yml config
 ```
 
-Database and concurrency tests use isolated Testcontainers rather than shared development data. See [engineering evidence](docs/engineering-evidence.md) for current results and benchmark provenance.
+Database and concurrency tests use isolated Testcontainers rather than shared development data. See [engineering evidence](docs/testing/engineering-evidence.md) for current results and benchmark provenance.
 
 ## Security notes
 
@@ -232,39 +252,24 @@ cd PerformanceTests
 npm.cmd run benchmark:bid-path -- --resource-profile=bid-priority --redis-shards=1
 ```
 
-`distributed` keeps downstream consumers enabled and is the production-like companion scenario. See [PerformanceTests](PerformanceTests/README.md) and [engineering evidence](docs/engineering-evidence.md) for thresholds, artifacts, and interpretation.
+`distributed` keeps downstream consumers enabled and is the production-like companion scenario. See [PerformanceTests](PerformanceTests/README.md) and [engineering evidence](docs/testing/engineering-evidence.md) for thresholds, artifacts, and interpretation.
 
 ## Demo and media
 
-Follow the [five-minute demo guide](docs/demo-guide.md) to present product discovery, live bidding, winner/order behavior, administration, and engineering evidence. Real UI captures belong under `docs/assets/`; mockups are not accepted as portfolio evidence.
+Follow the [five-minute demo guide](docs/product/demo-guide.md) to present product discovery, live bidding, winner/order behavior, administration, and engineering evidence. Real UI captures belong under `docs/assets/`; mockups are not accepted as portfolio evidence.
 
-| Storefront | Active auction |
+| Storefront — product discovery | Active auction — realtime bidding |
 |---|---|
 | ![Miracle Auction storefront](docs/assets/storefront.webp) | ![Miracle Auction active product](docs/assets/product-bidding.webp) |
 
-## Tradeoffs and limits
-
-- One sequential projector preserves ordering but limits projection throughput.
-- Redis outages reject bid mutations; PostgreSQL is deliberately not a fallback because dual authorities risk divergence.
-- PostgreSQL and dashboards converge asynchronously, so operational lag must be monitored.
-- Pub/Sub can lose transient updates; reconnecting clients refetch canonical state.
-- Kafka and SMTP are at-least-once. Idempotency prevents duplicate business effects, but email acceptance cannot be transactional with PostgreSQL.
-- Fixed-date catalog seeds must be refreshed when their auction windows no longer fit the demonstration date.
-- Admins can run a read-only Redis/PostgreSQL reconciliation for an active auction; automated repair remains deliberately out of scope until a maintenance-mode workflow and verified checkpoint are in place.
-- The frontend does not yet have the complete Playwright workflow suite in the roadmap.
-
 ## Documentation
 
-- [Five-minute demo](docs/demo-guide.md)
-- [Engineering evidence](docs/engineering-evidence.md)
-- [Current architecture](docs/overview_system_architecture.md)
-- [Redis-authoritative bidding](docs/bidding_architecture.md)
-- [Worker architecture and failures](docs/worker-process-architecture.md)
-- [Modular monolith boundaries](docs/modular_monolith_architecture.md)
-- [Deployment and recovery](docs/deployment.md)
-- [API contracts](docs/api-route-contracts.md)
-- [Current roadmap](docs/reflourish_plan.md)
-
-## License
-
-The backend package declares ISC. Add a root `LICENSE` file before presenting the entire repository as formally licensed.
+- [Five-minute demo](docs/product/demo-guide.md)
+- [Engineering evidence](docs/testing/engineering-evidence.md)
+- [System architecture](docs/architecture/system-overview.md)
+- [Redis-authoritative bidding](docs/architecture/bidding.md)
+- [Worker architecture and recovery](docs/architecture/worker-processes.md)
+- [Hetzner demo deployment](docs/operations/deployment-v2-hetzner-demo.md)
+- [Hetzner operations cheat sheet](docs/operations/hetzner-demo-operations.md)
+- [API route contracts](docs/contracts/api-routes.md)
+- [Engineering roadmap](docs/planning/roadmap.md)
