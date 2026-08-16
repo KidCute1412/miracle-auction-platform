@@ -1,5 +1,5 @@
 // MainLayout.tsx (React Router)
-import { Outlet } from "react-router-dom";
+import { Outlet, ScrollRestoration } from "react-router-dom";
 import Header from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +33,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground transition-colors duration-300">
+      <ScrollRestoration />
       {/* Fixed top header with theme border */}
       <header className="fixed inset-x-0 top-0 z-20 border-b border-border bg-card/80 backdrop-blur-xl transition-colors duration-300">
         <Header />

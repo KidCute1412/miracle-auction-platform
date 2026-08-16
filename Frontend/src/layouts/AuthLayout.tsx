@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, ScrollRestoration } from 'react-router-dom';
 import {
   Shield,
   Star,
@@ -18,6 +18,7 @@ export default function AuthLayout() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden transition-colors duration-300">
+      <ScrollRestoration />
       {/* Theme Toggle Button */}
       <button
         onClick={toggleTheme}
