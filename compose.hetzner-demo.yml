@@ -1,9 +1,5 @@
 x-backend-process: &backend-process
   image: online-auction-backend:hetzner-demo
-  build:
-    context: .
-    dockerfile: Backend/Dockerfile
-    target: runtime
   restart: unless-stopped
   stop_grace_period: 30s
   logging: &rotated-logs
@@ -11,6 +7,12 @@ x-backend-process: &backend-process
     options:
       max-size: 10m
       max-file: "3"
+
+x-backend-build: &backend-build
+  build:
+    context: .
+    dockerfile: Backend/Dockerfile
+    target: runtime
 
 x-core-environment: &core-environment
   NODE_ENV: production
@@ -125,7 +127,7 @@ services:
         condition: service_healthy
 
   api:
-    <<: *backend-process
+    <<: [*backend-process, *backend-build]
     command: node dist/server.js
     mem_limit: 512m
     environment:
