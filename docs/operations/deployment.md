@@ -2,7 +2,7 @@
 
 > Status: Current | Owner: Platform | Last verified: 2026-08-10
 
-For the lower-cost Azure for Students portfolio-demo plan, see [Deployment v2: Azure for Students Portfolio Demo](./deployment-v2-azure-student-demo.md). It is deliberately less resilient and must not replace this production topology.
+For the lower-cost portfolio-demo plan, see [Deployment v2: Hetzner Portfolio Demo](./deployment-v2-hetzner-demo.md). It is deliberately less resilient and must not replace this production topology.
 
 The current production topology is defined by [`compose.production.yml`](../../compose.production.yml) and the canonical [worker-process architecture](../architecture/worker-processes.md).
 

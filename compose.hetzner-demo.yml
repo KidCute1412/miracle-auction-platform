@@ -1,0 +1,177 @@
+x-backend-process: &backend-process
+  image: online-auction-backend:hetzner-demo
+  build:
+    context: .
+    dockerfile: Backend/Dockerfile
+    target: runtime
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging: &rotated-logs
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+x-core-environment: &core-environment
+  NODE_ENV: production
+  DATABASE_URL: ${DATABASE_URL}
+  DIRECT_URL: ${DIRECT_URL}
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  AUTH_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  AUCTION_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  BID_ENGINE: redis
+  # Demo topology intentionally has no Redis replica.
+  BID_DURABILITY_REPLICAS: ${BID_DURABILITY_REPLICAS:-0}
+  BID_DURABILITY_WAIT_MS: ${BID_DURABILITY_WAIT_MS:-100}
+  BID_MUTATION_CONNECTIONS: ${BID_MUTATION_CONNECTIONS:-4}
+  AUTH_SNAPSHOT_TTL_SECONDS: ${AUTH_SNAPSHOT_TTL_SECONDS:-30}
+
+x-kafka-environment: &kafka-environment
+  KAFKA_BROKERS: ${KAFKA_BROKERS}
+  KAFKA_SSL: ${KAFKA_SSL:-true}
+  KAFKA_USERNAME: ${KAFKA_USERNAME}
+  KAFKA_PASSWORD: ${KAFKA_PASSWORD}
+  KAFKA_CA: ${KAFKA_CA:-}
+  KAFKA_CLIENT_ID: ${KAFKA_CLIENT_ID:-auction-platform}
+  KAFKA_BIDDING_TOPIC: ${KAFKA_BIDDING_TOPIC:-bidding_events}
+  KAFKA_DOMAIN_TOPIC: ${KAFKA_DOMAIN_TOPIC:-domain_events}
+  KAFKA_DASHBOARD_TOPIC: ${KAFKA_DASHBOARD_TOPIC:-dashboard_updates}
+  KAFKA_ASYNC_DLQ_TOPIC: ${KAFKA_ASYNC_DLQ_TOPIC:-async_events_dlq}
+
+services:
+  redis:
+    image: redis:7-alpine
+    command:
+      - /bin/sh
+      - -ec
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --appendfsync everysec --maxmemory 384mb --maxmemory-policy noeviction
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    restart: unless-stopped
+    volumes:
+      - redis_demo_data:/data
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *rotated-logs
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+      target: migrator
+    image: online-auction-migrator:hetzner-demo
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
+
+  auction-worker:
+    <<: *backend-process
+    command: node dist/auction-worker.js
+    mem_limit: 384m
+    environment:
+      <<: *core-environment
+      BID_PROJECTOR_GROUP: ${BID_PROJECTOR_GROUP:-postgres-projector-v1}
+      BID_PROJECTOR_MAX_ATTEMPTS: ${BID_PROJECTOR_MAX_ATTEMPTS:-10}
+      BID_PROJECTOR_RECLAIM_INTERVAL_MS: ${BID_PROJECTOR_RECLAIM_INTERVAL_MS:-30000}
+      BID_PROJECTOR_READ_COUNT: ${BID_PROJECTOR_READ_COUNT:-100}
+      BID_PROJECTOR_CONCURRENCY: ${BID_PROJECTOR_CONCURRENCY:-4}
+      AUCTION_CLOSE_INTERVAL_MS: ${AUCTION_CLOSE_INTERVAL_MS:-1000}
+      AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: ${AUCTION_WORKER_HEARTBEAT_TTL_SECONDS:-90}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"import('ioredis').then(async({default:R})=>{const r=new R(process.env.REDIS_URL);const v=await r.get('auction:worker:heartbeat');await r.quit();process.exit(v?0:1)})\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  outbox-relay:
+    <<: *backend-process
+    command: node dist/outbox-relay.js
+    mem_limit: 192m
+    environment:
+      <<: [*core-environment, *kafka-environment]
+      OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-50}
+      OUTBOX_IDLE_POLL_MS: ${OUTBOX_IDLE_POLL_MS:-1000}
+      OUTBOX_MAX_BACKOFF_MS: ${OUTBOX_MAX_BACKOFF_MS:-300000}
+      OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS: ${OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS:-90}
+
+  async-worker:
+    <<: *backend-process
+    command: node dist/async-worker.js
+    mem_limit: 384m
+    environment:
+      <<: [*core-environment, *kafka-environment]
+      CLIENT_URL: ${CLIENT_URL}
+      DASHBOARD_KAFKA_GROUP_ID: ${DASHBOARD_KAFKA_GROUP_ID:-dashboard-analytics-v1}
+      NOTIFICATION_KAFKA_GROUP_ID: ${NOTIFICATION_KAFKA_GROUP_ID:-notification-intake-v1}
+      DASHBOARD_BATCH_CONCURRENCY: ${DASHBOARD_BATCH_CONCURRENCY:-4}
+      NOTIFICATION_BATCH_CONCURRENCY: ${NOTIFICATION_BATCH_CONCURRENCY:-4}
+      EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-disabled}
+      EMAIL_DELIVERY_CONCURRENCY: ${EMAIL_DELIVERY_CONCURRENCY:-1}
+      EMAIL_DELIVERY_MAX_ATTEMPTS: ${EMAIL_DELIVERY_MAX_ATTEMPTS:-5}
+      EMAIL_DELIVERY_LEASE_MS: ${EMAIL_DELIVERY_LEASE_MS:-300000}
+      ASYNC_WORKER_HEARTBEAT_TTL_SECONDS: ${ASYNC_WORKER_HEARTBEAT_TTL_SECONDS:-90}
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  api:
+    <<: *backend-process
+    command: node dist/server.js
+    mem_limit: 512m
+    environment:
+      <<: [*core-environment, *kafka-environment]
+      PORT: ${PORT:-5000}
+      CLIENT_URL: ${CLIENT_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      CSRF_SECRET: ${CSRF_SECRET}
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+      auction-worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:$${PORT:-5000}/ready >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 128m
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *rotated-logs
+
+volumes:
+  redis_demo_data:
+  caddy_data:
+  caddy_config:
