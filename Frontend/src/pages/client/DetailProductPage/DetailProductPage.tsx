@@ -242,9 +242,9 @@ function DetailProductPage() {
   return isLoading ? (
     <Loading />
   ) : (
-    <div className="mx-auto px-4 py-8 bg-background text-foreground transition-colors duration-300 relative">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 bg-background text-foreground transition-colors duration-300 relative">
       {/* Product Name */}
-      <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-foreground mb-6">
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-heading font-extrabold text-foreground mb-4 sm:mb-6">
         {products?.product_name}
       </h1>
 

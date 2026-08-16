@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Eye, FileText } from "lucide-react";
 import AddToLove from "@/components/common/AddToLove";
 import { cn } from "@/lib/utils";
@@ -42,10 +42,10 @@ export default function ProductImageGallery({
   };
 
   return (
-    <div className="space-y-4 min-w-0">
+    <div className="space-y-3 sm:space-y-4 w-full min-w-0">
       {/* Main Image Container with 3D Gyroscope Perspective */}
       <div 
-        className="perspective-[1000px] flex justify-center relative min-w-0 rounded-2xl border border-border/80 bg-card overflow-hidden group shadow-gold-glow cursor-pointer"
+        className="perspective-[1000px] relative w-full min-w-0 rounded-2xl border border-border/80 bg-card overflow-hidden group shadow-gold-glow cursor-pointer"
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={handleMouseLeave}
@@ -56,7 +56,7 @@ export default function ProductImageGallery({
 
         {product_images && product_images.length > 0 ? (
           <div
-            className="w-full relative transition-transform duration-200 ease-out transform-gpu"
+            className="w-full flex items-center justify-center relative transition-transform duration-200 ease-out transform-gpu"
             style={{
               transform: isHovered
                 ? `rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) scale3d(1.03, 1.03, 1.03)`
@@ -68,7 +68,7 @@ export default function ProductImageGallery({
               src={product_images[currentImageIndex]}
               alt={product_name}
               loading="lazy"
-              className="w-full h-[500px] object-contain bg-card transition-all duration-500 animate-in fade-in zoom-in-95 duration-300"
+              className="w-full h-[280px] xs:h-[340px] sm:h-[420px] md:h-[480px] lg:h-[500px] object-contain mx-auto bg-card transition-all duration-500 animate-in fade-in zoom-in-95 duration-300 select-none"
             />
 
             {/* Dynamic Specular Lens Sheen Spotlight */}
@@ -80,54 +80,61 @@ export default function ProductImageGallery({
             />
           </div>
         ) : (
-          <div className="w-full h-[500px] bg-muted rounded-2xl flex items-center justify-center">
+          <div className="w-full h-[280px] sm:h-[420px] md:h-[500px] bg-muted rounded-2xl flex items-center justify-center">
             <FileText className="w-16 h-16 text-muted-foreground/50" />
           </div>
         )}
         
-        <div onClick={(e) => e.stopPropagation()}>
+        {/* Floating Add to Favorites button */}
+        <div 
+          className="absolute top-3 right-14 sm:top-4 sm:right-18 z-20"
+          onClick={(e) => e.stopPropagation()}
+        >
           <AddToLove
             product_id={product_id || 0}
-            className="w-[100px] right-20 top-5 z-20"
+            className="static top-auto right-auto h-8 sm:h-10 px-2.5 sm:px-3 text-xs sm:text-sm"
           />
         </div>
         
+        {/* Fullsize Preview trigger */}
         <div
-          className="absolute top-5 right-5 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 backdrop-blur-sm z-20 active:scale-90"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 backdrop-blur-sm z-20 active:scale-90"
           onClick={(e) => {
             e.stopPropagation();
             onOpenImageModal(currentImageIndex);
           }}
           title="View full size image"
         >
-          <Eye className="w-5 h-5 text-white" />
+          <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
         </div>
       </div>
 
-      {/* Related Images */}
-      <div className="max-w-[80%] mx-auto">
-        <div className="flex overflow-x-auto space-x-3 pb-4 pt-2 scrollbar-hide">
-          {product_images?.map((image, index) => (
-            <div
-              key={index}
-              onClick={() => handleImageClick(index)}
-              className={cn(
-                "w-28 h-20 rounded-lg overflow-hidden border transition-all duration-300 cursor-pointer active:scale-95 flex-shrink-0 relative group/thumb",
-                index === currentImageIndex
-                  ? "border-accent ring-2 ring-accent/30 scale-102"
-                  : "border-border hover:border-accent/40 opacity-70 hover:opacity-100"
-              )}
-            >
-              <img
-                src={image}
-                alt={`Image ${index + 1}`}
-                loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
-              />
-            </div>
-          ))}
+      {/* Related Thumbnails */}
+      {product_images && product_images.length > 1 && (
+        <div className="w-full">
+          <div className="flex overflow-x-auto justify-start sm:justify-center items-center gap-2 sm:gap-3 pb-2 pt-1 scrollbar-hide">
+            {product_images.map((image, index) => (
+              <div
+                key={index}
+                onClick={() => handleImageClick(index)}
+                className={cn(
+                  "w-16 h-14 sm:w-24 sm:h-18 md:w-28 md:h-20 rounded-lg overflow-hidden border transition-all duration-300 cursor-pointer active:scale-95 flex-shrink-0 relative group/thumb",
+                  index === currentImageIndex
+                    ? "border-accent ring-2 ring-accent/30 scale-105"
+                    : "border-border hover:border-accent/40 opacity-70 hover:opacity-100"
+                )}
+              >
+                <img
+                  src={image}
+                  alt={`Thumbnail ${index + 1}`}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
