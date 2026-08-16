@@ -4,8 +4,7 @@ import * as accountValidate from "./accounts.schemas.ts";
 import { verifyToken } from "@/middlewares/auth.middleware.ts";
 import { issueCsrfToken } from "@/middlewares/csrf.middleware.ts";
 import rateLimit from "express-rate-limit";
-import RedisStore from "rate-limit-redis";
-import { redisClient } from "@/config/redis.config.ts";
+import { createRedisRateLimitStore, redisRateLimitPrefixes } from "@/infrastructure/security/redis-rate-limit.store.ts";
 
 const route = Router();
 const authLimiter = rateLimit({
@@ -13,15 +12,7 @@ const authLimiter = rateLimit({
   limit: process.env.NODE_ENV === "production" ? 100 : 500,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore({
-    sendCommand: async (...args: string[]) => {
-      try {
-        return (await redisClient.call(args[0], ...args.slice(1))) as never;
-      } catch {
-        return undefined as never;
-      }
-    },
-  }),
+  store: createRedisRateLimitStore(redisRateLimitPrefixes.auth),
   passOnStoreError: true,
   message: { code: "error", message: "Too many authentication attempts. Please try again later." },
 });

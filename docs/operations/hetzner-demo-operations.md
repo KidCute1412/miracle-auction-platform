@@ -1,6 +1,6 @@
 # Hetzner Demo Operations Cheat Sheet
 
-> Server: `online-auction-demo` | Frontend: `auction.lok1412.site` | API: `api.lok1412.site`
+> Server: `online-auction-demo` | Frontend: `auction.lok1412.site` | API: `miracle-auction-platform.api.lok1412.site`
 
 Read [Deployment v2: Hetzner Portfolio Demo](./deployment-v2-hetzner-demo.md) for first setup. This file is the short operating guide afterwards.
 
@@ -50,8 +50,8 @@ sudo -u deploy docker compose --env-file /opt/online-auction/demo.env -f compose
 ```
 
 ```text
-https://api.lok1412.site/health
-https://api.lok1412.site/ready
+https://miracle-auction-platform.api.lok1412.site/health
+https://miracle-auction-platform.api.lok1412.site/ready
 https://auction.lok1412.site
 ```
 
@@ -66,7 +66,7 @@ Important values:
 ```env
 NODE_ENV=production
 CLIENT_URL=https://auction.lok1412.site
-API_DOMAIN=api.lok1412.site
+API_DOMAIN=miracle-auction-platform.api.lok1412.site
 BID_DURABILITY_REPLICAS=0
 ```
 

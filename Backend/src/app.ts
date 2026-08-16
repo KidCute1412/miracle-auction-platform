@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import RedisStore from "rate-limit-redis";
 import clientRoutes from "./routes/client/index.route.ts";
 import adminRoutes from "./routes/admin/index.route.ts";
 import variableConfig from "./config/variable.config.ts";
@@ -16,6 +15,7 @@ import { requestLogger } from "./middlewares/request-logger.middleware.ts";
 import { getLogger, safeError } from "./infrastructure/observability/logger.ts";
 import { getAuthSnapshotMetrics } from "./modules/accounts/infrastructure/auth-snapshot.cache.ts";
 import { getRedisMutationMetrics } from "./modules/bids/infrastructure/redis/redis-auction.authority.ts";
+import { createRedisRateLimitStore, redisRateLimitPrefixes } from "./infrastructure/security/redis-rate-limit.store.ts";
 
 const log = getLogger({ component: "api" });
 
@@ -69,15 +69,7 @@ export function createApp() {
   app.use(csrfProtection);
   app.use(
     rateLimit({
-      store: new RedisStore({
-        sendCommand: async (...args: string[]) => {
-          try {
-            return (await redisClient.call(args[0], ...args.slice(1))) as never;
-          } catch {
-            return undefined as never;
-          }
-        },
-      }),
+      store: createRedisRateLimitStore(redisRateLimitPrefixes.api),
       passOnStoreError: true,
       windowMs: 15 * 60 * 1000,
       // A benchmark stack is isolated and may legitimately generate more traffic
