@@ -9,7 +9,7 @@ import { useFilters } from "@/hooks/useFilters";
 import { slugify } from "@/utils/make_slug";
 import { toast } from "sonner";
 import ConfirmDeleteButton from "@/components/common/ConfirmDeleteButton";
-import Loading from "@/components/common/Loading";
+import { AdminTableSkeleton } from "@/components/common/ContentSkeletons";
 import { categoryService } from "@/services/category.service";
 
 const LIMIT = 5;
@@ -169,9 +169,7 @@ export default function CategoryTrashPage() {
   };
 
   if (isLoading) {
-    return (
-      <Loading className="ml-[240px] bg-transparent"></Loading>
-    );
+    return <AdminTableSkeleton />;
   }
 
   return (
@@ -181,7 +179,7 @@ export default function CategoryTrashPage() {
           Category Trash
         </h2>
         <button
-          onClick={() => navigate(`/${import.meta.env.VITE_PATH_ADMIN}/category/list`)}
+          onClick={() => navigate("/admin/category/list")}
           className="text-sm font-semibold text-accent hover:underline cursor-pointer"
         >
           Back to List
@@ -333,7 +331,7 @@ export default function CategoryTrashPage() {
 
       {/* Mobile/Tablet Card View */}
       <div className="mt-5 space-y-4 lg:hidden relative">
-        {isPageLoading && <Loading></Loading>}
+        {isPageLoading && <div aria-label="Refreshing records" className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/50 backdrop-blur-xs"><div className="h-10 w-10 animate-spin rounded-full border-y-2 border-accent" /></div>}
         {items.map((item) => {
           const checked = selectedIds.includes(item.id);
           return (

@@ -5,7 +5,7 @@ import { formatDateOfBirth } from "@/utils/format_time";
 import { toast } from "sonner";
 import Swal from "sweetalert2";
 import { userService } from "@/services/user.service.ts";
-import Loading from "@/components/common/Loading";
+import { AdminDetailSkeleton } from "@/components/common/ContentSkeletons";
 import UserAvatar from "@/components/common/UserAvatar";
 import {
   ArrowLeft,
@@ -170,11 +170,7 @@ export default function UserDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loading className="bg-transparent" />
-      </div>
-    );
+    return <AdminDetailSkeleton />;
   }
 
   if (!userDetail) {

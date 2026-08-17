@@ -7,7 +7,7 @@ import type { CategoryItem } from "@/interface/category.interface";
 import { useFilters } from "@/hooks/useFilters";
 import { slugify } from "@/utils/make_slug";
 import { toast } from "sonner";
-import Loading from "@/components/common/Loading";
+import { AdminTableSkeleton } from "@/components/common/ContentSkeletons";
 import PaginationComponent from "@/components/common/Pagination";
 import { categoryService } from "@/services/category.service";
 
@@ -150,11 +150,7 @@ export default function CategoryList() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loading className="bg-transparent" />
-      </div>
-    );
+    return <AdminTableSkeleton />;
   }
 
   return (
@@ -173,13 +169,13 @@ export default function CategoryList() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/${import.meta.env.VITE_PATH_ADMIN}/category/trash`)}
+            onClick={() => navigate("/admin/category/trash")}
             className="cursor-pointer inline-flex items-center justify-center px-4 py-2.5 bg-muted/40 hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold rounded-xl text-sm transition-all"
           >
             View Trash Bin
           </button>
           <button
-            onClick={() => navigate(`/${import.meta.env.VITE_PATH_ADMIN}/category/create`)}
+            onClick={() => navigate("/admin/category/create")}
             className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:opacity-90 transition-all shadow-sm"
           >
             <Plus className="w-4 h-4" /> Create Category
@@ -274,7 +270,7 @@ export default function CategoryList() {
                       <button
                         title="Edit category"
                         className="cursor-pointer p-2 hover:bg-accent/10 text-accent rounded-xl transition-all"
-                        onClick={() => navigate(`/${import.meta.env.VITE_PATH_ADMIN}/category/edit/${item.id}`)}
+                        onClick={() => navigate(`/admin/category/edit/${item.id}`)}
                       >
                         <Pencil size={16} />
                       </button>
@@ -343,7 +339,7 @@ export default function CategoryList() {
             <div className="flex gap-2 pt-3 border-t border-border/50">
               <button
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-accent/10 hover:bg-accent/20 text-accent text-xs font-bold rounded-xl transition-all cursor-pointer"
-                onClick={() => navigate(`/${import.meta.env.VITE_PATH_ADMIN}/category/edit/${item.id}`)}
+                onClick={() => navigate(`/admin/category/edit/${item.id}`)}
               >
                 <Pencil size={14} />
                 <span>Edit Category</span>

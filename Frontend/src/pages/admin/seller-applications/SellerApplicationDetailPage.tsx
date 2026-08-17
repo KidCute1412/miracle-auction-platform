@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { formatToVN } from "@/utils/format_time";
-import Loading from "@/components/common/Loading";
+import { AdminDetailSkeleton } from "@/components/common/ContentSkeletons";
 import { userService } from "@/services/user.service";
 
 interface ApplicationInfo {
@@ -71,9 +71,7 @@ export default function SellerApplicationDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <Loading className="ml-[240px] bg-transparent"></Loading>
-    );
+    return <AdminDetailSkeleton />;
   }
 
   if (hasError) {
@@ -220,7 +218,7 @@ export default function SellerApplicationDetailPage() {
             <button
               onClick={() =>
                 navigate(
-                  `/${import.meta.env.VITE_PATH_ADMIN}/seller/applications`
+                  "/admin/seller/applications"
                 )
               }
               className="cursor-pointer px-6 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all focus:outline-none"

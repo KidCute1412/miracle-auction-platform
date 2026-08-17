@@ -9,7 +9,7 @@ import type {
   DlqKind,
 } from "api-contracts";
 
-const ADMIN_PATH = import.meta.env.VITE_PATH_ADMIN || "admin";
+import { ADMIN_PATH } from "@/lib/admin-path";
 
 export const dashboardService = {
   // Retrieve the full admin dashboard status data

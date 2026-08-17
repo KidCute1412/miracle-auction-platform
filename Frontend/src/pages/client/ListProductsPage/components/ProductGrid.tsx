@@ -1,7 +1,7 @@
 import React from "react";
 import ProductCard from "@/components/common/ProductCard";
 import PaginationComponent from "@/components/common/Pagination";
-import Loading from "@/components/common/Loading";
+import { ProductGridSkeleton } from "@/components/common/ContentSkeletons";
 import { SearchX, RotateCcw } from "lucide-react";
 
 export type ProductItem = {
@@ -35,7 +35,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   onClearFilters,
 }) => {
   if (isLoading) {
-    return <Loading />;
+    return <ProductGridSkeleton />;
   }
 
   if (!products || products.length === 0) {

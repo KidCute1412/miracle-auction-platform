@@ -10,6 +10,7 @@ import {
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { accountService } from "@/services/account.service.ts";
+import { adminRoute } from "@/lib/admin-path";
 
 const baseLinkClass =
   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200";
@@ -25,21 +26,21 @@ export default function Sidebar() {
   
   // Check if current path matches parent categories route
   const isCategoryActive = pathname.startsWith(
-    `/${import.meta.env.VITE_PATH_ADMIN}/category`
+    adminRoute("category")
   );
   
   // Check if current path matches parent users route
   const isUserActive = pathname.startsWith(
-    `/${import.meta.env.VITE_PATH_ADMIN}/user`
+    adminRoute("user")
   );
   
   // Check if current path matches bidder applications route
   const isBidderFormActive =
     pathname.startsWith(
-      `/${import.meta.env.VITE_PATH_ADMIN}/seller/applications`
+      adminRoute("seller/applications")
     ) ||
     pathname.startsWith(
-      `/${import.meta.env.VITE_PATH_ADMIN}/seller/application/`
+      adminRoute("seller/application/")
     );
 
   return (
@@ -50,7 +51,7 @@ export default function Sidebar() {
 
       {/* Dashboard / Overview Link */}
       <NavLink
-        to={`/${import.meta.env.VITE_PATH_ADMIN}/dashboard`}
+        to={adminRoute("dashboard")}
         end
         className={({ isActive }) =>
           `${baseLinkClass} ${isActive ? activeClass : normalClass}`
@@ -62,7 +63,7 @@ export default function Sidebar() {
 
       {/* Category Management Link */}
       <NavLink
-        to={`/${import.meta.env.VITE_PATH_ADMIN}/category/list`}
+        to={adminRoute("category/list")}
         className={() =>
           `${baseLinkClass} ${isCategoryActive ? activeClass : normalClass}`
         }
@@ -73,7 +74,7 @@ export default function Sidebar() {
 
       {/* Product Management Link */}
       <NavLink
-        to={`/${import.meta.env.VITE_PATH_ADMIN}/product/list`}
+        to={adminRoute("product/list")}
         className={({ isActive }) =>
           `${baseLinkClass} ${isActive ? activeClass : normalClass}`
         }
@@ -84,7 +85,7 @@ export default function Sidebar() {
 
       {/* User Management Link */}
       <NavLink
-        to={`/${import.meta.env.VITE_PATH_ADMIN}/user/list`}
+        to={adminRoute("user/list")}
         className={() =>
           `${baseLinkClass} ${isUserActive ? activeClass : normalClass}`
         }
@@ -95,7 +96,7 @@ export default function Sidebar() {
 
       {/* Registration Applications Link */}
       <NavLink
-        to={`/${import.meta.env.VITE_PATH_ADMIN}/seller/applications`}
+        to={adminRoute("seller/applications")}
         className={() =>
           `${baseLinkClass} ${isBidderFormActive ? activeClass : normalClass}`
         }
@@ -112,7 +113,7 @@ export default function Sidebar() {
 
         {/* Personal Profile Info Link */}
         <NavLink
-          to={`/${import.meta.env.VITE_PATH_ADMIN}/profile`}
+          to={adminRoute("profile")}
           className={({ isActive }) =>
             `${baseLinkClass} ${isActive ? activeClass : normalClass}`
           }

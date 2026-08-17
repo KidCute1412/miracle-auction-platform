@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Ban } from "lucide-react";
 import { useAuth } from "@/routes/ProtectedRouter";
-import Loading from "@/components/common/Loading";
+import { SectionSkeleton } from "@/components/common/ContentSkeletons";
 import BanBidderModal from "./BanBidderModal";
 import { bidService } from "@/services/bid.service.ts";
 import { formatVnd } from "@/lib/money.ts";
@@ -84,7 +84,7 @@ export default function BidHistorySection({ product, isSeller, isExpired }: { pr
   };
 
   if (loading) {
-    return <Loading className="static w-full h-full bg-transparent" />;
+    return <SectionSkeleton rows={4} />;
   }
 
   return (

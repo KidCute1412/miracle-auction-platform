@@ -7,7 +7,7 @@ import { formatToVN } from "@/utils/format_time";
 import { useFilters } from "@/hooks/useFilters";
 import { toast } from "sonner";
 import ConfirmDeleteButton from "@/components/common/ConfirmDeleteButton";
-import Loading from "@/components/common/Loading";
+import { AdminTableSkeleton } from "@/components/common/ContentSkeletons";
 import { productService } from "@/services/product.service";
 
 const LIMIT = 10;
@@ -130,7 +130,7 @@ export default function ProductTrashPage() {
   };
 
   const handleView = (id: number) => {
-    navigate(`/${import.meta.env.VITE_PATH_ADMIN}/product/detail/${id}`);
+    navigate(`/admin/product/detail/${id}`);
   };
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -173,9 +173,7 @@ export default function ProductTrashPage() {
   };
 
   if (isLoading) {
-    return (
-      <Loading className="ml-[240px] bg-transparent"></Loading>
-    );
+    return <AdminTableSkeleton columns={7} />;
   }
 
   return (
@@ -185,7 +183,7 @@ export default function ProductTrashPage() {
           Product Trash
         </h2>
         <button
-          onClick={() => navigate(`/${import.meta.env.VITE_PATH_ADMIN}/product/list`)}
+          onClick={() => navigate("/admin/product/list")}
           className="text-sm font-semibold text-accent hover:underline cursor-pointer"
         >
           Back to List
@@ -314,7 +312,7 @@ export default function ProductTrashPage() {
 
       {/* Mobile/Tablet Card View */}
       <div className="mt-5 space-y-4 lg:hidden relative">
-        {isPageLoading && <Loading></Loading>}
+        {isPageLoading && <div aria-label="Refreshing records" className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/50 backdrop-blur-xs"><div className="h-10 w-10 animate-spin rounded-full border-y-2 border-accent" /></div>}
         {items.map((item) => {
           const checked = selectedIds.includes(item.product_id);
           return (

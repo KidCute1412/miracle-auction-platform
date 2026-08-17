@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { slugify } from "@/utils/make_slug";
-import Loading from "@/components/common/Loading";
+import { CategoryGridSkeleton } from "@/components/common/ContentSkeletons";
 import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 
 import { categoryService } from "@/services/category.service.ts";
@@ -88,7 +88,7 @@ function AllCategoriesPage({ level }: { level: number }) {
   };
 
   return isLoading ? (
-    <Loading />
+    <div className="min-h-screen bg-background text-foreground"><div className="container mx-auto px-4 py-8"><div className="mx-auto mb-10 space-y-3 text-center"><div className="mx-auto h-9 w-56 animate-pulse rounded bg-muted" /><div className="mx-auto h-4 w-80 max-w-full animate-pulse rounded bg-muted" /></div><div className="max-w-6xl mx-auto"><CategoryGridSkeleton /></div></div></div>
   ) : (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       {/* Container wrapper for main contents */}

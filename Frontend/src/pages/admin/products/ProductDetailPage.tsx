@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { formatToVN } from "@/utils/format_time";
 import { productService } from "@/services/product.service";
-import Loading from "@/components/common/Loading";
+import { AdminDetailSkeleton } from "@/components/common/ContentSkeletons";
 import {
   ChevronDown,
   ChevronUp,
@@ -86,11 +86,7 @@ export default function ProductDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loading className="bg-transparent" />
-      </div>
-    );
+    return <AdminDetailSkeleton />;
   }
 
   if (!product) {

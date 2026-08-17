@@ -15,7 +15,7 @@ import { Clock, Calendar, User, Star, Award, TrendingUp, Sparkles } from "lucide
 import { useAuth } from "@/routes/ProtectedRouter";
 import useSocketBidding from "@/hooks/useSocketBidding";
 import PreviewImage from "./components/PreviewProductModal";
-import Loading from "@/components/common/Loading";
+import { ProductDetailSkeleton } from "@/components/common/ContentSkeletons";
 import { slugify } from "@/utils/make_slug";
 import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { productService } from "@/services/product.service.ts";
@@ -240,7 +240,7 @@ function DetailProductPage() {
   };
 
   return isLoading ? (
-    <Loading />
+    <ProductDetailSkeleton />
   ) : (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 bg-background text-foreground transition-colors duration-300 relative">
       {/* Product Name */}

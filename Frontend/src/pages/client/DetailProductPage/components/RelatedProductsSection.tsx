@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import ProductCard from "@/components/common/ProductCard";
 import HorizontalBar from "@/components/common/HorizontalBar";
 import { Package, Sparkles } from "lucide-react";
-import Loading from "@/components/common/Loading";
+import { ProductGridSkeleton } from "@/components/common/ContentSkeletons";
 import { productService } from "@/services/product.service.ts";
 
 type Products = {
@@ -41,7 +41,7 @@ export default function RelatedProductsSection({ category_id, product_id }: { ca
   if (isLoading) {
     return (
       <div className="bg-card rounded-xl border border-border p-8">
-        <Loading className="static w-full h-32 bg-transparent" />
+        <ProductGridSkeleton count={3} />
       </div>
     );
   }

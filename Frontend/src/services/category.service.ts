@@ -1,7 +1,7 @@
 import { apiRequest } from "./api.client.ts";
 import type { CategoryNode, CategoryEditItem } from "@/hooks/useCategory.ts";
 
-const ADMIN_PATH = import.meta.env.VITE_PATH_ADMIN;
+import { ADMIN_PATH } from "@/lib/admin-path";
 type TreeResponse = { tree: CategoryNode[] };
 type CreatorsResponse = { list: string[] };
 type CategoryResponse = { item: { id: number; name: string; status: CategoryEditItem["status"]; parent_id?: number | null; description?: string | null } };

@@ -1,6 +1,6 @@
 import { apiRequest } from "./api.client.ts";
 
-const ADMIN_PATH = import.meta.env.VITE_PATH_ADMIN;
+import { ADMIN_PATH } from "@/lib/admin-path";
 
 export type ProductFilterParams = {
   cat1_id?: number | string;

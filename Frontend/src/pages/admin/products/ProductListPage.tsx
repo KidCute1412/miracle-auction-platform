@@ -6,7 +6,7 @@ import { formatToVN } from "@/utils/format_time";
 import { formatPrice } from "@/utils/format_price";
 import { useFilters } from "@/hooks/useFilters";
 import { toast } from "sonner";
-import Loading from "@/components/common/Loading";
+import { AdminTableSkeleton } from "@/components/common/ContentSkeletons";
 import PaginationComponent from "@/components/common/Pagination";
 import { productService } from "@/services/product.service";
 
@@ -120,7 +120,7 @@ export default function ProductListPage() {
   }, [fetchItems]);
 
   const handleView = (id: number) => {
-    navigate(`/${import.meta.env.VITE_PATH_ADMIN}/product/detail/${id}`);
+    navigate(`/admin/product/detail/${id}`);
   };
 
   const handleDelete = (id: number) => {
@@ -144,11 +144,7 @@ export default function ProductListPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loading className="bg-transparent" />
-      </div>
-    );
+    return <AdminTableSkeleton columns={7} />;
   }
 
   return (
@@ -166,7 +162,7 @@ export default function ProductListPage() {
         </div>
 
         <button
-          onClick={() => navigate(`/${import.meta.env.VITE_PATH_ADMIN}/product/trash`)}
+          onClick={() => navigate("/admin/product/trash")}
           className="cursor-pointer inline-flex items-center justify-center px-4 py-2.5 bg-muted/40 hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold rounded-xl text-sm transition-all"
         >
           View Trash Bin

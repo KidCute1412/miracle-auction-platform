@@ -146,7 +146,7 @@ export default function CategoryEdit() {
             }
             if (data.code === "success") {
               toast.success(data.message);
-              navigate(`/${import.meta.env.VITE_PATH_ADMIN}/category/list`);
+              navigate("/admin/category/list");
             }
           })
           .catch(() => {
@@ -247,7 +247,7 @@ export default function CategoryEdit() {
                   type="button"
                   className="cursor-pointer w-full sm:w-auto text-sm font-semibold text-accent hover:underline transition-colors py-2"
                   onClick={() => {
-                     navigate(`/${import.meta.env.VITE_PATH_ADMIN}/category/list`);
+                     navigate("/admin/category/list");
                   }}
                 >
                   Back to list

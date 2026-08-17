@@ -8,6 +8,7 @@ import { useAdminDashboardSocket } from "@/hooks/useAdminDashboardSocket";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { dashboardService } from "@/services/dashboard.service";
 import SelectComponent from "@/components/common/Select";
+import { DashboardSkeleton } from "@/components/common/ContentSkeletons";
 
 const ranges: Record<DashboardRange, string> = {
   "7d": "Last 7 days", "30d": "Last 30 days", "3m": "Last 3 months", "6m": "Last 6 months", "1y": "Last year",
@@ -21,57 +22,6 @@ const colors = [
   "oklch(0.86 0.07 75)",
 ];
 const formatVnd = (value: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
-
-function DashboardSkeleton() {
-  return (
-    <main className="p-4 sm:p-8 space-y-6 bg-background min-h-screen animate-pulse">
-      <header className="flex flex-wrap gap-4 justify-between items-end border-b border-border pb-5">
-        <div className="space-y-2">
-          <div className="h-3 w-32 bg-accent/20 rounded" />
-          <div className="h-8 w-60 bg-muted/60 rounded-xl" />
-          <div className="h-4 w-48 bg-muted/40 rounded" />
-        </div>
-        <div className="flex gap-2">
-          <div className="h-10 w-40 bg-card border border-border rounded-xl" />
-          <div className="h-10 w-20 bg-card border border-border rounded-xl" />
-          <div className="h-10 w-36 bg-accent/30 rounded-xl" />
-        </div>
-      </header>
-
-      <div className="flex gap-2">
-        <div className="h-9 w-28 bg-accent/30 rounded-xl" />
-        <div className="h-9 w-28 bg-card border border-border rounded-xl" />
-        <div className="h-9 w-28 bg-card border border-border rounded-xl" />
-      </div>
-
-      <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-card border border-border rounded-2xl p-5 space-y-3">
-            <div className="w-5 h-5 bg-accent/20 rounded" />
-            <div className="h-3 w-24 bg-muted/40 rounded" />
-            <div className="h-7 w-36 bg-muted/60 rounded-lg" />
-          </div>
-        ))}
-      </section>
-
-      <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="bg-card border border-border rounded-xl p-4 space-y-2">
-            <div className="h-3 w-20 bg-muted/40 rounded" />
-            <div className="h-6 w-16 bg-muted/60 rounded" />
-          </div>
-        ))}
-      </section>
-
-      <div className="h-80 bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div className="h-5 w-72 bg-muted/60 rounded" />
-        <div className="h-56 bg-muted/20 rounded-xl flex items-center justify-center">
-          <p className="text-xs font-mono text-accent animate-pulse">Loading telemetry analytics feed…</p>
-        </div>
-      </div>
-    </main>
-  );
-}
 
 export default function DashboardPage() {
   const [range, setRange] = useState<DashboardRange>("6m");

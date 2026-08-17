@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useFilters } from "@/hooks/useFilters";
 import { formatToVN } from "@/utils/format_time";
 import { slugify } from "@/utils/make_slug";
-import Loading from "@/components/common/Loading";
+import { AdminTableSkeleton } from "@/components/common/ContentSkeletons";
 import PaginationComponent from "@/components/common/Pagination";
 import { userService } from "@/services/user.service";
 
@@ -130,7 +130,7 @@ export default function BidderFormListPage() {
         />
 
         {isLoading ? (
-          <Loading className="ml-[240px] bg-transparent"></Loading>
+          <AdminTableSkeleton columns={5} />
         ) : (
           <>
             {/* Desktop Table View */}

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { MessageCircle, User, HelpCircle, Send, MessageSquare, Crown } from "lucide-react";
 import PaginationComponent from "@/components/common/Pagination";
-import Loading from "@/components/common/Loading";
+import { SectionSkeleton } from "@/components/common/ContentSkeletons";
 import { productService } from "@/services/product.service.ts";
 
 interface QuestionType {
@@ -88,7 +88,7 @@ export default function QASection({ product_id, seller_id }: { product_id?: numb
   };
 
   if (isLoading) {
-    return <Loading className="static w-full h-full bg-transparent" />;
+    return <SectionSkeleton />;
   }
 
   return (

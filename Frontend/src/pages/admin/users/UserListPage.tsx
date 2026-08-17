@@ -5,7 +5,7 @@ import FilterBar from "@/components/admin/FilterBar";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useFilters } from "@/hooks/useFilters";
 import { slugify } from "@/utils/make_slug";
-import Loading from "@/components/common/Loading";
+import { AdminTableSkeleton } from "@/components/common/ContentSkeletons";
 import PaginationComponent from "@/components/common/Pagination";
 import { userService } from "@/services/user.service";
 import UserAvatar from "@/components/common/UserAvatar";
@@ -217,7 +217,7 @@ export default function UserListPage() {
         {/* Tablet/Mobile Card View - Show on screens < 1280px */}
         <div className="mt-5 grid grid-row-1 sm:grid-row-2 gap-4 xl:hidden">
           {isLoading ? (
-            <Loading className="ml-[240px] bg-transparent"></Loading>
+            <AdminTableSkeleton columns={4} rows={5} />
           ) : (
             items.map((user) => {
               return (
