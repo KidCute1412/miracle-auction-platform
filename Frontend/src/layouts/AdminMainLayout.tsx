@@ -2,9 +2,10 @@
 import { Outlet, ScrollRestoration } from "react-router-dom";
 import Header from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
+import Loading from "@/components/common/Loading";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/routes/ProtectedRouter";
-import {useEffect} from "react"
+import { useEffect } from "react";
 export default function MainLayout() {
   const { auth, loading } = useAuth();
   const route = useNavigate();
@@ -24,11 +25,7 @@ export default function MainLayout() {
   }, [auth, loading, route]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-accent"></div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
