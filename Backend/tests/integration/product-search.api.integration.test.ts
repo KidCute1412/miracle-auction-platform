@@ -108,7 +108,7 @@ describe("product search API integration", () => {
     });
   });
 
-  it("removes the obsolete search endpoint and provisions both search indexes", async () => {
+  it("removes the obsolete search endpoint and provisions catalog search indexes", async () => {
     await request(app)
       .get("/products/search")
       .expect(404, {
@@ -121,11 +121,26 @@ describe("product search API integration", () => {
       FROM pg_indexes
       WHERE schemaname = 'public'
         AND tablename = 'products'
-        AND indexname IN ('products_fts', 'products_name_trgm')
+        AND indexname IN (
+          'products_fts',
+          'products_name_trgm',
+          'products_catalog_end_time_idx',
+          'products_catalog_category_end_time_idx',
+          'products_catalog_current_price_idx',
+          'products_catalog_category_current_price_idx',
+          'products_catalog_created_at_idx',
+          'products_catalog_bid_turns_idx'
+        )
       ORDER BY indexname
     `;
     expect(indexes.map(({ indexname }) => indexname)).toEqual([
       "products_fts",
+      "products_catalog_bid_turns_idx",
+      "products_catalog_category_current_price_idx",
+      "products_catalog_category_end_time_idx",
+      "products_catalog_created_at_idx",
+      "products_catalog_current_price_idx",
+      "products_catalog_end_time_idx",
       "products_name_trgm",
     ]);
   });

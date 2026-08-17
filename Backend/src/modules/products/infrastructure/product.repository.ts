@@ -147,7 +147,8 @@ export async function getProductsCatalogList(
 
     // Trigrams are ineffective for one- and two-character input.
     if (searchTerm.length >= 3) {
-      searchClauses.push(`word_similarity(remove_accents(?), ${normalizedName}) > 0.20`);
+      // `<%` uses pg_trgm.word_similarity_threshold and can use products_name_trgm.
+      searchClauses.push(`remove_accents(?) <% ${normalizedName}`);
       bindings.push(searchTerm);
     }
     whereClauses.push(`(${searchClauses.join(" OR ")})`);
@@ -196,7 +197,7 @@ export async function getProductsCatalogList(
   }
 
   return prisma.$transaction(async (transaction) => {
-    await transaction.$executeRawUnsafe("SET LOCAL pg_trgm.word_similarity_threshold = '0.30'");
+    await transaction.$executeRawUnsafe("SET LOCAL pg_trgm.word_similarity_threshold = '0.45'");
     return (await raw(sql, bindings, transaction)).rows;
   });
 }
