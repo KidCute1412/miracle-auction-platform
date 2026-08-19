@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { slugify } from "@/utils/make_slug";
 import AddToLove from "@/components/common/AddToLove";
 import SafeImage from "@/components/common/SafeImage";
-import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { formatVnd } from "@/lib/money";
 
@@ -100,16 +99,12 @@ function ProductCard({
     return name.substring(0, len - thirdLen) + "*****";
   };
 
-  const { ref, hasIntersected } = useIntersectionObserver();
-
   return (
     <div
-      ref={ref}
       className={cn(
         "group relative w-80 h-112 cursor-pointer overflow-hidden rounded-2xl flex flex-col items-center shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "bg-card/40 backdrop-blur-xl border border-border",
         "hover:scale-[1.015] hover:shadow-gold-glow hover:border-accent/30",
-        hasIntersected ? "animate__animated animate__fadeInUp" : "opacity-0",
         data.className
       )}
       onClick={

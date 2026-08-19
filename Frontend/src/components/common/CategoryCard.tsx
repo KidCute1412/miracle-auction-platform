@@ -1,7 +1,6 @@
 import Cristiano from "@/assets/images/Cristiano.jpg";
 import { cn } from "@/lib/utils";
 import SafeImage from "@/components/common/SafeImage";
-import useIntersectionObserver from "@/hooks/useIntersectionObserver";
 
 interface CategoryCardProps {
   name?: string;
@@ -12,16 +11,13 @@ interface CategoryCardProps {
 
 function CategoryCard({ name = "Cristiano", image, onClick, className }: CategoryCardProps) {
   const displayImage = image || Cristiano;
-  const { ref, hasIntersected } = useIntersectionObserver();
 
   return (
     <div
-      ref={ref}
       className={cn(
         "group relative w-[380px] h-[450px] cursor-pointer overflow-hidden rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "bg-card/45 border border-border/80",
         "hover:border-accent/50 hover:-translate-y-2 hover:shadow-[0_20px_45px_-15px_oklch(0.78_0.09_75_/_18%),_0_0_30px_oklch(0.78_0.09_75_/_10%)]",
-        hasIntersected ? "animate__animated animate__fadeInUp" : "opacity-0",
         className
       )}
       onClick={onClick}
