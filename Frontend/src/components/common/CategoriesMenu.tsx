@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Ronaldo from "@/assets/images/Cristiano.jpg";
+import SafeImage from "@/components/common/SafeImage";
 import { toast } from "sonner";
 import { slugify } from "@/utils/make_slug";
 import { ChevronRight, Grid3X3, ArrowRight } from "lucide-react";
@@ -190,9 +191,14 @@ function CatagoriesMiniItem({
         className="h-[110px] aspect-square flex flex-col shrink-0 items-center justify-center rounded-xl border border-border hover:shadow-gold-glow hover:scale-105 hover:cursor-pointer transition-all duration-300 bg-muted/50 hover:bg-muted backdrop-blur-sm transform hover:-translate-y-0.5 relative overflow-hidden mb-2"
         onClick={handleClick}
       >
-        <img
+        <SafeImage
           className="object-cover h-[90%] aspect-square rounded-lg border border-border group-hover:border-accent/40 transition-all duration-300"
           src={image || Ronaldo}
+          fallbackSrc={Ronaldo}
+          optimizeWidth={200}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
           alt={name}
         />
         <div className="absolute inset-0 bg-background/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center rounded-xl">

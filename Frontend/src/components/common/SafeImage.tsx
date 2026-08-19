@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Gavel, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { optimizeImageUrl } from "@/utils/image";
 
 export interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src?: string;
@@ -9,6 +10,14 @@ export interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement
   containerClassName?: string;
   aspectRatio?: string;
   showFallbackText?: boolean;
+  maxRetries?: number;
+  autoOptimize?: boolean;
+  optimizeWidth?: number;
+}
+
+function resolveSourceUrl(rawSrc?: string, autoOpt = true, width = 600): string | undefined {
+  if (!rawSrc) return undefined;
+  return autoOpt ? optimizeImageUrl(rawSrc, width) : rawSrc;
 }
 
 export const SafeImage: React.FC<SafeImageProps> = ({
@@ -20,36 +29,77 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   aspectRatio,
   showFallbackText = false,
   loading = "lazy",
+  decoding = "async",
+  referrerPolicy = "no-referrer",
+  maxRetries = 2,
+  autoOptimize = true,
+  optimizeWidth = 600,
   onLoad,
   onError,
   ...props
 }) => {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(() => (!src ? "error" : "loading"));
-  const [currentSrc, setCurrentSrc] = useState<string | undefined>(src);
+  const [currentSrc, setCurrentSrc] = useState<string | undefined>(() => resolveSourceUrl(src, autoOptimize, optimizeWidth));
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+
     if (!src) {
       setStatus("error");
       setCurrentSrc(undefined);
+      setRetryCount(0);
     } else {
       setStatus("loading");
-      setCurrentSrc(src);
+      setCurrentSrc(resolveSourceUrl(src, autoOptimize, optimizeWidth));
+      setRetryCount(0);
     }
-  }, [src]);
+
+    return () => {
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+      }
+    };
+  }, [src, autoOptimize, optimizeWidth]);
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
     setStatus("loaded");
     onLoad?.(e);
   };
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    // 1. Attempt Auto-Retry with backoff if retries remain and src exists
+    if (src && retryCount < maxRetries) {
+      const nextRetry = retryCount + 1;
+      setRetryCount(nextRetry);
+
+      retryTimerRef.current = setTimeout(() => {
+        const baseSrc = resolveSourceUrl(src, autoOptimize, optimizeWidth) || src;
+        const separator = baseSrc.includes("?") ? "&" : "?";
+        setCurrentSrc(`${baseSrc}${separator}_retry=${nextRetry}`);
+        setStatus("loading");
+      }, 1000);
+      return;
+    }
+
+    // 2. Attempt fallbackSrc if available
     if (fallbackSrc && currentSrc !== fallbackSrc) {
       setCurrentSrc(fallbackSrc);
       setStatus("loading");
-    } else {
-      setStatus("error");
-      onError?.(e);
+      return;
     }
+
+    // 3. Mark final error and notify parent
+    setStatus("error");
+    onError?.(e);
   };
 
   return (
@@ -94,6 +144,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           src={currentSrc}
           alt={alt}
           loading={loading}
+          decoding={decoding}
+          referrerPolicy={referrerPolicy}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(

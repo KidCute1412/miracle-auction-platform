@@ -3,5 +3,9 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
-  test: { environment: "jsdom", restoreMocks: true },
+  test: {
+    environment: "jsdom",
+    restoreMocks: true,
+    include: ["src/**/*.test.{ts,tsx}"],
+  },
 });

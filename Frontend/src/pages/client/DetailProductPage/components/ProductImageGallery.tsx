@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Eye, FileText } from "lucide-react";
 import AddToLove from "@/components/common/AddToLove";
+import SafeImage from "@/components/common/SafeImage";
 import { cn } from "@/lib/utils";
 
 interface ProductImageGalleryProps {
@@ -63,12 +64,15 @@ export default function ProductImageGallery({
                 : "rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
             }}
           >
-            <img
+            <SafeImage
               key={currentImageIndex}
               src={product_images[currentImageIndex]}
               alt={product_name}
-              loading="lazy"
-              className="w-full h-[280px] xs:h-[340px] sm:h-[420px] md:h-[480px] lg:h-[500px] object-contain mx-auto bg-card transition-all duration-500 animate-in fade-in zoom-in-95 duration-300 select-none"
+              optimizeWidth={1000}
+              loading="eager"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              className="w-full h-[280px] xs:h-[340px] sm:h-[420px] md:h-[480px] lg:h-[500px] object-contain mx-auto bg-card transition-all duration-500 select-none"
             />
 
             {/* Dynamic Specular Lens Sheen Spotlight */}
@@ -124,10 +128,13 @@ export default function ProductImageGallery({
                     : "border-border hover:border-accent/40 opacity-70 hover:opacity-100"
                 )}
               >
-                <img
+                <SafeImage
                   src={image}
                   alt={`Thumbnail ${index + 1}`}
+                  optimizeWidth={200}
                   loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
                 />
               </div>

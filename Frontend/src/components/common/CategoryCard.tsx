@@ -40,6 +40,7 @@ function CategoryCard({ name = "Cristiano", image, onClick, className }: Categor
         <SafeImage
           src={displayImage}
           alt={name}
+          optimizeWidth={500}
           className="w-full h-full object-cover transition-all duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 group-hover:brightness-105 group-hover:saturate-[1.15]"
           loading="lazy"
         />

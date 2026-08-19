@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { User } from "lucide-react";
+import { getAvatarUrl } from "@/utils/image";
 
 export interface UserAvatarProps {
   src?: string | null;
@@ -25,6 +26,14 @@ const iconSizeMap = {
   xl: 48,
 };
 
+const pixelSizeMap: Record<string, number> = {
+  xs: 48,
+  sm: 64,
+  md: 96,
+  lg: 160,
+  xl: 256,
+};
+
 export const UserAvatar: React.FC<UserAvatarProps> = ({
   src,
   name = "",
@@ -32,11 +41,31 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   className = "",
   onClick,
 }) => {
+  const targetPixelSize = typeof size === "number" ? size * 2 : pixelSizeMap[size] || 96;
+  const optimizedSrc = src ? getAvatarUrl(src, targetPixelSize) : undefined;
+
   const [imgError, setImgError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string | undefined>(optimizedSrc);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setImgError(false);
-  }, [src]);
+    setCurrentSrc(optimizedSrc);
+    setRetryCount(0);
+  }, [optimizedSrc]);
+
+  const handleError = () => {
+    if (optimizedSrc && retryCount < 2) {
+      const next = retryCount + 1;
+      setRetryCount(next);
+      setTimeout(() => {
+        const sep = optimizedSrc.includes("?") ? "&" : "?";
+        setCurrentSrc(`${optimizedSrc}${sep}_retry=${next}`);
+      }, 1000);
+    } else {
+      setImgError(true);
+    }
+  };
 
   const getInitials = (str: string) => {
     if (!str) return "";
@@ -51,7 +80,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   const customStyle = typeof size === "number" ? { width: `${size}px`, height: `${size}px` } : {};
   const iconSize = typeof size === "string" ? iconSizeMap[size] : Math.max(16, Math.round(size * 0.45));
 
-  const hasValidImage = src && !imgError;
+  const hasValidImage = currentSrc && !imgError;
 
   return (
     <div
@@ -63,9 +92,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     >
       {hasValidImage ? (
         <img
-          src={src}
+          src={currentSrc}
           alt={name || "User avatar"}
-          onError={() => setImgError(true)}
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={handleError}
           className="w-full h-full object-cover"
         />
       ) : initials ? (
