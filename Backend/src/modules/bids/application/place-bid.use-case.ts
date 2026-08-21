@@ -17,8 +17,6 @@ import type { AuctionMutationData } from "../infrastructure/redis/redis-auction.
 import { decideLuaReferenceBid } from "../domain/lua-reference.model.ts";
 import { recordShadowComparison } from "./shadow-comparison.ts";
 
-import { bootstrapRedisAuction } from "../infrastructure/redis/redis-auction.bootstrap.ts";
-
 const bids = new BidRepository();
 export type PlaceBidInput = {
   userId: number;
@@ -42,17 +40,7 @@ export class PlaceBidUseCase {
         idempotencyKey: input.idempotencyKey,
         correlationId: input.correlationId ?? randomUUID(),
       };
-      try {
-        return await redisAuctionAuthority.mutate(command);
-      } catch (error) {
-        if (error instanceof BidDomainError && error.code === "AUCTION_STATE_NOT_READY") {
-          const bootstrapped = await bootstrapRedisAuction(input.productId);
-          if (bootstrapped) {
-            return redisAuctionAuthority.mutate(command);
-          }
-        }
-        throw error;
-      }
+      return redisAuctionAuthority.mutate(command);
     }
     return prisma.$transaction(async (tx) => {
       const operation = "place_bid";

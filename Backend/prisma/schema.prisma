@@ -8,6 +8,34 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model auction_authority_recovery {
+  id                    Int       @id
+  generation            String    @db.Uuid
+  recovery_epoch        BigInt    @default(0)
+  state                 String    @default("READY") @db.VarChar(32)
+  owner_id               String?   @db.VarChar(160)
+  lease_until            DateTime? @db.Timestamptz(6)
+  last_redis_healthy_at  DateTime  @default(now()) @db.Timestamptz(6)
+  recovery_started_at    DateTime? @db.Timestamptz(6)
+  recovery_completed_at  DateTime? @db.Timestamptz(6)
+  last_error             String?
+  updated_at             DateTime  @default(now()) @db.Timestamptz(6)
+}
+
+model auction_authority_recovery_runs {
+  run_id               String    @id @db.Uuid
+  recovery_epoch       BigInt    @unique
+  trigger              String    @db.VarChar(32)
+  status               String    @db.VarChar(32)
+  source               String    @default("POSTGRESQL") @db.VarChar(32)
+  started_at           DateTime  @default(now()) @db.Timestamptz(6)
+  completed_at         DateTime? @db.Timestamptz(6)
+  recovered_auctions   Int       @default(0)
+  extension_seconds    Int       @default(0)
+  error                String?
+  metadata             Json      @default("{}")
+}
+
 model bidding_ban_user {
   id         BigInt    @id @default(autoincrement())
   created_at DateTime  @default(now()) @db.Timestamptz(6)
@@ -148,6 +176,7 @@ model products {
   auction_status         String                   @default("PENDING") @db.VarChar(16)
   auction_version        BigInt                   @default(0)
   auction_sequence       BigInt                   @default(0)
+  last_authority_recovery_epoch BigInt            @default(0)
   bidding_ban_user       bidding_ban_user[]
   bidding_history        bidding_history[]
   love_products          love_products[]

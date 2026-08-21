@@ -18,4 +18,12 @@ describe("production runtime contract", () => {
       expect(source).not.toContain("redisClient.quit()");
     }
   });
+
+  it("copies every Redis authority script into the production bundle", async () => {
+    const buildConfig = await readFile(resolve(process.cwd(), "tsup.config.ts"), "utf8");
+    for (const script of ["auction-mutate.lua", "auction-bootstrap.lua"]) {
+      expect(buildConfig).toContain(script);
+      expect(buildConfig).toContain(`dist/scripts/${script}`);
+    }
+  });
 });

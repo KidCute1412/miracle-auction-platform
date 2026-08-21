@@ -18,6 +18,10 @@ vi.mock("@/config/redis.config.ts", () => ({
   authRedisClient: { hmget: vi.fn(), eval: vi.fn(), status: "end", quit: vi.fn() },
   auctionMutationRedisClient,
   createAuctionMutationRedisClient: vi.fn(() => auctionMutationRedisClient),
+  createRedisClient: vi.fn(() => ({
+    on: vi.fn(), subscribe: vi.fn().mockResolvedValue(1), unsubscribe: vi.fn().mockResolvedValue(1),
+    quit: vi.fn().mockResolvedValue("OK"), status: "end",
+  })),
   checkRedisConnection: vi.fn().mockResolvedValue(true),
   checkRedisDurability: vi.fn().mockResolvedValue({
     primary: true, replicasConnected: 0, replicasRequired: 0, mode: "primary-only", ready: true,

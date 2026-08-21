@@ -5,6 +5,7 @@ vi.unmock("@/config/redis.config.ts");
 import { createApp } from "../../src/app.ts";
 import { redisClient } from "../../src/config/redis.config.ts";
 import { runProjectorBatch } from "../../src/modules/bids/infrastructure/redis/redis-stream.projector.ts";
+import { bootstrapRedisAuction } from "../../src/modules/bids/infrastructure/redis/redis-auction.bootstrap.ts";
 import { prisma } from "../../src/infrastructure/database/prisma.client.ts";
 import { accessCookie, createAuction, createUser } from "../support/fixtures.ts";
 import { useIsolatedDatabase } from "../support/database.ts";
@@ -22,6 +23,11 @@ async function authenticatedRequest(user: { user_id: number; auth_version: numbe
   const csrf = await csrfCookie();
   return { csrf, cookie: `${csrf.cookie}; ${accessCookie(user)}` };
 }
+async function createReadyAuction(sellerId: number, overrides: Parameters<typeof createAuction>[1] = {}) {
+  const auction = await createAuction(sellerId, overrides);
+  await bootstrapRedisAuction(Number(auction.product_id));
+  return auction;
+}
 
 beforeAll(() => {
   process.env.JWT_SECRET = "integration-access-secret";
@@ -38,7 +44,7 @@ describe("bids API integration", () => {
   it("places an authenticated valid bid and preserves its legacy response envelope", async () => {
     const seller = await createUser({ role: "seller" });
     const bidder = await createUser();
-    const auction = await createAuction(seller.user_id);
+    const auction = await createReadyAuction(seller.user_id);
     const auth = await authenticatedRequest(bidder);
 
     const response = await request(app).post("/bids")
@@ -57,7 +63,7 @@ describe("bids API integration", () => {
 
     const seller = await createUser({ role: "seller" });
     const bidder = await createUser();
-    const auction = await createAuction(seller.user_id);
+    const auction = await createReadyAuction(seller.user_id);
     const auth = await authenticatedRequest(bidder);
     const invalid = await request(app).post("/bids")
       .set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", auth.csrf.token).set("Cookie", auth.cookie)
@@ -71,7 +77,7 @@ describe("bids API integration", () => {
   it("returns bid history for a bidder and rejects an invalid history query", async () => {
     const seller = await createUser({ role: "seller" });
     const bidder = await createUser();
-    const auction = await createAuction(seller.user_id);
+    const auction = await createReadyAuction(seller.user_id);
     const auth = await authenticatedRequest(bidder);
     await request(app).post("/bids").set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", auth.csrf.token).set("Cookie", auth.cookie)
       .set("Idempotency-Key", "place-bid-history").send({ product_id: Number(auction.product_id), max_price: "120" }).expect(200);
@@ -88,7 +94,7 @@ describe("bids API integration", () => {
   it("completes buy-now once and rejects the seller", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
-    const auction = await createAuction(seller.user_id, { buy_now_price: 300 });
+    const auction = await createReadyAuction(seller.user_id, { buy_now_price: 300 });
     const buyerAuth = await authenticatedRequest(buyer);
     const success = await request(app).post("/bids/purchase").set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", buyerAuth.csrf.token).set("Cookie", buyerAuth.cookie)
       .set("Idempotency-Key", "buy-now-success").send({ product_id: Number(auction.product_id), buy_price: "300" });
@@ -106,7 +112,7 @@ describe("bids API integration", () => {
     const seller = await createUser({ role: "seller" });
     const bidder = await createUser();
     const stranger = await createUser();
-    const auction = await createAuction(seller.user_id);
+    const auction = await createReadyAuction(seller.user_id);
     const strangerAuth = await authenticatedRequest(stranger);
     const forbidden = await request(app).post("/bids/bans").set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", strangerAuth.csrf.token).set("Cookie", strangerAuth.cookie)
       .set("Idempotency-Key", "ban-forbidden")
@@ -125,7 +131,7 @@ describe("bids API integration", () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
     const stranger = await createUser();
-    const auction = await createAuction(seller.user_id, { buy_now_price: 300 });
+    const auction = await createReadyAuction(seller.user_id, { buy_now_price: 300 });
     const buyerAuth = await authenticatedRequest(buyer);
     const purchase = await request(app).post("/bids/purchase")
       .set("Origin", process.env.CLIENT_URL!).set("x-csrf-token", buyerAuth.csrf.token).set("Cookie", buyerAuth.cookie)

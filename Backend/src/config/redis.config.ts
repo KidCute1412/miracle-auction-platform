@@ -1,16 +1,15 @@
-import { Redis } from "ioredis";
-import { redisOptions } from "./redis-options.ts";
+import type { Redis } from "ioredis";
+import { createRedisClient, resolveRedisTopology } from "./redis-topology.ts";
 import { getLogger, safeError } from "@/infrastructure/observability/logger.ts";
 
 const log = getLogger({ component: "redis" });
 
 // Keep reconnecting after transient Redis or Docker restarts. Individual commands
 // remain bounded by maxRetriesPerRequest and commandTimeout.
-export const redisClient = new Redis(process.env.REDIS_URL || "redis://localhost:16379", redisOptions);
-export const authRedisClient = new Redis(process.env.AUTH_REDIS_URL || process.env.REDIS_URL || "redis://localhost:16379", redisOptions);
-export const auctionMutationRedisClient = new Redis(
+export const redisClient = createRedisClient(process.env.REDIS_URL || "redis://localhost:16379");
+export const authRedisClient = createRedisClient(process.env.AUTH_REDIS_URL || process.env.REDIS_URL || "redis://localhost:16379");
+export const auctionMutationRedisClient = createRedisClient(
   process.env.AUCTION_REDIS_URL || process.env.REDIS_URL || "redis://localhost:16379",
-  redisOptions,
 );
 
 /**
@@ -22,8 +21,11 @@ const auctionShardUrls = (process.env.AUCTION_REDIS_URLS ?? "")
   .split(",")
   .map((url) => url.trim())
   .filter(Boolean);
+if (resolveRedisTopology().mode === "sentinel" && auctionShardUrls.length > 0) {
+  throw new Error("AUCTION_REDIS_URLS sharding cannot be combined with Redis Sentinel mode");
+}
 export const auctionMutationRedisClients: Redis[] = auctionShardUrls.length > 0
-  ? auctionShardUrls.map((url) => new Redis(url, redisOptions))
+  ? auctionShardUrls.map((url) => createRedisClient(url, {}, { ...process.env, REDIS_MODE: "standalone" }))
   : [auctionMutationRedisClient];
 export const auctionRedisShardCount = auctionMutationRedisClients.length;
 
@@ -48,6 +50,8 @@ export function createAuctionMutationRedisClient(): Redis {
   managedAuctionMutationClients.add(client);
   return client;
 }
+
+export { createRedisClient, resolveRedisTopology } from "./redis-topology.ts";
 
 export function createAuctionMutationRedisClientForProduct(productId: number): Redis {
   const client = auctionRedisClientForProduct(productId).duplicate();

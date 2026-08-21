@@ -5,6 +5,7 @@ import { assertManagedDatabaseName, validateManagedTestDatabaseEnvironment } fro
 const tables = [
   "email_deliveries", "notification_event_receipts", "dashboard_event_receipts",
   "admin_audit_logs", "dashboard_stats",
+  "auction_authority_recovery_runs",
   "auction_outbox", "auction_processed_events", "auction_transitions", "bid_idempotency",
   "orders", "bidding_history", "bidding_ban_user",
   "product_questions", "love_products", "products", "extend_bidding_time", "otp_codes",

@@ -13,7 +13,6 @@ import { parseMoneyVnd } from "../domain/money.ts";
 import { randomUUID } from "node:crypto";
 import { getBidEngine } from "./bid-engine.ts";
 import { redisAuctionAuthority } from "../infrastructure/redis/redis-auction.authority.ts";
-import { bootstrapRedisAuction } from "../infrastructure/redis/redis-auction.bootstrap.ts";
 
 const bids = new BidRepository();
 export type BuyNowInput = {
@@ -69,15 +68,7 @@ export class BuyNowUseCase {
         idempotencyKey: input.idempotencyKey,
         correlationId: input.correlationId ?? randomUUID(),
       } as const;
-      try {
-        return await redisAuctionAuthority.mutate(command);
-      } catch (error) {
-        if (error instanceof BidDomainError && error.code === "AUCTION_STATE_NOT_READY") {
-          const bootstrapped = await bootstrapRedisAuction(input.productId);
-          if (bootstrapped) return redisAuctionAuthority.mutate(command);
-        }
-        throw error;
-      }
+      return redisAuctionAuthority.mutate(command);
     }
     return prisma.$transaction(async (tx) => {
       const operation = "buy_now";

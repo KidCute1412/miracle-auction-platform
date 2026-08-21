@@ -7,6 +7,8 @@ local idempotencyKey = KEYS[6]
 local rateKey = KEYS[7]
 local deadlinesKey = KEYS[8]
 local streamKey = KEYS[9]
+local legacyIdempotencyKey = KEYS[10]
+local recoveryFenceKey = KEYS[11]
 local request = cjson.decode(ARGV[1])
 
 local function fail(code, message, statusCode)
@@ -64,8 +66,9 @@ local maxBigint = "9223372036854775807"
 
 local expectedTypes = {
   { stateKey, "hash" }, { maximaKey, "hash" }, { rankingKey, "zset" },
-  { rankMembersKey, "hash" }, { bansKey, "set" }, { idempotencyKey, "hash" },
-  { rateKey, "string" }, { deadlinesKey, "zset" }, { streamKey, "stream" }
+  { rankMembersKey, "hash" }, { bansKey, "set" }, { idempotencyKey, "string" },
+  { rateKey, "string" }, { deadlinesKey, "zset" }, { streamKey, "stream" },
+  { legacyIdempotencyKey, "hash" }, { recoveryFenceKey, "string" }
 }
 for _, expected in ipairs(expectedTypes) do
   local actual = redis.call("TYPE", expected[1]).ok
@@ -74,8 +77,19 @@ for _, expected in ipairs(expectedTypes) do
   end
 end
 
+if redis.call("EXISTS", recoveryFenceKey) == 1 then
+  return fail("AUCTION_AUTHORITY_RECOVERING", "Auction authority is recovering", 503)
+end
+
 local fingerprint = request.fingerprint
-local replay = redis.call("HGET", idempotencyKey, request.idempotencyKey)
+local replay = redis.call("GET", idempotencyKey)
+if not replay then
+  replay = redis.call("HGET", legacyIdempotencyKey, request.idempotencyKey)
+  if replay then
+    local legacyTtl = redis.call("PTTL", legacyIdempotencyKey)
+    if legacyTtl > 0 then redis.call("SET", idempotencyKey, replay, "PX", legacyTtl) end
+  end
+end
 if replay then
   local stored = cjson.decode(replay)
   if stored.fingerprint ~= fingerprint then
@@ -86,8 +100,7 @@ end
 
 local function reject(code, message, statusCode)
   local result = fail(code, message, statusCode)
-  redis.call("HSET", idempotencyKey, request.idempotencyKey, cjson.encode({ fingerprint = fingerprint, result = result }))
-  redis.call("PEXPIRE", idempotencyKey, tonumber(request.idempotencyTtlMs))
+  redis.call("SET", idempotencyKey, cjson.encode({ fingerprint = fingerprint, result = result }), "PX", tonumber(request.idempotencyTtlMs))
   return result
 end
 
@@ -228,11 +241,43 @@ end
 -- mutations. Those operations are already protected by their authorization
 -- rules and close is driven by the worker scheduler.
 if operation == "BID" or operation == "BUY_NOW" then
+  local rate = tonumber(redis.call("GET", rateKey) or "0")
+  if rate >= tonumber(request.rateLimit) then
+    return fail("RATE_LIMITED", "Too many auction mutations", 429)
+  end
+end
+
+sequence = add(sequence, "1")
+version = add(version, "1")
+local event = {
+  eventId = request.eventId,
+  correlationId = request.correlationId,
+  idempotencyKey = request.idempotencyKey,
+  schemaVersion = 1,
+  type = eventType,
+  productId = productId,
+  actorId = actorId,
+  -- Persist the committed request amount for BID and BUY_NOW so a catastrophic
+  -- Redis rebuild can restore the exact idempotency fingerprint from PostgreSQL.
+  requestedMaxPriceVnd = (operation == "BID" or operation == "BUY_NOW") and trim(request.amountVnd) or nil,
+  targetUserId = banTargetId,
+  currentPriceVnd = nextPrice,
+  leaderId = nextLeaderId or "",
+  leaderMaxPriceVnd = nextLeaderMax or "",
+  endAtMs = tostring(nextEndAtMs),
+  status = nextStatus,
+  sequence = sequence,
+  version = version,
+  occurredAtMs = tostring(nowMs),
+  orderId = orderId,
+  reason = request.reason
+}
+local payload = cjson.encode(event)
+redis.call("XADD", streamKey, "*", "event", payload)
+
+if operation == "BID" or operation == "BUY_NOW" then
   local rate = redis.call("INCR", rateKey)
   if rate == 1 then redis.call("PEXPIRE", rateKey, tonumber(request.rateWindowMs)) end
-  if rate > tonumber(request.rateLimit) then
-    return reject("RATE_LIMITED", "Too many auction mutations", 429)
-  end
 end
 
 if operation == "BID" then
@@ -264,8 +309,6 @@ elseif operation == "BAN" then
   end
 end
 
-sequence = add(sequence, "1")
-version = add(version, "1")
 redis.call("HSET", stateKey,
   "status", nextStatus,
   "currentPriceVnd", nextPrice,
@@ -273,36 +316,13 @@ redis.call("HSET", stateKey,
   "leaderMaxPriceVnd", nextLeaderMax or "",
   "endAtMs", tostring(nextEndAtMs),
   "sequence", sequence,
-  "version", version)
+  "version", version,
+  "lastEventId", request.eventId)
 if nextStatus == "ACTIVE" then
   redis.call("ZADD", deadlinesKey, nextEndAtMs, productId)
 else
   redis.call("ZREM", deadlinesKey, productId)
 end
-
-local event = {
-  eventId = request.eventId,
-  correlationId = request.correlationId,
-  idempotencyKey = request.idempotencyKey,
-  schemaVersion = 1,
-  type = eventType,
-  productId = productId,
-  actorId = actorId,
-  requestedMaxPriceVnd = operation == "BID" and trim(request.amountVnd) or nil,
-  targetUserId = banTargetId,
-  currentPriceVnd = nextPrice,
-  leaderId = nextLeaderId or "",
-  leaderMaxPriceVnd = nextLeaderMax or "",
-  endAtMs = tostring(nextEndAtMs),
-  status = nextStatus,
-  sequence = sequence,
-  version = version,
-  occurredAtMs = tostring(nowMs),
-  orderId = orderId,
-  reason = request.reason
-}
-local payload = cjson.encode(event)
-redis.call("XADD", streamKey, "*", "event", payload)
 
 local result = cjson.encode({
   status = "success",
@@ -317,6 +337,5 @@ local result = cjson.encode({
     order_id = orderId or cjson.null
   }
 })
-redis.call("HSET", idempotencyKey, request.idempotencyKey, cjson.encode({ fingerprint = fingerprint, result = result }))
-redis.call("PEXPIRE", idempotencyKey, tonumber(request.idempotencyTtlMs))
+redis.call("SET", idempotencyKey, cjson.encode({ fingerprint = fingerprint, result = result }), "PX", tonumber(request.idempotencyTtlMs))
 return result

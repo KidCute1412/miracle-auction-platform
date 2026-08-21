@@ -41,7 +41,7 @@ Supabase PostgreSQL is the durable projection and business store. Redis is autho
 | Process | Owns | Must not own |
 |---|---|---|
 | `api` | HTTP, auth/security email, Socket.IO, Redis Lua mutations, bootstrap of a newly created auction | Projector, close scheduler, Kafka producer, outbox relay, auction email cron |
-| `auction-worker` | Stream group initialization, missing-state bootstrap, single keyed-concurrent projector, PEL reclaim, close scheduler, reconciliation heartbeat | Kafka consumption, SMTP |
+| `auction-worker` | Stream group initialization, single keyed-concurrent projector, PEL reclaim, close scheduler, authority-loss detection/recovery, reconciliation heartbeat, safe acknowledged-entry compaction | Kafka consumption, SMTP |
 | `outbox-relay` | PostgreSQL outbox lease and Kafka batch publication | Socket.IO, SMTP, auction decisions |
 | `async-worker` | Dashboard consumer/recovery, notification intake, durable email delivery/recovery | Auction close scheduling, bid decisions |
 
@@ -49,7 +49,7 @@ Only one `auction-worker` replica is supported. Inside it, product lanes are par
 
 ## Lifecycle
 
-`auction-worker` checks PostgreSQL and Redis, creates the consumer group once, reports PEL/lag, bootstraps only missing Redis hashes, then starts projection, close scheduling and heartbeat. Shutdown stops the scheduler and new reads, waits for the current projection batch, closes the blocking Redis connection, then disconnects Prisma/Redis.
+`auction-worker` checks PostgreSQL and Redis, verifies the shared authority manifest, creates the consumer group once, reports PEL/lag, expires converged legacy terminal hashes, safely compacts acknowledged Stream history, then starts projection, close scheduling, recovery checks and heartbeat. Missing authority is rebuilt only behind a global Redis fence and PostgreSQL recovery lease, after Stream drain and before reconciliation succeeds. Shutdown stops the scheduler and new reads, waits for the current projection batch, closes the blocking Redis connection, then disconnects Prisma/Redis.
 
 `outbox-relay` claims pending non-terminal rows with `FOR UPDATE SKIP LOCKED`. `available_at` is the lease/retry timestamp. Rows are grouped by topic and published with `acks=-1`; `delivered_at` is set only after acknowledgement. A crash between Kafka acknowledgement and `delivered_at` can duplicate an event, so consumers use `eventId` receipts.
 
@@ -76,6 +76,8 @@ Every envelope contains `eventId`, `eventType`, `eventVersion`, `aggregateId`, `
 | PostgreSQL unavailable during bid | Redis may accept the authoritative mutation; Stream retains it and API response is unaffected |
 | PostgreSQL unavailable during projection | Entry remains pending and is not acknowledged |
 | Redis unavailable | Bid mutation returns service unavailable; PostgreSQL is never used as a hidden bid fallback |
+| Redis primary fails in Sentinel mode | Sentinel quorum promotes a replica; ioredis reconnects to it; `WAIT 1` still requires the remaining replica |
+| All Redis copies lose auction state | Worker fences mutations, rebuilds from PostgreSQL, extends interrupted deadlines by outage plus grace, reconciles, then automatically reopens bidding |
 | Redis Pub/Sub publish fails after projection | Transaction remains committed and Stream entry is acknowledged; clients refetch on reconnect |
 | Kafka unavailable | API remains ready; outbox rows retry with bounded exponential backoff |
 | Kafka duplicate | receipt/unique constraints prevent duplicate dashboard/email effects |
@@ -84,12 +86,15 @@ Every envelope contains `eventId`, `eventType`, `eventVersion`, `aggregateId`, `
 
 ## Health and operations
 
-`/health` is API liveness. `/ready` requires PostgreSQL, Redis primary/replica durability readiness and a fresh `auction:worker:heartbeat`. Kafka is reported but does not determine readiness. Operations reports three worker heartbeats, projection lag, pending/retrying/terminal outbox counts and oldest age, email queue states, Kafka consumer lag and DLQ totals.
+`/health` is API liveness. `/ready` requires PostgreSQL, Redis primary/replica durability readiness, a fresh `auction:worker:heartbeat`, and `auction:worker:authority-ready=true`. Kafka is reported but does not determine readiness. Operations reports recovery state/epoch, three worker heartbeats, projection lag, pending/retrying/terminal outbox counts and oldest age, email queue states, Kafka consumer lag and DLQ totals.
 
 Redis keys:
 
 - `auction:worker:heartbeat`
 - `auction:worker:projection-lag`
+- `auction:worker:authority-ready`
+- `auction:v1:authority-manifest`
+- `auction:v1:recovery:fence` (present only while recovery is closed)
 - `outbox:relay:heartbeat`
 - `async:worker:heartbeat`
 - `auction:committed:v1` (Pub/Sub)
@@ -98,14 +103,15 @@ Redis keys:
 
 All processes need `DATABASE_URL`/`DIRECT_URL`; API, auction worker and async worker use `REDIS_URL`. Outbox relay uses Redis only for best-effort heartbeat.
 
-- Auction: `BID_ENGINE`, `BID_PROJECTOR_GROUP`, `BID_PROJECTOR_MAX_ATTEMPTS`, `BID_PROJECTOR_RECLAIM_INTERVAL_MS`, `AUCTION_CLOSE_INTERVAL_MS`, `AUCTION_WORKER_HEARTBEAT_TTL_SECONDS`.
+- Auction: `BID_ENGINE`, `BID_PROJECTOR_GROUP`, `BID_PROJECTOR_MAX_ATTEMPTS`, `BID_PROJECTOR_RECLAIM_INTERVAL_MS`, `AUCTION_CLOSE_INTERVAL_MS`, `AUCTION_WORKER_HEARTBEAT_TTL_SECONDS`, `AUCTION_AUTO_RECOVERY_ENABLED`, `AUCTION_RECOVERY_CHECK_INTERVAL_MS`, `AUCTION_RECOVERY_LEASE_SECONDS`, `AUCTION_RECOVERY_DRAIN_TIMEOUT_MS`, `AUCTION_RECOVERY_GRACE_SECONDS`.
+- Redis topology: `REDIS_MODE=standalone|sentinel`, plus `REDIS_SENTINEL_MASTER` and three or more comma-separated `REDIS_SENTINEL_NODES` in Sentinel mode.
 - Relay: Kafka connection variables, `OUTBOX_BATCH_SIZE`, `OUTBOX_IDLE_POLL_MS`, `OUTBOX_MAX_BACKOFF_MS`, `OUTBOX_RELAY_HEARTBEAT_TTL_SECONDS`.
 - Async: Kafka connection variables, `DASHBOARD_KAFKA_GROUP_ID`, `NOTIFICATION_KAFKA_GROUP_ID`, `DASHBOARD_BATCH_CONCURRENCY`, `NOTIFICATION_BATCH_CONCURRENCY`, `EMAIL_DELIVERY_MODE`, `EMAIL_DELIVERY_CONCURRENCY`, `EMAIL_DELIVERY_MAX_ATTEMPTS`, `EMAIL_DELIVERY_LEASE_MS`, `ASYNC_WORKER_HEARTBEAT_TTL_SECONDS`. Kafka offsets are committed once a whole batch has completed durable receipt/enqueue work; dashboard refreshes are coalesced per batch.
 - Topics: `KAFKA_BIDDING_TOPIC`, `KAFKA_DOMAIN_TOPIC`, `KAFKA_DASHBOARD_TOPIC`, `KAFKA_ASYNC_DLQ_TOPIC`, and temporary `KAFKA_DASHBOARD_DLQ_TOPIC`.
 
 ## Rollout and rollback
 
-Apply the additive migration first. Create all new topics while retaining the legacy DLQ. Stop the embedded/old projector and email cron before starting the new single auction worker. Wait for bootstrap heartbeat, then start relay and async worker, then API. Never run old and new projectors together.
+Apply the additive migration first. Create all new topics while retaining the legacy DLQ. Stop the embedded/old projector and email cron before starting the new single auction worker. Wait for its readiness heartbeat, then start relay and async worker, then API. Never run old and new projectors together.
 
 Rollback stops `auction-worker`, `outbox-relay` and `async-worker` before starting the old API/worker. Do not drop the new tables/columns; they are additive and preserve legacy `auction_end_email_sent`.
 

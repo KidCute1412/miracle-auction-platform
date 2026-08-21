@@ -21,6 +21,13 @@ export default defineConfig({
   dts: false,
   outExtension: () => ({ js: ".js" }),
   async onSuccess() {
-    await cp("src/modules/bids/infrastructure/redis/auction-mutate.lua", "dist/auction-mutate.lua");
+    await Promise.all([
+      cp("src/modules/bids/infrastructure/redis/auction-mutate.lua", "dist/auction-mutate.lua"),
+      cp("src/modules/bids/infrastructure/redis/auction-bootstrap.lua", "dist/auction-bootstrap.lua"),
+      // Benchmark entrypoints are emitted below dist/scripts, so import.meta.url
+      // resolves Lua assets relative to that directory in the bundled image.
+      cp("src/modules/bids/infrastructure/redis/auction-mutate.lua", "dist/scripts/auction-mutate.lua"),
+      cp("src/modules/bids/infrastructure/redis/auction-bootstrap.lua", "dist/scripts/auction-bootstrap.lua"),
+    ]);
   },
 });

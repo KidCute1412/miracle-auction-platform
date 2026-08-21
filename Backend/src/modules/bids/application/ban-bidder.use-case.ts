@@ -7,7 +7,6 @@ import { randomUUID } from "node:crypto";
 import { getBidEngine } from "./bid-engine.ts";
 import { redisAuctionAuthority } from "../infrastructure/redis/redis-auction.authority.ts";
 import type { AuctionMutationData } from "../infrastructure/redis/redis-auction.types.ts";
-import { bootstrapRedisAuction } from "../infrastructure/redis/redis-auction.bootstrap.ts";
 const bids = new BidRepository();
 export class BanBidderUseCase {
   async execute(
@@ -29,15 +28,7 @@ export class BanBidderUseCase {
         idempotencyKey,
         correlationId,
       } as const;
-      try {
-        return await redisAuctionAuthority.mutate(command);
-      } catch (error) {
-        if (error instanceof BidDomainError && error.code === "AUCTION_STATE_NOT_READY") {
-          const bootstrapped = await bootstrapRedisAuction(productId);
-          if (bootstrapped) return redisAuctionAuthority.mutate(command);
-        }
-        throw error;
-      }
+      return redisAuctionAuthority.mutate(command);
     }
     return prisma.$transaction(async (tx) => {
       const auction = await bids.lockAuction(tx, productId);

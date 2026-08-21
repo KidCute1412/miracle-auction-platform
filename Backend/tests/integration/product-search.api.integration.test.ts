@@ -134,13 +134,13 @@ describe("product search API integration", () => {
       ORDER BY indexname
     `;
     expect(indexes.map(({ indexname }) => indexname)).toEqual([
-      "products_fts",
       "products_catalog_bid_turns_idx",
       "products_catalog_category_current_price_idx",
       "products_catalog_category_end_time_idx",
       "products_catalog_created_at_idx",
       "products_catalog_current_price_idx",
       "products_catalog_end_time_idx",
+      "products_fts",
       "products_name_trgm",
     ]);
   });

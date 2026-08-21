@@ -3,7 +3,8 @@ import { createComponentLogger } from "@/infrastructure/observability/logger.ts"
 const log = createComponentLogger("socket");
 
 import jwt, { type JwtPayload } from "jsonwebtoken";
-import { Redis } from "ioredis";
+import type { Redis } from "ioredis";
+import { createRedisClient } from "@/config/redis.config.ts";
 import type { Namespace, Server, Socket } from "socket.io";
 import type { BidSocketEvent, DashboardUpdatedEvent } from "api-contracts";
 import { accountRepository } from "@/modules/accounts/infrastructure/account.repository.ts";
@@ -83,7 +84,7 @@ export async function startAdminSocket(io: Server): Promise<void> {
       adminConnections = Math.max(0, adminConnections - 1);
     });
   });
-  dashboardSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:16379", {
+  dashboardSubscriber = createRedisClient(process.env.REDIS_URL || "redis://localhost:16379", {
     maxRetriesPerRequest: null,
   });
   dashboardSubscriber.on("error", (error) => log.warn("[SOCKET] Redis subscriber error", error.message));
@@ -100,7 +101,7 @@ export async function startAdminSocket(io: Server): Promise<void> {
     .subscribe("dashboard:updated:v1")
     .catch((error) => log.warn("[SOCKET] Dashboard Redis subscriber unavailable; clients will poll", error));
 
-  auctionSubscriber = new Redis(process.env.REDIS_URL || "redis://localhost:16379", {
+  auctionSubscriber = createRedisClient(process.env.REDIS_URL || "redis://localhost:16379", {
     maxRetriesPerRequest: null,
   });
   auctionSubscriber.on("error", (error) =>

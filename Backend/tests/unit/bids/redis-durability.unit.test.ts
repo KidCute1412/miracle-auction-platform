@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mutationRedis = vi.hoisted(() => ([
-  { script: vi.fn(), evalsha: vi.fn(), wait: vi.fn() },
-  { script: vi.fn(), evalsha: vi.fn(), wait: vi.fn() },
+  { script: vi.fn(), evalsha: vi.fn(), set: vi.fn(), wait: vi.fn() },
+  { script: vi.fn(), evalsha: vi.fn(), set: vi.fn(), wait: vi.fn() },
 ]));
 vi.mock("../../../src/config/redis.config.ts", () => ({
   auctionMutationRedisClient: mutationRedis[0],
@@ -26,6 +26,7 @@ describe("Redis mutation durability", () => {
     for (const redis of mutationRedis) {
       redis.script.mockResolvedValue("sha");
       redis.evalsha.mockResolvedValue(success);
+      redis.set.mockResolvedValue("OK");
     }
   });
 
@@ -36,6 +37,7 @@ describe("Redis mutation durability", () => {
       idempotencyKey: "durable-1", correlationId: "correlation-1",
     })).resolves.toMatchObject({ status: "success" });
     expect(mutationRedis[1].wait).toHaveBeenCalledWith(1, 100);
+    expect(mutationRedis[1].set).toHaveBeenCalledWith(expect.stringContaining("durability-probe"), "1", "PX", 10_000);
     expect(getRedisMutationMetrics()).toMatchObject({
       samples: expect.any(Number),
       poolAcquireP95Ms: expect.any(Number),

@@ -29,6 +29,7 @@ describe("health and readiness route contract", () => {
         redis: true,
         redisDurability: { primary: true, replicasConnected: 1, replicasRequired: 1, mode: "replica-ack", ready: true },
         auctionWorker: true,
+        auctionAuthority: true,
         kafka: true,
       },
       metrics: {
@@ -54,7 +55,9 @@ describe("health and readiness route contract", () => {
           mutationP95Ms: 0,
           replicaAckP95Ms: 0,
           durabilityUnconfirmed: 0,
+          indeterminateMutations: 0,
         },
+        auctionAuthorityRecovery: { state: "disabled", ready: true },
       },
     });
   });
@@ -85,6 +88,22 @@ describe("health and readiness route contract", () => {
     const response = await request(createApp()).get("/ready");
     expect(response.status).toBe(503);
     expect(response.body.dependencies.redisDurability).toMatchObject({ ready: false, replicasConnected: 0 });
+  });
+
+  it("returns 503 while automatic auction authority recovery is fenced", async () => {
+    vi.stubEnv("AUCTION_AUTO_RECOVERY_ENABLED", "true");
+    vi.mocked(checkRedisDurability).mockResolvedValueOnce({ primary: true, replicasConnected: 1, replicasRequired: 1, mode: "replica-ack", ready: true });
+    vi.mocked(redisClient.get)
+      .mockResolvedValueOnce(new Date().toISOString())
+      .mockResolvedValueOnce(JSON.stringify({ state: "recovering", ready: false, recoveryEpoch: "4" }));
+    const response = await request(createApp()).get("/ready");
+    expect(response.status).toBe(503);
+    expect(response.body).toMatchObject({
+      status: "not_ready",
+      dependencies: { auctionAuthority: false },
+      metrics: { auctionAuthorityRecovery: { state: "recovering", recoveryEpoch: "4" } },
+    });
+    vi.unstubAllEnvs();
   });
 });
 

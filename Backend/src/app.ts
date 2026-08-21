@@ -44,22 +44,34 @@ export function createApp() {
   app.use(requestLogger);
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
   app.get("/ready", async (_req, res) => {
-    const [database, redis, durability, kafka, heartbeat] = await Promise.all([
+    const [database, redis, durability, kafka, heartbeat, authorityRaw] = await Promise.all([
       checkPrismaConnection(),
       checkRedisConnection(),
       checkRedisDurability(),
       checkKafkaForReadiness(),
       redisClient.get("auction:worker:heartbeat").catch(() => null),
+      redisClient.get("auction:worker:authority-ready").catch(() => null),
     ]);
     const heartbeatAt = heartbeat ? Date.parse(heartbeat) : Number.NaN;
     const heartbeatTtlMs = Number(process.env.AUCTION_WORKER_HEARTBEAT_TTL_SECONDS ?? 90) * 1_000;
     const auctionWorker = Number.isFinite(heartbeatAt) && Date.now() - heartbeatAt < heartbeatTtlMs;
-    const dependencies = { database, redis, redisDurability: durability, auctionWorker, kafka };
-    const ready = database && redis && durability.ready && auctionWorker;
+    let auctionAuthority = process.env.AUCTION_AUTO_RECOVERY_ENABLED !== "true";
+    let auctionAuthorityRecovery: unknown = { state: "disabled", ready: true };
+    if (authorityRaw) {
+      try {
+        auctionAuthorityRecovery = JSON.parse(authorityRaw) as unknown;
+        auctionAuthority = (auctionAuthorityRecovery as { ready?: unknown }).ready === true;
+      } catch {
+        auctionAuthority = false;
+      }
+    }
+    const dependencies = { database, redis, redisDurability: durability, auctionWorker, auctionAuthority, kafka };
+    const mutationMetrics = getRedisMutationMetrics();
+    const ready = database && redis && durability.ready && auctionWorker && auctionAuthority && mutationMetrics.indeterminateMutations === 0;
     res.status(ready ? 200 : 503).json({
       status: ready ? "ready" : "not_ready",
       dependencies,
-      metrics: { authSnapshot: getAuthSnapshotMetrics(), redisMutation: getRedisMutationMetrics() },
+      metrics: { authSnapshot: getAuthSnapshotMetrics(), redisMutation: mutationMetrics, auctionAuthorityRecovery },
     });
   });
   app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));

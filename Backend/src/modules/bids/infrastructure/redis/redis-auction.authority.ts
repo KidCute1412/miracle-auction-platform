@@ -2,13 +2,13 @@ import { createComponentLogger } from "@/infrastructure/observability/logger.ts"
 
 const log = createComponentLogger("redis-auction.authority");
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { Redis } from "ioredis";
 import { auctionMutationRedisClient, auctionRedisShardForProduct, createAuctionMutationRedisClientForProduct } from "@/config/redis.config.ts";
 import { BidDomainError, BidDurabilityUnconfirmedError, BidInfrastructureError } from "../../domain/bid.errors.ts";
 import { parseMoneyVnd } from "../../domain/money.ts";
-import { mutationKeys } from "./redis-auction.keys.ts";
+import { mutationKeys, redisAuctionKeys } from "./redis-auction.keys.ts";
 import type { AuctionMutationCommand, AuctionMutationResult } from "./redis-auction.types.ts";
 
 const SCRIPT_URL = new URL("./auction-mutate.lua", import.meta.url);
@@ -18,6 +18,7 @@ const poolAcquireLatencyMs: number[] = [];
 const luaEvalLatencyMs: number[] = [];
 const replicaAckLatencyMs: number[] = [];
 let durabilityUnconfirmed = 0;
+let indeterminateMutations = 0;
 
 interface MutationLease {
   client: Redis;
@@ -101,6 +102,7 @@ export function getRedisMutationMetrics() {
     mutationP95Ms: percentile95(mutationLatencyMs),
     replicaAckP95Ms: percentile95(replicaAckLatencyMs),
     durabilityUnconfirmed,
+    indeterminateMutations,
   };
 }
 
@@ -113,6 +115,15 @@ function fingerprint(command: AuctionMutationCommand): string {
     command.targetUserId ?? "",
     command.reason ?? "",
   ].join(":");
+}
+
+function idempotencyDigest(command: AuctionMutationCommand): string {
+  return createHash("sha256").update(command.idempotencyKey).digest("hex");
+}
+
+function isIndeterminateScriptError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /OOM|Error running script|ERR Error running script/i.test(message);
 }
 
 async function loadScript(client: Redis): Promise<string> {
@@ -161,10 +172,15 @@ export class RedisAuctionAuthority {
     let raw: unknown;
     try {
       const luaEvalStartedAt = performance.now();
-      raw = await evaluate(lease.client, mutationKeys(command.productId, command.actorId), payload);
+      raw = await evaluate(
+        lease.client,
+        mutationKeys(command.productId, command.actorId, idempotencyDigest(command)),
+        payload,
+      );
       recordSample(luaEvalLatencyMs, performance.now() - luaEvalStartedAt);
     } catch (error) {
       lease.release();
+      if (isIndeterminateScriptError(error)) indeterminateMutations += 1;
       log.error("[BIDDING] Redis authority failure", error);
       throw new BidInfrastructureError();
     }
@@ -191,9 +207,11 @@ export class RedisAuctionAuthority {
     const replicas = Number(process.env.BID_DURABILITY_REPLICAS ?? 0);
     if (replicas > 0) {
       const timeoutMs = Number(process.env.BID_DURABILITY_WAIT_MS ?? 100);
+      const probeTtlMs = Number(process.env.BID_DURABILITY_PROBE_TTL_MS ?? 10_000);
       const waitStartedAt = performance.now();
       let acknowledged: number;
       try {
+        await lease.client.set(redisAuctionKeys.durabilityProbe(eventId), "1", "PX", probeTtlMs);
         acknowledged = await lease.client.wait(replicas, timeoutMs);
       } finally {
         lease.release();
@@ -201,7 +219,7 @@ export class RedisAuctionAuthority {
       recordSample(replicaAckLatencyMs, performance.now() - waitStartedAt);
       if (acknowledged < replicas) {
         durabilityUnconfirmed += 1;
-        throw new BidDurabilityUnconfirmedError();
+        throw new BidDurabilityUnconfirmedError(result.data);
       }
     } else {
       lease.release();

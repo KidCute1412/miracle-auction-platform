@@ -9,6 +9,7 @@ import { prisma } from "@/infrastructure/database/prisma.client.ts";
 import { canonicalAuctionEventType } from "@/infrastructure/events/auction-event-contract.ts";
 import { redisAuctionKeys } from "./redis-auction.keys.ts";
 import type { AuctionStreamEvent } from "./redis-auction.types.ts";
+import { expireTerminalAuctionState, isTerminalAuctionStatus } from "./redis-auction.cleanup.ts";
 
 const GROUP = process.env.BID_PROJECTOR_GROUP ?? "postgres-projector-v1";
 const COMMITTED_CHANNEL = "auction:committed:v1";
@@ -551,8 +552,46 @@ export async function autoClaimProjectorEntries(
 
 export async function acknowledgeProjectedEntry(entryId: string, shard = 0): Promise<void> {
   const redis = getAuctionRedisClients()[shard]!;
-  await redis.xack(redisAuctionKeys.results, GROUP, entryId);
+  const acknowledged = await redis.xack(redisAuctionKeys.results, GROUP, entryId);
+  if (acknowledged > 0) await redis.xdel(redisAuctionKeys.results, entryId);
   await redis.hdel(redisAuctionKeys.projectorRetries, entryId);
+}
+
+async function finalizeProjectedEntry(entry: RedisStreamEntry): Promise<void> {
+  const event = parseEvent(entry.payload);
+  if (isTerminalAuctionStatus(event.status)) {
+    await expireTerminalAuctionState(Number(event.productId));
+  }
+  await acknowledgeProjectedEntry(entry.id, entry.shard);
+}
+
+export async function compactAcknowledgedProjectorEntries(): Promise<number> {
+  await ensureProjectorGroup();
+  let trimmed = 0;
+  for (const redis of getAuctionRedisClients()) {
+    const pending = await redis.xpending(redisAuctionKeys.results, GROUP, "-", "+", 1) as unknown;
+    let threshold: string | undefined;
+    if (Array.isArray(pending) && Array.isArray(pending[0]) && typeof pending[0][0] === "string") {
+      threshold = pending[0][0];
+    } else {
+      const groups = await redis.xinfo("GROUPS", redisAuctionKeys.results);
+      if (Array.isArray(groups)) {
+        for (const raw of groups) {
+          if (!Array.isArray(raw)) continue;
+          const nameIndex = raw.indexOf("name");
+          const deliveredIndex = raw.indexOf("last-delivered-id");
+          if (raw[nameIndex + 1] === GROUP && typeof raw[deliveredIndex + 1] === "string") {
+            threshold = raw[deliveredIndex + 1] as string;
+            break;
+          }
+        }
+      }
+    }
+    if (threshold && threshold !== "0-0") {
+      trimmed += await redis.xtrim(redisAuctionKeys.results, "MINID", threshold);
+    }
+  }
+  return trimmed;
 }
 
 export async function recordProjectionFailure(entry: RedisStreamEntry, error: unknown): Promise<"retry" | "dlq"> {
@@ -563,6 +602,9 @@ export async function recordProjectionFailure(entry: RedisStreamEntry, error: un
   const message = error instanceof Error ? error.message : "Unknown projection error";
   await redis.xadd(
     redisAuctionKeys.dlq,
+    "MAXLEN",
+    "~",
+    Number(process.env.BID_PROJECTOR_DLQ_MAXLEN ?? 10_000),
     "*",
     "sourceEntryId",
     entry.id,
@@ -611,7 +653,7 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
     await runWithLogContext(context, async () => {
       try {
         await projectAuctionEntry(entry);
-        await acknowledgeProjectedEntry(entry.id, entry.shard);
+        await finalizeProjectedEntry(entry);
         runtimeStats.processed += 1;
       } catch (error) {
         const outcome = await recordProjectionFailure(entry, error);
@@ -636,7 +678,7 @@ export async function runProjectorBatch(consumer: string): Promise<number> {
       try {
         await projectAuctionLane(lane);
         for (const entry of lane) {
-          await acknowledgeProjectedEntry(entry.id, entry.shard);
+          await finalizeProjectedEntry(entry);
           runtimeStats.processed += 1;
         }
       } catch (error) {

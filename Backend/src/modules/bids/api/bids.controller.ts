@@ -19,9 +19,10 @@ function legacyError(res: Response, error: unknown, fallback: string): Response 
   const status = error instanceof BidDomainError ? error.statusCode : 500;
   if (status === 500) log.error(error);
   const code = error instanceof BidDomainError ? error.code : "INTERNAL_ERROR";
+  const details = error instanceof BidDomainError && "details" in error ? error.details : undefined;
   return res
     .status(status)
-    .json({ status: "error", code, message: status === 500 ? fallback : (error as Error).message });
+    .json({ status: "error", code, message: status === 500 ? fallback : (error as Error).message, ...(details ? { details } : {}) });
 }
 function requireIdempotencyKey(req: AccountRequest): string {
   const key = req.header("Idempotency-Key")?.trim();
