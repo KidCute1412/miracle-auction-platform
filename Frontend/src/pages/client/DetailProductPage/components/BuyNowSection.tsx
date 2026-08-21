@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ShoppingCart, Zap, X, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { bidService } from "@/services/bid.service.ts";
+import { bidService, isDurabilityUnconfirmed } from "@/services/bid.service.ts";
 import { ApiClientError } from "@/services/api.client.ts";
 import { formatVnd } from "@/lib/money.ts";
 
@@ -45,7 +45,11 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name,
       }
     } catch (error: unknown) {
       console.error(error);
-      toast.error(error instanceof ApiClientError ? error.message : "Error connecting to server!");
+      if (isDurabilityUnconfirmed(error)) {
+        toast.warning("Purchase was accepted by the primary server but replica confirmation is still pending. Do not submit it again.");
+      } else {
+        toast.error(error instanceof ApiClientError ? error.message : "Error connecting to server!");
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TrendingUp, Clock, Zap } from "lucide-react";
 import { formatVnd, moneyBigInt } from "@/lib/money";
-import { bidService } from "@/services/bid.service";
+import { bidService, isDurabilityUnconfirmed } from "@/services/bid.service";
 import { ApiClientError } from "@/services/api.client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,9 @@ export default function FloatingQuickBidBar({
       }
     } catch (e: unknown) {
       const message = e instanceof ApiClientError ? e.message : "Failed to place bid";
-      if (message !== "Not logged in") {
+      if (isDurabilityUnconfirmed(e)) {
+        toast.warning("Bid was accepted by the primary server but replica confirmation is still pending. Do not submit a new bid.");
+      } else if (message !== "Not logged in") {
         toast.error(message);
       }
     } finally {

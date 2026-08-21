@@ -64,7 +64,20 @@ export interface BidSocketEvent {
 }
 
 export interface PaginationQuery { page?: number; limit?: number; }
-export interface ApiClientErrorBody { message?: string; status?: LegacyErrorStatus; code?: string; [key: string]: unknown; }
+export interface BidDurabilityUnconfirmedDetails {
+  acceptedOnPrimary: true;
+  eventId: string;
+  productId: string;
+  sequence: string;
+  version: string;
+}
+export interface ApiClientErrorBody {
+  message?: string;
+  status?: LegacyErrorStatus;
+  code?: string;
+  details?: BidDurabilityUnconfirmedDetails | Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 // Accounts: legacy endpoints use `code`, not the Bids `status` envelope.
 export type LegacyCode = "success" | "error" | "otp error" | "existedOTP";
@@ -190,6 +203,8 @@ export interface AuctionProjectionReconciliation {
   postgresStatus: string;
   redisLeaderId: string | null;
   postgresLeaderId: string | null;
+  redisLastEventId: string | null;
+  postgresLastEventId: string | null;
   redisExpectedOrderCount: number;
   postgresOrderCount: number;
   status: "converged" | "projection_lag" | "diverged";

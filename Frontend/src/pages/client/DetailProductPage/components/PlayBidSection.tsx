@@ -4,7 +4,7 @@ import { NumericFormat } from "react-number-format";
 import { TrendingUp, AlertCircle, Zap, ChevronDown, X, AlertTriangle, CheckCircle } from "lucide-react";
 import JustValidate from "just-validate";
 import { cn } from "@/lib/utils";
-import { bidService } from "@/services/bid.service";
+import { bidService, isDurabilityUnconfirmed } from "@/services/bid.service";
 import { ApiClientError } from "@/services/api.client";
 import type { BidRequest } from "api-contracts";
 import { formatVnd, moneyBigInt } from "@/lib/money.ts";
@@ -113,7 +113,9 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
     } catch (e: unknown) {
       console.log(e);
       const message = e instanceof ApiClientError ? e.message : "Error connecting to server to place bid!";
-      if (message !== "Not logged in") {
+      if (isDurabilityUnconfirmed(e)) {
+        toast.warning("Bid was accepted by the primary server but replica confirmation is still pending. Do not submit a new bid.");
+      } else if (message !== "Not logged in") {
         toast.error(message);
       }
     } finally {

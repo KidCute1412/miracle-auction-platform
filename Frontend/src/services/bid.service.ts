@@ -1,13 +1,35 @@
 import type { BanBidderRequest, BanBidderResponse, BidHistoryQuery, BidHistoryResponse, BidRequest, BidSuccessResponse, BuyNowRequest, BuyNowSuccessResponse } from "api-contracts";
-import { apiRequest } from "./api.client.ts";
+import { ApiClientError, apiRequest } from "./api.client.ts";
+
+const DURABILITY_RETRY_DELAYS_MS = [100, 250] as const;
+const wait = (milliseconds: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function idempotentMutation<TResponse, TBody>(path: string, body: TBody): Promise<TResponse> {
+  const idempotencyKey = crypto.randomUUID();
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await apiRequest<TResponse, TBody>(path, {
+        method: "POST",
+        body,
+        headers: { "Idempotency-Key": idempotencyKey },
+      });
+    } catch (error) {
+      const retryDelay = DURABILITY_RETRY_DELAYS_MS[attempt];
+      if (!(error instanceof ApiClientError) || error.body.code !== "BID_DURABILITY_UNCONFIRMED" || retryDelay === undefined) {
+        throw error;
+      }
+      await wait(retryDelay);
+    }
+  }
+}
+
+export function isDurabilityUnconfirmed(error: unknown): error is ApiClientError {
+  return error instanceof ApiClientError && error.body.code === "BID_DURABILITY_UNCONFIRMED";
+}
 
 export const bidService = {
   play: async (body: BidRequest): Promise<BidSuccessResponse> => {
-    return apiRequest<BidSuccessResponse, BidRequest>(`/bids`, {
-      method: "POST",
-      body,
-      headers: { "Idempotency-Key": crypto.randomUUID() },
-    });
+    return idempotentMutation<BidSuccessResponse, BidRequest>(`/bids`, body);
   },
 
   getHistory: async (params: BidHistoryQuery): Promise<BidHistoryResponse> => {
@@ -15,18 +37,10 @@ export const bidService = {
   },
 
   buyNow: async (body: BuyNowRequest): Promise<BuyNowSuccessResponse> => {
-    return apiRequest<BuyNowSuccessResponse, BuyNowRequest>(`/bids/purchase`, {
-      method: "POST",
-      body,
-      headers: { "Idempotency-Key": crypto.randomUUID() },
-    });
+    return idempotentMutation<BuyNowSuccessResponse, BuyNowRequest>(`/bids/purchase`, body);
   },
 
   banBidder: async (body: BanBidderRequest): Promise<BanBidderResponse> => {
-    return apiRequest<BanBidderResponse, BanBidderRequest>(`/bids/bans`, {
-      method: "POST",
-      body,
-      headers: { "Idempotency-Key": crypto.randomUUID() },
-    });
+    return idempotentMutation<BanBidderResponse, BanBidderRequest>(`/bids/bans`, body);
   },
 };
