@@ -257,9 +257,9 @@ The selected bid-core benchmark is a five-run local, isolated Docker/k6 measurem
 
 | Scenario | Throughput median | Accepted bids/s | p95 | p99 | Infrastructure errors | Throughput CV |
 |---|---:|---:|---:|---:|---:|---:|
-| `bid-path` + `bid-priority` + HA | **333.83 req/s** | **323.90** | **487.10 ms** | **606.95 ms** | **0.0038%** | **5.79%** |
+| `bid-path` + `bid-priority` + HA | **333.83 req/s** | **323.90** | **487.10 ms** | **606.95 ms** | **0% crash/network**; **0.0038% durability-unconfirmed** | **5.79%** |
 
-All five runs passed Redis/PostgreSQL convergence, Stream/outbox drain, ordering, and idempotency invariants. `bid-path` excludes dashboard and notification consumers, so it measures the durable bidding core rather than end-to-end downstream capacity. It is local diagnostic evidence, not a production SLA or a claim of unlimited scale. Reproduce it with:
+All five runs passed Redis/PostgreSQL convergence, Stream/outbox drain, ordering, and idempotency invariants. The one durability-unconfirmed response was a safe `503`: Redis primary had accepted the mutation, but replica acknowledgement exceeded the 100 ms bound; no crash or network failure was recorded. `bid-path` excludes dashboard and notification consumers, so it measures the durable bidding core rather than end-to-end downstream capacity. It is local diagnostic evidence, not a production SLA or a claim of unlimited scale. Reproduce it with:
 
 ```powershell
 cd PerformanceTests
