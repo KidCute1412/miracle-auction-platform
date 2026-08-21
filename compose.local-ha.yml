@@ -1,0 +1,131 @@
+x-sentinel-environment: &sentinel-environment
+  REDIS_MODE: sentinel
+  REDIS_SENTINEL_MASTER: auction-primary
+  REDIS_SENTINEL_NODES: redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+  AUCTION_AUTO_RECOVERY_ENABLED: "true"
+
+x-backend-ha: &backend-ha
+  build:
+    context: .
+    dockerfile: Backend/Dockerfile
+    target: runtime
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  redis-replica-2:
+    image: redis:7-alpine
+    container_name: online-auction-redis-replica-2
+    command: ["redis-server", "--replicaof", "redis", "6379", "--appendonly", "yes", "--appendfsync", "everysec"]
+    depends_on:
+      redis: { condition: service_healthy }
+    volumes: ["redis_replica_2_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis-sentinel-1: &sentinel
+    image: redis:7-alpine
+    container_name: online-auction-redis-sentinel-1
+    command: ["sh", "/opt/auction/sentinel-entrypoint.sh"]
+    volumes:
+      - ./infra/redis/sentinel-entrypoint.sh:/opt/auction/sentinel-entrypoint.sh:ro
+      - redis_sentinel_1_data:/data
+    depends_on:
+      redis: { condition: service_healthy }
+      redis-replica: { condition: service_healthy }
+      redis-replica-2: { condition: service_healthy }
+    ports: ["26379:26379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis-sentinel-2:
+    <<: *sentinel
+    container_name: online-auction-redis-sentinel-2
+    volumes:
+      - ./infra/redis/sentinel-entrypoint.sh:/opt/auction/sentinel-entrypoint.sh:ro
+      - redis_sentinel_2_data:/data
+    ports: ["26380:26379"]
+
+  redis-sentinel-3:
+    <<: *sentinel
+    container_name: online-auction-redis-sentinel-3
+    volumes:
+      - ./infra/redis/sentinel-entrypoint.sh:/opt/auction/sentinel-entrypoint.sh:ro
+      - redis_sentinel_3_data:/data
+    ports: ["26381:26379"]
+
+  auction-worker:
+    environment:
+      <<: *sentinel-environment
+    depends_on:
+      redis-sentinel-1: { condition: service_healthy }
+      redis-sentinel-2: { condition: service_healthy }
+      redis-sentinel-3: { condition: service_healthy }
+
+  outbox-relay:
+    environment:
+      <<: *sentinel-environment
+
+  async-worker:
+    environment:
+      <<: *sentinel-environment
+    depends_on:
+      redis-sentinel-1: { condition: service_healthy }
+      redis-sentinel-2: { condition: service_healthy }
+      redis-sentinel-3: { condition: service_healthy }
+
+  api:
+    <<: *backend-ha
+    container_name: online-auction-api-ha
+    command: node dist/server.js
+    ports: ["5000:5000"]
+    environment:
+      <<: *sentinel-environment
+      NODE_ENV: development
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      DIRECT_URL: postgresql://postgres:my_local_password@postgres:5432/online_auction_test?schema=public
+      REDIS_URL: redis://redis:6379
+      BID_ENGINE: redis
+      BID_DURABILITY_REPLICAS: "1"
+      BID_DURABILITY_WAIT_MS: "100"
+      BID_DURABILITY_PROBE_TTL_MS: "10000"
+      BID_MUTATION_CONNECTIONS: "8"
+      BID_IDEMPOTENCY_TTL_MS: "86400000"
+      AUCTION_TERMINAL_GRACE_SECONDS: "604800"
+      AUCTION_WORKER_HEARTBEAT_TTL_SECONDS: "90"
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_SSL: "false"
+      EMAIL_DELIVERY_MODE: disabled
+      CLIENT_URL: http://localhost:5173
+      JWT_SECRET: local-ha-access-secret
+      JWT_REFRESH_SECRET: local-ha-refresh-secret
+      CSRF_SECRET: local-ha-csrf-secret
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis-sentinel-1: { condition: service_healthy }
+      redis-sentinel-2: { condition: service_healthy }
+      redis-sentinel-3: { condition: service_healthy }
+      auction-worker: { condition: service_started }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5000/ready >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  redis_replica_2_data:
+  redis_sentinel_1_data:
+  redis_sentinel_2_data:
+  redis_sentinel_3_data:

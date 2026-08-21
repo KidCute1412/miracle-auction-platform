@@ -90,6 +90,12 @@ sequenceDiagram
 
 The synchronous bid request ends after Redis accepts the Lua mutation **and** the configured replica acknowledgement succeeds (`WAIT 1` in the benchmark). PostgreSQL, Kafka, Socket.IO, dashboards, and email are not part of bid HTTP latency. See the [system overview](docs/architecture/system-overview.md), [bid architecture](docs/architecture/bidding.md), and [worker failure model](docs/architecture/worker-processes.md).
 
+### Local HA benchmark topology
+
+The production-like architecture above shows the normal primary/replica path. The isolated benchmark can additionally run Redis in Sentinel mode: one active auction shard uses one primary, two replicas, and three Sentinel processes. Sentinels monitor the primary, form quorum, and promote a replica if the primary fails; the old primary rejoins as a replica after recovery. Normal bids still execute the same Lua mutation and `WAIT 1` durability path. This HA topology is a local benchmark option and does not change the production Compose topology. See [`PerformanceTests/README.md`](PerformanceTests/README.md) for the command and failover checks.
+
+The latest local HA bid-path diagnostic used 100 VUs, five independent 75-second runs, and the `bid-priority` resource profile. It achieved median throughput of `333.83 req/s`, `323.90 accepted bids/s`, p95 `487.10 ms`, p99 `606.95 ms`, and throughput CV `5.79%`; core correctness invariants passed. This is a diagnostic result with dashboard/notification consumers intentionally skipped and a small non-zero infrastructure error rate (`0.0038%`), so it is not an end-to-end production-capacity claim. The reproducible configuration and artifacts are preserved under [`PerformanceTests/artifacts/runs/bid-path-20260821085816-35e03e`](PerformanceTests/artifacts/runs/bid-path-20260821085816-35e03e).
+
 ## Reliability model
 
 | Concern | Design |
@@ -223,6 +229,14 @@ docker compose config
 docker compose --env-file Backend/.env.example -f compose.production.yml config
 ```
 
+Optional local HA runs the backend inside Compose with one Redis primary, two replicas, and three Sentinels:
+
+```powershell
+docker compose -f docker-compose.yml -f compose.local-ha.yml up -d
+```
+
+The default command remains the lighter one-primary/one-replica profile. Both profiles enable automatic PostgreSQL checkpoint recovery after total Redis state loss; PostgreSQL is not queried synchronously by successful bid requests.
+
 Database and concurrency tests use isolated Testcontainers rather than shared development data. See [engineering evidence](docs/testing/engineering-evidence.md) for current results and benchmark provenance.
 
 ## Security notes
@@ -239,17 +253,23 @@ This is not a security certification. Refresh-token reuse tests, broader audit c
 
 ## Performance evidence
 
-The selected bid-core benchmark is a three-run local, isolated Docker/k6 measurement using **100 VUs for 75 seconds**, one Redis auction shard, Redis AOF, Lua validation, idempotency, replica acknowledgement (`WAIT 1`), projection, and post-run core invariants:
+The selected bid-core benchmark is a five-run local, isolated Docker/k6 measurement using **100 VUs for 75 seconds**, one Redis auction shard in HA mode, Redis AOF, Lua validation, idempotency, replica acknowledgement (`WAIT 1`), projection, and post-run core invariants:
 
 | Scenario | Throughput median | Accepted bids/s | p95 | p99 | Infrastructure errors | Throughput CV |
 |---|---:|---:|---:|---:|---:|---:|
-| `bid-path` + `bid-priority` | **309.33 req/s** | **275.16** | **536.57 ms** | **689.85 ms** | **0%** | **1.89%** |
+| `bid-path` + `bid-priority` + HA | **333.83 req/s** | **323.90** | **487.10 ms** | **606.95 ms** | **0.0038%** | **5.79%** |
 
-All three runs passed Redis/PostgreSQL convergence, Stream/outbox drain, ordering, and idempotency invariants. `bid-path` excludes dashboard and notification consumers, so it measures the durable bidding core rather than end-to-end downstream capacity. It is local benchmark evidence, not a production SLA or a claim of unlimited scale. Reproduce it with:
+All five runs passed Redis/PostgreSQL convergence, Stream/outbox drain, ordering, and idempotency invariants. `bid-path` excludes dashboard and notification consumers, so it measures the durable bidding core rather than end-to-end downstream capacity. It is local diagnostic evidence, not a production SLA or a claim of unlimited scale. Reproduce it with:
 
 ```powershell
 cd PerformanceTests
-npm.cmd run benchmark:bid-path -- --resource-profile=bid-priority --redis-shards=1
+node cli/index.js benchmark `
+  --scenario=bid-path `
+  --topology=ha `
+  --redis-shards=1 `
+  --resource-profile=bid-priority `
+  --runs=5 `
+  --continue=true
 ```
 
 `distributed` keeps downstream consumers enabled and is the production-like companion scenario. See [PerformanceTests](PerformanceTests/README.md) and [engineering evidence](docs/testing/engineering-evidence.md) for thresholds, artifacts, and interpretation.

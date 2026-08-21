@@ -11,6 +11,7 @@
     "benchmark:hot": "node cli/index.js benchmark --scenario=hot --runs=3 --continue=true",
     "benchmark:distributed": "node cli/index.js benchmark --scenario=distributed --runs=3 --continue=true",
     "benchmark:bid-path": "node cli/index.js benchmark --scenario=bid-path --runs=3 --continue=true",
+    "benchmark:ha": "node cli/index.js benchmark --scenario=distributed --topology=ha --redis-shards=1 --runs=3 --continue=true",
     "benchmark:compare:redis-pessimistic": "node cli/index.js compare-engines --scenario=distributed --runs=1 --continue=true",
     "compare": "node cli/index.js compare",
     "test": "node --test tests/metrics.test.js"

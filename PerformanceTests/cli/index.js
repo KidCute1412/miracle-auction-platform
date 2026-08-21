@@ -9,11 +9,13 @@ import { compareBidEngines, compareRevisionSummaries, describeRunGateFailures, d
 import { benchmarkTuningEnvironment, resolveBenchmarkTuning } from "../lib/benchmark-tuning.js";
 import { benchmarkResourceProfileEnvironment, resolveBenchmarkResourceProfile } from "../lib/benchmark-resource-profile.js";
 import { auctionRedisUrls, redisShardResourceEnvironment, resolveRedisShards } from "../lib/benchmark-redis-shards.js";
+import { haRedisResourceEnvironment, resolveBenchmarkTopology } from "../lib/benchmark-topology.js";
 import { resolveProfile } from "../config/profiles.js";
 
 const performanceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(performanceRoot, "..");
 const composeFile = resolve(performanceRoot, "compose/benchmark.compose.yml");
+const haComposeFile = resolve(performanceRoot, "compose/benchmark.ha.compose.yml");
 
 class BenchmarkGateError extends Error {}
 
@@ -84,7 +86,8 @@ function command(commandName, commandArgs, options = {}) {
 }
 
 function dockerCompose(project, sourceRoot, runId, args, quiet = false, options = {}) {
-  return command("docker", ["compose", "-p", project, "-f", composeFile, ...args], {
+  const composeFiles = options.topology === "ha" ? ["-f", composeFile, "-f", haComposeFile] : ["-f", composeFile];
+  return command("docker", ["compose", "-p", project, ...composeFiles, ...args], {
     quiet,
     allowFailure: options.allowFailure,
     timeoutMs: options.timeoutMs,
@@ -95,6 +98,9 @@ function dockerCompose(project, sourceRoot, runId, args, quiet = false, options 
       BID_DURABILITY_REPLICAS: options.durabilityReplicas ?? process.env.BID_DURABILITY_REPLICAS,
       ...benchmarkResourceProfileEnvironment(options.resourceProfile ?? resolveBenchmarkResourceProfile(undefined, process.env)),
       ...redisShardResourceEnvironment(options.resourceProfile ?? resolveBenchmarkResourceProfile(undefined, process.env), options.redisShards ?? 1),
+      ...(options.topology === "ha"
+        ? haRedisResourceEnvironment(options.resourceProfile ?? resolveBenchmarkResourceProfile(undefined, process.env))
+        : {}),
       ...benchmarkTuningEnvironment(options.tuning ?? resolveBenchmarkTuning({}, process.env)),
       BID_ENGINE: options.bidEngine ?? process.env.BID_ENGINE ?? "redis",
       AUCTION_REDIS_URLS: auctionRedisUrls(options.redisShards ?? 1),
@@ -342,12 +348,15 @@ async function executeSuite(options) {
   const tuning = resolveBenchmarkTuning(options);
   const resourceProfile = resolveBenchmarkResourceProfile(options["resource-profile"]);
   const redisShards = resolveRedisShards(options["redis-shards"] ?? process.env.BENCHMARK_REDIS_SHARDS ?? 1);
+  const topology = resolveBenchmarkTopology(options.topology ?? process.env.BENCHMARK_TOPOLOGY);
+  if (topology === "ha" && redisShards !== 1) throw new Error("HA benchmark supports exactly one auction shard");
   const composeOptions = {
     bidEngine,
     durabilityReplicas: profile.durable === false ? "0" : "1",
     tuning,
     resourceProfile,
     redisShards,
+    topology,
     downstream: profile.downstream !== false,
   };
   // Keep warm-up intentionally lightweight: a full 100-VU warm-up creates
@@ -357,7 +366,7 @@ async function executeSuite(options) {
   if (!Number.isFinite(convergenceTimeoutMs) || convergenceTimeoutMs < 0) throw new Error("--convergence-timeout-ms must be a non-negative number");
   const runRecords = [];
   const projectsCreated = new Set();
-  process.stdout.write(`[benchmark] scenario=${scenario} runs=${runs} redis-shards=${redisShards} profile=${profile.productMode}${options.duration ? ` duration=${options.duration}` : ""}\n`);
+  process.stdout.write(`[benchmark] scenario=${scenario} runs=${runs} topology=${topology} redis-shards=${redisShards} profile=${profile.productMode}${options.duration ? ` duration=${options.duration}` : ""}\n`);
   await mkdir(outputRoot, { recursive: true });
   await writeJson(runnerOwnerPath(runId), { pid: process.pid, runId, startedAt: new Date().toISOString() });
   await writeJson(resolve(outputRoot, "run-config.json"), {
@@ -370,6 +379,7 @@ async function executeSuite(options) {
     tuning,
     resourceProfile,
     redisShards,
+    topology,
     auctionRedisUrls: auctionRedisUrls(redisShards).split(","),
   });
   try {

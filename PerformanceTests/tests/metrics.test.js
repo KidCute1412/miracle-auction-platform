@@ -5,6 +5,7 @@ import { resolveProfile } from "../config/profiles.js";
 import { benchmarkTuningEnvironment, resolveBenchmarkTuning } from "../lib/benchmark-tuning.js";
 import { benchmarkResourceProfileEnvironment, resolveBenchmarkResourceProfile } from "../lib/benchmark-resource-profile.js";
 import { auctionRedisUrls, redisShardResourceEnvironment, resolveRedisShards } from "../lib/benchmark-redis-shards.js";
+import { haRedisResourceEnvironment, resolveBenchmarkTopology } from "../lib/benchmark-topology.js";
 
 const summary = (rate, p99, errors = 0) => ({ metrics: {
   http_reqs: { values: { rate } }, http_req_duration: { values: { "p(95)": p99 / 2, "p(99)": p99 } },
@@ -176,6 +177,23 @@ test("Redis shard topology preserves the active Redis CPU budget", () => {
     BENCHMARK_REDIS_1_CPU_LIMIT: "0.2",
     BENCHMARK_REDIS_REPLICA_1_CPU_LIMIT: "0.125",
   });
+});
+
+test("HA topology keeps the Redis and Sentinel CPU allocation inside the standalone budget", () => {
+  const profile = resolveBenchmarkResourceProfile("balanced", {});
+  assert.equal(resolveBenchmarkTopology(), "standalone");
+  assert.equal(resolveBenchmarkTopology("ha"), "ha");
+  assert.throws(() => resolveBenchmarkTopology("cluster"), /topology/);
+  const allocation = haRedisResourceEnvironment(profile);
+  const active = Number(allocation.BENCHMARK_REDIS_0_CPU_LIMIT)
+    + Number(allocation.BENCHMARK_REDIS_REPLICA_0_CPU_LIMIT)
+    + Number(allocation.BENCHMARK_REDIS_1_CPU_LIMIT)
+    + 3 * Number(allocation.BENCHMARK_REDIS_SENTINEL_CPU_LIMIT);
+  const standaloneTotal = Number(profile.limits.redis) + Number(profile.limits.redisReplica)
+    + Number(profile.limits.api) + Number(profile.limits.auctionWorker);
+  const haTotal = active + Number(allocation.BENCHMARK_HA_API_CPU_LIMIT)
+    + Number(allocation.BENCHMARK_HA_AUCTION_WORKER_CPU_LIMIT);
+  assert.ok(Math.abs(haTotal - standaloneTotal) < 1e-9);
 });
 
 test("latency threshold failure does not masquerade as a core correctness failure", () => {

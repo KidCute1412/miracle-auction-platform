@@ -25,6 +25,7 @@ npm run benchmark:smoke
 npm run benchmark:hot
 npm run benchmark:distributed
 npm run benchmark:bid-path
+npm run benchmark:ha
 
 # One Redis-versus-PostgreSQL pessimistic-lock A/B sample
 npm run benchmark:compare:redis-pessimistic
@@ -42,6 +43,15 @@ npm.cmd run benchmark:distributed
 # Durable HTTP bid path (Redis replica ACK + auction projection), with dashboard
 # and notification consumers excluded during measurement. This is diagnostic-only.
 npm.cmd run benchmark:bid-path
+
+# HA durable bid-path diagnostic with the bid-priority CPU profile (five runs)
+node cli/index.js benchmark `
+  --scenario=bid-path `
+  --topology=ha `
+  --redis-shards=1 `
+  --resource-profile=bid-priority `
+  --runs=5 `
+  --continue=true
 
 # One isolated Redis versus PostgreSQL FOR UPDATE comparison
 npm.cmd run benchmark:compare:redis-pessimistic
@@ -73,9 +83,13 @@ Profiles are in `config/profiles.js`:
 - `spike`: abrupt burst and recovery.
 - `soak`: long stability run.
 
-For custom runs, call Node directly (this avoids npm argument-forwarding differences between shells): `node cli/index.js benchmark --scenario=hot --runs=5 --duration=30s`. Optional parameters include `--duration`, `--vus` for fixed-VU profiles such as distributed, `--warmup-duration`, `--convergence-timeout-ms`, `--runs`, `--output`, `--redis-shards=1|2`, the four concurrency flags, `--resource-profile=balanced|bid-priority`, `--keep-env`, and `--continue=true` (the longer `--continue-on-gate-failure=true` name is also supported). The official distributed command refuses an undersized Docker allocation; `--allow-low-resources=true` is only for non-claim profiling. Use `--allow-competing-stacks=true` only after verifying the other containers cannot distort the result. The benchmark manifest determines product IDs, bidder IDs and bid prices; k6 does not hard-code a dataset.
+For custom runs, call Node directly (this avoids npm argument-forwarding differences between shells): `node cli/index.js benchmark --scenario=hot --runs=5 --duration=30s`. Optional parameters include `--duration`, `--vus` for fixed-VU profiles such as distributed, `--warmup-duration`, `--convergence-timeout-ms`, `--runs`, `--output`, `--topology=standalone|ha`, `--redis-shards=1|2`, the four concurrency flags, `--resource-profile=balanced|bid-priority`, `--keep-env`, and `--continue=true` (the longer `--continue-on-gate-failure=true` name is also supported). HA intentionally supports one auction shard. The official distributed command refuses an undersized Docker allocation; `--allow-low-resources=true` is only for non-claim profiling. Use `--allow-competing-stacks=true` only after verifying the other containers cannot distort the result. The benchmark manifest determines product IDs, bidder IDs and bid prices; k6 does not hard-code a dataset.
 
 The default benchmark topology uses one Redis auction shard and mutation/projector/dashboard/notification concurrency of `16 / 16 / 2 / 2`. `--redis-shards=2` enables two benchmark-only primary/replica pairs; an auction is pinned by `productId % shardCount`, and its Lua mutation plus replica `WAIT` stay on that primary. The active Redis CPU budget stays constant: one shard receives the full Redis primary/replica budget, while two shards split that budget equally; inactive benchmark-only containers receive only a minimal Docker-valid quota. This does not alter production Compose or Oracle deployment topology. `balanced` is the default CPU profile. `bid-priority` preserves the same total 5.55-CPU budget but moves capacity from Kafka, outbox relay and async work to the API and Redis; it is for measuring the durable bid path while dashboard/notification freshness is observed separately. These are throughput settings, not correctness shortcuts: Redis AOF, replica acknowledgement, projector writes and Kafka offsets remain enabled.
+
+`--topology=ha` overlays one primary, two replicas, and three Sentinels. Its CPU allocation is taken from the same whole-stack budget as standalone (the balanced profile moves a small slice from API/auction-worker to keep all six Redis processes schedulable). This makes latency comparisons fair at the host-budget level and includes Sentinel discovery overhead on API Redis connections. `npm run benchmark:ha` is the repeatable three-run command; failover behavior is validated separately by stopping the isolated primary and checking promotion, retained data, `WAIT 1`, and rejoining of the old primary as a replica.
+
+The latest local HA bid-path diagnostic (`bid-path-20260821085816-35e03e`) used `bid-priority`, five independent 75-second runs and 100 VUs: median throughput `333.83 req/s`, accepted bids `323.90/s`, p95 `487.10 ms`, p99 `606.95 ms`, and throughput CV `5.79%`. Core invariants passed. This is diagnostic evidence with downstream consumers intentionally skipped and a non-zero infrastructure error rate (`0.0038%`); it is not an official end-to-end or production-capacity claim. The paired report and configuration are preserved under `artifacts/runs/bid-path-20260821085816-35e03e/`.
 
 ## Evidence and interpretation
 
