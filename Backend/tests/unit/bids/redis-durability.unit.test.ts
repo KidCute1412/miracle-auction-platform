@@ -66,6 +66,18 @@ describe("Redis mutation durability", () => {
     expect(mutationRedis[0].wait).toHaveBeenCalledWith(1, 100);
     expect(mutationRedis[1].wait).toHaveBeenCalledWith(1, 100);
   });
+
+  it("passes both the auction-scoped and global recovery fences to Lua", async () => {
+    mutationRedis[0].wait.mockResolvedValue(1);
+    await new RedisAuctionAuthority().mutate({
+      operation: "BID", productId: 2, actorId: 2, actorRole: "user", amountVnd: "110000",
+      idempotencyKey: "fence-contract", correlationId: "correlation-fence",
+    });
+    const call = mutationRedis[0].evalsha.mock.calls.at(-1) as unknown[];
+    expect(call[1]).toBe(12);
+    expect(call).toContain("auction:v1:2:recovery-fence");
+    expect(call).toContain("auction:v1:recovery:fence");
+  });
 });
 
 describe("sharded projector receipts", () => {

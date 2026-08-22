@@ -105,6 +105,22 @@ describe("health and readiness route contract", () => {
     });
     vi.unstubAllEnvs();
   });
+
+  it("keeps readiness while only selected auctions are recovering", async () => {
+    vi.stubEnv("AUCTION_AUTO_RECOVERY_ENABLED", "true");
+    vi.mocked(checkRedisDurability).mockResolvedValueOnce({ primary: true, replicasConnected: 1, replicasRequired: 1, mode: "replica-ack", ready: true });
+    vi.mocked(redisClient.get)
+      .mockResolvedValueOnce(new Date().toISOString())
+      .mockResolvedValueOnce(JSON.stringify({ state: "recovering", ready: true, scope: "auctions", affectedAuctionIds: [42] }));
+    const response = await request(createApp()).get("/ready");
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      status: "ready",
+      dependencies: { auctionAuthority: true },
+      metrics: { auctionAuthorityRecovery: { scope: "auctions", affectedAuctionIds: [42] } },
+    });
+    vi.unstubAllEnvs();
+  });
 });
 
 describe("CSRF bootstrap route contract", () => {

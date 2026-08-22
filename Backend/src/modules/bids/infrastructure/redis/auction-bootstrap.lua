@@ -4,10 +4,11 @@ local rankingKey = KEYS[3]
 local rankMembersKey = KEYS[4]
 local bansKey = KEYS[5]
 local deadlinesKey = KEYS[6]
-local recoveryFenceKey = KEYS[7]
+local auctionRecoveryFenceKey = KEYS[7]
+local recoveryFenceKey = KEYS[8]
 local seed = cjson.decode(ARGV[1])
 
-if redis.call("EXISTS", recoveryFenceKey) == 1 and not seed.recovery then
+if (redis.call("EXISTS", recoveryFenceKey) == 1 or redis.call("EXISTS", auctionRecoveryFenceKey) == 1) and not seed.recovery then
   return redis.error_reply("AUCTION_AUTHORITY_RECOVERING")
 end
 

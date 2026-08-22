@@ -8,7 +8,8 @@ local rateKey = KEYS[7]
 local deadlinesKey = KEYS[8]
 local streamKey = KEYS[9]
 local legacyIdempotencyKey = KEYS[10]
-local recoveryFenceKey = KEYS[11]
+local auctionRecoveryFenceKey = KEYS[11]
+local recoveryFenceKey = KEYS[12]
 local request = cjson.decode(ARGV[1])
 
 local function fail(code, message, statusCode)
@@ -68,7 +69,7 @@ local expectedTypes = {
   { stateKey, "hash" }, { maximaKey, "hash" }, { rankingKey, "zset" },
   { rankMembersKey, "hash" }, { bansKey, "set" }, { idempotencyKey, "string" },
   { rateKey, "string" }, { deadlinesKey, "zset" }, { streamKey, "stream" },
-  { legacyIdempotencyKey, "hash" }, { recoveryFenceKey, "string" }
+  { legacyIdempotencyKey, "hash" }, { auctionRecoveryFenceKey, "string" }, { recoveryFenceKey, "string" }
 }
 for _, expected in ipairs(expectedTypes) do
   local actual = redis.call("TYPE", expected[1]).ok
@@ -79,6 +80,9 @@ end
 
 if redis.call("EXISTS", recoveryFenceKey) == 1 then
   return fail("AUCTION_AUTHORITY_RECOVERING", "Auction authority is recovering", 503)
+end
+if redis.call("EXISTS", auctionRecoveryFenceKey) == 1 then
+  return fail("AUCTION_AUTHORITY_RECOVERING", "This auction is recovering", 503)
 end
 
 local fingerprint = request.fingerprint

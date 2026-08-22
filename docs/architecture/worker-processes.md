@@ -49,7 +49,7 @@ Only one `auction-worker` replica is supported. Inside it, product lanes are par
 
 ## Lifecycle
 
-`auction-worker` checks PostgreSQL and Redis, verifies the shared authority manifest, creates the consumer group once, reports PEL/lag, expires converged legacy terminal hashes, safely compacts acknowledged Stream history, then starts projection, close scheduling, recovery checks and heartbeat. Missing authority is rebuilt only behind a global Redis fence and PostgreSQL recovery lease, after Stream drain and before reconciliation succeeds. Shutdown stops the scheduler and new reads, waits for the current projection batch, closes the blocking Redis connection, then disconnects Prisma/Redis.
+`auction-worker` checks PostgreSQL and Redis, verifies the shared authority manifest, creates the consumer group once, reports PEL/lag, expires converged legacy terminal hashes, safely compacts acknowledged Stream history, then starts projection, close scheduling, recovery checks and heartbeat. Missing authority is rebuilt behind an auction-scoped Redis fence and PostgreSQL recovery lease when the affected scope is known; total loss or unverifiable integrity uses the global fence. Shutdown stops the scheduler and new reads, waits for the current projection batch, closes the blocking Redis connection, then disconnects Prisma/Redis.
 
 `outbox-relay` claims pending non-terminal rows with `FOR UPDATE SKIP LOCKED`. `available_at` is the lease/retry timestamp. Rows are grouped by topic and published with `acks=-1`; `delivered_at` is set only after acknowledgement. A crash between Kafka acknowledgement and `delivered_at` can duplicate an event, so consumers use `eventId` receipts.
 

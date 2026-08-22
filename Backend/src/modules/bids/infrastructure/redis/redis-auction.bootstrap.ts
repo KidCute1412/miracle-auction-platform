@@ -125,13 +125,14 @@ export async function bootstrapRedisAuction(productId: number, options: { recove
     const script = await readFile(BOOTSTRAP_SCRIPT_URL, "utf8");
     const result = await redis.eval(
       script,
-      7,
+      8,
       stateKey,
       redisAuctionKeys.maxima(productId),
       redisAuctionKeys.ranking(productId),
       redisAuctionKeys.rankMembers(productId),
       redisAuctionKeys.bans(productId),
       redisAuctionKeys.deadlines,
+      redisAuctionKeys.auctionRecoveryFence(productId),
       redisAuctionKeys.recoveryFence,
       JSON.stringify(seed),
     );

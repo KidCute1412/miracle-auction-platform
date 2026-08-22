@@ -18,6 +18,7 @@ export const redisAuctionKeys = {
   projectorRetries: "auction:v1:projector:retries",
   authorityManifest: "auction:v1:authority-manifest",
   recoveryFence: "auction:v1:recovery:fence",
+  auctionRecoveryFence: (productId: number | string) => `${prefix(productId)}:recovery-fence`,
   plannedBootstrap: "auction:v1:bootstrap-batch",
 } as const;
 
@@ -33,6 +34,7 @@ export function mutationKeys(productId: number, actorId: number, idempotencyDige
     redisAuctionKeys.deadlines,
     redisAuctionKeys.results,
     redisAuctionKeys.idempotency(productId),
+    redisAuctionKeys.auctionRecoveryFence(productId),
     redisAuctionKeys.recoveryFence,
   ];
 }

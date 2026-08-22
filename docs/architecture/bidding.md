@@ -14,7 +14,7 @@ Redis Lua validates auction status/window, seller and ban rules, bid step, proxy
 
 JWT authorization reads `auth:v1:user:{id}` (`role`, `status`, `authVersion`, TTL 30 seconds) from a dedicated Redis connection. Misses and Redis failures fall back to a minimal PostgreSQL query. Password, role, and status changes increment `auth_version` and write through with a Lua version fence. `/profiles/me` loads the full profile explicitly.
 
-New auctions are bootstrapped synchronously after their PostgreSQL create through an atomic compare-and-initialize script. A missing state for an existing auction fails closed with `AUCTION_STATE_NOT_READY`; neither the API nor worker rebuilds it automatically from a possibly stale PostgreSQL projection. Recovery requires maintenance and a verified projection checkpoint.
+New auctions are bootstrapped synchronously after their PostgreSQL create through an atomic compare-and-initialize script. A missing or incomplete state for an existing auction fails closed with `AUCTION_STATE_NOT_READY`; the recovery worker can then fence and rebuild only that auction after the verified PostgreSQL projection checkpoint is drained. A global fence remains reserved for total Redis loss or unverifiable authority integrity.
 
 ## Projection and ordering
 

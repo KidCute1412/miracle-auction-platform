@@ -9,7 +9,13 @@ import { getLogger, safeError } from "@/infrastructure/observability/logger.ts";
 import { bootstrapRedisAuction } from "./redis-auction.bootstrap.ts";
 import { redisAuctionKeys } from "./redis-auction.keys.ts";
 import { reconcileAuctionProjection } from "./redis-projection.reconciliation.ts";
-import { ensureProjectorGroup, getProjectorStreamHealth, runProjectorBatch } from "./redis-stream.projector.ts";
+import {
+  captureProjectorStreamWatermarks,
+  ensureProjectorGroup,
+  getProjectorStreamHealth,
+  hasUndrainedProjectorEntries,
+  runProjectorBatch,
+} from "./redis-stream.projector.ts";
 
 const log = getLogger({ component: "redis-authority-recovery" });
 const SCHEMA_VERSION = 1;
@@ -24,6 +30,8 @@ export interface AuctionAuthorityRecoveryRuntime {
   trigger?: string;
   lastError?: string;
   lastCheckedAt?: string;
+  scope?: "none" | "auctions" | "global";
+  affectedAuctionIds?: number[];
 }
 
 let runtime: AuctionAuthorityRecoveryRuntime = {
@@ -89,18 +97,44 @@ async function inspectRedisAuthority(productIds: readonly number[], generation: 
   const manifestMatches = parsed.every(
     (item) => item?.generation === generation && item.recoveryEpoch === epoch.toString(),
   );
+  const activeBidRows = await prisma.bidding_history.findMany({
+    where: { product_id: { in: productIds.map((productId) => BigInt(productId)) }, status: null },
+    select: { product_id: true },
+    distinct: ["product_id"],
+  });
+  const productsWithActiveBids = new Set(activeBidRows.map((row) => Number(row.product_id)));
   const statePresence = await Promise.all(
-    productIds.map(async (productId) => ({
-      productId,
-      exists: (await clients[productId % clients.length]!.exists(redisAuctionKeys.state(productId))) === 1,
-    })),
+    productIds.map(async (productId) => {
+      const client = clients[productId % clients.length]!;
+      const stateKey = redisAuctionKeys.state(productId);
+      const [stateType, maximaType, rankingType, rankMembersType, bansType, auctionFence] = await Promise.all([
+        client.type(stateKey),
+        client.type(redisAuctionKeys.maxima(productId)),
+        client.type(redisAuctionKeys.ranking(productId)),
+        client.type(redisAuctionKeys.rankMembers(productId)),
+        client.type(redisAuctionKeys.bans(productId)),
+        client.exists(redisAuctionKeys.auctionRecoveryFence(productId)),
+      ]);
+      const fields = stateType === "hash"
+        ? await client.hmget(stateKey, "productId", "status", "sequence", "version", "currentPriceVnd", "endAtMs")
+        : [];
+      const requiresBidStructures = productsWithActiveBids.has(productId);
+      const validType = (actual: string, expected: string, required: boolean): boolean =>
+        actual === expected || (!required && actual === "none");
+      const complete = stateType === "hash" &&
+        validType(maximaType, "hash", requiresBidStructures) &&
+        validType(rankingType, "zset", requiresBidStructures) &&
+        validType(rankMembersType, "hash", requiresBidStructures) &&
+        validType(bansType, "set", false) && fields.every((value) => value !== null);
+      return { productId, exists: complete, fenced: auctionFence === 1 };
+    }),
   );
   return {
     manifestMatches,
     manifestAbsent: manifests.every((item) => item === null),
     fencePresent: fences.some((item) => item === 1),
     plannedBootstrap: plannedBootstraps.some((item) => item === 1),
-    missingProductIds: statePresence.filter((item) => !item.exists).map((item) => item.productId),
+    missingProductIds: statePresence.filter((item) => !item.exists || item.fenced).map((item) => item.productId),
   };
 }
 
@@ -150,14 +184,17 @@ async function renewLease(epoch: bigint): Promise<void> {
   if (updated.count !== 1) throw new Error("Auction recovery lease was lost");
 }
 
-async function drainProjection(epoch: bigint): Promise<void> {
+async function drainProjection(epoch: bigint, productIds?: readonly number[]): Promise<void> {
   await ensureProjectorGroup();
   const deadline = Date.now() + Math.max(30_000, Number(process.env.AUCTION_RECOVERY_DRAIN_TIMEOUT_MS ?? 120_000));
   const consumer = `authority-recovery-${ownerId}`;
+  const targets = productIds?.map(String) ?? [];
+  const watermarks = targets.length > 0 ? await captureProjectorStreamWatermarks() : undefined;
   while (Date.now() < deadline) {
     await runProjectorBatch(consumer);
+    if (targets.length > 0 && watermarks && !(await hasUndrainedProjectorEntries(new Set(targets), watermarks))) return;
     const health = await getProjectorStreamHealth();
-    if (health.pending === 0 && health.lag === 0) return;
+    if (targets.length === 0 && health.pending === 0 && health.lag === 0) return;
     await renewLease(epoch);
   }
   throw new Error("Timed out while draining Redis auction events into PostgreSQL");
@@ -290,14 +327,25 @@ async function restoreRecentIdempotency(): Promise<number> {
   return restored;
 }
 
-async function performRecovery(trigger: string): Promise<AuctionAuthorityRecoveryRuntime> {
+async function performRecovery(
+  trigger: string,
+  targetProductIds: readonly number[] = [],
+  globalRecovery = false,
+): Promise<AuctionAuthorityRecoveryRuntime> {
   const claim = await claimRecovery(trigger);
   if (!claim) {
     runtime = { state: "checking", ready: false, trigger, lastCheckedAt: new Date().toISOString() };
     return runtime;
   }
   const epoch = claim.recovery_epoch;
-  runtime = { state: "recovering", ready: false, recoveryEpoch: epoch.toString(), trigger };
+  runtime = {
+    state: "recovering",
+    ready: !globalRecovery,
+    recoveryEpoch: epoch.toString(),
+    trigger,
+    scope: globalRecovery ? "global" : "auctions",
+    affectedAuctionIds: [...targetProductIds],
+  };
   const fence = JSON.stringify({
     ownerId,
     recoveryEpoch: epoch.toString(),
@@ -305,14 +353,21 @@ async function performRecovery(trigger: string): Promise<AuctionAuthorityRecover
     startedAt: new Date().toISOString(),
   });
   try {
-    await Promise.all(getAuctionRedisClients().map((client) => client.set(redisAuctionKeys.recoveryFence, fence)));
-    await drainProjection(epoch);
+    if (globalRecovery) {
+      await Promise.all(getAuctionRedisClients().map((client) => client.set(redisAuctionKeys.recoveryFence, fence)));
+    } else {
+      await Promise.all(targetProductIds.map(async (productId) => {
+        const client = getAuctionRedisClients()[productId % getAuctionRedisClients().length]!;
+        await client.set(redisAuctionKeys.auctionRecoveryFence(productId), fence);
+      }));
+    }
+    await drainProjection(epoch, globalRecovery ? undefined : targetProductIds);
     const extension =
       trigger === "FULL_DATA_LOSS"
         ? await extendInterruptedAuctions(claim.last_redis_healthy_at, epoch)
         : { products: [] as RecoveryProduct[], seconds: 0 };
     await renewLease(epoch);
-    const refreshedProductIds = await activeProductIds();
+    const refreshedProductIds = globalRecovery ? await activeProductIds() : [...targetProductIds];
     for (const productId of refreshedProductIds) {
       await bootstrapRedisAuction(productId, { recovery: true, force: true });
       const reconciliation = await reconcileAuctionProjection(productId);
@@ -353,13 +408,22 @@ async function performRecovery(trigger: string): Promise<AuctionAuthorityRecover
         },
       }),
     ]);
-    await Promise.all(getAuctionRedisClients().map((client) => client.del(redisAuctionKeys.recoveryFence)));
+    if (globalRecovery) {
+      await Promise.all(getAuctionRedisClients().map((client) => client.del(redisAuctionKeys.recoveryFence)));
+    } else {
+      await Promise.all(targetProductIds.map(async (productId) => {
+        const client = getAuctionRedisClients()[productId % getAuctionRedisClients().length]!;
+        await client.del(redisAuctionKeys.auctionRecoveryFence(productId));
+      }));
+    }
     runtime = {
       state: "ready",
       ready: true,
       recoveryEpoch: epoch.toString(),
       trigger,
       lastCheckedAt: completedAt.toISOString(),
+      scope: globalRecovery ? "global" : "none",
+      affectedAuctionIds: [],
     };
     log.info(
       { trigger, epoch: epoch.toString(), auctions: refreshedProductIds.length },
@@ -388,9 +452,11 @@ async function performRecovery(trigger: string): Promise<AuctionAuthorityRecover
       .catch(() => undefined);
     runtime = {
       state: "failed",
-      ready: false,
+      ready: !globalRecovery,
       recoveryEpoch: epoch.toString(),
       trigger,
+      scope: globalRecovery ? "global" : "auctions",
+      affectedAuctionIds: [...targetProductIds],
       lastError: message,
       lastCheckedAt: new Date().toISOString(),
     };
@@ -472,7 +538,8 @@ async function cycle(): Promise<AuctionAuthorityRecoveryRuntime> {
       : inspection.missingProductIds.length > 0
         ? "PARTIAL_STATE_LOSS"
         : "MANIFEST_MISMATCH";
-  return performRecovery(trigger);
+  const globalRecovery = trigger === "FULL_DATA_LOSS" || trigger === "MANIFEST_MISMATCH";
+  return performRecovery(trigger, globalRecovery ? [] : inspection.missingProductIds, globalRecovery);
 }
 
 export function runAuctionAuthorityRecoveryCycle(): Promise<AuctionAuthorityRecoveryRuntime> {

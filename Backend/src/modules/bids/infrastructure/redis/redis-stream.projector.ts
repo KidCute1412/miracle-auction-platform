@@ -50,6 +50,81 @@ export interface RedisStreamEntry {
   shard?: number;
 }
 
+export type ProjectorStreamWatermark = string;
+
+export async function captureProjectorStreamWatermarks(): Promise<ProjectorStreamWatermark[]> {
+  return Promise.all(getAuctionRedisClients().map(async (redis) => {
+    let info: unknown;
+    try {
+      info = await redis.xinfo("STREAM", redisAuctionKeys.results);
+    } catch (error) {
+      if (error instanceof Error && /no such key/i.test(error.message)) return "0-0";
+      throw error;
+    }
+    if (!Array.isArray(info)) return "0-0";
+    const index = info.indexOf("last-generated-id");
+    return typeof info[index + 1] === "string" ? info[index + 1] as string : "0-0";
+  }));
+}
+
+function streamEntriesFromRange(raw: unknown, shard: number): RedisStreamEntry[] {
+  return entriesFromRead([[redisAuctionKeys.results, raw]], shard);
+}
+
+function extractRawProductId(payload: string): string | undefined {
+  try {
+    const parsed = JSON.parse(payload) as { productId?: unknown };
+    if (typeof parsed.productId === "string" && /^\d+$/.test(parsed.productId)) return parsed.productId;
+    if (typeof parsed.productId === "number" && Number.isSafeInteger(parsed.productId) && parsed.productId >= 0) {
+      return parsed.productId.toString();
+    }
+  } catch {
+    // The event is malformed and its aggregate cannot be identified safely.
+  }
+  return undefined;
+}
+
+/** Returns true while any target-auction entry up to the recovery watermark
+ * remains in the stream. Acknowledged entries are deleted, while pending and
+ * unread entries remain visible to XRANGE. */
+export async function hasUndrainedProjectorEntries(
+  productIds: ReadonlySet<string>,
+  watermarks: readonly ProjectorStreamWatermark[],
+): Promise<boolean> {
+  for (const [shard, redis] of getAuctionRedisClients().entries()) {
+    const maximum = watermarks[shard] ?? "0-0";
+    let cursor = "-";
+    while (true) {
+      let raw: unknown;
+      try {
+        raw = await redis.xrange(redisAuctionKeys.results, cursor, maximum, "COUNT", 1_000);
+      } catch (error) {
+        if (error instanceof Error && /no such key/i.test(error.message)) break;
+        throw error;
+      }
+      const entries = streamEntriesFromRange(raw, shard);
+      for (const entry of entries) {
+        try {
+          if (productIds.has(parseEvent(entry.payload).productId)) return true;
+        } catch {
+          const productId = extractRawProductId(entry.payload);
+          if (productId === undefined) {
+            throw new InvalidAuctionEventError("Cannot identify malformed stream event aggregate during recovery");
+          }
+          if (productIds.has(productId)) {
+            throw new InvalidAuctionEventError(`Malformed stream event belongs to recovering auction ${productId}`);
+          }
+        }
+      }
+      if (!Array.isArray(raw) || raw.length < 1_000) break;
+      const last = raw[raw.length - 1];
+      if (!Array.isArray(last) || typeof last[0] !== "string") break;
+      cursor = `(${last[0]}`;
+    }
+  }
+  return false;
+}
+
 /** Redis stream IDs are only unique inside a Redis instance. Persist the
  * shard alongside the ID so receipts from independent shards cannot collide. */
 export function streamReceiptId(entry: Pick<RedisStreamEntry, "id" | "shard">): string {

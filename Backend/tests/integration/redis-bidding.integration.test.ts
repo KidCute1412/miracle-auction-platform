@@ -125,6 +125,151 @@ describe("Redis-authoritative bidding integration", () => {
     }
   });
 
+  it("recovers one missing auction state without blocking a healthy auction", async () => {
+    vi.stubEnv("AUCTION_AUTO_RECOVERY_ENABLED", "true");
+    try {
+      const seller = await createUser({ role: "seller" });
+      const bidder = await createUser();
+      const healthyBidder = await createUser();
+      const broken = await createAuction(seller.user_id);
+      const healthy = await createAuction(seller.user_id);
+      const brokenId = Number(broken.product_id);
+      const healthyId = Number(healthy.product_id);
+      await prisma.auction_authority_recovery.update({
+        where: { id: 1 },
+        data: { state: "READY", owner_id: null, lease_until: null, last_error: null, last_redis_healthy_at: new Date() },
+      });
+      await bootstrapRedisAuction(brokenId);
+      await bootstrapRedisAuction(healthyId);
+      await runAuctionAuthorityRecoveryCycle();
+
+      await redisClient.del(redisAuctionKeys.state(brokenId));
+      await redisClient.set(redisAuctionKeys.auctionRecoveryFence(brokenId), "test-partial-fence");
+      const healthyBid = await redisAuctionAuthority.mutate({
+        operation: "BID", productId: healthyId, actorId: healthyBidder.user_id, actorRole: "user", amountVnd: "120",
+        idempotencyKey: "healthy-during-partial-recovery", correlationId: randomUUID(),
+      });
+      expect(healthyBid.status).toBe("success");
+
+      const recovered = await runAuctionAuthorityRecoveryCycle();
+      expect(recovered).toMatchObject({ state: "ready", ready: true, scope: "none", affectedAuctionIds: [] });
+      await expect(redisClient.exists(redisAuctionKeys.state(brokenId))).resolves.toBe(1);
+      await expect(redisClient.exists(redisAuctionKeys.auctionRecoveryFence(brokenId))).resolves.toBe(0);
+      await expect(redisClient.exists(redisAuctionKeys.recoveryFence)).resolves.toBe(0);
+
+      await expect(redisAuctionAuthority.mutate({
+        operation: "BID", productId: brokenId, actorId: bidder.user_id, actorRole: "user", amountVnd: "120",
+        idempotencyKey: "broken-after-recovery", correlationId: randomUUID(),
+      })).resolves.toMatchObject({ status: "success" });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("repairs an auction state key corrupted to the wrong Redis type", async () => {
+    vi.stubEnv("AUCTION_AUTO_RECOVERY_ENABLED", "true");
+    try {
+      const seller = await createUser({ role: "seller" });
+      const auction = await createAuction(seller.user_id);
+      const healthyAuction = await createAuction(seller.user_id);
+      const productId = Number(auction.product_id);
+      const healthyProductId = Number(healthyAuction.product_id);
+      await prisma.auction_authority_recovery.update({
+        where: { id: 1 },
+        data: { state: "READY", owner_id: null, lease_until: null, last_error: null, last_redis_healthy_at: new Date() },
+      });
+      await bootstrapRedisAuction(productId);
+      await bootstrapRedisAuction(healthyProductId);
+      await runAuctionAuthorityRecoveryCycle();
+
+      await redisClient.del(
+        redisAuctionKeys.maxima(productId),
+        redisAuctionKeys.ranking(productId),
+        redisAuctionKeys.rankMembers(productId),
+        redisAuctionKeys.bans(productId),
+      );
+      await redisClient.set(redisAuctionKeys.state(productId), "corrupted-state");
+
+      await expect(runAuctionAuthorityRecoveryCycle()).resolves.toMatchObject({
+        state: "ready",
+        ready: true,
+        scope: "none",
+        affectedAuctionIds: [],
+      });
+      await expect(redisClient.type(redisAuctionKeys.state(productId))).resolves.toBe("hash");
+      await expect(redisClient.hget(redisAuctionKeys.state(productId), "productId")).resolves.toBe(productId.toString());
+      await expect(redisClient.exists(redisAuctionKeys.auctionRecoveryFence(productId))).resolves.toBe(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("does not complete targeted recovery around a malformed target stream event", async () => {
+    vi.stubEnv("AUCTION_AUTO_RECOVERY_ENABLED", "true");
+    try {
+      const seller = await createUser({ role: "seller" });
+      const broken = await createAuction(seller.user_id);
+      const healthy = await createAuction(seller.user_id);
+      const brokenId = Number(broken.product_id);
+      const healthyId = Number(healthy.product_id);
+      await prisma.auction_authority_recovery.update({
+        where: { id: 1 },
+        data: { state: "READY", owner_id: null, lease_until: null, last_error: null, last_redis_healthy_at: new Date() },
+      });
+      await bootstrapRedisAuction(brokenId);
+      await bootstrapRedisAuction(healthyId);
+      await runAuctionAuthorityRecoveryCycle();
+
+      await redisClient.del(redisAuctionKeys.state(brokenId));
+      await redisClient.xadd(
+        redisAuctionKeys.results,
+        "*",
+        "event",
+        JSON.stringify({ productId: brokenId.toString(), type: "BROKEN_EVENT" }),
+      );
+
+      await expect(runAuctionAuthorityRecoveryCycle()).rejects.toThrow(/malformed stream event belongs to recovering auction/i);
+      await expect(redisClient.exists(redisAuctionKeys.auctionRecoveryFence(brokenId))).resolves.toBe(1);
+      await expect(redisClient.type(redisAuctionKeys.state(brokenId))).resolves.toBe("none");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("rebuilds missing bid indexes after an auction has active bid history", async () => {
+    vi.stubEnv("AUCTION_AUTO_RECOVERY_ENABLED", "true");
+    try {
+      const seller = await createUser({ role: "seller" });
+      const bidder = await createUser();
+      const auction = await createAuction(seller.user_id);
+      const healthy = await createAuction(seller.user_id);
+      const productId = Number(auction.product_id);
+      const healthyId = Number(healthy.product_id);
+      await prisma.auction_authority_recovery.update({
+        where: { id: 1 },
+        data: { state: "READY", owner_id: null, lease_until: null, last_error: null, last_redis_healthy_at: new Date() },
+      });
+      await bootstrapRedisAuction(productId);
+      await bootstrapRedisAuction(healthyId);
+      await runAuctionAuthorityRecoveryCycle();
+      await redisAuctionAuthority.mutate({
+        operation: "BID", productId, actorId: bidder.user_id, actorRole: "user", amountVnd: "120",
+        idempotencyKey: "bid-before-index-corruption", correlationId: randomUUID(),
+      });
+      await runProjectorBatch("active-bid-index-recovery");
+
+      await redisClient.del(redisAuctionKeys.maxima(productId));
+      await expect(runAuctionAuthorityRecoveryCycle()).resolves.toMatchObject({
+        state: "ready", ready: true, scope: "none", affectedAuctionIds: [],
+      });
+      await expect(redisClient.type(redisAuctionKeys.maxima(productId))).resolves.toBe("hash");
+      await expect(redisClient.hget(redisAuctionKeys.maxima(productId), bidder.user_id.toString())).resolves.toBe("120");
+      await expect(redisClient.exists(redisAuctionKeys.auctionRecoveryFence(productId))).resolves.toBe(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("installs one snapshot when two bootstrap callers race", async () => {
     const seller = await createUser({ role: "seller" });
     const auction = await createAuction(seller.user_id);
