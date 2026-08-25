@@ -31,4 +31,13 @@ describe("bidService durability retries", () => {
     const keys = vi.mocked(apiRequest).mock.calls.map((call) => (call[1]?.headers as Record<string, string>)["Idempotency-Key"]);
     expect(new Set(keys).size).toBe(1);
   });
+
+  it("uses a caller-provided key for a new invocation", async () => {
+    vi.mocked(apiRequest).mockResolvedValue({ status: "success" });
+
+    await bidService.play({ product_id: 7, max_price: "120" }, crypto.randomUUID());
+
+    const headers = vi.mocked(apiRequest).mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers["Idempotency-Key"]).toMatch(/[0-9a-f-]{36}/);
+  });
 });

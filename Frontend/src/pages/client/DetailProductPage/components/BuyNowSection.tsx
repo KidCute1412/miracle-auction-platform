@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ShoppingCart, Zap, X, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name,
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const buyNowIdempotencyKeyRef = useRef<ReturnType<typeof crypto.randomUUID> | null>(null);
 
   const handleBuyNowClick = () => {
     setShowConfirmModal(true);
@@ -32,22 +33,27 @@ export default function BuyNowSection({ product_id, buy_now_price, product_name,
     setIsSubmitting(true);
 
     try {
+      buyNowIdempotencyKeyRef.current ??= crypto.randomUUID();
       const data = await bidService.buyNow({
         product_id: product_id,
         buy_price: String(buy_now_price),
-      });
+      }, buyNowIdempotencyKeyRef.current);
 
       if (data.status === "success") {
         setShowSuccessOverlay(true);
         if (data.data) {
           onBuyNowSuccess?.(data.data);
         }
+        buyNowIdempotencyKeyRef.current = null;
+      } else {
+        buyNowIdempotencyKeyRef.current = null;
       }
     } catch (error: unknown) {
       console.error(error);
       if (isDurabilityUnconfirmed(error)) {
         toast.warning("Purchase was accepted by the primary server but replica confirmation is still pending. Do not submit it again.");
       } else {
+        buyNowIdempotencyKeyRef.current = null;
         toast.error(error instanceof ApiClientError ? error.message : "Error connecting to server!");
       }
     } finally {

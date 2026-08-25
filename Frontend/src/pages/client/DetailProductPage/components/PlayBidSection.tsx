@@ -23,6 +23,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const [successBidAmount, setSuccessBidAmount] = useState("0");
   const [pendingBidData, setPendingBidData] = useState<BidRequest | null>(null);
+  const bidIdempotencyKeyRef = useRef<ReturnType<typeof crypto.randomUUID> | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -83,6 +84,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
         product_id: product_id,
         max_price: maxPriceSubmit,
       });
+      bidIdempotencyKeyRef.current = null;
       setShowConfirmModal(true);
     });
 
@@ -96,9 +98,11 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
     
     setShowConfirmModal(false);
     setIsSubmit(true);
+    let durabilityUnconfirmed = false;
     
     try {
-      const data = await bidService.play(pendingBidData);
+      bidIdempotencyKeyRef.current ??= crypto.randomUUID();
+      const data = await bidService.play(pendingBidData, bidIdempotencyKeyRef.current);
 
       if (data.status === "success") {
         setSuccessBidAmount(pendingBidData.max_price);
@@ -107,20 +111,25 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
         if (data.data) {
           onBidSuccess?.(data.data);
         }
+        bidIdempotencyKeyRef.current = null;
       } else {
         toast.error(`Failed to place bid`);
       }
     } catch (e: unknown) {
       console.log(e);
       const message = e instanceof ApiClientError ? e.message : "Error connecting to server to place bid!";
-      if (isDurabilityUnconfirmed(e)) {
+      durabilityUnconfirmed = isDurabilityUnconfirmed(e);
+      if (durabilityUnconfirmed) {
         toast.warning("Bid was accepted by the primary server but replica confirmation is still pending. Do not submit a new bid.");
       } else if (message !== "Not logged in") {
         toast.error(message);
       }
     } finally {
       setIsSubmit(false);
-      setPendingBidData(null);
+      if (!durabilityUnconfirmed) {
+        setPendingBidData(null);
+        bidIdempotencyKeyRef.current = null;
+      }
     }
   };
 

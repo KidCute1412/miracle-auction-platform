@@ -4,8 +4,7 @@ import { ApiClientError, apiRequest } from "./api.client.ts";
 const DURABILITY_RETRY_DELAYS_MS = [100, 250] as const;
 const wait = (milliseconds: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-async function idempotentMutation<TResponse, TBody>(path: string, body: TBody): Promise<TResponse> {
-  const idempotencyKey = crypto.randomUUID();
+async function idempotentMutation<TResponse, TBody>(path: string, body: TBody, idempotencyKey = crypto.randomUUID()): Promise<TResponse> {
   for (let attempt = 0; ; attempt += 1) {
     try {
       return await apiRequest<TResponse, TBody>(path, {
@@ -28,16 +27,16 @@ export function isDurabilityUnconfirmed(error: unknown): error is ApiClientError
 }
 
 export const bidService = {
-  play: async (body: BidRequest): Promise<BidSuccessResponse> => {
-    return idempotentMutation<BidSuccessResponse, BidRequest>(`/bids`, body);
+  play: async (body: BidRequest, idempotencyKey?: ReturnType<typeof crypto.randomUUID>): Promise<BidSuccessResponse> => {
+    return idempotentMutation<BidSuccessResponse, BidRequest>(`/bids`, body, idempotencyKey);
   },
 
   getHistory: async (params: BidHistoryQuery): Promise<BidHistoryResponse> => {
     return apiRequest<BidHistoryResponse>(`/bids`, { params: { product_id: params.product_id } });
   },
 
-  buyNow: async (body: BuyNowRequest): Promise<BuyNowSuccessResponse> => {
-    return idempotentMutation<BuyNowSuccessResponse, BuyNowRequest>(`/bids/purchase`, body);
+  buyNow: async (body: BuyNowRequest, idempotencyKey?: ReturnType<typeof crypto.randomUUID>): Promise<BuyNowSuccessResponse> => {
+    return idempotentMutation<BuyNowSuccessResponse, BuyNowRequest>(`/bids/purchase`, body, idempotencyKey);
   },
 
   banBidder: async (body: BanBidderRequest): Promise<BanBidderResponse> => {
