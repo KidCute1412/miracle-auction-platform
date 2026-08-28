@@ -85,13 +85,13 @@ export default function ProfileDropdown({ menuItems }: ProfileDropdownProps) {
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center cursor-pointer space-x-3 px-3 py-1.5 rounded-full border border-border hover:shadow-sm transition-all duration-200 bg-background/50 hover:bg-muted"
+        className="flex items-center cursor-pointer p-0.5 sm:px-3 sm:py-1.5 sm:space-x-3 rounded-full border border-transparent sm:border-border hover:shadow-sm transition-all duration-200 bg-transparent sm:bg-background/50 hover:bg-muted"
       >
         <UserAvatar
           src={auth?.avatar}
           name={auth?.full_name || auth?.username || ""}
-          size="md"
-          className="border-accent/30 shadow-gold-glow"
+          size="sm"
+          className="sm:w-10 sm:h-10 border-accent/30 shadow-gold-glow"
         />
 
         <div className="hidden md:flex flex-col text-left">
@@ -103,7 +103,7 @@ export default function ProfileDropdown({ menuItems }: ProfileDropdownProps) {
 
         <ChevronDown
           size={16}
-          className={`text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-muted-foreground transition-transform duration-200 hidden sm:block ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 

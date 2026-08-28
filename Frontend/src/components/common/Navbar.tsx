@@ -91,19 +91,19 @@ function Navbar() {
   return (
     <>
       <header className="fixed top-0 left-0 w-full z-50 bg-background/85 backdrop-blur-md border-b border-border transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 lg:h-20 flex items-center justify-between gap-2">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 lg:h-20 flex items-center justify-between gap-2">
           {/* Left section: Hamburger button (mobile) + Brand logo */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-xl text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors"
+              className="md:hidden p-1.5 sm:p-2 rounded-xl text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors shrink-0"
               aria-label="Open mobile menu"
             >
               <Menu size={22} />
             </button>
 
             <div
-              className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none"
+              className="flex items-center gap-1.5 sm:gap-3 cursor-pointer select-none shrink-0"
               onClick={() => navigate("/")}
             >
               <img
@@ -111,7 +111,7 @@ function Navbar() {
                 alt="logo"
                 className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded-full hover:rotate-12 transition-transform duration-300 shrink-0"
               />
-              <span className="font-heading font-extrabold text-xl sm:text-2xl tracking-wider bg-gradient-to-r from-accent to-accent/60 bg-clip-text text-transparent">
+              <span className="font-heading font-extrabold text-lg sm:text-2xl tracking-wider bg-gradient-to-r from-accent to-accent/60 bg-clip-text text-transparent truncate">
                 Miracle
               </span>
             </div>
@@ -126,11 +126,11 @@ function Navbar() {
           </div>
 
           {/* Right section: Actions & Auth */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
             {/* Mobile search toggle button */}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className="md:hidden p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              className="md:hidden p-1.5 sm:p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
               aria-label="Toggle mobile search"
             >
               {mobileSearchOpen ? <X size={20} className="text-accent" /> : <LucideSearch size={20} />}
@@ -139,19 +139,19 @@ function Navbar() {
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-muted text-foreground transition-colors duration-200"
+              className="p-1.5 sm:p-2 rounded-full hover:bg-muted text-foreground transition-colors duration-200 shrink-0"
               aria-label="Toggle theme"
             >
               {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
             </button>
 
             {!auth ? (
-              <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-1 sm:gap-3 shrink-0">
                 <Link
                   to="/accounts/login"
                   onMouseEnter={() => handleHover("signin")}
                   onMouseLeave={() => handleHover("leave")}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold hover:text-accent transition-colors duration-200"
+                  className="px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold hover:text-accent transition-colors duration-200 whitespace-nowrap"
                 >
                   Sign in
                 </Link>
@@ -159,19 +159,19 @@ function Navbar() {
                   to="/accounts/register"
                   onMouseEnter={() => handleHover("signup")}
                   onMouseLeave={() => handleHover("leave")}
-                  className="hidden sm:inline-flex px-4 py-2 text-xs sm:text-sm font-semibold bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-all duration-200 shadow-sm"
+                  className="hidden sm:inline-flex px-4 py-2 text-xs sm:text-sm font-semibold bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-all duration-200 shadow-sm whitespace-nowrap"
                 >
                   Sign up
                 </Link>
               </div>
             ) : (
-              <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                 <Link
                   to="/my-products"
                   onMouseEnter={() => handleHover("heart")}
                   onMouseLeave={() => handleHover("leave")}
                   title="Favorites"
-                  className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
+                  className="hidden sm:inline-flex p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
                 >
                   <Heart size={19} />
                 </Link>
@@ -180,7 +180,7 @@ function Navbar() {
                   <Link
                     to="/register-seller"
                     title="Become a Seller"
-                    className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
+                    className="hidden sm:inline-flex p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
                   >
                     <UserPlus size={19} />
                   </Link>
@@ -190,7 +190,7 @@ function Navbar() {
                     onMouseEnter={() => handleHover("plus")}
                     onMouseLeave={() => handleHover("leave")}
                     title="Add new product"
-                    className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
+                    className="hidden sm:inline-flex p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
                   >
                     <Plus size={19} />
                   </Link>
@@ -199,6 +199,7 @@ function Navbar() {
                 <div
                   onMouseEnter={() => handleHover("profile")}
                   onMouseLeave={() => handleHover("leave")}
+                  className="shrink-0"
                 >
                   <ProfileDropdown />
                 </div>
@@ -272,6 +273,7 @@ interface MobileDrawerProps {
 
 function MobileDrawer({ isOpen, onClose, auth, onLogout }: MobileDrawerProps) {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [expandedCat, setExpandedCat] = useState<number | null>(null);
   const [loadingCats, setLoadingCats] = useState(false);
@@ -335,13 +337,22 @@ function MobileDrawer({ isOpen, onClose, auth, onLogout }: MobileDrawerProps) {
               Miracle
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Close menu"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close menu"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Search inside Drawer */}
