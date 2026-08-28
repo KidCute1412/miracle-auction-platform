@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface Card3DTiltProps {
@@ -18,13 +18,34 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
   glareOpacity = 0.08, // Muted, elegant glare
   disabled = false,
 }) => {
+  const [isTouchOrMobile, setIsTouchOrMobile] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(hover: none) and (pointer: coarse)").matches || window.innerWidth < 768;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkMobile = () => {
+      const isTouch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+      const isSmallScreen = window.innerWidth < 768;
+      setIsTouchOrMobile(isTouch || isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const cardRef = useRef<HTMLDivElement>(null);
   const glareRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
+  const isDisabled = disabled || isTouchOrMobile;
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (disabled || !cardRef.current) return;
+      if (isDisabled || !cardRef.current) return;
 
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
@@ -58,11 +79,11 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
         }
       });
     },
-    [disabled, maxTiltDeg, scale, glareOpacity]
+    [isDisabled, maxTiltDeg, scale, glareOpacity]
   );
 
   const handleMouseLeave = useCallback(() => {
-    if (disabled) return;
+    if (isDisabled) return;
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }
@@ -74,7 +95,11 @@ export const Card3DTilt: React.FC<Card3DTiltProps> = ({
       glareRef.current.style.opacity = "0";
       glareRef.current.style.transition = "opacity 0.4s ease-out";
     }
-  }, [disabled]);
+  }, [isDisabled]);
+
+  if (isDisabled) {
+    return <div className={cn("relative", className)}>{children}</div>;
+  }
 
   return (
     <div

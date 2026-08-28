@@ -30,15 +30,29 @@ export const Section3DPedestal: React.FC = () => {
     fetchSpotlight();
   }, []);
 
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 1024;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const updateTransform = (deg: number) => {
     if (frameRef.current) {
       frameRef.current.style.transform = `rotateY(${deg}deg) rotateX(6deg) translateZ(30px)`;
     }
   };
 
-  // Smooth continuous rotation using requestAnimationFrame only when visible in viewport
+  // Smooth continuous rotation using requestAnimationFrame only when visible in viewport and on desktop
   useEffect(() => {
-    if (isDragging) return;
+    if (isDragging || isMobile) return;
     let isVisible = true;
     let lastTime = performance.now();
 
@@ -74,7 +88,7 @@ export const Section3DPedestal: React.FC = () => {
       observer.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [isDragging]);
+  }, [isDragging, isMobile]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -119,7 +133,7 @@ export const Section3DPedestal: React.FC = () => {
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/80 border border-border/60 px-3.5 py-1.5 rounded-full select-none">
+          <div className="hidden sm:inline-flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/80 border border-border/60 px-3.5 py-1.5 rounded-full select-none">
             <RefreshCw className="w-3.5 h-3.5 text-accent animate-spin" />
             <span>Interactive Drag & Rotate</span>
           </div>
@@ -182,50 +196,67 @@ export const Section3DPedestal: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: 3D Interactive Rotating Pedestal */}
+          {/* Right Column: 3D Interactive Rotating Pedestal (Desktop) or Fast 2D Showcase (Mobile) */}
           <div className="lg:col-span-6 flex items-center justify-center">
-            <Card3DTilt maxTiltDeg={5} scale={1.02} className="w-full max-w-[400px]">
-              <div
-                className="relative w-full aspect-square flex flex-col items-center justify-center cursor-grab active:cursor-grabbing select-none preserve-3d"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
-                {/* 3D Floating Product Image Frame */}
-                <div
-                  ref={frameRef}
-                  className="relative w-64 h-64 rounded-2xl p-2.5 bg-card border border-accent/30 shadow-2xl transition-transform duration-75 preserve-3d"
-                  style={{
-                    transform: `rotateY(${rotationYRef.current}deg) rotateX(6deg) translateZ(30px)`,
-                    willChange: "transform",
-                  }}
-                >
+            {isMobile ? (
+              <div className="relative w-full max-w-[340px] aspect-square flex items-center justify-center">
+                <div className="relative w-64 h-64 rounded-2xl p-2.5 bg-card border border-accent/30 shadow-xl overflow-hidden group">
                   <img
                     src={imageUrl}
                     alt={product.product_name}
                     className="w-full h-full object-cover rounded-xl shadow-inner pointer-events-none"
+                    loading="lazy"
                   />
-
-                  {/* Authenticity Badge overlay */}
-                  <div
-                    className="absolute top-3 right-3 bg-card/90 border border-accent/40 text-accent px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold flex items-center gap-1 shadow-md"
-                    style={{ transform: "translateZ(20px)" }}
-                  >
+                  <div className="absolute top-3 right-3 bg-card/90 border border-accent/40 text-accent px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold flex items-center gap-1 shadow-md">
                     <ShieldCheck size={11} />
                     <span>VERIFIED</span>
                   </div>
                 </div>
-
-                {/* 3D Pedestal Base Platform */}
-                <div
-                  className="relative w-72 h-16 -mt-6 rounded-full border border-accent/20 bg-gradient-to-r from-card via-accent/15 to-card shadow-lg flex items-center justify-center pointer-events-none"
-                  style={{ transform: "rotateX(70deg) translateZ(-15px)" }}
-                >
-                  <div className="w-56 h-12 rounded-full border border-dashed border-accent/40 animate-[spin_40s_linear_infinite]" />
-                </div>
               </div>
-            </Card3DTilt>
+            ) : (
+              <Card3DTilt maxTiltDeg={5} scale={1.02} className="w-full max-w-[400px]">
+                <div
+                  className="relative w-full aspect-square flex flex-col items-center justify-center cursor-grab active:cursor-grabbing select-none preserve-3d"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                >
+                  {/* 3D Floating Product Image Frame */}
+                  <div
+                    ref={frameRef}
+                    className="relative w-64 h-64 rounded-2xl p-2.5 bg-card border border-accent/30 shadow-2xl transition-transform duration-75 preserve-3d"
+                    style={{
+                      transform: `rotateY(${rotationYRef.current}deg) rotateX(6deg) translateZ(30px)`,
+                      willChange: "transform",
+                    }}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={product.product_name}
+                      className="w-full h-full object-cover rounded-xl shadow-inner pointer-events-none"
+                    />
+
+                    {/* Authenticity Badge overlay */}
+                    <div
+                      className="absolute top-3 right-3 bg-card/90 border border-accent/40 text-accent px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold flex items-center gap-1 shadow-md"
+                      style={{ transform: "translateZ(20px)" }}
+                    >
+                      <ShieldCheck size={11} />
+                      <span>VERIFIED</span>
+                    </div>
+                  </div>
+
+                  {/* 3D Pedestal Base Platform */}
+                  <div
+                    className="relative w-72 h-16 -mt-6 rounded-full border border-accent/20 bg-gradient-to-r from-card via-accent/15 to-card shadow-lg flex items-center justify-center pointer-events-none"
+                    style={{ transform: "rotateX(70deg) translateZ(-15px)" }}
+                  >
+                    <div className="w-56 h-12 rounded-full border border-dashed border-accent/40 animate-[spin_40s_linear_infinite]" />
+                  </div>
+                </div>
+              </Card3DTilt>
+            )}
           </div>
 
         </div>
