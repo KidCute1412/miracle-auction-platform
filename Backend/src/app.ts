@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import clientRoutes from "./routes/client/index.route.ts";
@@ -76,6 +77,7 @@ export function createApp() {
   });
   app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
   app.use(helmet());
+  app.use(compression());
   app.use(express.json());
   app.use(cookieParser());
   app.use(csrfProtection);

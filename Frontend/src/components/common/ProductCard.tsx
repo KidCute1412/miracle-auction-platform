@@ -131,7 +131,7 @@ function ProductCard({
 
         <SafeImage
           src={product_image}
-          loading="lazy"
+          loading="eager"
           optimizeWidth={450}
           alt={product_name}
           className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 group-hover:brightness-110"

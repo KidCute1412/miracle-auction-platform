@@ -31,7 +31,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   loading = "lazy",
   decoding = "async",
   referrerPolicy = "no-referrer",
-  maxRetries = 2,
+  maxRetries = 1,
   autoOptimize = true,
   optimizeWidth = 600,
   onLoad,
@@ -42,11 +42,17 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [currentSrc, setCurrentSrc] = useState<string | undefined>(() => resolveSourceUrl(src, autoOptimize, optimizeWidth));
   const [retryCount, setRetryCount] = useState(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
 
     if (!src) {
@@ -54,14 +60,28 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       setCurrentSrc(undefined);
       setRetryCount(0);
     } else {
-      setStatus("loading");
-      setCurrentSrc(resolveSourceUrl(src, autoOptimize, optimizeWidth));
+      const resolved = resolveSourceUrl(src, autoOptimize, optimizeWidth);
+      setCurrentSrc(resolved);
       setRetryCount(0);
+
+      // Check if image is already cached / completed
+      if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+        setStatus("loaded");
+      } else {
+        setStatus("loading");
+        // Watchdog timer: on weak devices or delayed events, reveal image after 3.5s
+        timeoutRef.current = setTimeout(() => {
+          setStatus((prev) => (prev === "loading" ? "loaded" : prev));
+        }, 3500);
+      }
     }
 
     return () => {
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
   }, [src, autoOptimize, optimizeWidth]);
@@ -71,11 +91,19 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
     }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     setStatus("loaded");
     onLoad?.(e);
   };
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     // 1. Attempt Auto-Retry with backoff if retries remain and src exists
     if (src && retryCount < maxRetries) {
       const nextRetry = retryCount + 1;
@@ -141,6 +169,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       ) : (
         /* Image Element */
         <img
+          ref={imgRef}
           src={currentSrc}
           alt={alt}
           loading={loading}

@@ -19,10 +19,10 @@ function Home() {
   return (
     <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
       {/* Continuous Ambient Cosmic Mesh Background (responsive GPU optimization) */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] md:w-[1200px] h-[300px] md:h-[600px] bg-accent/[0.04] dark:bg-accent/[0.02] rounded-full blur-[80px] md:blur-[140px]" />
-        <div className="hidden sm:block absolute top-[35%] right-0 w-[800px] h-[500px] bg-indigo-500/[0.03] rounded-full blur-[160px]" />
-        <div className="hidden sm:block absolute top-[70%] left-0 w-[800px] h-[500px] bg-accent/[0.03] rounded-full blur-[160px]" />
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transform-gpu">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] md:w-[900px] h-[250px] md:h-[450px] bg-accent/[0.04] dark:bg-accent/[0.02] rounded-full blur-[60px] md:blur-[80px]" />
+        <div className="hidden sm:block absolute top-[35%] right-0 w-[600px] h-[400px] bg-indigo-500/[0.03] rounded-full blur-[80px]" />
+        <div className="hidden sm:block absolute top-[70%] left-0 w-[600px] h-[400px] bg-accent/[0.03] rounded-full blur-[80px]" />
       </div>
 
       {/* Main Continuous Page Flow */}
