@@ -229,7 +229,7 @@ export interface AuditLog {
 }
 export interface PaginationMeta { page: number; limit: number; total: number; totalPages: number; }
 export interface AuditLogResponse extends ApiSuccess<AuditLog[]> { meta: PaginationMeta; }
-export type VisitorEventType = "page_view" | "product_view" | "search_submitted" | "favorite_toggled" | "auth_started" | "registration_started" | "bid_started";
+export type VisitorEventType = "page_view" | "product_view" | "search_submitted" | "favorite_toggled" | "auth_started" | "auth_succeeded" | "registration_started" | "bid_started";
 export interface VisitorSession {
   sessionId: string; visitorId: string;
   user: { id: number; username: string; email: string } | null;

@@ -3,7 +3,7 @@ import { prisma } from "@/infrastructure/database/prisma.client.ts";
 
 export type VisitorEventType =
   | "page_view" | "product_view" | "search_submitted" | "favorite_toggled"
-  | "auth_started" | "registration_started" | "bid_started";
+  | "auth_started" | "auth_succeeded" | "registration_started" | "bid_started";
 
 export interface GeoData {
   status: "resolved" | "unavailable" | "private";
@@ -102,7 +102,7 @@ export const visitorAnalyticsRepository = {
       };
       if (existing) {
         await tx.visitor_sessions.update({ where: { session_id: input.sessionId }, data: {
-          ...common, last_seen_at: new Date(), duration_seconds: Math.max(0, Math.round((Date.now() - existing.first_seen_at.getTime()) / 1000)), event_count: { increment: 1 },
+          ...common, user_id: input.userId ?? undefined, last_seen_at: new Date(), duration_seconds: Math.max(0, Math.round((Date.now() - existing.first_seen_at.getTime()) / 1000)), event_count: { increment: 1 },
           page_view_count: input.eventType === "page_view" ? { increment: 1 } : undefined,
         } });
       } else {

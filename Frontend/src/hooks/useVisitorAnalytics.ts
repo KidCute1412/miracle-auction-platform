@@ -41,9 +41,9 @@ function context() {
   };
 }
 
-export function trackVisitorEvent(eventType: VisitorEventType, metadata: Record<string, string | number | boolean> = {}) {
+export async function trackVisitorEvent(eventType: VisitorEventType, metadata: Record<string, string | number | boolean> = {}): Promise<void> {
   if (navigator.doNotTrack === "1" || window.location.pathname.startsWith("/admin")) return;
-  void visitorAnalyticsService.record({ ...context(), eventType, metadata }).catch(() => {
+  await visitorAnalyticsService.record({ ...context(), eventType, metadata }).catch(() => {
     // Analytics must never interrupt the visitor's primary workflow.
   });
 }

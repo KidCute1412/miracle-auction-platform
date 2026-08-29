@@ -107,6 +107,6 @@ export async function getFacets(_req: AccountRequest, res: Response): Promise<vo
     countries: result.countries.map((item) => ({ code: item.country_code!, name: item.country_name })),
     regions: result.regions.map((item) => item.region!),
     cities: result.cities.map((item) => item.city!),
-    eventTypes: ["page_view", "product_view", "search_submitted", "favorite_toggled", "auth_started", "registration_started", "bid_started"],
+    eventTypes: ["page_view", "product_view", "search_submitted", "favorite_toggled", "auth_started", "auth_succeeded", "registration_started", "bid_started"],
   } });
 }

@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getVisitorSessionId, useVisitorAnalytics } from "./useVisitorAnalytics";
+import { getVisitorSessionId, trackVisitorEvent, useVisitorAnalytics } from "./useVisitorAnalytics";
 
 const record = vi.hoisted(() => vi.fn());
 vi.mock("@/services/visitor-analytics.service", () => ({ visitorAnalyticsService: { record } }));
@@ -27,6 +27,13 @@ describe("useVisitorAnalytics", () => {
       wrapper: ({ children }) => <MemoryRouter initialEntries={["/"]}>{children}</MemoryRouter>,
     });
     expect(record).not.toHaveBeenCalled();
+  });
+
+  it("records a successful login so the existing anonymous session can be identified", async () => {
+    await trackVisitorEvent("auth_succeeded", { method: "email" });
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: "auth_succeeded", metadata: { method: "email" },
+    }));
   });
 
   it("reuses a session within 30 minutes and rotates it after inactivity", () => {

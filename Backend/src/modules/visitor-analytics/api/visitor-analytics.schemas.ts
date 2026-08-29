@@ -2,7 +2,7 @@ import Joi from "joi";
 
 export const visitorEventTypes = [
   "page_view", "product_view", "search_submitted", "favorite_toggled",
-  "auth_started", "registration_started", "bid_started",
+  "auth_started", "auth_succeeded", "registration_started", "bid_started",
 ] as const;
 
 const eventMetadataSchema = Joi.object({

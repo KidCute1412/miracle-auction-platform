@@ -8,6 +8,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleLogin } from "@react-oauth/google";
 import { accountService } from "@/services/account.service.ts";
+import { trackVisitorEvent } from "@/hooks/useVisitorAnalytics";
 
 function AccountLogin() {
   const navigate = useNavigate();
@@ -50,13 +51,14 @@ function AccountLogin() {
         };
 
         accountService.login(dataFinal)
-          .then((data) => {
+          .then(async (data) => {
             if (data.code === "error") {
               toast.error(data.message);
             }
 
             if (data.code === "success") {
               toast.success("Logged in successfully!");
+              await trackVisitorEvent("auth_succeeded", { method: "email" });
               if (data.role === "admin") {
                 navigate(`/admin/dashboard`);
               } else {
@@ -74,12 +76,13 @@ function AccountLogin() {
     const { credential } = credentialResponse;
     const dataFinal = { credential: credential, rememberMe: false };
     accountService.googleLogin(dataFinal as any)
-      .then((data) => {
+      .then(async (data) => {
         if (data.code === "error") {
           toast.error(data.message);
         }
         if (data.code === "success") {
           toast.success(data.message || "Logged in successfully!");
+          await trackVisitorEvent("auth_succeeded", { method: "google" });
           if (data.role === "admin") {
             navigate(`/admin/dashboard`);
           } else {

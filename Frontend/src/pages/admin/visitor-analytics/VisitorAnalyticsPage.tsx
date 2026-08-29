@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 const dateTime = new Intl.DateTimeFormat("en-GB", { dateStyle: "short", timeStyle: "medium" });
 const eventLabels: Record<VisitorEventType, string> = {
   page_view: "Page view", product_view: "Product view", search_submitted: "Search submitted",
-  favorite_toggled: "Favorite toggled", auth_started: "Login started",
+  favorite_toggled: "Favorite toggled", auth_started: "Login started", auth_succeeded: "Login succeeded",
   registration_started: "Registration started", bid_started: "Bid started",
 };
 const rangeOptions = [["24h", "Last 24 hours"], ["7d", "Last 7 days"], ["30d", "Last 30 days"], ["90d", "Last 90 days"], ["custom", "Custom range"]] as const;
