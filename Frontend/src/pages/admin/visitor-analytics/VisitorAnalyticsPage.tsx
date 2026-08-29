@@ -5,6 +5,7 @@ import type { VisitorEventType, VisitorSession, VisitorSessionsResponse, Visitor
 import { visitorAnalyticsService, type VisitorSessionFilters } from "@/services/visitor-analytics.service";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import PaginationComponent from "@/components/common/Pagination";
 
 const dateTime = new Intl.DateTimeFormat("en-GB", { dateStyle: "short", timeStyle: "medium" });
 const eventLabels: Record<VisitorEventType, string> = {
@@ -19,13 +20,6 @@ function duration(seconds: number) {
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
-function pageNumbers(current: number, total: number): Array<number | "…"> {
-  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
-  if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
-  if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
-  return [1, "…", current - 1, current, current + 1, "…", total];
-}
-
 function Metric({ icon: Icon, label, value }: { icon: typeof Globe2; label: string; value: string | number }) {
   return <div className="rounded-xl border border-border bg-glass p-4 shadow-sm"><Icon className="mb-3 size-5 text-accent" /><p className="font-heading text-2xl font-bold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>;
 }
@@ -170,12 +164,9 @@ export default function VisitorAnalyticsPage() {
           <td className="px-4 py-3"><div>{[item.device.type, item.device.operatingSystem].filter(Boolean).join(" · ") || "—"}</div><div className="mt-1 text-xs text-muted-foreground">{item.device.browser || "Unknown browser"} · {item.device.screen || "—"}</div></td>
           <td className="px-4 py-3 text-right"><div className="font-semibold">{item.eventCount}</div><div className="text-xs text-muted-foreground">{item.pageViewCount} pages</div></td>
         </tr>)}</tbody></table></div>
-      {!loading && response && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm"><span className="text-muted-foreground">Showing {start}–{end} of {response.meta.total}</span><div className="flex items-center gap-1">
-        <button disabled={page <= 1} onClick={() => update("page", "1")} className="rounded px-2 py-1 disabled:opacity-30">«</button><button disabled={page <= 1} onClick={() => update("page", String(page - 1))} className="rounded px-2 py-1 disabled:opacity-30">‹</button>
-        {pageNumbers(page, totalPages).map((value, index) => value === "…" ? <span key={`ellipsis-${index}`} className="px-2">…</span> : <button key={value} onClick={() => update("page", String(value))} aria-current={value === page ? "page" : undefined} className={`size-8 rounded-md ${value === page ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{value}</button>)}
-        <button disabled={page >= totalPages} onClick={() => update("page", String(page + 1))} className="rounded px-2 py-1 disabled:opacity-30">›</button><button disabled={page >= totalPages} onClick={() => update("page", String(totalPages))} className="rounded px-2 py-1 disabled:opacity-30">»</button>
-      </div><Select value={String(limit)} onValueChange={(value) => update("limit", value)}><SelectTrigger size="sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="25">25 per page</SelectItem><SelectItem value="50">50 per page</SelectItem><SelectItem value="100">100 per page</SelectItem></SelectContent></Select></div>}
+      {!loading && response && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm"><span className="text-muted-foreground">Showing {start}–{end} of {response.meta.total}</span><Select value={String(limit)} onValueChange={(value) => update("limit", value)}><SelectTrigger size="sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="25">25 per page</SelectItem><SelectItem value="50">50 per page</SelectItem><SelectItem value="100">100 per page</SelectItem></SelectContent></Select></div>}
     </div>
+    {!loading && response && <PaginationComponent numberOfPages={totalPages} currentPage={page} isPageLoading={loading} />}
     <p className="text-xs text-muted-foreground">Browsers with Do Not Track enabled are not recorded.</p>
     <SessionDetail sessionId={selectedSession} open={selectedSession !== null} onOpenChange={(open) => { if (!open) setSelectedSession(null); }} />
   </section>;

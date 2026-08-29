@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import FilterBar from "@/components/admin/FilterBar";
-import Pagination from "@/components/admin/Pagination";
+import Pagination from "@/components/common/Pagination";
 import { Eye, Trash2, RotateCcw } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatToVN } from "@/utils/format_time";
