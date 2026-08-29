@@ -306,6 +306,89 @@ model admin_audit_logs {
   @@index([actor_id, action, result], map: "admin_audit_logs_filter_idx")
 }
 
+model visitor_events {
+  id             BigInt   @id @default(autoincrement())
+  visitor_id     String   @db.Uuid
+  user_id        Int?
+  event_type     String   @default("page_view") @db.VarChar(32)
+  path           String   @db.VarChar(2048)
+  page_title     String?  @db.VarChar(500)
+  referrer       String?  @db.VarChar(2048)
+  ip_address     String   @db.VarChar(45)
+  country_code   String?  @db.VarChar(8)
+  country_name   String?  @db.VarChar(100)
+  region         String?  @db.VarChar(100)
+  city           String?  @db.VarChar(100)
+  timezone       String?  @db.VarChar(100)
+  language       String?  @db.VarChar(50)
+  user_agent     String?  @db.VarChar(1000)
+  screen_width   Int?
+  screen_height  Int?
+  session_id     String   @db.Uuid
+  metadata       Json     @default("{}")
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  users          users?   @relation(fields: [user_id], references: [user_id], onDelete: SetNull, onUpdate: NoAction)
+  visitor_sessions visitor_sessions @relation(fields: [session_id], references: [session_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at, id], map: "visitor_events_created_idx")
+  @@index([visitor_id, created_at], map: "visitor_events_visitor_idx")
+  @@index([user_id, created_at], map: "visitor_events_user_idx")
+  @@index([country_code, created_at], map: "visitor_events_country_idx")
+  @@index([session_id, created_at, id], map: "visitor_events_session_idx")
+}
+
+model visitor_sessions {
+  session_id       String    @id @db.Uuid
+  visitor_id       String    @db.Uuid
+  user_id          Int?
+  ip_address       String    @db.VarChar(45)
+  first_seen_at    DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at     DateTime  @default(now()) @db.Timestamptz(6)
+  landing_path     String    @db.VarChar(2048)
+  exit_path        String    @db.VarChar(2048)
+  referrer         String?   @db.VarChar(2048)
+  page_view_count  Int       @default(0)
+  event_count      Int       @default(0)
+  duration_seconds Int       @default(0)
+  country_code     String?   @db.VarChar(8)
+  country_name     String?   @db.VarChar(100)
+  region           String?   @db.VarChar(100)
+  region_code      String?   @db.VarChar(20)
+  city             String?   @db.VarChar(100)
+  postal_code      String?   @db.VarChar(32)
+  latitude         Decimal?  @db.Decimal(9, 6)
+  longitude        Decimal?  @db.Decimal(9, 6)
+  geo_timezone     String?   @db.VarChar(100)
+  geo_status       String    @default("pending") @db.VarChar(24)
+  geo_source       String?   @db.VarChar(32)
+  geo_checked_at   DateTime? @db.Timestamptz(6)
+  asn              String?   @db.VarChar(32)
+  isp_name         String?   @db.VarChar(200)
+  isp_domain       String?   @db.VarChar(200)
+  network_type     String?   @db.VarChar(40)
+  is_anonymous     Boolean?
+  is_anycast       Boolean?
+  is_hosting       Boolean?
+  is_mobile        Boolean?
+  is_satellite     Boolean?
+  timezone         String?   @db.VarChar(100)
+  language         String?   @db.VarChar(50)
+  user_agent       String?   @db.VarChar(1000)
+  browser          String?   @db.VarChar(100)
+  operating_system String?   @db.VarChar(100)
+  device_type      String?   @db.VarChar(40)
+  screen_width     Int?
+  screen_height    Int?
+  users            users?    @relation(fields: [user_id], references: [user_id], onDelete: SetNull, onUpdate: NoAction)
+  visitor_events   visitor_events[]
+
+  @@index([last_seen_at, session_id], map: "visitor_sessions_last_seen_idx")
+  @@index([visitor_id, last_seen_at], map: "visitor_sessions_visitor_idx")
+  @@index([user_id, last_seen_at], map: "visitor_sessions_user_idx")
+  @@index([country_code, region, city, last_seen_at], map: "visitor_sessions_location_idx")
+  @@index([ip_address, last_seen_at], map: "visitor_sessions_ip_idx")
+}
+
 model auction_processed_events {
   event_id       String   @id @db.Uuid
   redis_entry_id String   @unique @db.VarChar(80)
@@ -386,6 +469,8 @@ model users {
   user_blacklist                          user_blacklist[]
   user_rating_user_rating_rater_idTousers user_rating[]            @relation("user_rating_rater_idTousers")
   user_rating_user_rating_user_idTousers  user_rating[]            @relation("user_rating_user_idTousers")
+  visitor_events                          visitor_events[]
+  visitor_sessions                        visitor_sessions[]
 
   @@index([fts], map: "users_fts", type: Gin)
 }

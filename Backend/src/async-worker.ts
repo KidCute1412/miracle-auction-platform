@@ -8,6 +8,7 @@ import {
 } from "@/modules/notifications/notification-consumer.worker.ts";
 import { startDashboardConsumer, stopDashboardConsumer } from "@/workers/dashboard.worker.ts";
 import { getLogger, safeError } from "@/infrastructure/observability/logger.ts";
+import { startVisitorAnalyticsRetention, stopVisitorAnalyticsRetention } from "@/modules/visitor-analytics/application/visitor-retention.worker.ts";
 
 const log = getLogger({ component: "async-worker" });
 
@@ -26,6 +27,7 @@ async function run(): Promise<void> {
     log.error({ err: safeError(error) }, "Notification intake unavailable; email delivery remains active"),
   );
   startEmailDeliveryLoop();
+  startVisitorAnalyticsRetention();
   await writeHeartbeat();
   heartbeatTimer = setInterval(() => void writeHeartbeat(), 30_000);
   heartbeatTimer.unref();
@@ -38,6 +40,7 @@ async function shutdown(signal: string): Promise<void> {
   shuttingDown = true;
   log.info({ signal }, "Worker stopping");
   if (heartbeatTimer) clearInterval(heartbeatTimer);
+  stopVisitorAnalyticsRetention();
   heartbeatTimer = undefined;
   await Promise.allSettled([stopDashboardConsumer(), stopNotificationConsumer(), stopEmailDeliveryLoop()]);
   await Promise.allSettled([closeRedisConnection(), prisma.$disconnect()]);

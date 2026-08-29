@@ -8,6 +8,7 @@ import { bidService, isDurabilityUnconfirmed } from "@/services/bid.service";
 import { ApiClientError } from "@/services/api.client";
 import type { BidRequest } from "api-contracts";
 import { formatVnd, moneyBigInt } from "@/lib/money.ts";
+import { trackVisitorEvent } from "@/hooks/useVisitorAnalytics";
 
 export default function PlayBidSection({ product_id, current_price, step_price, buy_now_price, onBidSuccess }: {
   product_id?: number;
@@ -84,6 +85,7 @@ export default function PlayBidSection({ product_id, current_price, step_price, 
         product_id: product_id,
         max_price: maxPriceSubmit,
       });
+      trackVisitorEvent("bid_started", { productId: product_id });
       bidIdempotencyKeyRef.current = null;
       setShowConfirmModal(true);
     });

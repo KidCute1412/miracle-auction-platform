@@ -6,6 +6,7 @@ import {
   FiFileText,
   FiUserCheck,
   FiLogOut,
+  FiActivity,
 } from "react-icons/fi";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -95,6 +96,16 @@ export default function Sidebar() {
       </NavLink>
 
       {/* Registration Applications Link */}
+      <NavLink
+        to={adminRoute("visitor-analytics")}
+        className={({ isActive }) =>
+          `${baseLinkClass} ${isActive ? activeClass : normalClass}`
+        }
+      >
+        <FiActivity className="text-lg opacity-80" />
+        <span>Visitor Analytics</span>
+      </NavLink>
+
       <NavLink
         to={adminRoute("seller/applications")}
         className={() =>

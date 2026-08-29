@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Heart } from "lucide-react";
 import { productService } from "@/services/product.service";
+import { trackVisitorEvent } from "@/hooks/useVisitorAnalytics";
 
 export default function AddToLove({ product_id, className }: { product_id: number; className?: string }) {
   const [loveCount, setLoveCount] = useState(0);
@@ -54,6 +55,7 @@ export default function AddToLove({ product_id, className }: { product_id: numbe
       love_status: newLoveStatus,
     })
       .then(() => {
+        trackVisitorEvent("favorite_toggled", { productId: product_id, active: newLoveStatus });
         setIsLoved(newLoveStatus);
         setLoveCount((prev) => (newLoveStatus ? prev + 1 : prev - 1));
       })

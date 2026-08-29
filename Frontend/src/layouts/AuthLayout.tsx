@@ -12,9 +12,11 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from "@/contexts/ThemeContext";
+import { useVisitorAnalytics } from "@/hooks/useVisitorAnalytics";
 
 export default function AuthLayout() {
   const { theme, toggleTheme } = useTheme();
+  useVisitorAnalytics();
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden transition-colors duration-300">

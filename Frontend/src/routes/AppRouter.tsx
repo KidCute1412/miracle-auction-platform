@@ -34,6 +34,7 @@ import {
   SellerApplicationPage as BidderFormListPage,
   SellerApplicationDetailPage,
   ProfilePage as AdminProfilePage,
+  VisitorAnalyticsPage,
 } from "@/pages/admin";
 import RateUserPage from "@/pages/client/RateUserPage";
 import RateHistoryPage from "@/pages/client/ProfilePage/components/RateHistoryPage";
@@ -211,6 +212,10 @@ const routers = createBrowserRouter([
       {
         path: "seller/application/detail/:id",
         element: <SellerApplicationDetailPage />,
+      },
+      {
+        path: "visitor-analytics",
+        element: <VisitorAnalyticsPage />,
       },
       {
         path: "profile",

@@ -16,6 +16,13 @@ vi.mock("../../src/modules/dashboard/api/dashboard.controller.ts", () => ({
   exportCsv: (_req: unknown, res: Response) => res.status(200).send("csv"),
   getAuditLogs: (_req: unknown, res: Response) => res.status(200).json({ status: "success" }),
 }));
+vi.mock("../../src/modules/visitor-analytics/api/visitor-analytics.controller.ts", () => ({
+  listSessions: (_req: unknown, res: Response) => res.status(200).json({ success: true }),
+  getFacets: (_req: unknown, res: Response) => res.status(200).json({ success: true }),
+  getSession: (_req: unknown, res: Response) => res.status(200).json({ success: true }),
+  getSessionEvents: (_req: unknown, res: Response) => res.status(200).json({ success: true }),
+  recordEvent: (_req: unknown, res: Response) => res.status(202).json({ success: true }),
+}));
 
 import adminRouter from "../../src/routes/admin/index.route.ts";
 
@@ -40,5 +47,12 @@ describe("admin API access integration", () => {
 
     const admin = await createUser({ role: "admin" });
     await request(app).get("/admin/dashboard").set("Cookie", accessCookie(admin)).expect(200, { status: "success" });
+  });
+
+  it("protects visitor analytics from non-admin accounts", async () => {
+    const user = await createUser({ role: "user" });
+    await request(app).get("/admin/visitor-analytics/sessions").set("Cookie", accessCookie(user)).expect(403);
+    const admin = await createUser({ role: "admin" });
+    await request(app).get("/admin/visitor-analytics/sessions").set("Cookie", accessCookie(admin)).expect(200);
   });
 });

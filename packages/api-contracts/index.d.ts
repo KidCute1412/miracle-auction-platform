@@ -229,6 +229,45 @@ export interface AuditLog {
 }
 export interface PaginationMeta { page: number; limit: number; total: number; totalPages: number; }
 export interface AuditLogResponse extends ApiSuccess<AuditLog[]> { meta: PaginationMeta; }
+export type VisitorEventType = "page_view" | "product_view" | "search_submitted" | "favorite_toggled" | "auth_started" | "registration_started" | "bid_started";
+export interface VisitorSession {
+  sessionId: string; visitorId: string;
+  user: { id: number; username: string; email: string } | null;
+  ipAddress: string; firstSeenAt: string; lastSeenAt: string; durationSeconds: number;
+  landingPath: string; exitPath: string; referrer: string | null;
+  pageViewCount: number; eventCount: number;
+  location: {
+    status: "pending" | "resolved" | "unavailable" | "private"; source: string | null;
+    countryCode: string | null; countryName: string | null; region: string | null; regionCode: string | null;
+    city: string | null; postalCode: string | null; latitude: number | null; longitude: number | null;
+    timezone: string | null; checkedAt: string | null;
+  };
+  network: {
+    asn: string | null; ispName: string | null; ispDomain: string | null; type: string | null;
+    isAnonymous: boolean | null; isAnycast: boolean | null; isHosting: boolean | null;
+    isMobile: boolean | null; isSatellite: boolean | null;
+  };
+  device: {
+    browser: string | null; operatingSystem: string | null; type: string | null; screen: string | null;
+    language: string | null; timezone: string | null; userAgent: string | null;
+  };
+}
+export interface VisitorSessionSummary {
+  sessions: number; uniqueVisitors: number; authenticatedSessions: number;
+  bounceSessions: number; averageDurationSeconds: number;
+}
+export interface VisitorSessionsResponse extends ApiSuccess<VisitorSession[]> {
+  summary: VisitorSessionSummary; meta: PaginationMeta;
+}
+export interface VisitorSessionResponse extends ApiSuccess<VisitorSession> {}
+export interface VisitorTimelineEvent {
+  id: string; eventType: VisitorEventType; path: string; pageTitle: string | null;
+  referrer: string | null; metadata: Record<string, unknown>; createdAt: string;
+}
+export interface VisitorTimelineResponse extends ApiSuccess<VisitorTimelineEvent[]> { meta: PaginationMeta; }
+export interface VisitorAnalyticsFacetsResponse extends ApiSuccess<{
+  countries: Array<{ code: string; name: string | null }>; regions: string[]; cities: string[]; eventTypes: VisitorEventType[];
+}> {}
 export interface DashboardDlqItem {
   kind: "dashboard" | "notification" | "outbox";
   eventId: string;

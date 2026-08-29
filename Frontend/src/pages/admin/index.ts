@@ -16,3 +16,4 @@ export { default as SellerApplicationPage } from "./seller-applications/SellerAp
 export { default as SellerApplicationDetailPage } from "./seller-applications/SellerApplicationDetailPage";
 
 export { default as ProfilePage } from "./profile/ProfilePage";
+export { default as VisitorAnalyticsPage } from "./visitor-analytics/VisitorAnalyticsPage";
