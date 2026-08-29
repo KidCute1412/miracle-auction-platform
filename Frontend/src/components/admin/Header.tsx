@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Sun, Moon, ShieldCheck, User, LayoutDashboard, Store, LogOut, ChevronDown } from "lucide-react";
+import { Sun, Moon, ShieldCheck, User, LayoutDashboard, Store, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import UserAvatar from "@/components/common/UserAvatar";
 import { accountService } from "@/services/account.service";
 import { toast } from "sonner";
 
-export default function Header() {
+interface HeaderProps { sidebarOpen?: boolean; onToggleSidebar?: () => void; }
+
+export default function Header({ sidebarOpen = true, onToggleSidebar }: HeaderProps) {
   const { auth, setAuth } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -43,6 +45,9 @@ export default function Header() {
     <div className="mx-auto flex h-16 items-center justify-between px-6 bg-card text-foreground transition-colors duration-300">
       {/* Brand logo container */}
       <div className="flex items-center gap-2.5 font-heading font-bold text-lg tracking-wide select-none">
+        <button onClick={onToggleSidebar} className="rounded-lg border border-border/50 bg-muted/60 p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"} aria-pressed={sidebarOpen}>
+          {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+        </button>
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/15 text-accent border border-accent/20">
           <ShieldCheck className="w-5 h-5" />
         </div>

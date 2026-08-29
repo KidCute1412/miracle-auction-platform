@@ -5,8 +5,9 @@ import Sidebar from "@/components/admin/Sidebar";
 import Loading from "@/components/common/Loading";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/routes/ProtectedRouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 export default function MainLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { auth, loading } = useAuth();
   const route = useNavigate();
 
@@ -33,7 +34,7 @@ export default function MainLayout() {
       <ScrollRestoration />
       {/* Fixed top header with theme border */}
       <header className="fixed inset-x-0 top-0 z-20 border-b border-border bg-card/80 backdrop-blur-xl transition-colors duration-300">
-        <Header />
+        <Header sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((open) => !open)} />
       </header>
 
       {/* Grid container for navigation and main views */}
@@ -41,11 +42,11 @@ export default function MainLayout() {
         className="grid"
         style={{
           gridTemplateRows: "1fr",
-          gridTemplateColumns: "240px 1fr",
+          gridTemplateColumns: sidebarOpen ? "240px 1fr" : "0 1fr",
         }}
       >
         {/* Sticky sidebar for administration routing */}
-        <aside className="sticky top-16 hidden h-[calc(100vh-64px)] overflow-y-auto border-r border-border bg-card transition-colors duration-300 md:block">
+        <aside aria-hidden={!sidebarOpen} className={`sticky top-16 hidden h-[calc(100vh-64px)] overflow-y-auto border-r border-border bg-card transition-all duration-300 md:block ${sidebarOpen ? "opacity-100" : "pointer-events-none -translate-x-full opacity-0"}`}>
           <Sidebar />
         </aside>
 
