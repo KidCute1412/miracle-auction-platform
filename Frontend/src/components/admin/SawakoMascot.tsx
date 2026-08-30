@@ -353,7 +353,7 @@ export default function SawakoMascot() {
       {bubbleVisible && currentLine && !prefs.muted && (
         <div
           data-testid="sawako-speech-bubble"
-          className="relative -mb-4 sm:-mb-6 z-20 mr-1 max-w-56 rounded-2xl border border-pink-400/35 bg-zinc-950/70 px-3 py-2 shadow-xl shadow-pink-950/20 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200"
+          className="relative -mb-10 sm:-mb-12 z-20 mr-3 sm:mr-5 max-w-52 rounded-2xl border border-pink-400/35 bg-zinc-950/75 px-3 py-2 shadow-xl shadow-pink-950/20 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200"
           style={{ transformOrigin: "bottom right" }}
         >
           <div className="flex items-start justify-between gap-1.5">
@@ -377,15 +377,15 @@ export default function SawakoMascot() {
           </p>
 
           {/* Comic Bubble Pointer Tail */}
-          <div className="absolute -bottom-2 right-8 h-2.5 w-2.5 rotate-45 border-r border-b border-pink-400/35 bg-zinc-950/70 backdrop-blur-md" />
+          <div className="absolute -bottom-1.5 right-8 h-2.5 w-2.5 rotate-45 border-r border-b border-pink-400/35 bg-zinc-950/75 backdrop-blur-md" />
         </div>
       )}
 
       {/* ===================== CHARACTER SVG & POKE AREA ===================== */}
       <div className="relative group flex flex-col items-center">
-        {/* Quick Utility Control Toolbar docked neatly beside Sawako */}
+        {/* Quick Utility Control Toolbar docked snugly beside Sawako */}
         <div
-          className={`absolute top-4 -left-8 z-10 flex flex-col items-center gap-1 rounded-full border border-pink-400/20 bg-zinc-950/90 p-1 backdrop-blur-md shadow-lg transition-all duration-200 ${
+          className={`absolute top-12 -left-1 sm:-left-2 z-30 flex flex-col items-center gap-1 rounded-full border border-pink-400/30 bg-zinc-950/75 p-1 backdrop-blur-md shadow-lg transition-all duration-200 ${
             isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-1 pointer-events-none"
           }`}
         >
