@@ -440,6 +440,7 @@ export default function SawakoMascot() {
             eyeOffset={eyeOffset}
             isHovered={isHovered}
             isDragging={isDragging}
+            isSpeaking={bubbleVisible && Boolean(currentLine)}
             scaleX={scale.x}
             scaleY={scale.y}
             onPokeHand={handlePokeHand}

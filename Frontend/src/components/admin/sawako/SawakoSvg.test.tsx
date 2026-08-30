@@ -1,0 +1,122 @@
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, fireEvent, renderHook, cleanup } from "@testing-library/react";
+import React from "react";
+import SawakoSvg from "./SawakoSvg";
+import { useSawakoPhysics } from "./hooks/useSawakoPhysics";
+import { useSawakoLipSync } from "./hooks/useSawakoLipSync";
+
+describe("SawakoSvg Modular Puppet Rig", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders SVG with accessible label and modular parts", () => {
+    const { getByRole, getByTestId } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        isSpeaking={false}
+      />
+    );
+
+    const svgElement = getByRole("img", { name: /Sawako Anime Mascot/i });
+    expect(svgElement).toBeDefined();
+    expect(getByTestId("sawako-hands-target")).toBeDefined();
+    expect(getByTestId("sawako-feet-target")).toBeDefined();
+  });
+
+  it("handles independent hand click events and triggers onPokeHand", () => {
+    const handlePokeHand = vi.fn();
+    const { getByTestId } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0.2, y: 0.1 }}
+        isHovered={true}
+        isDragging={false}
+        isSpeaking={false}
+        onPokeHand={handlePokeHand}
+      />
+    );
+
+    const handBtn = getByTestId("sawako-hands-target");
+    fireEvent.click(handBtn);
+    expect(handlePokeHand).toHaveBeenCalledTimes(1);
+  });
+
+  it("handles independent foot click events and triggers onPokeFoot", () => {
+    const handlePokeFoot = vi.fn();
+    const { getByTestId } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: -0.3, y: 0.2 }}
+        isHovered={false}
+        isDragging={false}
+        isSpeaking={false}
+        onPokeFoot={handlePokeFoot}
+      />
+    );
+
+    const footBtn = getByTestId("sawako-feet-target");
+    fireEvent.click(footBtn);
+    expect(handlePokeFoot).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders dizzy swirl eyes when expression is dizzy", () => {
+    const { getByRole } = render(
+      <SawakoSvg
+        expression="dizzy"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+      />
+    );
+
+    const svg = getByRole("img", { name: /Sawako Anime Mascot/i });
+    expect(svg.innerHTML).toContain("animate-spin");
+  });
+
+  it("renders sleepy closed eyes when expression is sleepy", () => {
+    const { getByText } = render(
+      <SawakoSvg
+        expression="sleepy"
+        symbol="zzz"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+      />
+    );
+
+    const zzzSymbol = getByText("Zzz..");
+    expect(zzzSymbol).toBeDefined();
+  });
+
+  it("computes clamped pupil offsets and head tilt via useSawakoPhysics", () => {
+    const { result } = renderHook(() =>
+      useSawakoPhysics({ x: 0.8, y: -0.6 }, false, false)
+    );
+
+    expect(result.current.pupilX).toBe(4);
+    expect(result.current.pupilY).toBeCloseTo(-2.1, 1);
+    expect(result.current.headRotate).toBeCloseTo(4.8, 1);
+    expect(typeof result.current.isBlinking).toBe("boolean");
+  });
+
+  it("modulates mouth opening cadence during speech via useSawakoLipSync", () => {
+    const { result, rerender } = renderHook(
+      ({ isSpeaking }) => useSawakoLipSync(isSpeaking),
+      { initialProps: { isSpeaking: false } }
+    );
+
+    expect(result.current.mouthOpenRatio).toBe(0);
+
+    // When speaking begins
+    rerender({ isSpeaking: true });
+    expect(typeof result.current.mouthOpenRatio).toBe("number");
+  });
+});

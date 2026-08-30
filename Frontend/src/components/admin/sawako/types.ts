@@ -18,3 +18,23 @@ export interface MascotPreferences {
   muted: boolean;
   position: MascotPosition | null;
 }
+
+export interface SawakoPhysics {
+  pupilX: number;
+  pupilY: number;
+  headRotate: number;
+  isBlinking: boolean;
+}
+
+export interface SawakoSvgProps {
+  expression: SawakoExpression;
+  symbol: SawakoSymbol;
+  eyeOffset: { x: number; y: number };
+  isHovered: boolean;
+  isDragging: boolean;
+  isSpeaking?: boolean;
+  scaleX?: number;
+  scaleY?: number;
+  onPokeHand?: (e: React.MouseEvent) => void;
+  onPokeFoot?: (e: React.MouseEvent) => void;
+}
