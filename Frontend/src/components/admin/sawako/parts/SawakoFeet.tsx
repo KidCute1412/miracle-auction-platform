@@ -8,11 +8,11 @@ interface SawakoFeetProps {
 }
 
 /**
- * SawakoFeet - Articulated Anime Chibi Legs with Shy Kicking Kinematics
+ * SawakoFeet - Articulated Anime Chibi Legs with Dynamic Drag & Hover Kinematics
  * Features:
- * - Positioned behind the white dress skirt so the dress naturally overlaps the thighs
- * - Removed distracting hover rings
- * - Shy cute kicking/fluttering animation when hovered
+ * - When dragged: cute airborne pendular dangling & kicking animation in mid-air
+ * - When hovered: gentle kicking animation
+ * - Positioned behind the white dress skirt
  * - Glossy pastel pink Mary-Jane shoes with buckle
  * - Interactive hotspot with `sawako-feet-target`
  */
@@ -22,15 +22,11 @@ export function SawakoFeet({
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
-  // Shy kicking / fluttering kinematics on hover
-  let feetClass = "transition-transform duration-200 ease-out";
-  let feetTransform = "translate(0, 0)";
-
-  if (isDragging) {
-    feetTransform = "translate(0, -9px) rotate(-4deg)";
-  } else if (hoveredZone === "foot") {
-    feetClass = "animate-[shyFeetFlutter_0.5s_ease-in-out_infinite]";
-  }
+  const feetClass = isDragging
+    ? "animate-[airborneFeetDangle_0.42s_ease-in-out_infinite]"
+    : hoveredZone === "foot"
+      ? "animate-[shyFeetFlutter_0.5s_ease-in-out_infinite]"
+      : "transition-transform duration-200 ease-out";
 
   return (
     <g
@@ -46,13 +42,12 @@ export function SawakoFeet({
       className={`cursor-pointer pointer-events-auto group focus:outline-hidden ${feetClass}`}
       aria-label="Interact with Sawako's feet"
       style={{
-        transform: feetTransform,
-        transformOrigin: "368px 840px",
+        transformOrigin: "368px 770px",
       }}
     >
       <defs>
         {/* Shoe Gloss Gradient */}
-        <linearGradient id="shoeGloss" x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient id="shoeGloss" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#FDE8F3" />
           <stop offset="40%" stopColor="#FBCFE8" />
           <stop offset="100%" stopColor="#F472B6" />

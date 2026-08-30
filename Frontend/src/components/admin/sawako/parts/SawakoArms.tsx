@@ -9,10 +9,11 @@ interface SawakoArmsProps {
 }
 
 /**
- * SawakoArms - Pure White Dress Sleeves with Shy Fluttering Kinematics
+ * SawakoArms - Articulated Anime Chibi Arms with Dynamic Drag & Hover Kinematics
  * Features:
- * - Removed spinning rings on hover
- * - Shy fluttering/flailing animation when hovered ("kiểu ngại, tay chân vùng vẫy một chút")
+ * - When dragged: cute airborne flailing / dangling motion in mid-air
+ * - When hovered: shy fluttering animation
+ * - Pure white silk dress sleeves matching the one-piece dress
  * - Delicate bare wrists and soft chibi hands with blushing rosy fingertips
  * - Interactive hotspot with `sawako-hands-target`
  */
@@ -23,16 +24,11 @@ export function SawakoArms({
   onPokeHand,
   setHoveredZone,
 }: SawakoArmsProps) {
-  // Shy flailing / fluttering kinematics on hover
-  let armClass = "transition-transform duration-200 ease-out";
-  let armTransform = "translate(0, 0)";
-
-  if (isDragging) {
-    armTransform = "translate(0, -14px) scale(1.04)";
-  } else if (isHovered || hoveredZone === "hand") {
-    // Shy cute hand flailing wiggle
-    armClass = "animate-[shyArmsFlutter_0.5s_ease-in-out_infinite]";
-  }
+  const armClass = isDragging
+    ? "animate-[airborneArmsFlail_0.45s_ease-in-out_infinite]"
+    : isHovered || hoveredZone === "hand"
+      ? "animate-[shyArmsFlutter_0.5s_ease-in-out_infinite]"
+      : "transition-transform duration-200 ease-out";
 
   return (
     <g
@@ -48,8 +44,7 @@ export function SawakoArms({
       className={`cursor-pointer pointer-events-auto group focus:outline-hidden ${armClass}`}
       aria-label="Interact with Sawako's hands"
       style={{
-        transform: armTransform,
-        transformOrigin: "368px 530px",
+        transformOrigin: "368px 524px",
       }}
     >
       <defs>

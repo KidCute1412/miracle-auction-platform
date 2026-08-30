@@ -7,6 +7,9 @@ interface SawakoHairFrontProps {
 /**
  * SawakoHairFront - Signature Long Front Silky Hair Strands
  * Matches the straight, glossy front locks draping over the chest from "Sawako better.jpg"
+ * Features:
+ * - Dynamic breeze flutter when dragging in mid-air
+ * - Multi-layered silky gloss highlights
  */
 export function SawakoHairFront({ isDragging }: SawakoHairFrontProps) {
   return (
@@ -14,9 +17,12 @@ export function SawakoHairFront({ isDragging }: SawakoHairFrontProps) {
       id="sawako-hair-front"
       className={
         isDragging
-          ? "animate-[ghostFloat_1.2s_ease-in-out_infinite]"
+          ? "animate-[airborneHairFlutter_0.5s_ease-in-out_infinite]"
           : "transition-transform duration-300"
       }
+      style={{
+        transformOrigin: "368px 300px",
+      }}
     >
       {/* ===================== LEFT FRONT SILKY LOCK ===================== */}
       <g id="left-front-strand">

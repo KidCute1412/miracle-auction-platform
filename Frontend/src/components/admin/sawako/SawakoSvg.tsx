@@ -15,7 +15,7 @@ import { SawakoWisps } from "./parts/SawakoWisps";
  * Features:
  * - Scaled down to 80% for ideal desktop/dashboard footprint
  * - Proper SVG Z-index layering: legs rendered behind pure white dress
- * - Relaxed natural arm positioning with breathing room
+ * - Dynamic airborne flailing / dangling kinematics when dragged
  * - Soft idle bobbing, shy flailing limbs on hover, and serene anime expression
  */
 export default function SawakoSvg({
@@ -72,6 +72,22 @@ export default function SawakoSvg({
         @keyframes shyFeetFlutter {
           0%, 100% { transform: translateY(-8px) rotate(4deg); }
           50% { transform: translateY(-11px) rotate(-4deg); }
+        }
+        @keyframes airborneArmsFlail {
+          0% { transform: translate(0, -6px) rotate(-5deg); }
+          50% { transform: translate(0, -12px) rotate(5deg); }
+          100% { transform: translate(0, -6px) rotate(-5deg); }
+        }
+        @keyframes airborneFeetDangle {
+          0% { transform: translate(0, -6px) rotate(6deg); }
+          25% { transform: translate(2px, -10px) rotate(0deg); }
+          50% { transform: translate(0, -6px) rotate(-6deg); }
+          75% { transform: translate(-2px, -10px) rotate(0deg); }
+          100% { transform: translate(0, -6px) rotate(6deg); }
+        }
+        @keyframes airborneHairFlutter {
+          0%, 100% { transform: translateY(0px) rotate(-2deg); }
+          50% { transform: translateY(-8px) rotate(2deg); }
         }
       `}</style>
 
