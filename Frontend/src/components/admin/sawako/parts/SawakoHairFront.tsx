@@ -9,6 +9,7 @@ interface SawakoHairFrontProps {
  * Fully merged into the authoritative single silhouette inside SawakoBaseArtwork
  * to ensure 100% hair unity with zero seams or wig-attachment lines.
  */
-export function SawakoHairFront(_props: SawakoHairFrontProps) {
+export function SawakoHairFront(props: SawakoHairFrontProps) {
+  void props;
   return <g id="sawako-hair-front" data-testid="sawako-hair-front" />;
 }
