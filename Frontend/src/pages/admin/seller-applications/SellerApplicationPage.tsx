@@ -100,7 +100,7 @@ export default function BidderFormListPage() {
   }, [currentPage, statusFilter, dateFrom, dateTo, searchFromUrl]);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-foreground bg-background">
+    <div className="w-full text-foreground">
       <div className="max-w-[1600px] mx-auto">
         <h2 className="font-heading font-bold text-xl sm:text-2xl mb-4 text-foreground">
           Seller Applications

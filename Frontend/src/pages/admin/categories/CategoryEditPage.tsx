@@ -157,9 +157,9 @@ export default function CategoryEdit() {
   }, [item, id, navigate]);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-foreground">
+    <div className="w-full max-w-5xl mx-auto text-foreground">
       {item && (
-        <form id="CategoryEditForm" className="w-full max-w-5xl mx-auto space-y-4">
+        <form id="CategoryEditForm" className="w-full space-y-4">
           <h2 className="text-xl sm:text-2xl font-heading font-bold text-foreground">Edit Category</h2>
 
           <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm transition-colors duration-300">

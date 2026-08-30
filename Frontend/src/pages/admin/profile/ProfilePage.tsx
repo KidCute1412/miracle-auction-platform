@@ -92,7 +92,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-foreground bg-background transition-colors duration-300">
+    <div className="w-full text-foreground transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
         <div className="mb-4">
           <h1 className="font-heading font-bold text-xl sm:text-2xl text-foreground">

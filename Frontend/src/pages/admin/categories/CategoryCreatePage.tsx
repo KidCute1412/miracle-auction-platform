@@ -142,10 +142,10 @@ export default function CategoryCreate() {
   const value = "";
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-foreground">
+    <div className="w-full max-w-5xl mx-auto text-foreground">
       <form
         id="CategoryCreateForm"
-        className="w-full max-w-5xl mx-auto space-y-4"
+        className="w-full space-y-4"
       >
         <h2 className="text-xl sm:text-2xl font-heading font-bold text-foreground">Create Category</h2>
 

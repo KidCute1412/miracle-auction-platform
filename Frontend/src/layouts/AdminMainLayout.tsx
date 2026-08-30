@@ -7,7 +7,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { useEffect, useState } from "react";
 export default function MainLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth >= 768;
+    }
+    return true;
+  });
   const { auth, loading } = useAuth();
   const route = useNavigate();
 
@@ -37,22 +42,45 @@ export default function MainLayout() {
         <Header sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((open) => !open)} />
       </header>
 
-      {/* Grid container for navigation and main views */}
-      <div
-        className="grid"
-        style={{
-          gridTemplateRows: "1fr",
-          gridTemplateColumns: sidebarOpen ? "240px 1fr" : "0 1fr",
-        }}
+      {/* Mobile Drawer Backdrop */}
+      {sidebarOpen && (
+        <div
+          role="presentation"
+          aria-hidden="true"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs transition-opacity duration-300 md:hidden"
+        />
+      )}
+
+      {/* Mobile Drawer Off-Canvas Navigation */}
+      <aside
+        aria-label="Mobile Navigation"
+        className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] bg-card border-r border-border shadow-2xl pt-16 transition-transform duration-300 ease-in-out md:hidden ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+        }`}
       >
-        {/* Sticky sidebar for administration routing */}
-        <aside aria-hidden={!sidebarOpen} className={`sticky top-16 hidden h-[calc(100vh-64px)] overflow-y-auto border-r border-border bg-card transition-all duration-300 md:block ${sidebarOpen ? "opacity-100" : "pointer-events-none -translate-x-full opacity-0"}`}>
+        <Sidebar onNavigate={() => setSidebarOpen(false)} />
+      </aside>
+
+      {/* Grid container for desktop navigation and main views */}
+      <div
+        className={`grid transition-all duration-300 grid-cols-1 ${
+          sidebarOpen ? "md:grid-cols-[240px_1fr]" : "md:grid-cols-[0_1fr]"
+        }`}
+      >
+        {/* Sticky desktop sidebar for administration routing */}
+        <aside
+          aria-hidden={!sidebarOpen}
+          className={`sticky top-16 hidden h-[calc(100vh-64px)] overflow-y-auto border-r border-border bg-card transition-all duration-300 md:block ${
+            sidebarOpen ? "opacity-100" : "pointer-events-none -translate-x-full opacity-0"
+          }`}
+        >
           <Sidebar />
         </aside>
 
         {/* Main viewing area with layout background */}
-        <main className="pt-16 bg-muted/20">
-          <div className="min-h-[calc(100vh-64px)] overflow-y-auto p-6">
+        <main className="pt-16 bg-muted/20 min-w-0">
+          <div className="min-h-[calc(100vh-64px)] overflow-y-auto p-3 sm:p-6">
             <Outlet />
           </div>
         </main>

@@ -39,11 +39,11 @@ function FilterSelect({ value, onChange, options, placeholder, icon }: FilterSel
   const isFiltered = value && value !== "" && value !== "all";
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative w-full sm:w-auto" ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-10 flex items-center gap-2 px-3.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer border select-none ${
+        className={`h-10 w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-3.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer border select-none ${
           isFiltered
             ? "bg-accent/10 border-accent/40 text-accent font-semibold shadow-xs"
             : "bg-muted/30 border-border/80 text-foreground hover:bg-muted/70 hover:border-border"
@@ -130,7 +130,7 @@ function CustomDatePicker({ value, onChange, placeholder }: CustomDatePickerProp
   const dateValue = useMemo(() => parseDateString(value), [value]);
 
   return (
-    <div className="relative inline-block">
+    <div className="relative block sm:inline-block w-full sm:w-auto">
       <DatePicker
         selected={dateValue}
         onChange={(d: Date | null) => {
@@ -141,7 +141,7 @@ function CustomDatePicker({ value, onChange, placeholder }: CustomDatePickerProp
         customInput={
           <button
             type="button"
-            className={`h-10 flex items-center gap-2 px-3 rounded-xl text-xs font-medium border transition-all duration-200 cursor-pointer select-none ${
+            className={`h-10 w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-3 rounded-xl text-xs font-medium border transition-all duration-200 cursor-pointer select-none ${
               value
                 ? "bg-accent/10 border-accent/40 text-accent font-semibold shadow-xs"
                 : "bg-card border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -356,8 +356,8 @@ export default function FilterBar({
       {/* Top Filter Bar Row */}
       {hasTopFilters && (
         <div className="flex flex-wrap items-center gap-2.5 bg-card/80 border border-border/80 p-2.5 rounded-2xl shadow-xs transition-colors duration-300">
-          <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border/60">
-            <Filter className="w-3.5 h-3.5 text-accent" />
+          <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-full sm:w-auto sm:border-r border-border/60">
+            <Filter className="w-3.5 h-3.5 text-accent shrink-0" />
             <span>Catalog Filters</span>
           </div>
 
@@ -383,13 +383,13 @@ export default function FilterBar({
 
           {/* Custom Date Range Filter Selectors */}
           {hasDateFilter && (
-            <div className="flex items-center gap-2 px-2.5 py-1 bg-muted/20 border border-border/60 rounded-xl">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-1.5 sm:px-2.5 sm:py-1 bg-muted/20 border border-border/60 rounded-xl w-full sm:w-auto">
               <CustomDatePicker
                 value={dateFrom || ""}
                 onChange={(val) => setDateFrom!(val)}
                 placeholder="From Date"
               />
-              <span className="text-xs text-muted-foreground font-medium">to</span>
+              <span className="text-xs text-muted-foreground font-medium text-center sm:text-left">to</span>
               <CustomDatePicker
                 value={dateTo || ""}
                 onChange={(val) => setDateTo!(val)}
@@ -403,7 +403,7 @@ export default function FilterBar({
             <button
               type="button"
               onClick={onResetFilters}
-              className="flex items-center gap-1.5 px-3 py-1.5 h-10 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 border border-destructive/20 transition-all cursor-pointer ml-auto"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 h-10 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 border border-destructive/20 transition-all cursor-pointer w-full sm:w-auto sm:ml-auto"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -413,11 +413,11 @@ export default function FilterBar({
       )}
 
       {/* Bottom Control Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3 flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1 w-full">
           {/* Global search entry textfield */}
           {hasSearch && (
-            <div className="relative flex items-center h-11 min-w-[280px] max-w-[440px] flex-1 rounded-xl border border-border/80 bg-card px-3.5 shadow-xs focus-within:ring-2 focus-within:ring-accent/20 focus-within:border-accent/50 transition-all">
+            <div className="relative flex items-center h-11 min-w-0 w-full sm:min-w-[240px] sm:max-w-[440px] flex-1 rounded-xl border border-border/80 bg-card px-3.5 shadow-xs focus-within:ring-2 focus-within:ring-accent/20 focus-within:border-accent/50 transition-all">
               <Search className="w-4 h-4 text-muted-foreground mr-2.5 shrink-0" />
               <input
                 type="text"
@@ -447,7 +447,7 @@ export default function FilterBar({
                     setSearch!("");
                     if (onSearchSubmit) onSearchSubmit();
                   }}
-                  className="p-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
+                  className="p-1 text-muted-foreground hover:text-foreground rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -460,7 +460,7 @@ export default function FilterBar({
 
           {/* Bulk Action selector */}
           {hasBulkAction && (
-            <div className="flex h-11 rounded-xl bg-card border border-border/80 shadow-xs overflow-hidden transition-colors">
+            <div className="flex h-11 rounded-xl bg-card border border-border/80 shadow-xs overflow-hidden transition-colors w-full sm:w-auto">
               <BulkSelect
                 value={selectedAction}
                 onChange={setSelectedAction}
@@ -470,7 +470,7 @@ export default function FilterBar({
 
               <button
                 type="button"
-                className="cursor-pointer h-full px-4 text-xs font-semibold text-primary hover:bg-primary/10 border-l border-border/80 transition-colors"
+                className="cursor-pointer h-full px-4 text-xs font-semibold text-primary hover:bg-primary/10 border-l border-border/80 transition-colors shrink-0"
                 onClick={handleApplyClick}
               >
                 Apply
@@ -480,12 +480,12 @@ export default function FilterBar({
         </div>
 
         {/* Action Triggers (Create / Trash) */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
           {/* Trash drawer selector trigger */}
           {onTrashClick && (
             <button
               type="button"
-              className="h-11 px-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 text-sm font-semibold hover:bg-destructive/20 transition-all cursor-pointer flex items-center gap-2"
+              className="h-11 px-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 text-sm font-semibold hover:bg-destructive/20 transition-all cursor-pointer flex items-center justify-center gap-2 flex-1 sm:flex-none"
               onClick={onTrashClick}
             >
               <Trash2 size={16} />
@@ -497,7 +497,7 @@ export default function FilterBar({
           {onCreateNew && (
             <button
               type="button"
-              className="h-11 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all shadow-xs cursor-pointer flex items-center gap-2"
+              className="h-11 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2 flex-1 sm:flex-none"
               onClick={onCreateNew}
             >
               <Plus size={16} />

@@ -160,9 +160,9 @@ export const VanguardAreaChart: React.FC<VanguardAreaChartProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 max-w-full">
           {/* Tab Selector */}
-          <div className="flex bg-muted p-1 rounded-xl border border-border">
+          <div className="flex bg-muted p-1 rounded-xl border border-border overflow-x-auto max-w-full no-scrollbar">
             {(["revenue", "bids", "overview", "overlay"] as const).map((tab) => (
               <button
                 key={tab}

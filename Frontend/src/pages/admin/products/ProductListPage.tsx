@@ -163,7 +163,7 @@ export default function ProductListPage() {
 
         <button
           onClick={() => navigate("/admin/product/trash")}
-          className="cursor-pointer inline-flex items-center justify-center px-4 py-2.5 bg-muted/40 hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold rounded-xl text-sm transition-all"
+          className="cursor-pointer inline-flex items-center justify-center px-4 py-2.5 bg-muted/40 hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold rounded-xl text-sm transition-all w-full sm:w-auto"
         >
           View Trash Bin
         </button>

@@ -20,7 +20,11 @@ const activeClass =
 const normalClass =
   "text-muted-foreground hover:text-foreground hover:bg-muted/60";
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const location = useLocation();
   const pathname = location.pathname;
   const navigate = useNavigate();
@@ -54,6 +58,7 @@ export default function Sidebar() {
       <NavLink
         to={adminRoute("dashboard")}
         end
+        onClick={onNavigate}
         className={({ isActive }) =>
           `${baseLinkClass} ${isActive ? activeClass : normalClass}`
         }
@@ -65,6 +70,7 @@ export default function Sidebar() {
       {/* Category Management Link */}
       <NavLink
         to={adminRoute("category/list")}
+        onClick={onNavigate}
         className={() =>
           `${baseLinkClass} ${isCategoryActive ? activeClass : normalClass}`
         }
@@ -76,6 +82,7 @@ export default function Sidebar() {
       {/* Product Management Link */}
       <NavLink
         to={adminRoute("product/list")}
+        onClick={onNavigate}
         className={({ isActive }) =>
           `${baseLinkClass} ${isActive ? activeClass : normalClass}`
         }
@@ -87,6 +94,7 @@ export default function Sidebar() {
       {/* User Management Link */}
       <NavLink
         to={adminRoute("user/list")}
+        onClick={onNavigate}
         className={() =>
           `${baseLinkClass} ${isUserActive ? activeClass : normalClass}`
         }
@@ -98,6 +106,7 @@ export default function Sidebar() {
       {/* Registration Applications Link */}
       <NavLink
         to={adminRoute("visitor-analytics")}
+        onClick={onNavigate}
         className={({ isActive }) =>
           `${baseLinkClass} ${isActive ? activeClass : normalClass}`
         }
@@ -108,6 +117,7 @@ export default function Sidebar() {
 
       <NavLink
         to={adminRoute("seller/applications")}
+        onClick={onNavigate}
         className={() =>
           `${baseLinkClass} ${isBidderFormActive ? activeClass : normalClass}`
         }
@@ -125,6 +135,7 @@ export default function Sidebar() {
         {/* Personal Profile Info Link */}
         <NavLink
           to={adminRoute("profile")}
+          onClick={onNavigate}
           className={({ isActive }) =>
             `${baseLinkClass} ${isActive ? activeClass : normalClass}`
           }
@@ -137,6 +148,7 @@ export default function Sidebar() {
         <div
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 cursor-pointer transition-colors duration-200"
           onClick={() => {
+            onNavigate?.();
             accountService.logout()
               .then((data) => {
                 if (data.code === "success") {

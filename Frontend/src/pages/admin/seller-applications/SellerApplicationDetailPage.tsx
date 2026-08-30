@@ -97,7 +97,7 @@ export default function SellerApplicationDetailPage() {
 
   return (
     detailForm && (
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-foreground bg-background">
+      <div className="w-full max-w-4xl mx-auto text-foreground">
         <h1 className="text-xl sm:text-2xl font-heading font-bold mb-4 text-foreground">
           Upgrade Application Details
         </h1>

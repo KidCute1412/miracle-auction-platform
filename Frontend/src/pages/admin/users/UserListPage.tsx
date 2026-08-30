@@ -97,7 +97,7 @@ export default function UserListPage() {
   }, [search, currentPage, statusFilter]);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-foreground bg-background">
+    <div className="w-full text-foreground">
       <div className="max-w-[1600px] mx-auto">
         <h2 className="font-heading font-bold text-xl sm:text-2xl mb-4 text-foreground">
           Manage Users
@@ -118,8 +118,8 @@ export default function UserListPage() {
           onResetFilters={resetFilters}
         />
 
-        {/* Desktop Table View - Hidden on screens < 1280px */}
-        <div className="mt-5 bg-card rounded-xl border border-border overflow-hidden hidden xl:block transition-colors duration-300">
+        {/* Desktop Table View - Hidden on screens < 1024px */}
+        <div className="mt-5 bg-card rounded-xl border border-border overflow-hidden hidden lg:block transition-colors duration-300">
           <div className="w-full overflow-x-auto">
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-muted/30">
@@ -214,8 +214,8 @@ export default function UserListPage() {
           )}
         </div>
 
-        {/* Tablet/Mobile Card View - Show on screens < 1280px */}
-        <div className="mt-5 grid grid-row-1 sm:grid-row-2 gap-4 xl:hidden">
+        {/* Tablet/Mobile Card View - Show on screens < 1024px */}
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
           {isLoading ? (
             <AdminTableSkeleton columns={4} rows={5} />
           ) : (

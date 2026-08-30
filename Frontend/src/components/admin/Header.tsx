@@ -42,22 +42,22 @@ export default function Header({ sidebarOpen = true, onToggleSidebar }: HeaderPr
   };
 
   return (
-    <div className="mx-auto flex h-16 items-center justify-between px-6 bg-card text-foreground transition-colors duration-300">
+    <div className="mx-auto flex h-16 items-center justify-between px-3 sm:px-6 bg-card text-foreground transition-colors duration-300">
       {/* Brand logo container */}
-      <div className="flex items-center gap-2.5 font-heading font-bold text-lg tracking-wide select-none">
-        <button onClick={onToggleSidebar} className="rounded-lg border border-border/50 bg-muted/60 p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"} aria-pressed={sidebarOpen}>
+      <div className="flex items-center gap-2 sm:gap-2.5 font-heading font-bold text-base sm:text-lg tracking-wide select-none">
+        <button onClick={onToggleSidebar} className="rounded-lg border border-border/50 bg-muted/60 p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer" aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"} aria-pressed={sidebarOpen}>
           {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
         </button>
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/15 text-accent border border-accent/20">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/15 text-accent border border-accent/20 shrink-0">
           <ShieldCheck className="w-5 h-5" />
         </div>
-        <Link to="/admin/dashboard" className="text-foreground hover:text-accent transition-colors">
+        <Link to="/admin/dashboard" className="text-foreground hover:text-accent transition-colors truncate">
           Vanguard <span className="text-accent font-semibold">Admin</span>
         </Link>
       </div>
 
       {/* User profile and controls container */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         {/* Theme toggle button */}
         <button
           onClick={toggleTheme}
@@ -68,10 +68,10 @@ export default function Header({ sidebarOpen = true, onToggleSidebar }: HeaderPr
         </button>
 
         {/* User profile dropdown container */}
-        <div className="relative pl-3 border-l border-border" ref={dropdownRef}>
+        <div className="relative pl-2 sm:pl-3 border-l border-border" ref={dropdownRef}>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-muted/60 transition-colors cursor-pointer select-none text-left"
+            className="flex items-center gap-2 sm:gap-3 p-1.5 rounded-xl hover:bg-muted/60 transition-colors cursor-pointer select-none text-left"
           >
             <div className="rounded-full ring-2 ring-accent/40 p-0.5 shrink-0 bg-background shadow-gold-glow">
               <UserAvatar
@@ -98,7 +98,7 @@ export default function Header({ sidebarOpen = true, onToggleSidebar }: HeaderPr
 
           {/* Menu Dropdown Container */}
           {isOpen && (
-            <div className="absolute top-full right-0 mt-2 w-52 bg-glass shadow-gold-glow border border-border py-1.5 rounded-xl z-50 p-1 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute top-full right-0 mt-2 w-52 max-w-[calc(100vw-32px)] bg-glass shadow-gold-glow border border-border py-1.5 rounded-xl z-50 p-1 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150">
               <div className="px-3 py-2 border-b border-border/50 sm:hidden">
                 <p className="text-xs font-semibold text-foreground truncate">{auth?.full_name || auth?.username}</p>
                 <p className="text-[10px] text-accent font-mono uppercase">Administrator</p>
