@@ -355,10 +355,10 @@ export default function SawakoMascot() {
 
       {/* ===================== CHARACTER SVG & POKE AREA ===================== */}
       <div className="relative group flex flex-col items-center">
-        {/* Quick Utility Control Toolbar */}
+        {/* Quick Utility Control Toolbar docked neatly beside Sawako */}
         <div
-          className={`absolute -top-7 right-2 flex items-center gap-1 rounded-full border border-zinc-700/60 bg-zinc-900/90 px-2 py-0.5 backdrop-blur-md shadow-md transition-all duration-200 ${
-            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+          className={`absolute top-4 -left-8 z-10 flex flex-col items-center gap-1 rounded-full border border-pink-400/20 bg-zinc-950/90 p-1 backdrop-blur-md shadow-lg transition-all duration-200 ${
+            isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-1 pointer-events-none"
           }`}
         >
           {/* Mute dialogue & audio button */}
@@ -370,11 +370,11 @@ export default function SawakoMascot() {
               updatePrefs((p) => ({ ...p, muted: nextMuted }));
               if (nextMuted) setBubbleVisible(false);
             }}
-            className="p-1 text-zinc-400 hover:text-pink-300 transition-colors"
+            className="p-1 text-zinc-400 hover:text-pink-300 transition-colors cursor-pointer rounded-full"
             title={prefs.muted ? "Unmute dialogue & sound" : "Mute dialogue & sound"}
             aria-label={prefs.muted ? "Unmute dialogue" : "Mute dialogue"}
           >
-            {prefs.muted ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+            {prefs.muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
           </button>
 
           {/* Minimize to cat-paw button */}
@@ -383,11 +383,11 @@ export default function SawakoMascot() {
               e.stopPropagation();
               updatePrefs((p) => ({ ...p, minimized: true }));
             }}
-            className="p-1 text-zinc-400 hover:text-amber-300 transition-colors"
+            className="p-1 text-zinc-400 hover:text-pink-300 transition-colors cursor-pointer rounded-full"
             title="Minimize to desk tray"
             aria-label="Minimize mascot"
           >
-            <Minus className="h-3 w-3" />
+            <Minus className="h-3.5 w-3.5" />
           </button>
         </div>
 
