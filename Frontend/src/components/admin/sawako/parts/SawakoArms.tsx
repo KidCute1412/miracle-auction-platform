@@ -9,12 +9,11 @@ interface SawakoArmsProps {
 }
 
 /**
- * SawakoArms - Soft, Natural Relaxed Chibi Arms with Breathing Room
+ * SawakoArms - Pure White Dress Sleeves & Articulated Chibi Hands
  * Features:
- * - Elbows curve gently away from the waist, eliminating stiffness and tightness against the torso
- * - Loose cardigan sleeves draping naturally forward
- * - Delicate petite hands cupped softly in front of the skirt with blushing fingertips
- * - Smooth waving and breathing motion on hover / drag
+ * - Pure white silk dress sleeves seamlessly matching the one-piece dress
+ * - Elbows curved gently outward to avoid any stiff or pasted-on look
+ * - Delicate bare wrists and soft chibi hands with blushing rosy fingertips
  * - Interactive hotspot with `sawako-hands-target`
  */
 export function SawakoArms({
@@ -51,16 +50,16 @@ export function SawakoArms({
       }}
     >
       <defs>
-        {/* Sleeve Shading Gradient */}
-        <linearGradient id="sleeveGradientLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FAF5EE" />
-          <stop offset="60%" stopColor="#EFE4D6" />
-          <stop offset="100%" stopColor="#D9C7B4" />
+        {/* Pure White Dress Sleeve Gradient */}
+        <linearGradient id="whiteSleeveLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="60%" stopColor="#F8FAFC" />
+          <stop offset="100%" stopColor="#E2E8F0" />
         </linearGradient>
-        <linearGradient id="sleeveGradientRight" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FAF5EE" />
-          <stop offset="60%" stopColor="#EFE4D6" />
-          <stop offset="100%" stopColor="#D9C7B4" />
+        <linearGradient id="whiteSleeveRight" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="60%" stopColor="#F8FAFC" />
+          <stop offset="100%" stopColor="#E2E8F0" />
         </linearGradient>
 
         {/* Fingertip Blush Glow */}
@@ -71,10 +70,9 @@ export function SawakoArms({
         </radialGradient>
       </defs>
 
-      {/* ===================== LEFT ARM & RELAXED HAND ===================== */}
-      {/* Elbow sweeps outward to create distinct breathing space between arm and torso */}
+      {/* ===================== LEFT ARM & HAND ===================== */}
       <g id="left-arm-render">
-        {/* Left Sleeve Fabric: Outward curve at elbow, soft draping cuff */}
+        {/* Left Dress Sleeve: Curves naturally at elbow, seamless white silk */}
         <path
           d="
             M 276 524
@@ -83,26 +81,26 @@ export function SawakoArms({
             C 288 618, 288 565, 308 532
             Z
           "
-          fill="url(#sleeveGradientLeft)"
-          stroke="#C8B6A2"
-          strokeWidth={2.2}
+          fill="url(#whiteSleeveLeft)"
+          stroke="#CBD5E1"
+          strokeWidth={2}
         />
-        {/* Natural elbow fold crease line */}
-        <path d="M 246 605 Q 262 615 278 604" stroke="#BAA58E" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+        {/* Elbow crease line */}
+        <path d="M 246 605 Q 262 615 278 604" stroke="#CBD5E1" strokeWidth={1.6} strokeLinecap="round" fill="none" />
 
-        {/* Soft Sleeve Cuff Rim */}
+        {/* Delicate Scallop Sleeve Cuff */}
         <path
           d="M 268 672 Q 288 680 308 660 L 306 654 Q 286 674 268 666 Z"
-          fill="#FAF4EB"
-          stroke="#C2B09C"
-          strokeWidth={1.6}
+          fill="#FFFFFF"
+          stroke="#CBD5E1"
+          strokeWidth={1.4}
         />
 
-        {/* Petite Chibi Left Hand resting cupped in front of skirt */}
+        {/* Petite Chibi Left Hand resting cupped in front of dress */}
         <g id="left-chibi-hand" transform="translate(294, 666)">
-          <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.4} />
+          <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1.2} />
           {/* Thumb */}
-          <path d="M 12 4 C 16 5, 17 9, 14 12 C 12 11, 10 7, 12 4 Z" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.2} />
+          <path d="M 12 4 C 16 5, 17 9, 14 12 C 12 11, 10 7, 12 4 Z" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1} />
           <ellipse cx="14" cy="8" rx="2.5" ry="2.5" fill="url(#fingerBlush)" />
           {/* Fingers separation */}
           <path d="M 4 17 Q 6 19 8 17" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
@@ -111,10 +109,9 @@ export function SawakoArms({
         </g>
       </g>
 
-      {/* ===================== RIGHT ARM & RELAXED HAND ===================== */}
-      {/* Elbow sweeps outward to create distinct breathing space between arm and torso */}
+      {/* ===================== RIGHT ARM & HAND ===================== */}
       <g id="right-arm-render">
-        {/* Right Sleeve Fabric: Outward curve at elbow, soft draping cuff */}
+        {/* Right Dress Sleeve: Curves naturally at elbow, seamless white silk */}
         <path
           d="
             M 460 524
@@ -123,26 +120,26 @@ export function SawakoArms({
             C 448 618, 448 565, 428 532
             Z
           "
-          fill="url(#sleeveGradientRight)"
-          stroke="#C8B6A2"
-          strokeWidth={2.2}
+          fill="url(#whiteSleeveRight)"
+          stroke="#CBD5E1"
+          strokeWidth={2}
         />
-        {/* Natural elbow fold crease line */}
-        <path d="M 490 605 Q 474 615 458 604" stroke="#BAA58E" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+        {/* Elbow crease line */}
+        <path d="M 490 605 Q 474 615 458 604" stroke="#CBD5E1" strokeWidth={1.6} strokeLinecap="round" fill="none" />
 
-        {/* Soft Sleeve Cuff Rim */}
+        {/* Delicate Scallop Sleeve Cuff */}
         <path
           d="M 468 672 Q 448 680 428 660 L 430 654 Q 450 674 468 666 Z"
-          fill="#FAF4EB"
-          stroke="#C2B09C"
-          strokeWidth={1.6}
+          fill="#FFFFFF"
+          stroke="#CBD5E1"
+          strokeWidth={1.4}
         />
 
-        {/* Petite Chibi Right Hand resting cupped in front of skirt */}
+        {/* Petite Chibi Right Hand resting cupped in front of dress */}
         <g id="right-chibi-hand" transform="translate(430, 666)">
-          <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.4} />
+          <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1.2} />
           {/* Thumb */}
-          <path d="M 0 4 C -4 5, -5 9, -2 12 C 0 11, 2 7, 0 4 Z" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.2} />
+          <path d="M 0 4 C -4 5, -5 9, -2 12 C 0 11, 2 7, 0 4 Z" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1} />
           <ellipse cx="-2" cy="8" rx="2.5" ry="2.5" fill="url(#fingerBlush)" />
           {/* Fingers separation */}
           <path d="M 6 17 Q 8 19 10 17" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
@@ -151,7 +148,7 @@ export function SawakoArms({
         </g>
       </g>
 
-      {/* Invisible broad hotspot over hands for effortless interaction */}
+      {/* Invisible broad hotspot over hands */}
       <rect
         x="220"
         y="520"
