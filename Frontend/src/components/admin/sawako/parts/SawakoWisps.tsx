@@ -7,9 +7,11 @@ interface SawakoWispsProps {
 }
 
 /**
- * SawakoWisps - Charming Manga Aura & Expressive Emotion Symbols
+ * SawakoWisps - Subtle Charming Aura & Expressive Emotion Symbols
  * Features:
- * - Faithful homage to "Sawako better.jpg": white chalky doodle star, aura silhouette line, and sparkle rays
+ * - Cleaned up to remove the distracting bouncing doodle star
+ * - Subtle chalky aura outline contour around the hair
+ * - Soft pastel petals and gentle light sparkles
  * - Contextual hitodama ghost flames when dizzy or sweating
  * - Anime manga emotion symbols: anger, sweat, sparkle, zzz, heart, question
  */
@@ -18,45 +20,26 @@ export function SawakoWisps({ symbol, expression }: SawakoWispsProps) {
 
   return (
     <g className="pointer-events-none" id="sawako-wisps-layer">
-      {/* ===================== AUTHENTIC DOODLE AURA (FROM SAWAKO BETTER.JPG) ===================== */}
-      {/* 1. White chalky doodle star on left */}
-      <g transform="translate(80, 250)" className="animate-pulse opacity-90">
-        <path
-          d="M 0 -22 L 6 -6 L 22 -6 L 10 4 L 14 20 L 0 10 L -14 20 L -10 4 L -22 -6 L -6 -6 Z"
-          fill="none"
-          stroke="#FFFFFF"
-          strokeWidth={3.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="0" cy="0" r="3" fill="#FFFFFF" opacity="0.6" />
-      </g>
-
-      {/* 2. White chalky doodle silhouette aura contour line on left (directly from photo) */}
+      {/* Subtle white chalky contour line softly echoing hair silhouette on left */}
       <path
         d="
-          M 210 130
-          C 140 160, 110 240, 105 340
-          C 100 420, 120 480, 120 540
-          C 120 600, 70 650, 60 740
+          M 210 140
+          C 150 170, 126 240, 120 330
+          C 114 410, 130 470, 130 530
         "
         stroke="#FFFFFF"
-        strokeWidth={3}
+        strokeWidth={2.4}
         strokeLinecap="round"
-        strokeDasharray="18,10"
+        strokeDasharray="14,10"
         fill="none"
-        opacity="0.8"
-        className="animate-pulse"
+        opacity="0.65"
       />
 
-      {/* 3. White chalky radiating sparkle rays on upper right (directly from photo) */}
-      <g transform="translate(610, 170)" className="animate-bounce opacity-90">
-        {/* Ray 1 (45 deg) */}
-        <line x1="0" y1="0" x2="28" y2="28" stroke="#FFFFFF" strokeWidth={6} strokeLinecap="round" />
-        {/* Ray 2 (horizontal-ish) */}
-        <line x1="22" y1="-20" x2="48" y2="-40" stroke="#FFFFFF" strokeWidth={6} strokeLinecap="round" />
-        {/* Ray 3 (steep) */}
-        <line x1="32" y1="12" x2="62" y2="12" stroke="#FFFFFF" strokeWidth={6} strokeLinecap="round" />
+      {/* Subtle radiating sparkle rays on upper right */}
+      <g transform="translate(610, 170)" className="opacity-75">
+        <line x1="0" y1="0" x2="24" y2="24" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" />
+        <line x1="18" y1="-18" x2="42" y2="-36" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" />
+        <line x1="28" y1="10" x2="54" y2="10" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" />
       </g>
 
       {/* ===================== CONTEXTUAL HITODAMA FLAMES ===================== */}
@@ -75,9 +58,9 @@ export function SawakoWisps({ symbol, expression }: SawakoWispsProps) {
         </g>
       )}
 
-      {/* Sweet Innocent Petals when calm */}
+      {/* Gentle Floating Petals when calm */}
       {!showHitodama && (
-        <g id="angelic-petals" opacity={0.8}>
+        <g id="angelic-petals" opacity={0.7}>
           <g transform="translate(90, 420)" className="animate-[ghostFloat_4s_ease-in-out_infinite]">
             <path d="M 0 0 C 10 -15, 25 -5, 20 10 C 15 25, -5 15, 0 0 Z" fill="#FBCFE8" fillOpacity={0.75} />
           </g>
@@ -123,7 +106,7 @@ export function SawakoWisps({ symbol, expression }: SawakoWispsProps) {
       {symbol === "heart" && (
         <g transform="translate(560, 120) scale(1.8)" className="animate-ping origin-center">
           <path
-            d="M 10 3 A 3.5 3.5 0 0 0 5 7.5 A 3.5 3.5 0 0 0 0 3 A 3.5 3.5 0 0 0 5 0 A 3.5 3.5 0 0 0 10 3 Z"
+            d="M 10 3 A 3.5 3.5 0 0 0 5 7.5 A 3.5 3.5 0 0 0 0 3 A 3.5 3.5 0 0 0 10 3 Z"
             fill="#F43F5E"
             transform="rotate(45 5 5)"
           />

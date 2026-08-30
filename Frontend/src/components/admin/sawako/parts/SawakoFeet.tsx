@@ -10,6 +10,7 @@ interface SawakoFeetProps {
 /**
  * SawakoFeet - Articulated Anime Chibi Legs & Glossy Pastel Mary-Jane Shoes
  * Features:
+ * - Positioned behind the white skirt so the skirt naturally overlaps the thighs
  * - Detailed anime socks with ribbed cuff folds and ankle ambient shadows
  * - Glossy pastel pink Mary-Jane shoes with toe box shine, mini buckle, and rubber sole
  * - Independent dangling and kicking kinematics when dragged or hovered
@@ -62,22 +63,34 @@ export function SawakoFeet({
           <stop offset="80%" stopColor="#F1F5F9" />
           <stop offset="100%" stopColor="#E2E8F0" />
         </linearGradient>
+
+        {/* Thigh Under-Skirt Shadow */}
+        <linearGradient id="thighShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#E2E8F0" />
+          <stop offset="100%" stopColor="#FFFFFF" />
+        </linearGradient>
       </defs>
 
       {/* ===================== CHIBI LEGS & SOCKS ===================== */}
+      {/* Starting from Y=760 so thighs extend well behind the skirt hem */}
       <g id="chibi-legs-render">
         {/* Left Leg & Sock */}
         <g id="left-leg">
+          {/* Upper Thigh under skirt */}
+          <path
+            d="M 314 770 L 314 830 L 344 830 L 344 770 Z"
+            fill="url(#thighShadow)"
+          />
           {/* Sock Body */}
           <path
-            d="M 314 826 C 316 870, 318 920, 321 954 L 349 954 C 347 920, 345 870, 342 826 Z"
+            d="M 315 830 C 317 870, 318 920, 321 954 L 349 954 C 347 920, 345 870, 343 830 Z"
             fill="url(#sockShadow)"
             stroke="#CBD5E1"
             strokeWidth={1.8}
           />
           {/* Sock Ribbed Cuff Fold at top */}
           <path
-            d="M 313 836 Q 328 840 343 836"
+            d="M 314 836 Q 329 840 344 836"
             stroke="#94A3B8"
             strokeWidth={1.6}
             fill="none"
@@ -89,16 +102,21 @@ export function SawakoFeet({
 
         {/* Right Leg & Sock */}
         <g id="right-leg">
+          {/* Upper Thigh under skirt */}
+          <path
+            d="M 392 770 L 392 830 L 422 830 L 422 770 Z"
+            fill="url(#thighShadow)"
+          />
           {/* Sock Body */}
           <path
-            d="M 394 826 C 392 870, 390 920, 387 954 L 415 954 C 418 920, 420 870, 422 826 Z"
+            d="M 393 830 C 391 870, 390 920, 387 954 L 415 954 C 418 920, 420 870, 421 830 Z"
             fill="url(#sockShadow)"
             stroke="#CBD5E1"
             strokeWidth={1.8}
           />
           {/* Sock Ribbed Cuff Fold at top */}
           <path
-            d="M 393 836 Q 408 840 423 836"
+            d="M 392 836 Q 407 840 422 836"
             stroke="#94A3B8"
             strokeWidth={1.6}
             fill="none"
@@ -110,34 +128,22 @@ export function SawakoFeet({
 
         {/* Left Pastel Mary-Jane Chibi Shoe */}
         <g id="left-shoe">
-          {/* Shoe Main Volume */}
           <ellipse cx="332" cy="964" rx="25" ry="14" fill="url(#shoeGloss)" stroke="#EC4899" strokeWidth={2} />
-          {/* Toe Box Gloss Highlight */}
           <ellipse cx="324" cy="960" rx="9" ry="4.5" fill="#FFFFFF" fillOpacity={0.65} />
-          {/* Shoe Sole & Rubber Edge */}
           <path d="M 308 968 Q 332 980 356 968" stroke="#64748B" strokeWidth={3.2} fill="none" strokeLinecap="round" />
-          {/* Heel Lift hint */}
           <rect x="345" y="966" width="9" height="4.5" rx="1.5" fill="#475569" />
-          {/* Mary-Jane Instep Strap */}
           <path d="M 315 962 Q 332 968 349 962" stroke="#DB2777" strokeWidth={2.4} fill="none" />
-          {/* Golden Mini Buckle */}
           <circle cx="332" cy="964" r="2.8" fill="#FDE047" stroke="#CA8A04" strokeWidth={1} />
           <circle cx="332" cy="964" r="1.2" fill="#FFFFFF" />
         </g>
 
         {/* Right Pastel Mary-Jane Chibi Shoe */}
         <g id="right-shoe">
-          {/* Shoe Main Volume */}
           <ellipse cx="404" cy="964" rx="25" ry="14" fill="url(#shoeGloss)" stroke="#EC4899" strokeWidth={2} />
-          {/* Toe Box Gloss Highlight */}
           <ellipse cx="412" cy="960" rx="9" ry="4.5" fill="#FFFFFF" fillOpacity={0.65} />
-          {/* Shoe Sole & Rubber Edge */}
           <path d="M 380 968 Q 404 980 428 968" stroke="#64748B" strokeWidth={3.2} fill="none" strokeLinecap="round" />
-          {/* Heel Lift hint */}
           <rect x="382" y="966" width="9" height="4.5" rx="1.5" fill="#475569" />
-          {/* Mary-Jane Instep Strap */}
           <path d="M 387 962 Q 404 968 421 962" stroke="#DB2777" strokeWidth={2.4} fill="none" />
-          {/* Golden Mini Buckle */}
           <circle cx="404" cy="964" r="2.8" fill="#FDE047" stroke="#CA8A04" strokeWidth={1} />
           <circle cx="404" cy="964" r="1.2" fill="#FFFFFF" />
         </g>
@@ -146,9 +152,9 @@ export function SawakoFeet({
       {/* Invisible broad hotspot over feet */}
       <rect
         x="260"
-        y="850"
+        y="830"
         width="216"
-        height="160"
+        height="180"
         fill="transparent"
         className="cursor-pointer"
       />

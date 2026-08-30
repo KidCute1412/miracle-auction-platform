@@ -9,12 +9,13 @@ interface SawakoArmsProps {
 }
 
 /**
- * SawakoArms - Articulated Anime Chibi Arms with Detailed Cardigan Sleeves & Petite Hands
+ * SawakoArms - Soft, Natural Relaxed Chibi Arms with Breathing Room
  * Features:
- * - Realistic cardigan sleeve folds, cuff seams, and fabric shadows
- * - Petite chibi hands with delicate fingers and blushing rosy fingertips
- * - Interactive waving / floating kinematics
- * - Generous click hotspot with `sawako-hands-target`
+ * - Elbows curve gently away from the waist, eliminating stiffness and tightness against the torso
+ * - Loose cardigan sleeves draping naturally forward
+ * - Delicate petite hands cupped softly in front of the skirt with blushing fingertips
+ * - Smooth waving and breathing motion on hover / drag
+ * - Interactive hotspot with `sawako-hands-target`
  */
 export function SawakoArms({
   isHovered,
@@ -70,93 +71,91 @@ export function SawakoArms({
         </radialGradient>
       </defs>
 
-      {/* ===================== LEFT ARM & HAND ===================== */}
+      {/* ===================== LEFT ARM & RELAXED HAND ===================== */}
+      {/* Elbow sweeps outward to create distinct breathing space between arm and torso */}
       <g id="left-arm-render">
-        {/* Left Sleeve Fabric Body with elbow wrinkle */}
+        {/* Left Sleeve Fabric: Outward curve at elbow, soft draping cuff */}
         <path
           d="
             M 276 524
-            C 246 565, 238 625, 272 670
-            C 280 674, 298 672, 308 658
-            C 292 615, 296 568, 310 534
+            C 240 560, 232 620, 268 672
+            C 278 678, 296 676, 308 660
+            C 288 618, 288 565, 308 532
             Z
           "
           fill="url(#sleeveGradientLeft)"
           stroke="#C8B6A2"
           strokeWidth={2.2}
         />
-        {/* Elbow fabric crease line */}
-        <path d="M 252 605 Q 266 612 280 600" stroke="#BAA58E" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+        {/* Natural elbow fold crease line */}
+        <path d="M 246 605 Q 262 615 278 604" stroke="#BAA58E" strokeWidth={1.8} strokeLinecap="round" fill="none" />
 
-        {/* Sleeve Cuff Rim */}
+        {/* Soft Sleeve Cuff Rim */}
         <path
-          d="M 272 670 Q 290 676 308 658 L 306 652 Q 288 670 272 664 Z"
+          d="M 268 672 Q 288 680 308 660 L 306 654 Q 286 674 268 666 Z"
           fill="#FAF4EB"
           stroke="#C2B09C"
           strokeWidth={1.6}
         />
 
-        {/* Petite Chibi Left Hand & Fingers */}
-        <g id="left-chibi-hand" transform="translate(290, 664)">
-          {/* Palm Base */}
+        {/* Petite Chibi Left Hand resting cupped in front of skirt */}
+        <g id="left-chibi-hand" transform="translate(294, 666)">
           <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.4} />
           {/* Thumb */}
           <path d="M 12 4 C 16 5, 17 9, 14 12 C 12 11, 10 7, 12 4 Z" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.2} />
           <ellipse cx="14" cy="8" rx="2.5" ry="2.5" fill="url(#fingerBlush)" />
-          {/* Fingers definition lines */}
+          {/* Fingers separation */}
           <path d="M 4 17 Q 6 19 8 17" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
           <path d="M 0 16 Q 2 18 4 16" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
-          {/* Rosy Fingertip Blush */}
           <ellipse cx="6" cy="14" rx="4.5" ry="3" fill="url(#fingerBlush)" />
         </g>
       </g>
 
-      {/* ===================== RIGHT ARM & HAND ===================== */}
+      {/* ===================== RIGHT ARM & RELAXED HAND ===================== */}
+      {/* Elbow sweeps outward to create distinct breathing space between arm and torso */}
       <g id="right-arm-render">
-        {/* Right Sleeve Fabric Body with elbow wrinkle */}
+        {/* Right Sleeve Fabric: Outward curve at elbow, soft draping cuff */}
         <path
           d="
             M 460 524
-            C 490 565, 498 625, 464 670
-            C 456 674, 438 672, 428 658
-            C 444 615, 440 568, 426 534
+            C 496 560, 504 620, 468 672
+            C 458 678, 440 676, 428 660
+            C 448 618, 448 565, 428 532
             Z
           "
           fill="url(#sleeveGradientRight)"
           stroke="#C8B6A2"
           strokeWidth={2.2}
         />
-        {/* Elbow fabric crease line */}
-        <path d="M 484 605 Q 470 612 456 600" stroke="#BAA58E" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+        {/* Natural elbow fold crease line */}
+        <path d="M 490 605 Q 474 615 458 604" stroke="#BAA58E" strokeWidth={1.8} strokeLinecap="round" fill="none" />
 
-        {/* Sleeve Cuff Rim */}
+        {/* Soft Sleeve Cuff Rim */}
         <path
-          d="M 464 670 Q 446 676 428 658 L 430 652 Q 448 670 464 664 Z"
+          d="M 468 672 Q 448 680 428 660 L 430 654 Q 450 674 468 666 Z"
           fill="#FAF4EB"
           stroke="#C2B09C"
           strokeWidth={1.6}
         />
 
-        {/* Petite Chibi Right Hand & Fingers */}
-        <g id="right-chibi-hand" transform="translate(434, 664)">
-          {/* Palm Base */}
+        {/* Petite Chibi Right Hand resting cupped in front of skirt */}
+        <g id="right-chibi-hand" transform="translate(430, 666)">
           <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.4} />
           {/* Thumb */}
           <path d="M 0 4 C -4 5, -5 9, -2 12 C 0 11, 2 7, 0 4 Z" fill="#FEE3D4" stroke="#C8B6A2" strokeWidth={1.2} />
           <ellipse cx="-2" cy="8" rx="2.5" ry="2.5" fill="url(#fingerBlush)" />
-          {/* Fingers definition lines */}
+          {/* Fingers separation */}
           <path d="M 6 17 Q 8 19 10 17" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
           <path d="M 10 16 Q 12 18 14 16" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
-          {/* Rosy Fingertip Blush */}
           <ellipse cx="6" cy="14" rx="4.5" ry="3" fill="url(#fingerBlush)" />
         </g>
       </g>
 
       {/* Invisible broad hotspot over hands for effortless interaction */}
       <rect
-        x="230"
+        x="220"
         y="520"
-        width="276"
+        width="296"
         height="190"
         fill="transparent"
         className="cursor-pointer"
