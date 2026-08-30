@@ -17,7 +17,7 @@ export const POKE_LINES: SawakoLine[] = [
     symbol: "sweat",
   },
   {
-    text: "Myaah?! My ears are sensitive, watch where your cursor goes!",
+    text: "Eep?! Watch where your cursor goes, don't mess up my pink hair ribbon!",
     expression: "pout",
     symbol: "anger",
   },
@@ -40,7 +40,7 @@ export const DIZZY_LINES: SawakoLine[] = [
     symbol: "sweat",
   },
   {
-    text: "M-Mercy! My cat ears are tangled up! Have some decorum, admin!",
+    text: "M-Mercy! My hair ribbon is tangled up! Have some decorum, admin!",
     expression: "dizzy",
     symbol: "sweat",
   },

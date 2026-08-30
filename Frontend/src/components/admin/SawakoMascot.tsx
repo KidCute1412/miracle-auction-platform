@@ -275,12 +275,12 @@ export default function SawakoMascot() {
           title="Sawako is napping. Click to wake her up!"
           aria-label="Wake up Sawako the mascot"
         >
-          {/* Miniature cute cat paw icon */}
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400/20 text-sm">
-            🐾
+          {/* Miniature cute pink ribbon icon */}
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-400/20 text-sm">
+            🎀
           </span>
           <span className="hidden sm:inline font-sans tracking-wide">Sawako (Napping)</span>
-          <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+          <Sparkles className="h-3.5 w-3.5 text-pink-400 animate-pulse" />
         </button>
       </div>
     );

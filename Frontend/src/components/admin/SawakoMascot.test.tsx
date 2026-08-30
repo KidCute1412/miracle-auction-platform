@@ -22,7 +22,7 @@ describe("SawakoMascot Component", () => {
     );
 
     expect(screen.getByTestId("sawako-mascot-container")).toBeDefined();
-    expect(screen.getByRole("img", { name: /Sawako Cat-Eared Anime Mascot/i })).toBeDefined();
+    expect(screen.getByRole("img", { name: /Sawako Anime Mascot/i })).toBeDefined();
   });
 
   it("displays the initial introduction speech bubble with Sawako's title", () => {
@@ -73,7 +73,7 @@ describe("SawakoMascot Component", () => {
     expect(
       bubble.textContent?.includes("@.@") ||
       bubble.textContent?.includes("spinning") ||
-      bubble.textContent?.includes("ears") ||
+      bubble.textContent?.includes("ribbon") ||
       bubble.textContent?.includes("floating")
     ).toBe(true);
   });
