@@ -14,7 +14,8 @@ import { SawakoWisps } from "./parts/SawakoWisps";
  * SawakoSvg - Authentic Full-Body Chibi Mascot Vector Puppet
  * Features:
  * - Scaled down to 80% for ideal desktop/dashboard footprint
- * - Proper SVG Z-index layering: legs rendered behind pure white dress
+ * - Proper SVG Z-index layering: legs rendered behind pure white muse dress
+ * - No glow / no brightness flare on hover/touch (clean natural presentation)
  * - Dynamic airborne flailing / dangling kinematics when dragged
  * - Shy expression on drag (no dizzy spinning eyes)
  * - Soft idle bobbing, shy flailing limbs on hover, and serene anime expression
@@ -106,11 +107,7 @@ export default function SawakoSvg({
       >
         <svg
           viewBox="0 0 736 1104"
-          className={`w-full h-full drop-shadow-[0_16px_28px_rgba(0,0,0,0.32)] overflow-visible transition-all duration-200 ${
-            isHovered
-              ? "brightness-105 drop-shadow-[0_18px_32px_rgba(251,207,232,0.45)]"
-              : ""
-          }`}
+          className="w-full h-full drop-shadow-[0_16px_28px_rgba(0,0,0,0.32)] overflow-visible transition-all duration-200"
           role="img"
           aria-label="Sawako Anime Mascot"
         >
@@ -127,7 +124,7 @@ export default function SawakoSvg({
           <ellipse cx="368" cy="1010" rx="180" ry="20" fill="url(#sawakoGroundMist)" />
           <ellipse cx="368" cy="1012" rx="110" ry="11" fill="#fce7f3" fillOpacity={0.35} />
 
-          {/* ===================== LAYER 1: ARTICULATED LEGS & SHOES (BEHIND WHITE DRESS) ===================== */}
+          {/* ===================== LAYER 1: ARTICULATED LEGS & BLACK BOOTS (BEHIND MUSE DRESS) ===================== */}
           <SawakoFeet
             isDragging={isDragging}
             hoveredZone={hoveredZone}
@@ -143,7 +140,7 @@ export default function SawakoSvg({
               transition: "transform 0.15s ease-out",
             }}
           >
-            {/* 1. Base Artwork: Back hair, neck, oval face, pure white one-piece dress (overlapping legs) */}
+            {/* 1. Base Artwork: Back hair, neck, oval face, scooped white muse dress (overlapping legs) */}
             <SawakoBaseArtwork expression={activeExpression} />
 
             {/* 2. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
@@ -164,7 +161,7 @@ export default function SawakoSvg({
             <SawakoHairFront isDragging={isDragging} />
           </g>
 
-          {/* ===================== LAYER 3: RELAXED NATURAL WHITE SLEEVES & HANDS ===================== */}
+          {/* ===================== LAYER 3: RELAXED PUFFED SLEEVES & HANDS ===================== */}
           <SawakoArms
             isHovered={isHovered}
             isDragging={isDragging}
