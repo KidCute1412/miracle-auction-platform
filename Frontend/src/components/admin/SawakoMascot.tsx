@@ -105,32 +105,9 @@ export default function SawakoMascot() {
     [prefs.muted],
   );
 
-  // Jelly squash & stretch animation trigger
-  const triggerSquashAndStretch = useCallback(() => {
-    // Phase 1: Heavy squish down
-    setScale({ x: 1.28, y: 0.72 });
-
-    // Phase 2: Recoil vertical stretch
-    setTimeout(() => {
-      setScale({ x: 0.88, y: 1.15 });
-    }, 120);
-
-    // Phase 3: Slight bounce back
-    setTimeout(() => {
-      setScale({ x: 1.05, y: 0.95 });
-    }, 240);
-
-    // Phase 4: Settle
-    setTimeout(() => {
-      setScale({ x: 1, y: 1 });
-    }, 360);
-  }, []);
-
   // Handle poke / click
   const handlePoke = useCallback(() => {
     if (isDragging) return;
-
-    triggerSquashAndStretch();
 
     // Track rapid clicks for dizziness easter egg
     rapidClickCountRef.current += 1;
@@ -158,32 +135,30 @@ export default function SawakoMascot() {
     // Pick random poke response
     const line = POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)];
     say(line, 4000);
-  }, [isDragging, prefs.muted, say, triggerSquashAndStretch]);
+  }, [isDragging, prefs.muted, say]);
 
   // Interactive Hand Poke handler
   const handlePokeHand = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      triggerSquashAndStretch();
       sawakoSound.setMuted(prefs.muted);
       sawakoSound.playChime();
       const line = HAND_POKE_LINES[Math.floor(Math.random() * HAND_POKE_LINES.length)];
       say(line, 4000);
     },
-    [prefs.muted, say, triggerSquashAndStretch],
+    [prefs.muted, say],
   );
 
   // Interactive Foot Poke handler
   const handlePokeFoot = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      triggerSquashAndStretch();
       sawakoSound.setMuted(prefs.muted);
-      sawakoSound.playBounce();
+      sawakoSound.playPoke();
       const line = FOOT_POKE_LINES[Math.floor(Math.random() * FOOT_POKE_LINES.length)];
       say(line, 4000);
     },
-    [prefs.muted, say, triggerSquashAndStretch],
+    [prefs.muted, say],
   );
 
   // Route change awareness
@@ -283,10 +258,6 @@ export default function SawakoMascot() {
       setIsDragging(false);
 
       sawakoSound.setMuted(prefs.muted);
-      sawakoSound.playBounce();
-
-      // Jelly bounce on drop
-      triggerSquashAndStretch();
 
       const dropLine = DROP_LINES[Math.floor(Math.random() * DROP_LINES.length)];
       say(dropLine, 3500);
