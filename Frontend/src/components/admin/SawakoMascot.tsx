@@ -249,7 +249,7 @@ export default function SawakoMascot() {
     if ((e.target as HTMLElement).closest("button")) return;
 
     setIsDragging(true);
-    setScale({ x: 0.9, y: 1.12 }); // Elastic stretch while airborne
+    setScale({ x: 1, y: 1 });
 
     const currentX = prefs.position?.x ?? 0;
     const currentY = prefs.position?.y ?? 0;

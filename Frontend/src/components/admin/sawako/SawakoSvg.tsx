@@ -101,7 +101,7 @@ export default function SawakoSvg({
       <div
         className={`relative w-40 h-68 sm:w-44 sm:h-76 transition-all duration-300 ${
           isDragging
-            ? "translate-y-[-10px] scale-105"
+            ? "translate-y-[-6px]"
             : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >

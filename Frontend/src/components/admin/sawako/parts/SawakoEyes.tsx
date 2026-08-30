@@ -10,15 +10,12 @@ interface SawakoEyesProps {
 
 /**
  * SawakoEyes - High-Fidelity Anime Chibi Eyes Rig
- * Faithfully captures the signature expressive, liquid, sparkling anime eyes from "Sawako better.jpg"
  * Features:
- * - Ambient occlusion sclera shadow under upper eyelid
- * - Multi-layered obsidian iris gradient with inner pupil core and lower crescent glow
- * - Triple specular highlights (primary crisp circular gleam, secondary sparkle, micro-catchlight)
- * - Tare-me gentle drooping upper lash line with corner lash flicks
- * - Exactly 4 distinct lower eyelashes per eye from the original character design
- * - Natural expressive eyebrows and eyelid crease
- * - Expressions: normal, happy, pout, shy (bashful glance), sleepy, smug, dizzy (only for 6-click easter egg)
+ * - Shy expression: Iconic anime `><` tightly-shut bashful eyes with cute lash flicks
+ * - Dizzy expression: Hypnotic spinning swirl eyes (for 6-click easter egg)
+ * - Sleepy expression: Peaceful curved closed eyes (^ ^)
+ * - Happy expression: Big cheerful curved smile eyes (⌒ ⌒)
+ * - Normal/Pout: Liquid obsidian irises with 3 specular gleams and 4 lower lashes
  */
 export function SawakoEyes({
   expression,
@@ -56,6 +53,51 @@ export function SawakoEyes({
     );
   }
 
+  // Shy Expression: Iconic Anime `><` Tightly Shut Bashful Eyes
+  if (expression === "shy") {
+    return (
+      <g id="eyes-shy-anime">
+        {/* Bashful Eyebrows tilted in shy embarrassment */}
+        <path d="M 248 274 Q 282 288 318 278" stroke="#16171E" strokeWidth={4.2} strokeLinecap="round" fill="none" />
+        <path d="M 418 278 Q 454 288 488 274" stroke="#16171E" strokeWidth={4.2} strokeLinecap="round" fill="none" />
+
+        {/* Left Eye: `>` shape */}
+        <g id="left-eye-shy">
+          <path
+            d="M 256 318 L 302 338 L 256 358"
+            stroke="#0E0F14"
+            strokeWidth={7.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+          {/* Upper & lower lash flicks */}
+          <line x1="256" y1="318" x2="246" y2="310" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          <line x1="256" y1="358" x2="246" y2="366" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          {/* Sparkle droplet at eye apex */}
+          <circle cx="308" cy="338" r="3.2" fill="#FFFFFF" />
+        </g>
+
+        {/* Right Eye: `<` shape */}
+        <g id="right-eye-shy">
+          <path
+            d="M 480 318 L 434 338 L 480 358"
+            stroke="#0E0F14"
+            strokeWidth={7.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+          {/* Upper & lower lash flicks */}
+          <line x1="480" y1="318" x2="490" y2="310" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          <line x1="480" y1="358" x2="490" y2="366" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          {/* Sparkle droplet at eye apex */}
+          <circle cx="428" cy="338" r="3.2" fill="#FFFFFF" />
+        </g>
+      </g>
+    );
+  }
+
   // Sleepy Expression: Peaceful curved closed eyes (^ ^)
   if (expression === "sleepy") {
     return (
@@ -87,13 +129,9 @@ export function SawakoEyes({
     );
   }
 
-  // Shy Expression: Bashful downward-glancing cute anime eyes (🥺 / (///▽///))
-  const isShy = expression === "shy";
   const isPout = expression === "pout";
-
-  // Dynamic pupil offset: when shy, gaze looks cutely slightly down-inward
-  const activePupilX = isShy ? -2 : isPout ? -6 : pupilX;
-  const activePupilY = isShy ? 2.5 : isPout ? -3 : pupilY;
+  const activePupilX = isPout ? -6 : pupilX;
+  const activePupilY = isPout ? -3 : pupilY;
 
   // Dynamic Blinking Eyelid Scaling
   const eyelidScaleY = isBlinking ? 0.08 : 1;
@@ -121,9 +159,7 @@ export function SawakoEyes({
         {/* Left Eyebrow */}
         <path
           d={
-            isShy
-              ? "M 248 274 Q 282 284 318 276"
-              : isPout
+            isPout
               ? "M 246 280 Q 282 290 318 280"
               : "M 246 274 Q 282 264 318 276"
           }
@@ -135,9 +171,7 @@ export function SawakoEyes({
         {/* Right Eyebrow */}
         <path
           d={
-            isShy
-              ? "M 418 276 Q 454 284 488 274"
-              : isPout
+            isPout
               ? "M 418 280 Q 454 290 490 280"
               : "M 418 276 Q 454 264 490 274"
           }
@@ -156,28 +190,22 @@ export function SawakoEyes({
           transition: "transform 0.08s ease-in-out",
         }}
       >
-        {/* Eye Sclera (Whites) */}
         <ellipse cx="282" cy="336" rx="44" ry="40" fill="#FFFFFF" stroke="#1c1d24" strokeWidth={2.4} />
 
-        {/* Sclera Upper Shadow */}
         <path
           d="M 240 326 Q 282 344 324 326 A 44 40 0 0 0 240 326"
           fill="url(#scleraShadow)"
         />
 
-        {/* Tracking Iris & Pupil */}
         <g
           style={{
             transform: `translate(${activePupilX}px, ${activePupilY}px)`,
             transition: "transform 0.1s ease-out",
           }}
         >
-          {/* Deep Charcoal/Indigo Iris */}
           <ellipse cx="282" cy="338" rx="28" ry="32" fill="url(#sawakoRichIris)" />
-          {/* Pitch Black Inner Core Pupil */}
           <circle cx="282" cy="340" r="14" fill="#030305" />
 
-          {/* Lower Crescent Iris Illumination */}
           <path
             d="M 262 350 Q 282 366 302 350"
             stroke="#535B7E"
@@ -187,22 +215,16 @@ export function SawakoEyes({
             opacity="0.9"
           />
 
-          {/* Primary Crisp White Specular Highlight */}
           <circle cx="273" cy="324" r="9" fill="#FFFFFF" />
-          {/* Secondary Soft Sparkle Highlight */}
           <circle cx="293" cy="350" r="4.2" fill="#FFFFFF" fillOpacity={0.92} />
-          {/* Micro catchlight dot */}
           <circle cx="269" cy="346" r="2.2" fill="#FFFFFF" fillOpacity={0.75} />
         </g>
 
-        {/* Eyelid Fold Crease Line above lashes */}
         <path d="M 244 306 Q 282 294 320 306" stroke="#7A6068" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.65" />
 
-        {/* Tare-me Soft Upper Eyelid Arch with Natural Taper */}
         <path d="M 236 324 Q 282 296 328 322" stroke="#0E0F14" strokeWidth={8} strokeLinecap="round" fill="none" />
         <path d="M 326 322 Q 332 320 336 314" stroke="#0E0F14" strokeWidth={3.5} strokeLinecap="round" fill="none" />
 
-        {/* Exactly 4 Lower Eyelashes from Sawako better.jpg */}
         <g stroke="#0E0F14" strokeWidth={2.8} strokeLinecap="round">
           <line x1="254" y1="366" x2="250" y2="377" />
           <line x1="272" y1="372" x2="270" y2="383" />
@@ -219,28 +241,22 @@ export function SawakoEyes({
           transition: "transform 0.08s ease-in-out",
         }}
       >
-        {/* Eye Sclera (Whites) */}
         <ellipse cx="454" cy="336" rx="44" ry="40" fill="#FFFFFF" stroke="#1c1d24" strokeWidth={2.4} />
 
-        {/* Sclera Upper Shadow */}
         <path
           d="M 412 326 Q 454 344 496 326 A 44 40 0 0 0 412 326"
           fill="url(#scleraShadow)"
         />
 
-        {/* Tracking Iris & Pupil */}
         <g
           style={{
             transform: `translate(${activePupilX}px, ${activePupilY}px)`,
             transition: "transform 0.1s ease-out",
           }}
         >
-          {/* Deep Charcoal/Indigo Iris */}
           <ellipse cx="454" cy="338" rx="28" ry="32" fill="url(#sawakoRichIris)" />
-          {/* Pitch Black Inner Core Pupil */}
           <circle cx="454" cy="340" r="14" fill="#030305" />
 
-          {/* Lower Crescent Iris Illumination */}
           <path
             d="M 434 350 Q 454 366 474 350"
             stroke="#535B7E"
@@ -250,22 +266,16 @@ export function SawakoEyes({
             opacity="0.9"
           />
 
-          {/* Primary Crisp White Specular Highlight */}
           <circle cx="445" cy="324" r="9" fill="#FFFFFF" />
-          {/* Secondary Soft Sparkle Highlight */}
           <circle cx="465" cy="350" r="4.2" fill="#FFFFFF" fillOpacity={0.92} />
-          {/* Micro catchlight dot */}
           <circle cx="441" cy="346" r="2.2" fill="#FFFFFF" fillOpacity={0.75} />
         </g>
 
-        {/* Eyelid Fold Crease Line above lashes */}
         <path d="M 416 306 Q 454 294 492 306" stroke="#7A6068" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.65" />
 
-        {/* Tare-me Soft Upper Eyelid Arch with Natural Taper */}
         <path d="M 408 322 Q 454 296 500 324" stroke="#0E0F14" strokeWidth={8} strokeLinecap="round" fill="none" />
         <path d="M 410 322 Q 404 320 400 314" stroke="#0E0F14" strokeWidth={3.5} strokeLinecap="round" fill="none" />
 
-        {/* Exactly 4 Lower Eyelashes from Sawako better.jpg */}
         <g stroke="#0E0F14" strokeWidth={2.8} strokeLinecap="round">
           <line x1="428" y1="366" x2="423" y2="377" />
           <line x1="446" y1="372" x2="446" y2="383" />
