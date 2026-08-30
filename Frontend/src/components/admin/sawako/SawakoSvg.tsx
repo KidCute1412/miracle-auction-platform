@@ -14,9 +14,9 @@ import { SawakoWisps } from "./parts/SawakoWisps";
  * SawakoSvg - Authentic Full-Body Chibi Mascot Vector Puppet
  * Features:
  * - Scaled down to 80% for ideal desktop/dashboard footprint
- * - Proper SVG Z-index layering: legs rendered behind skirt so skirt naturally overlaps
+ * - Proper SVG Z-index layering: legs rendered behind pure white dress
  * - Relaxed natural arm positioning with breathing room
- * - Soft idle bobbing, head cursor tracking tilt, and lip-sync cadence
+ * - Soft idle bobbing, shy flailing limbs on hover, and serene anime expression
  */
 export default function SawakoSvg({
   expression,
@@ -65,9 +65,17 @@ export default function SawakoSvg({
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-8px) rotate(-1deg); }
         }
+        @keyframes shyArmsFlutter {
+          0%, 100% { transform: translateY(-7px) rotate(-3deg); }
+          50% { transform: translateY(-3px) rotate(3deg); }
+        }
+        @keyframes shyFeetFlutter {
+          0%, 100% { transform: translateY(-8px) rotate(4deg); }
+          50% { transform: translateY(-11px) rotate(-4deg); }
+        }
       `}</style>
 
-      {/* Levitation Floating Container (compacted dimensions) */}
+      {/* Levitation Floating Container */}
       <div
         className={`relative w-40 h-68 sm:w-44 sm:h-76 transition-all duration-300 ${
           isDragging
@@ -98,8 +106,7 @@ export default function SawakoSvg({
           <ellipse cx="368" cy="1010" rx="180" ry="20" fill="url(#sawakoGroundMist)" />
           <ellipse cx="368" cy="1012" rx="110" ry="11" fill="#fce7f3" fillOpacity={0.35} />
 
-          {/* ===================== LAYER 1: ARTICULATED LEGS & SHOES (BEHIND SKIRT) ===================== */}
-          {/* Rendered BEFORE BaseArtwork so the skirt naturally overlaps the thighs */}
+          {/* ===================== LAYER 1: ARTICULATED LEGS & SHOES (BEHIND WHITE DRESS) ===================== */}
           <SawakoFeet
             isDragging={isDragging}
             hoveredZone={hoveredZone}
@@ -115,7 +122,7 @@ export default function SawakoSvg({
               transition: "transform 0.15s ease-out",
             }}
           >
-            {/* 1. Base Artwork: Back hair, neck, oval face, cardigan, pure white silky skirt (overlapping legs) */}
+            {/* 1. Base Artwork: Back hair, neck, oval face, pure white one-piece dress (overlapping legs) */}
             <SawakoBaseArtwork />
 
             {/* 2. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes) */}
@@ -126,7 +133,7 @@ export default function SawakoSvg({
               isBlinking={isBlinking}
             />
 
-            {/* 3. Independent Mouth (Lip-sync cadence, innocent parted resting mouth) */}
+            {/* 3. Independent Mouth (Innocent parted anime mouth without robotic flapping) */}
             <SawakoMouth
               expression={expression}
               mouthOpenRatio={mouthOpenRatio}
@@ -136,8 +143,7 @@ export default function SawakoSvg({
             <SawakoHairFront isDragging={isDragging} />
           </g>
 
-          {/* ===================== LAYER 3: RELAXED NATURAL ARMS & HANDS ===================== */}
-          {/* Positioned in front of the skirt with relaxed breathing room */}
+          {/* ===================== LAYER 3: RELAXED NATURAL WHITE SLEEVES & HANDS ===================== */}
           <SawakoArms
             isHovered={isHovered}
             isDragging={isDragging}

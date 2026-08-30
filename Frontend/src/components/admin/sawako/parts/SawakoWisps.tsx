@@ -9,9 +9,8 @@ interface SawakoWispsProps {
 /**
  * SawakoWisps - Subtle Charming Aura & Expressive Emotion Symbols
  * Features:
- * - Cleaned up to remove the distracting bouncing doodle star
- * - Subtle chalky aura outline contour around the hair
- * - Soft pastel petals and gentle light sparkles
+ * - Removed extra stray white line on the left completely
+ * - Soft pastel cherry blossom petals and gentle light sparkles
  * - Contextual hitodama ghost flames when dizzy or sweating
  * - Anime manga emotion symbols: anger, sweat, sparkle, zzz, heart, question
  */
@@ -20,28 +19,6 @@ export function SawakoWisps({ symbol, expression }: SawakoWispsProps) {
 
   return (
     <g className="pointer-events-none" id="sawako-wisps-layer">
-      {/* Subtle white chalky contour line softly echoing hair silhouette on left */}
-      <path
-        d="
-          M 210 140
-          C 150 170, 126 240, 120 330
-          C 114 410, 130 470, 130 530
-        "
-        stroke="#FFFFFF"
-        strokeWidth={2.4}
-        strokeLinecap="round"
-        strokeDasharray="14,10"
-        fill="none"
-        opacity="0.65"
-      />
-
-      {/* Subtle radiating sparkle rays on upper right */}
-      <g transform="translate(610, 170)" className="opacity-75">
-        <line x1="0" y1="0" x2="24" y2="24" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" />
-        <line x1="18" y1="-18" x2="42" y2="-36" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" />
-        <line x1="28" y1="10" x2="54" y2="10" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" />
-      </g>
-
       {/* ===================== CONTEXTUAL HITODAMA FLAMES ===================== */}
       {showHitodama && (
         <g id="hitodama-wisps">
@@ -60,7 +37,7 @@ export function SawakoWisps({ symbol, expression }: SawakoWispsProps) {
 
       {/* Gentle Floating Petals when calm */}
       {!showHitodama && (
-        <g id="angelic-petals" opacity={0.7}>
+        <g id="angelic-petals" opacity={0.65}>
           <g transform="translate(90, 420)" className="animate-[ghostFloat_4s_ease-in-out_infinite]">
             <path d="M 0 0 C 10 -15, 25 -5, 20 10 C 15 25, -5 15, 0 0 Z" fill="#FBCFE8" fillOpacity={0.75} />
           </g>
@@ -106,7 +83,7 @@ export function SawakoWisps({ symbol, expression }: SawakoWispsProps) {
       {symbol === "heart" && (
         <g transform="translate(560, 120) scale(1.8)" className="animate-ping origin-center">
           <path
-            d="M 10 3 A 3.5 3.5 0 0 0 5 7.5 A 3.5 3.5 0 0 0 0 3 A 3.5 3.5 0 0 0 10 3 Z"
+            d="M 10 3 A 3.5 3.5 0 0 0 5 7.5 A 3.5 3.5 0 0 0 0 3 A 3.5 3.5 0 0 0 5 0 A 3.5 3.5 0 0 0 10 3 Z"
             fill="#F43F5E"
             transform="rotate(45 5 5)"
           />

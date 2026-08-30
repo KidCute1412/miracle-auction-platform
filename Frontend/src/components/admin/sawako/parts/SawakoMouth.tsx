@@ -3,14 +3,15 @@ import type { SawakoExpression } from "../types";
 
 interface SawakoMouthProps {
   expression: SawakoExpression;
-  mouthOpenRatio: number;
+  mouthOpenRatio?: number;
 }
 
 /**
- * SawakoMouth - Expressive Anime Chibi Mouth with Lip-Sync Cadence
- * Faithfully matches Sawako's innocent, slightly parted curiosity mouth from "Sawako better.jpg".
+ * SawakoMouth - Natural Expressive Anime Chibi Mouth
+ * Displays Kuronuma Sawako's innocent, slightly parted curiosity mouth from "Sawako better.jpg".
+ * Keeps the mouth in its natural cute anime shape without robotic lip flapping.
  */
-export function SawakoMouth({ expression, mouthOpenRatio }: SawakoMouthProps) {
+export function SawakoMouth({ expression }: SawakoMouthProps) {
   // Pout Expression: Cute tiny grumbling pout (>3<)
   if (expression === "pout") {
     return (
@@ -22,7 +23,6 @@ export function SawakoMouth({ expression, mouthOpenRatio }: SawakoMouthProps) {
           strokeLinecap="round"
           fill="none"
         />
-        {/* Soft lower pout lip shadow */}
         <path
           d="M 362 453 Q 368 456 374 453"
           stroke="#F87171"
@@ -50,23 +50,20 @@ export function SawakoMouth({ expression, mouthOpenRatio }: SawakoMouthProps) {
     );
   }
 
-  // Happy Expression: Radiant wide smile with cute pink tongue
+  // Happy Expression: Radiant smile with cute pink tongue
   if (expression === "happy") {
     return (
       <g id="mouth-happy">
-        {/* Mouth cavity */}
         <path
           d="M 352 438 Q 368 466 384 438 Z"
           fill="#881337"
           stroke="#9F1239"
           strokeWidth={1.8}
         />
-        {/* Cute rosy tongue */}
         <path
           d="M 358 448 Q 368 444 378 448 Q 368 465 358 448 Z"
           fill="#FDA4AF"
         />
-        {/* Upper smile line */}
         <path
           d="M 350 438 Q 368 442 386 438"
           stroke="#881337"
@@ -93,45 +90,41 @@ export function SawakoMouth({ expression, mouthOpenRatio }: SawakoMouthProps) {
     );
   }
 
-  // Default / Speaking State:
-  // In "Sawako better.jpg", her resting mouth is a soft, small, open oval showing mild surprise/innocence.
-  const baselineHeight = 5.5; // Natural resting open height from photo
-  const openHeight = baselineHeight + mouthOpenRatio * 14;
-  const openWidth = 8 + mouthOpenRatio * 5;
-
+  // Default / Speaking Natural Resting Mouth (from Sawako better.jpg)
+  // Clean, serene, delicately parted anime mouth without repetitive flapping
   return (
-    <g id="mouth-default-speaking">
+    <g id="mouth-default">
       {/* Soft Mouth Interior Cavity */}
       <ellipse
         cx="368"
-        cy={446 + mouthOpenRatio * 2}
-        rx={openWidth}
-        ry={openHeight / 2}
+        cy={446}
+        rx={9}
+        ry={4.8}
         fill="#7F1D1D"
         stroke="#991B1B"
-        strokeWidth={1.8}
+        strokeWidth={1.6}
       />
-      {/* Inner Pink Tongue / Soft Tone */}
+      {/* Inner Pink Tongue Tone */}
       <ellipse
         cx="368"
-        cy={447 + openHeight * 0.15}
-        rx={openWidth * 0.72}
-        ry={openHeight * 0.28}
+        cy={447.5}
+        rx={6.5}
+        ry={2.4}
         fill="#FDA4AF"
       />
 
       {/* Upper Lip Definition Curve */}
       <path
-        d={`M ${368 - openWidth - 2} 444 Q 368 ${442 - mouthOpenRatio * 2} ${368 + openWidth + 2} 444`}
+        d="M 356 444 Q 368 442 380 444"
         stroke="#881337"
         strokeWidth={2.6}
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Subtle Lower Lip Shade below */}
+      {/* Subtle Lower Lip Shadow */}
       <path
-        d={`M ${368 - openWidth * 0.6} ${448 + openHeight * 0.52} Q 368 ${451 + openHeight * 0.52} ${368 + openWidth * 0.6} ${448 + openHeight * 0.52}`}
+        d="M 362 451 Q 368 453.5 374 451"
         stroke="#FB7185"
         strokeWidth={1.8}
         strokeLinecap="round"

@@ -8,12 +8,12 @@ interface SawakoFeetProps {
 }
 
 /**
- * SawakoFeet - Articulated Anime Chibi Legs & Glossy Pastel Mary-Jane Shoes
+ * SawakoFeet - Articulated Anime Chibi Legs with Shy Kicking Kinematics
  * Features:
- * - Positioned behind the white skirt so the skirt naturally overlaps the thighs
- * - Detailed anime socks with ribbed cuff folds and ankle ambient shadows
- * - Glossy pastel pink Mary-Jane shoes with toe box shine, mini buckle, and rubber sole
- * - Independent dangling and kicking kinematics when dragged or hovered
+ * - Positioned behind the white dress skirt so the dress naturally overlaps the thighs
+ * - Removed distracting hover rings
+ * - Shy cute kicking/fluttering animation when hovered
+ * - Glossy pastel pink Mary-Jane shoes with buckle
  * - Interactive hotspot with `sawako-feet-target`
  */
 export function SawakoFeet({
@@ -22,12 +22,14 @@ export function SawakoFeet({
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
-  // Independent feet kicking / dangling kinematics
+  // Shy kicking / fluttering kinematics on hover
+  let feetClass = "transition-transform duration-200 ease-out";
   let feetTransform = "translate(0, 0)";
+
   if (isDragging) {
     feetTransform = "translate(0, -9px) rotate(-4deg)";
   } else if (hoveredZone === "foot") {
-    feetTransform = "translate(0, -11px) rotate(5deg)";
+    feetClass = "animate-[shyFeetFlutter_0.5s_ease-in-out_infinite]";
   }
 
   return (
@@ -41,12 +43,11 @@ export function SawakoFeet({
       }}
       onMouseEnter={() => setHoveredZone("foot")}
       onMouseLeave={() => setHoveredZone(null)}
-      className="cursor-pointer pointer-events-auto group focus:outline-hidden"
+      className={`cursor-pointer pointer-events-auto group focus:outline-hidden ${feetClass}`}
       aria-label="Interact with Sawako's feet"
       style={{
         transform: feetTransform,
         transformOrigin: "368px 840px",
-        transition: "transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)",
       }}
     >
       <defs>
@@ -72,23 +73,19 @@ export function SawakoFeet({
       </defs>
 
       {/* ===================== CHIBI LEGS & SOCKS ===================== */}
-      {/* Starting from Y=760 so thighs extend well behind the skirt hem */}
       <g id="chibi-legs-render">
         {/* Left Leg & Sock */}
         <g id="left-leg">
-          {/* Upper Thigh under skirt */}
           <path
             d="M 314 770 L 314 830 L 344 830 L 344 770 Z"
             fill="url(#thighShadow)"
           />
-          {/* Sock Body */}
           <path
             d="M 315 830 C 317 870, 318 920, 321 954 L 349 954 C 347 920, 345 870, 343 830 Z"
             fill="url(#sockShadow)"
             stroke="#CBD5E1"
             strokeWidth={1.8}
           />
-          {/* Sock Ribbed Cuff Fold at top */}
           <path
             d="M 314 836 Q 329 840 344 836"
             stroke="#94A3B8"
@@ -96,25 +93,21 @@ export function SawakoFeet({
             fill="none"
             strokeLinecap="round"
           />
-          {/* Ankle crease */}
           <path d="M 326 940 Q 335 943 344 940" stroke="#CBD5E1" strokeWidth={1.4} fill="none" />
         </g>
 
         {/* Right Leg & Sock */}
         <g id="right-leg">
-          {/* Upper Thigh under skirt */}
           <path
             d="M 392 770 L 392 830 L 422 830 L 422 770 Z"
             fill="url(#thighShadow)"
           />
-          {/* Sock Body */}
           <path
             d="M 393 830 C 391 870, 390 920, 387 954 L 415 954 C 418 920, 420 870, 421 830 Z"
             fill="url(#sockShadow)"
             stroke="#CBD5E1"
             strokeWidth={1.8}
           />
-          {/* Sock Ribbed Cuff Fold at top */}
           <path
             d="M 392 836 Q 407 840 422 836"
             stroke="#94A3B8"
@@ -122,7 +115,6 @@ export function SawakoFeet({
             fill="none"
             strokeLinecap="round"
           />
-          {/* Ankle crease */}
           <path d="M 392 940 Q 401 943 410 940" stroke="#CBD5E1" strokeWidth={1.4} fill="none" />
         </g>
 
@@ -158,21 +150,6 @@ export function SawakoFeet({
         fill="transparent"
         className="cursor-pointer"
       />
-
-      {/* Feet glow ring on hover */}
-      {hoveredZone === "foot" && (
-        <ellipse
-          cx="368"
-          cy="972"
-          rx="100"
-          ry="34"
-          fill="none"
-          stroke="#38BDF8"
-          strokeWidth={3}
-          strokeDasharray="6,6"
-          className="animate-pulse"
-        />
-      )}
     </g>
   );
 }
