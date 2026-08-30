@@ -6,13 +6,14 @@ interface SawakoBaseArtworkProps {
 }
 
 /**
- * SawakoBaseArtwork - Pure White Dress Anime Chibi Puppet
+ * SawakoBaseArtwork - Ethereal Muse Dress (Đầm Nàng Thơ Trắng Tinh Khiết)
  * Features:
- * - Unified one-piece white dress: delicate collar, ribbon bow, fitted bodice, and flowing A-line skirt
- * - Dynamic blush glow when shy or bashful
- * - Slender anime oval face with cute rounded chin
- * - Sleek, fluttering silky hair with angel ring gloss sheen
- * - 3D white star hairpin on temple
+ * - Romantic muse one-piece dress: ruffled square neckline, ruched gathered bust,
+ *   fitted high-empire waist with delicate ribbon, and tiered cascading billowing ruffled skirt.
+ * - Pure pristine white silk with pearlescent and silver-silk gradient shading.
+ * - Slender anime oval face with soft cute chin and bashful blushing cheeks.
+ * - Sleek, fluttering silky hair with angel ring gloss sheen.
+ * - 3D white star hairpin on temple.
  */
 export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
   const isShy = expression === "shy";
@@ -51,7 +52,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           <stop offset="100%" stopColor="#6C728F" stopOpacity="0" />
         </linearGradient>
 
-        {/* Soft Airbrush Cheeks Blush - Intensified when shy */}
+        {/* Soft Airbrush Cheeks Blush */}
         <radialGradient id="sawakoCheekAirbrush" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#FF6B6B" stopOpacity={isShy ? 0.75 : 0.6} />
           <stop offset="45%" stopColor="#FF8F8F" stopOpacity={isShy ? 0.45 : 0.35} />
@@ -59,12 +60,18 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           <stop offset="100%" stopColor="#FFB8B8" stopOpacity="0" />
         </radialGradient>
 
-        {/* Pure White Silk Dress Gradient */}
-        <linearGradient id="whiteDressSilk" x1="0%" y1="0%" x2="0%" y2="100%">
+        {/* Pristine White Muse Silk Dress Gradient */}
+        <linearGradient id="museDressSilk" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="30%" stopColor="#FCFDFE" />
-          <stop offset="70%" stopColor="#F1F5F9" />
+          <stop offset="25%" stopColor="#FEFEFF" />
+          <stop offset="60%" stopColor="#F4F7FB" />
           <stop offset="100%" stopColor="#E2E8F0" />
+        </linearGradient>
+
+        {/* Dress Layer Tier Shadow */}
+        <linearGradient id="museTierShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#CBD5E1" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
         </linearGradient>
 
         {/* Bangs Forehead Drop Shadow */}
@@ -123,113 +130,170 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
         <path d="M 550 440 C 564 580, 558 720, 534 840" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.65" />
       </g>
 
-      {/* ===================== 2. UNIFIED PURE WHITE DRESS ===================== */}
-      <g id="pure-white-dress">
+      {/* ===================== 2. ETHEREAL MUSE DRESS (ĐẦM NÀNG THƠ TRẮNG TINH KHIẾT) ===================== */}
+      <g id="pure-white-muse-dress">
+        {/* Under-layer Main Silhouette */}
         <path
           d="
             M 276 522
             Q 368 534 460 522
-            C 472 570, 468 620, 448 664
-            C 478 715, 502 775, 510 838
-            Q 368 864 226 838
-            C 234 775, 258 715, 288 664
-            C 268 620, 264 570, 276 522
+            C 472 570, 466 618, 444 656
+            C 482 710, 514 772, 526 846
+            Q 368 876 210 846
+            C 222 772, 254 710, 292 656
+            C 270 618, 264 570, 276 522
             Z
           "
-          fill="url(#whiteDressSilk)"
+          fill="url(#museDressSilk)"
           stroke="#CBD5E1"
           strokeWidth={2.2}
         />
 
-        <path d="M 324 532 C 330 575, 334 620, 332 664" stroke="#E2E8F0" strokeWidth={1.6} strokeLinecap="round" fill="none" />
-        <path d="M 412 532 C 406 575, 402 620, 404 664" stroke="#E2E8F0" strokeWidth={1.6} strokeLinecap="round" fill="none" />
-
+        {/* --- Bodice: Romantic Muse Gathered Sweetheart Bust --- */}
+        {/* Soft gathered ruched fabric under bust */}
         <path
           d="
-            M 326 514
-            C 342 536, 356 544, 368 546
-            C 356 534, 344 522, 336 514
+            M 314 522
+            C 310 550, 318 585, 342 596
+            C 360 585, 376 585, 394 596
+            C 418 585, 426 550, 422 522
             Z
           "
           fill="#FFFFFF"
-          stroke="#CBD5E1"
-          strokeWidth={1.6}
-        />
-        <path
-          d="
-            M 410 514
-            C 394 536, 380 544, 368 546
-            C 380 534, 392 522, 400 514
-            Z
-          "
-          fill="#FFFFFF"
-          stroke="#CBD5E1"
+          stroke="#E2E8F0"
           strokeWidth={1.6}
         />
 
-        {/* Ribbon Bow */}
-        <g id="dress-neck-bow" transform="translate(368, 544)">
-          <circle cx="0" cy="0" r="3.5" fill="#F472B6" stroke="#DB2777" strokeWidth={1} />
-          <path d="M 0 0 C -6 -6, -14 -4, -12 2 C -10 6, -4 2, 0 0 Z" fill="#FBCFE8" stroke="#DB2777" strokeWidth={1} />
-          <path d="M 0 0 C 6 -6, 14 -4, 12 2 C 10 6, 4 2, 0 0 Z" fill="#FBCFE8" stroke="#DB2777" strokeWidth={1} />
-          <path d="M -1 2 Q -4 10 -6 16" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
-          <path d="M 1 2 Q 4 10 6 16" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+        {/* Delicate Muse Square Neckline Frill Trim */}
+        <path
+          d="
+            M 314 520
+            Q 326 532 338 522
+            Q 350 532 362 522
+            Q 374 532 386 522
+            Q 398 532 410 522
+            Q 422 532 426 520
+          "
+          stroke="#E2E8F0"
+          strokeWidth={2.4}
+          fill="none"
+        />
+
+        {/* Muse Bodice Ribbons / Corsetry Ruching */}
+        <g stroke="#E2E8F0" strokeWidth={1.4} strokeLinecap="round" fill="none">
+          <path d="M 334 536 C 336 556, 338 578, 342 596" />
+          <path d="M 352 532 C 354 554, 356 576, 358 595" />
+          <path d="M 384 532 C 382 554, 380 576, 378 595" />
+          <path d="M 402 536 C 400 556, 398 578, 394 596" />
         </g>
 
-        {/* Waistline */}
+        {/* Petite Center Silk Bow & Floral Rosette */}
+        <g id="muse-bodice-bow" transform="translate(368, 592)">
+          <circle cx="0" cy="0" r="3.6" fill="#FDE2E4" stroke="#F472B6" strokeWidth={1.2} />
+          {/* Left ribbon loop */}
+          <path d="M 0 0 C -7 -7, -15 -5, -13 2 C -11 6, -4 2, 0 0 Z" fill="#FFF1F2" stroke="#F472B6" strokeWidth={1} />
+          {/* Right ribbon loop */}
+          <path d="M 0 0 C 7 -7, 15 -5, 13 2 C 11 6, 4 2, 0 0 Z" fill="#FFF1F2" stroke="#F472B6" strokeWidth={1} />
+          {/* Dangling satin ribbon tails */}
+          <path d="M -2 2 Q -5 14 -8 24" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+          <path d="M 2 2 Q 5 14 8 24" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+        </g>
+
+        {/* Fitted High-Empire Waist Sash with Pearl Lace */}
         <path
-          d="M 288 664 Q 368 678 448 664"
+          d="M 292 656 Q 368 668 444 656"
           stroke="#CBD5E1"
           strokeWidth={2.4}
           fill="none"
           strokeLinecap="round"
         />
         <path
-          d="M 292 668 Q 368 682 444 668"
+          d="M 296 660 Q 368 672 440 660"
           stroke="#FFFFFF"
           strokeWidth={2}
           fill="none"
-          opacity="0.9"
         />
 
-        {/* Flowing Skirt Folds */}
-        <g stroke="#CBD5E1" strokeWidth={2} strokeLinecap="round" fill="none">
-          <path d="M 260 720 C 265 760, 260 804, 252 840" />
-          <path d="M 300 690 C 304 740, 304 795, 302 847" />
-          <path d="M 338 678 C 342 730, 344 790, 340 852" />
-          <path d="M 368 678 C 368 732, 368 795, 368 854" strokeWidth={2.5} stroke="#94A3B8" />
-          <path d="M 398 678 C 394 730, 392 790, 396 852" />
-          <path d="M 436 690 C 432 740, 432 795, 434 847" />
-          <path d="M 476 720 C 471 760, 476 804, 484 840" />
-        </g>
-
-        {/* Silk Highlights */}
-        <g stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" fill="none" opacity="0.95">
-          <path d="M 280 700 C 284 750, 284 800, 280 844" />
-          <path d="M 320 682 C 324 735, 324 795, 320 850" />
-          <path d="M 416 682 C 412 735, 412 795, 416 850" />
-          <path d="M 456 700 C 452 750, 452 800, 456 844" />
-        </g>
-
-        {/* Scallop Hemline */}
+        {/* --- Skirt Tier 1: Flowing Upper Flounce --- */}
         <path
-          d="M 226 838 Q 262 848 298 846 Q 334 853 368 854 Q 402 853 438 846 Q 474 848 510 838"
-          stroke="#FFFFFF"
-          strokeWidth={3}
+          d="
+            M 288 660
+            C 264 705, 252 748, 250 762
+            Q 368 784 486 762
+            C 484 748, 472 705, 448 660
+            Q 368 672 288 660
+            Z
+          "
+          fill="#FFFFFF"
+          stroke="#CBD5E1"
+          strokeWidth={1.8}
+        />
+        {/* Tier 1 Ruffle Scallop Edge */}
+        <path
+          d="
+            M 250 762
+            Q 276 774 302 768
+            Q 328 776 354 770
+            Q 380 776 406 770
+            Q 432 776 458 768
+            Q 476 774 486 762
+          "
+          stroke="#CBD5E1"
+          strokeWidth={2}
           fill="none"
         />
+        {/* Drop shadow under Tier 1 */}
         <path
-          d="M 228 840 Q 368 866 508 840 Q 368 858 228 840 Z"
-          fill="#E2E8F0"
-          opacity="0.45"
+          d="M 252 764 Q 368 786 484 764 Q 368 778 252 764 Z"
+          fill="url(#museTierShadow)"
+        />
+
+        {/* --- Skirt Tier 2: Billowing Lower Flounce with Cascading Folds --- */}
+        <g stroke="#CBD5E1" strokeWidth={2} strokeLinecap="round" fill="none">
+          <path d="M 248 768 C 242 805, 230 836, 218 852" />
+          <path d="M 290 772 C 288 808, 280 844, 274 860" />
+          <path d="M 334 772 C 334 812, 332 850, 328 864" />
+          <path d="M 368 774 C 368 815, 368 854, 368 866" strokeWidth={2.4} stroke="#94A3B8" />
+          <path d="M 402 772 C 402 812, 404 850, 408 864" />
+          <path d="M 446 772 C 448 808, 456 844, 462 860" />
+          <path d="M 488 768 C 494 805, 506 836, 518 852" />
+        </g>
+
+        {/* Luminous Pure White Silk Highlights on Flounce */}
+        <g stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round" fill="none" opacity="0.95">
+          <path d="M 270 774 C 268 810, 260 844, 252 858" />
+          <path d="M 312 772 C 314 814, 312 852, 308 864" />
+          <path d="M 424 772 C 422 814, 424 852, 428 864" />
+          <path d="M 466 774 C 468 810, 476 844, 484 858" />
+        </g>
+
+        {/* Dreamy Ruffled Scalloped Bottom Hem */}
+        <path
+          d="
+            M 210 846
+            Q 240 860 270 854
+            Q 302 864 336 858
+            Q 368 866 400 858
+            Q 434 864 466 854
+            Q 496 860 526 846
+          "
+          stroke="#FFFFFF"
+          strokeWidth={3.6}
+          fill="none"
+        />
+        {/* Hemline Under-Flounce Shadow */}
+        <path
+          d="M 212 848 Q 368 878 524 848 Q 368 868 212 848 Z"
+          fill="#CBD5E1"
+          opacity="0.5"
         />
       </g>
 
       {/* ===================== 3. DELICATE NECK & CLAVICLE ===================== */}
       <g id="neck-layer">
-        <path d="M 348 480 L 348 528 Q 368 536 388 528 L 388 480 Z" fill="#FEE5D8" />
+        <path d="M 348 480 L 348 524 Q 368 532 388 524 L 388 480 Z" fill="#FEE5D8" />
         <path d="M 348 482 Q 368 506 388 482 L 388 498 Q 368 518 348 498 Z" fill="url(#sawakoNeckShadow)" />
-        <path d="M 358 520 Q 368 524 378 520" stroke="#E0B69E" strokeWidth={1.5} strokeLinecap="round" fill="none" />
+        <path d="M 358 518 Q 368 522 378 518" stroke="#E0B69E" strokeWidth={1.5} strokeLinecap="round" fill="none" />
 
         <g id="left-ear">
           <ellipse cx="214" cy="358" rx="13" ry="20" fill="#FEE7DA" stroke="#1c1d24" strokeWidth={2} />
@@ -256,7 +320,6 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
         strokeWidth={2.6}
       />
 
-      {/* Forehead Shadow under bangs */}
       <path
         d="M 220 270 Q 368 285 516 270 L 516 312 Q 368 322 220 312 Z"
         fill="url(#sawakoBangsShadow)"

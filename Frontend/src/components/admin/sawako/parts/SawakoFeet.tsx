@@ -8,12 +8,12 @@ interface SawakoFeetProps {
 }
 
 /**
- * SawakoFeet - Articulated Anime Chibi Legs with Dynamic Drag & Hover Kinematics
+ * SawakoFeet - Articulated Anime Chibi Legs with Stylish Black High-Top Boots
  * Features:
- * - When dragged: cute airborne pendular dangling & kicking animation in mid-air
- * - When hovered: gentle kicking animation
- * - Positioned behind the white dress skirt
- * - Glossy pastel pink Mary-Jane shoes with buckle
+ * - Stylish black high-top boots (giày đen cao cổ) with polished leather gloss and silver eyelets
+ * - Delicate ruffled white lace socks peeking out just above the boot collar
+ * - Positioned behind the white muse dress skirt
+ * - Dynamic kinematics: airborne pendular dangling when dragged, shy fluttering when hovered
  * - Interactive hotspot with `sawako-feet-target`
  */
 export function SawakoFeet({
@@ -46,93 +46,201 @@ export function SawakoFeet({
       }}
     >
       <defs>
-        {/* Shoe Gloss Gradient */}
-        <linearGradient id="shoeGloss" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FDE8F3" />
-          <stop offset="40%" stopColor="#FBCFE8" />
-          <stop offset="100%" stopColor="#F472B6" />
+        {/* Black Polished Leather Boot Gradient */}
+        <linearGradient id="blackBootLeather" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#252736" />
+          <stop offset="35%" stopColor="#191B26" />
+          <stop offset="75%" stopColor="#101118" />
+          <stop offset="100%" stopColor="#08090C" />
         </linearGradient>
 
-        {/* Sock Shadow Gradient */}
-        <linearGradient id="sockShadow" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="80%" stopColor="#F1F5F9" />
-          <stop offset="100%" stopColor="#E2E8F0" />
+        {/* Boot Sole Dark Rubber Gradient */}
+        <linearGradient id="bootSoleRubber" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#2D303E" />
+          <stop offset="100%" stopColor="#0F1016" />
         </linearGradient>
 
-        {/* Thigh Under-Skirt Shadow */}
-        <linearGradient id="thighShadow" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#E2E8F0" />
-          <stop offset="100%" stopColor="#FFFFFF" />
+        {/* Thigh Under-Skirt Skin Tone */}
+        <linearGradient id="thighSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#FDE6D6" />
+          <stop offset="100%" stopColor="#FFF2EA" />
         </linearGradient>
       </defs>
 
-      {/* ===================== CHIBI LEGS & SOCKS ===================== */}
+      {/* ===================== CHIBI LEGS & BLACK HIGH-TOP BOOTS ===================== */}
       <g id="chibi-legs-render">
-        {/* Left Leg & Sock */}
-        <g id="left-leg">
+        {/* ==================== LEFT LEG & BLACK HIGH-TOP BOOT ==================== */}
+        <g id="left-boot-leg">
+          {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
+          <path d="M 314 770 L 314 888 L 344 888 L 344 770 Z" fill="url(#thighSkin)" />
+
+          {/* Ruffled White Lace Sock Collar peeking out from boot */}
+          <g id="left-sock-frill">
+            <path
+              d="
+                M 312 888
+                Q 318 880 324 888
+                Q 330 880 336 888
+                Q 342 880 348 888
+                L 348 896
+                Q 330 900 312 896
+                Z
+              "
+              fill="#FFFFFF"
+              stroke="#CBD5E1"
+              strokeWidth={1.4}
+            />
+          </g>
+
+          {/* Black High-Top Boot Shaft (Cao cổ bao quanh bắp chân & cổ chân) */}
           <path
-            d="M 314 770 L 314 830 L 344 830 L 344 770 Z"
-            fill="url(#thighShadow)"
+            d="
+              M 314 894
+              C 316 918, 318 942, 312 956
+              C 306 962, 308 970, 316 974
+              L 354 974
+              C 356 964, 354 944, 348 918
+              L 346 894
+              Q 330 900 314 894
+              Z
+            "
+            fill="url(#blackBootLeather)"
+            stroke="#0A0B0E"
+            strokeWidth={2}
           />
+
+          {/* Boot Vamp & Rounded Toe Box */}
+          <ellipse cx="334" cy="968" rx="24" ry="12" fill="url(#blackBootLeather)" stroke="#0A0B0E" strokeWidth={1.8} />
+
+          {/* Leather Highlight Sheen */}
           <path
-            d="M 315 830 C 317 870, 318 920, 321 954 L 349 954 C 347 920, 345 870, 343 830 Z"
-            fill="url(#sockShadow)"
-            stroke="#CBD5E1"
+            d="M 318 906 C 322 926, 324 946, 322 962"
+            stroke="#4A5068"
+            strokeWidth={2}
+            strokeLinecap="round"
+            fill="none"
+            opacity="0.8"
+          />
+          <path d="M 326 964 Q 336 968 346 964" stroke="#5E6584" strokeWidth={1.6} fill="none" opacity="0.75" />
+
+          {/* Boot Front Laces & Silver Eyelets */}
+          <g id="left-boot-laces">
+            <circle cx="326" cy="912" r="1.6" fill="#94A3B8" />
+            <circle cx="336" cy="912" r="1.6" fill="#94A3B8" />
+            <line x1="326" y1="912" x2="336" y2="920" stroke="#1E202B" strokeWidth={1.8} />
+
+            <circle cx="326" cy="924" r="1.6" fill="#94A3B8" />
+            <circle cx="336" cy="924" r="1.6" fill="#94A3B8" />
+            <line x1="336" y1="912" x2="326" y2="924" stroke="#1E202B" strokeWidth={1.8} />
+            <line x1="326" y1="924" x2="336" y2="936" stroke="#1E202B" strokeWidth={1.8} />
+
+            <circle cx="326" cy="936" r="1.6" fill="#94A3B8" />
+            <circle cx="336" cy="936" r="1.6" fill="#94A3B8" />
+            <line x1="336" y1="924" x2="326" y2="936" stroke="#1E202B" strokeWidth={1.8} />
+          </g>
+
+          {/* Sturdy Boot Sole with Chunky Heel */}
+          <path
+            d="
+              M 308 972
+              Q 332 984 358 972
+              L 358 978
+              Q 332 990 308 978
+              Z
+            "
+            fill="url(#bootSoleRubber)"
+            stroke="#050508"
             strokeWidth={1.8}
           />
-          <path
-            d="M 314 836 Q 329 840 344 836"
-            stroke="#94A3B8"
-            strokeWidth={1.6}
-            fill="none"
-            strokeLinecap="round"
-          />
-          <path d="M 326 940 Q 335 943 344 940" stroke="#CBD5E1" strokeWidth={1.4} fill="none" />
+          {/* Heel block */}
+          <rect x="345" y="974" width="11" height="6" rx="1.5" fill="#0A0B0E" />
         </g>
 
-        {/* Right Leg & Sock */}
-        <g id="right-leg">
+        {/* ==================== RIGHT LEG & BLACK HIGH-TOP BOOT ==================== */}
+        <g id="right-boot-leg">
+          {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
+          <path d="M 392 770 L 392 888 L 422 888 L 422 770 Z" fill="url(#thighSkin)" />
+
+          {/* Ruffled White Lace Sock Collar peeking out from boot */}
+          <g id="right-sock-frill">
+            <path
+              d="
+                M 390 888
+                Q 396 880 402 888
+                Q 408 880 414 888
+                Q 420 880 426 888
+                L 426 896
+                Q 408 900 390 896
+                Z
+              "
+              fill="#FFFFFF"
+              stroke="#CBD5E1"
+              strokeWidth={1.4}
+            />
+          </g>
+
+          {/* Black High-Top Boot Shaft (Cao cổ bao quanh bắp chân & cổ chân) */}
           <path
-            d="M 392 770 L 392 830 L 422 830 L 422 770 Z"
-            fill="url(#thighShadow)"
+            d="
+              M 390 894
+              C 392 918, 394 942, 388 956
+              C 382 962, 384 970, 392 974
+              L 430 974
+              C 432 964, 430 944, 424 918
+              L 422 894
+              Q 406 900 390 894
+              Z
+            "
+            fill="url(#blackBootLeather)"
+            stroke="#0A0B0E"
+            strokeWidth={2}
           />
+
+          {/* Boot Vamp & Rounded Toe Box */}
+          <ellipse cx="410" cy="968" rx="24" ry="12" fill="url(#blackBootLeather)" stroke="#0A0B0E" strokeWidth={1.8} />
+
+          {/* Leather Highlight Sheen */}
           <path
-            d="M 393 830 C 391 870, 390 920, 387 954 L 415 954 C 418 920, 420 870, 421 830 Z"
-            fill="url(#sockShadow)"
-            stroke="#CBD5E1"
+            d="M 406 906 C 402 926, 400 946, 402 962"
+            stroke="#4A5068"
+            strokeWidth={2}
+            strokeLinecap="round"
+            fill="none"
+            opacity="0.8"
+          />
+          <path d="M 402 964 Q 412 968 422 964" stroke="#5E6584" strokeWidth={1.6} fill="none" opacity="0.75" />
+
+          {/* Boot Front Laces & Silver Eyelets */}
+          <g id="right-boot-laces">
+            <circle cx="400" cy="912" r="1.6" fill="#94A3B8" />
+            <circle cx="410" cy="912" r="1.6" fill="#94A3B8" />
+            <line x1="400" y1="912" x2="410" y2="920" stroke="#1E202B" strokeWidth={1.8} />
+
+            <circle cx="400" cy="924" r="1.6" fill="#94A3B8" />
+            <circle cx="410" cy="924" r="1.6" fill="#94A3B8" />
+            <line x1="410" y1="912" x2="400" y2="924" stroke="#1E202B" strokeWidth={1.8} />
+            <line x1="400" y1="924" x2="410" y2="936" stroke="#1E202B" strokeWidth={1.8} />
+
+            <circle cx="400" cy="936" r="1.6" fill="#94A3B8" />
+            <circle cx="410" cy="936" r="1.6" fill="#94A3B8" />
+            <line x1="410" y1="924" x2="400" y2="936" stroke="#1E202B" strokeWidth={1.8} />
+          </g>
+
+          {/* Sturdy Boot Sole with Chunky Heel */}
+          <path
+            d="
+              M 384 972
+              Q 408 984 434 972
+              L 434 978
+              Q 408 990 384 978
+              Z
+            "
+            fill="url(#bootSoleRubber)"
+            stroke="#050508"
             strokeWidth={1.8}
           />
-          <path
-            d="M 392 836 Q 407 840 422 836"
-            stroke="#94A3B8"
-            strokeWidth={1.6}
-            fill="none"
-            strokeLinecap="round"
-          />
-          <path d="M 392 940 Q 401 943 410 940" stroke="#CBD5E1" strokeWidth={1.4} fill="none" />
-        </g>
-
-        {/* Left Pastel Mary-Jane Chibi Shoe */}
-        <g id="left-shoe">
-          <ellipse cx="332" cy="964" rx="25" ry="14" fill="url(#shoeGloss)" stroke="#EC4899" strokeWidth={2} />
-          <ellipse cx="324" cy="960" rx="9" ry="4.5" fill="#FFFFFF" fillOpacity={0.65} />
-          <path d="M 308 968 Q 332 980 356 968" stroke="#64748B" strokeWidth={3.2} fill="none" strokeLinecap="round" />
-          <rect x="345" y="966" width="9" height="4.5" rx="1.5" fill="#475569" />
-          <path d="M 315 962 Q 332 968 349 962" stroke="#DB2777" strokeWidth={2.4} fill="none" />
-          <circle cx="332" cy="964" r="2.8" fill="#FDE047" stroke="#CA8A04" strokeWidth={1} />
-          <circle cx="332" cy="964" r="1.2" fill="#FFFFFF" />
-        </g>
-
-        {/* Right Pastel Mary-Jane Chibi Shoe */}
-        <g id="right-shoe">
-          <ellipse cx="404" cy="964" rx="25" ry="14" fill="url(#shoeGloss)" stroke="#EC4899" strokeWidth={2} />
-          <ellipse cx="412" cy="960" rx="9" ry="4.5" fill="#FFFFFF" fillOpacity={0.65} />
-          <path d="M 380 968 Q 404 980 428 968" stroke="#64748B" strokeWidth={3.2} fill="none" strokeLinecap="round" />
-          <rect x="382" y="966" width="9" height="4.5" rx="1.5" fill="#475569" />
-          <path d="M 387 962 Q 404 968 421 962" stroke="#DB2777" strokeWidth={2.4} fill="none" />
-          <circle cx="404" cy="964" r="2.8" fill="#FDE047" stroke="#CA8A04" strokeWidth={1} />
-          <circle cx="404" cy="964" r="1.2" fill="#FFFFFF" />
+          {/* Heel block */}
+          <rect x="385" y="974" width="11" height="6" rx="1.5" fill="#0A0B0E" />
         </g>
       </g>
 
