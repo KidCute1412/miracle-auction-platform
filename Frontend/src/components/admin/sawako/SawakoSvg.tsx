@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { SawakoSvgProps } from "./types";
+import type { SawakoSvgProps, SawakoExpression } from "./types";
 import { useSawakoPhysics } from "./hooks/useSawakoPhysics";
 import { useSawakoLipSync } from "./hooks/useSawakoLipSync";
 import { SawakoBaseArtwork } from "./parts/SawakoBaseArtwork";
@@ -16,6 +16,7 @@ import { SawakoWisps } from "./parts/SawakoWisps";
  * - Scaled down to 80% for ideal desktop/dashboard footprint
  * - Proper SVG Z-index layering: legs rendered behind pure white dress
  * - Dynamic airborne flailing / dangling kinematics when dragged
+ * - Shy expression on drag (no dizzy spinning eyes)
  * - Soft idle bobbing, shy flailing limbs on hover, and serene anime expression
  */
 export default function SawakoSvg({
@@ -39,6 +40,10 @@ export default function SawakoSvg({
     isDragging
   );
   const { mouthOpenRatio } = useSawakoLipSync(isSpeaking);
+
+  // Gaurantee shy expression during drag instead of dizzy spinning eyes
+  const activeExpression: SawakoExpression =
+    isDragging && expression !== "dizzy" ? "shy" : expression;
 
   // Overall scale scaled down to 80% size for refined mascot presence
   const finalScaleX = scaleX * 0.82;
@@ -139,11 +144,11 @@ export default function SawakoSvg({
             }}
           >
             {/* 1. Base Artwork: Back hair, neck, oval face, pure white one-piece dress (overlapping legs) */}
-            <SawakoBaseArtwork />
+            <SawakoBaseArtwork expression={activeExpression} />
 
-            {/* 2. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes) */}
+            {/* 2. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
             <SawakoEyes
-              expression={expression}
+              expression={activeExpression}
               pupilX={pupilX}
               pupilY={pupilY}
               isBlinking={isBlinking}
@@ -151,7 +156,7 @@ export default function SawakoSvg({
 
             {/* 3. Independent Mouth (Innocent parted anime mouth without robotic flapping) */}
             <SawakoMouth
-              expression={expression}
+              expression={activeExpression}
               mouthOpenRatio={mouthOpenRatio}
             />
 
@@ -169,7 +174,7 @@ export default function SawakoSvg({
           />
 
           {/* ===================== LAYER 4: FLOATING WISPS & EMOTION SYMBOLS ===================== */}
-          <SawakoWisps symbol={symbol} expression={expression} />
+          <SawakoWisps symbol={symbol} expression={activeExpression} />
         </svg>
       </div>
     </div>

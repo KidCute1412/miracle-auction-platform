@@ -89,14 +89,19 @@ export const DIZZY_LINES: SawakoLine[] = [
 
 export const DRAG_LINES: SawakoLine[] = [
   {
-    text: "Kyaa! Put me down gently!",
-    expression: "dizzy",
-    symbol: "sweat",
+    text: "Kyaa! P-Please put me down gently...",
+    expression: "shy",
+    symbol: "heart",
   },
   {
     text: "W-Where are you taking me?!",
-    expression: "pout",
-    symbol: "anger",
+    expression: "shy",
+    symbol: "sweat",
+  },
+  {
+    text: "M-My dress is fluttering... don't look!",
+    expression: "shy",
+    symbol: "heart",
   },
 ];
 

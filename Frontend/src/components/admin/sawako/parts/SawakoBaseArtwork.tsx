@@ -1,15 +1,22 @@
 import React from "react";
+import type { SawakoExpression } from "../types";
+
+interface SawakoBaseArtworkProps {
+  expression?: SawakoExpression;
+}
 
 /**
- * SawakoBaseArtwork - Pure White Dress (Đầm trắng liền thân) Anime Chibi Puppet
+ * SawakoBaseArtwork - Pure White Dress Anime Chibi Puppet
  * Features:
  * - Unified one-piece white dress: delicate collar, ribbon bow, fitted bodice, and flowing A-line skirt
- * - Solves disjointed clothing look with seamless fabric transitions and pearlescent silk gradients
+ * - Dynamic blush glow when shy or bashful
  * - Slender anime oval face with cute rounded chin
  * - Sleek, fluttering silky hair with angel ring gloss sheen
  * - 3D white star hairpin on temple
  */
-export function SawakoBaseArtwork() {
+export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
+  const isShy = expression === "shy";
+
   return (
     <g className="sawako-base-artwork">
       <defs>
@@ -44,11 +51,11 @@ export function SawakoBaseArtwork() {
           <stop offset="100%" stopColor="#6C728F" stopOpacity="0" />
         </linearGradient>
 
-        {/* Soft Airbrush Cheeks Blush */}
+        {/* Soft Airbrush Cheeks Blush - Intensified when shy */}
         <radialGradient id="sawakoCheekAirbrush" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FF7A7A" stopOpacity="0.6" />
-          <stop offset="45%" stopColor="#FF9999" stopOpacity="0.35" />
-          <stop offset="75%" stopColor="#FFB8B8" stopOpacity="0.12" />
+          <stop offset="0%" stopColor="#FF6B6B" stopOpacity={isShy ? 0.75 : 0.6} />
+          <stop offset="45%" stopColor="#FF8F8F" stopOpacity={isShy ? 0.45 : 0.35} />
+          <stop offset="75%" stopColor="#FFB8B8" stopOpacity={isShy ? 0.2 : 0.12} />
           <stop offset="100%" stopColor="#FFB8B8" stopOpacity="0" />
         </radialGradient>
 
@@ -58,13 +65,6 @@ export function SawakoBaseArtwork() {
           <stop offset="30%" stopColor="#FCFDFE" />
           <stop offset="70%" stopColor="#F1F5F9" />
           <stop offset="100%" stopColor="#E2E8F0" />
-        </linearGradient>
-
-        {/* Dress Bodice Shading */}
-        <linearGradient id="whiteDressBodice" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="60%" stopColor="#F8FAFC" />
-          <stop offset="100%" stopColor="#EDF2F7" />
         </linearGradient>
 
         {/* Bangs Forehead Drop Shadow */}
@@ -96,7 +96,6 @@ export function SawakoBaseArtwork() {
           strokeWidth={2.4}
         />
 
-        {/* Side Hair Breeze Strands */}
         <path
           d="
             M 166 360
@@ -120,15 +119,12 @@ export function SawakoBaseArtwork() {
           opacity="0.75"
         />
 
-        {/* Silky Hair Flow Lines */}
         <path d="M 186 440 C 172 580, 178 720, 202 840" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.65" />
         <path d="M 550 440 C 564 580, 558 720, 534 840" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.65" />
       </g>
 
-      {/* ===================== 2. UNIFIED PURE WHITE DRESS (ĐẦM TRẮNG LIỀN THÂN) ===================== */}
-      {/* Seamless one-piece dress flowing from shoulders to hemline, overlapping legs */}
+      {/* ===================== 2. UNIFIED PURE WHITE DRESS ===================== */}
       <g id="pure-white-dress">
-        {/* Continuous Full Dress Silhouette (Bodice + Waist + Flowing Skirt) */}
         <path
           d="
             M 276 522
@@ -145,11 +141,9 @@ export function SawakoBaseArtwork() {
           strokeWidth={2.2}
         />
 
-        {/* Upper Bodice Soft Princess Seams */}
         <path d="M 324 532 C 330 575, 334 620, 332 664" stroke="#E2E8F0" strokeWidth={1.6} strokeLinecap="round" fill="none" />
         <path d="M 412 532 C 406 575, 402 620, 404 664" stroke="#E2E8F0" strokeWidth={1.6} strokeLinecap="round" fill="none" />
 
-        {/* Delicate Scallop Neckline with Petal Collar */}
         <path
           d="
             M 326 514
@@ -173,20 +167,16 @@ export function SawakoBaseArtwork() {
           strokeWidth={1.6}
         />
 
-        {/* Petite Pastel Pink Ribbon Bow at Neckline */}
+        {/* Ribbon Bow */}
         <g id="dress-neck-bow" transform="translate(368, 544)">
-          {/* Bow Knot */}
           <circle cx="0" cy="0" r="3.5" fill="#F472B6" stroke="#DB2777" strokeWidth={1} />
-          {/* Left Loop */}
           <path d="M 0 0 C -6 -6, -14 -4, -12 2 C -10 6, -4 2, 0 0 Z" fill="#FBCFE8" stroke="#DB2777" strokeWidth={1} />
-          {/* Right Loop */}
           <path d="M 0 0 C 6 -6, 14 -4, 12 2 C 10 6, 4 2, 0 0 Z" fill="#FBCFE8" stroke="#DB2777" strokeWidth={1} />
-          {/* Ribbon Tails */}
           <path d="M -1 2 Q -4 10 -6 16" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
           <path d="M 1 2 Q 4 10 6 16" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
         </g>
 
-        {/* Gentle Empire Waistline Sash Curve */}
+        {/* Waistline */}
         <path
           d="M 288 664 Q 368 678 448 664"
           stroke="#CBD5E1"
@@ -202,7 +192,7 @@ export function SawakoBaseArtwork() {
           opacity="0.9"
         />
 
-        {/* Elegant Flowing Skirt Folds cascading from waist to hem */}
+        {/* Flowing Skirt Folds */}
         <g stroke="#CBD5E1" strokeWidth={2} strokeLinecap="round" fill="none">
           <path d="M 260 720 C 265 760, 260 804, 252 840" />
           <path d="M 300 690 C 304 740, 304 795, 302 847" />
@@ -213,7 +203,7 @@ export function SawakoBaseArtwork() {
           <path d="M 476 720 C 471 760, 476 804, 484 840" />
         </g>
 
-        {/* Pearlescent Silk Highlights on Dress Skirt */}
+        {/* Silk Highlights */}
         <g stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" fill="none" opacity="0.95">
           <path d="M 280 700 C 284 750, 284 800, 280 844" />
           <path d="M 320 682 C 324 735, 324 795, 320 850" />
@@ -221,14 +211,13 @@ export function SawakoBaseArtwork() {
           <path d="M 456 700 C 452 750, 452 800, 456 844" />
         </g>
 
-        {/* Translucent Ruffled Scallop Hemline */}
+        {/* Scallop Hemline */}
         <path
           d="M 226 838 Q 262 848 298 846 Q 334 853 368 854 Q 402 853 438 846 Q 474 848 510 838"
           stroke="#FFFFFF"
           strokeWidth={3}
           fill="none"
         />
-        {/* Soft Dress Bottom Hem Shadow */}
         <path
           d="M 228 840 Q 368 866 508 840 Q 368 858 228 840 Z"
           fill="#E2E8F0"
@@ -242,7 +231,6 @@ export function SawakoBaseArtwork() {
         <path d="M 348 482 Q 368 506 388 482 L 388 498 Q 368 518 348 498 Z" fill="url(#sawakoNeckShadow)" />
         <path d="M 358 520 Q 368 524 378 520" stroke="#E0B69E" strokeWidth={1.5} strokeLinecap="round" fill="none" />
 
-        {/* Petite Chibi Ears */}
         <g id="left-ear">
           <ellipse cx="214" cy="358" rx="13" ry="20" fill="#FEE7DA" stroke="#1c1d24" strokeWidth={2} />
           <path d="M 216 350 Q 210 358 216 366" stroke="#E6B4A0" strokeWidth={1.8} strokeLinecap="round" fill="none" />
@@ -276,8 +264,8 @@ export function SawakoBaseArtwork() {
 
       {/* ===================== 5. AIRBRUSH CHEEKS BLUSH & HATCHINGS ===================== */}
       <g id="cheeks-blush-layer">
-        <ellipse cx="272" cy="382" rx="40" ry="24" fill="url(#sawakoCheekAirbrush)" />
-        <g stroke="#FF4D4D" strokeWidth={1.8} strokeLinecap="round" opacity="0.82">
+        <ellipse cx="272" cy="382" rx={isShy ? 44 : 40} ry={isShy ? 26 : 24} fill="url(#sawakoCheekAirbrush)" />
+        <g stroke="#FF4D4D" strokeWidth={isShy ? 2.1 : 1.8} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
           <line x1="254" y1="384" x2="262" y2="372" />
           <line x1="262" y1="387" x2="270" y2="372" />
           <line x1="270" y1="388" x2="278" y2="372" />
@@ -285,8 +273,8 @@ export function SawakoBaseArtwork() {
           <line x1="286" y1="386" x2="294" y2="374" />
         </g>
 
-        <ellipse cx="464" cy="382" rx="40" ry="24" fill="url(#sawakoCheekAirbrush)" />
-        <g stroke="#FF4D4D" strokeWidth={1.8} strokeLinecap="round" opacity="0.82">
+        <ellipse cx="464" cy="382" rx={isShy ? 44 : 40} ry={isShy ? 26 : 24} fill="url(#sawakoCheekAirbrush)" />
+        <g stroke="#FF4D4D" strokeWidth={isShy ? 2.1 : 1.8} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
           <line x1="442" y1="384" x2="450" y2="374" />
           <line x1="450" y1="386" x2="458" y2="372" />
           <line x1="458" y1="388" x2="466" y2="372" />
@@ -343,7 +331,6 @@ export function SawakoBaseArtwork() {
           fill="url(#sawakoHairSheen)"
         />
 
-        {/* 3D White Star Clip on Temple */}
         <g id="star-hairclip" transform="translate(260, 218) rotate(-14) scale(1.35)">
           <line x1="-18" y1="0" x2="18" y2="0" stroke="#6B7280" strokeWidth={3} strokeLinecap="round" />
           <polygon

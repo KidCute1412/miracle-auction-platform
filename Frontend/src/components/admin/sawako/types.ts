@@ -1,4 +1,4 @@
-export type SawakoExpression = 'normal' | 'pout' | 'dizzy' | 'happy' | 'sleepy' | 'smug';
+export type SawakoExpression = 'normal' | 'pout' | 'dizzy' | 'happy' | 'sleepy' | 'smug' | 'shy';
 
 export type SawakoSymbol = 'none' | 'anger' | 'sweat' | 'sparkle' | 'question' | 'heart' | 'zzz';
 
