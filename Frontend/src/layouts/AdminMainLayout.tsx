@@ -3,6 +3,7 @@ import { Outlet, ScrollRestoration } from "react-router-dom";
 import Header from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
 import Loading from "@/components/common/Loading";
+import SawakoMascot from "@/components/admin/SawakoMascot";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/routes/ProtectedRouter";
 import { useEffect, useState } from "react";
@@ -85,6 +86,9 @@ export default function MainLayout() {
           </div>
         </main>
       </div>
+
+      {/* Interactive anime admin mascot */}
+      <SawakoMascot />
     </div>
   );
 }
