@@ -353,7 +353,7 @@ export default function SawakoMascot() {
       {bubbleVisible && currentLine && !prefs.muted && (
         <div
           data-testid="sawako-speech-bubble"
-          className="relative mb-2 max-w-56 rounded-2xl border border-pink-400/30 bg-zinc-950/95 px-3 py-2 shadow-2xl backdrop-blur-lg animate-in fade-in zoom-in-95 duration-200"
+          className="relative -mb-4 sm:-mb-6 z-20 mr-1 max-w-56 rounded-2xl border border-pink-400/35 bg-zinc-950/70 px-3 py-2 shadow-xl shadow-pink-950/20 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200"
           style={{ transformOrigin: "bottom right" }}
         >
           <div className="flex items-start justify-between gap-1.5">
@@ -365,7 +365,7 @@ export default function SawakoMascot() {
                 e.stopPropagation();
                 setBubbleVisible(false);
               }}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors p-0.5"
+              className="text-zinc-400 hover:text-zinc-200 transition-colors p-0.5 cursor-pointer"
               aria-label="Dismiss speech bubble"
             >
               <X className="h-3 w-3" />
@@ -377,7 +377,7 @@ export default function SawakoMascot() {
           </p>
 
           {/* Comic Bubble Pointer Tail */}
-          <div className="absolute -bottom-2 right-8 h-2.5 w-2.5 rotate-45 border-r border-b border-pink-400/30 bg-zinc-950/95" />
+          <div className="absolute -bottom-2 right-8 h-2.5 w-2.5 rotate-45 border-r border-b border-pink-400/35 bg-zinc-950/70 backdrop-blur-md" />
         </div>
       )}
 
