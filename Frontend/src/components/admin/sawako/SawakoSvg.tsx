@@ -8,7 +8,10 @@ import { SawakoMouth } from "./parts/SawakoMouth";
 import { SawakoHairFront } from "./parts/SawakoHairFront";
 import { SawakoArms } from "./parts/SawakoArms";
 import { SawakoFeet } from "./parts/SawakoFeet";
+import { SawakoHairBack } from "./parts/SawakoHairBack";
 import { SawakoWisps } from "./parts/SawakoWisps";
+import { SawakoFireflies } from "./parts/SawakoFireflies";
+import { SawakoAmbientMood } from "./parts/SawakoAmbientMood";
 
 /**
  * SawakoSvg - Authentic Full-Body Chibi Mascot Vector Puppet
@@ -31,6 +34,12 @@ export default function SawakoSvg({
   scaleY = 1,
   onPokeHand,
   onPokeFoot,
+  onPokeStarClip,
+  isProtectingStar = false,
+  isBeingPatted = false,
+  onHeadpatStroke,
+  timeOfDay = "day",
+  onCycleTimeOfDay,
 }: SawakoSvgProps) {
   const [hoveredZone, setHoveredZone] = useState<"hand" | "foot" | null>(null);
 
@@ -42,9 +51,12 @@ export default function SawakoSvg({
   );
   const { mouthOpenRatio } = useSawakoLipSync(isSpeaking);
 
-  // Gaurantee shy expression during drag instead of dizzy spinning eyes
-  const activeExpression: SawakoExpression =
-    isDragging && expression !== "dizzy" ? "shy" : expression;
+  // Guarantee happy smiling eyes (⌒ ⌒) and blushing cheeks during headpat
+  const activeExpression: SawakoExpression = isBeingPatted
+    ? "happy"
+    : isDragging && expression !== "dizzy"
+      ? "shy"
+      : expression;
 
   // Overall scale scaled down to 80% size for refined mascot presence
   const finalScaleX = scaleX * 0.82;
@@ -95,14 +107,27 @@ export default function SawakoSvg({
           0%, 100% { transform: translateY(0px) rotate(-2deg); }
           50% { transform: translateY(-8px) rotate(2deg); }
         }
+        @keyframes startledHop {
+          0% { transform: translateY(0px) rotate(0deg); }
+          16% { transform: translateY(-10px) rotate(-2deg); }
+          24% { transform: translateY(-4px) rotate(0deg); }
+          78% { transform: translateY(-3px) rotate(0deg); }
+          100% { transform: translateY(0px) rotate(0deg); }
+        }
+        @keyframes headpatPurrLean {
+          0%, 100% { transform: rotate(5deg) translateY(-2px); }
+          50% { transform: rotate(-5deg) translateY(-5px); }
+        }
       `}</style>
 
       {/* Levitation Floating Container */}
       <div
         className={`relative w-40 h-68 sm:w-44 sm:h-76 transition-all duration-300 ${
-          isDragging
-            ? "translate-y-[-6px]"
-            : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
+          isProtectingStar
+            ? "animate-[startledHop_1.8s_ease-in-out]"
+            : isDragging
+              ? "translate-y-[-6px]"
+              : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
         <svg
@@ -124,7 +149,19 @@ export default function SawakoSvg({
           <ellipse cx="368" cy="1010" rx="180" ry="20" fill="url(#sawakoGroundMist)" />
           <ellipse cx="368" cy="1012" rx="110" ry="11" fill="#fce7f3" fillOpacity={0.35} />
 
-          {/* ===================== LAYER 1: ARTICULATED LEGS & BLACK BOOTS (BEHIND MUSE DRESS) ===================== */}
+          {/* ===================== LAYER 0: SLEEK BACK HAIR (BEHIND LEGS & ENTIRE BODY) ===================== */}
+          <g
+            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : ""}
+            style={{
+              transform: isBeingPatted ? undefined : `rotate(${headRotate}deg)`,
+              transformOrigin: "368px 486px",
+              transition: "transform 0.15s ease-out",
+            }}
+          >
+            <SawakoHairBack />
+          </g>
+
+          {/* ===================== LAYER 1: ARTICULATED LEGS & BLACK BOOTS (ON TOP OF BACK HAIR) ===================== */}
           <SawakoFeet
             isDragging={isDragging}
             hoveredZone={hoveredZone}
@@ -134,14 +171,20 @@ export default function SawakoSvg({
 
           {/* ===================== LAYER 2: HEAD & UPPER BODY WITH ROTATION ===================== */}
           <g
+            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : ""}
             style={{
-              transform: `rotate(${headRotate}deg)`,
+              transform: isBeingPatted ? undefined : `rotate(${headRotate}deg)`,
               transformOrigin: "368px 486px",
               transition: "transform 0.15s ease-out",
             }}
           >
             {/* 1. Base Artwork: Back hair, neck, oval face, scooped white muse dress (overlapping legs) */}
-            <SawakoBaseArtwork expression={activeExpression} />
+            <SawakoBaseArtwork
+              expression={activeExpression}
+              isHovered={isHovered}
+              onPokeStarClip={onPokeStarClip}
+              onHeadpatStroke={onHeadpatStroke}
+            />
 
             {/* 2. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
             <SawakoEyes
@@ -168,10 +211,21 @@ export default function SawakoSvg({
             hoveredZone={hoveredZone}
             onPokeHand={onPokeHand}
             setHoveredZone={setHoveredZone}
+            isProtectingStar={isProtectingStar}
           />
 
-          {/* ===================== LAYER 4: FLOATING WISPS & EMOTION SYMBOLS ===================== */}
-          <SawakoWisps symbol={symbol} expression={activeExpression} />
+          {/* ===================== LAYER 4: ETHEREAL LUMINOUS FIREFLIES ===================== */}
+          <SawakoFireflies isHovered={isHovered} isDragging={isDragging} />
+
+          {/* ===================== LAYER 5: DYNAMIC REAL-TIME AMBIENT MOOD (MOON / DUSK / SUN) ===================== */}
+          <SawakoAmbientMood
+            timeOfDay={timeOfDay}
+            isDragging={isDragging}
+            onCycleTimeOfDay={onCycleTimeOfDay}
+          />
+
+          {/* ===================== LAYER 6: FLOATING WISPS & EMOTION SYMBOLS ===================== */}
+          <SawakoWisps symbol={symbol} expression={activeExpression} isBeingPatted={isBeingPatted} />
         </svg>
       </div>
     </div>

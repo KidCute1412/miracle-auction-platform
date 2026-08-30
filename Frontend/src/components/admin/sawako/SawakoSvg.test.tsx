@@ -119,4 +119,37 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     rerender({ isSpeaking: true });
     expect(typeof result.current.mouthOpenRatio).toBe("number");
   });
+
+  it("renders luminous fireflies layer around Sawako's muse dress", () => {
+    const { container } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        isSpeaking={false}
+      />
+    );
+
+    const firefliesLayer = container.querySelector("#sawako-fireflies-layer");
+    expect(firefliesLayer).not.toBeNull();
+  });
+
+  it("renders crescent moon ambient accent during night timeOfDay", () => {
+    const { container } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        isSpeaking={false}
+        timeOfDay="night"
+      />
+    );
+
+    const moon = container.querySelector("#ambient-crescent-moon");
+    expect(moon).not.toBeNull();
+  });
 });
