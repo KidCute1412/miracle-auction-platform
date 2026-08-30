@@ -57,23 +57,30 @@ export default function Header({ sidebarOpen = true, onToggleSidebar }: HeaderPr
       </div>
 
       {/* User profile and controls container */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      {/* User profile and controls container */}
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Theme toggle button */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200 cursor-pointer border border-border/50"
+          className="p-2 rounded-lg bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200 cursor-pointer border border-border/50 shrink-0"
           aria-label="Toggle theme"
         >
           {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 
+        {/* Subtle vertical divider */}
+        <div className="h-5 w-px bg-border shrink-0" aria-hidden="true" />
+
         {/* User profile dropdown container */}
-        <div className="relative pl-2 sm:pl-3 border-l border-border" ref={dropdownRef}>
+        <div className="relative shrink-0" ref={dropdownRef}>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center gap-2 sm:gap-3 p-1.5 rounded-xl hover:bg-muted/60 transition-colors cursor-pointer select-none text-left"
+            className="flex items-center gap-2 sm:gap-2.5 p-1 sm:px-2.5 sm:py-1 rounded-full sm:rounded-xl hover:bg-muted/60 transition-colors cursor-pointer select-none text-left"
+            aria-expanded={isOpen}
+            aria-haspopup="true"
+            aria-label="Admin user menu"
           >
-            <div className="rounded-full ring-2 ring-accent/40 p-0.5 shrink-0 bg-background shadow-gold-glow">
+            <div className="flex items-center justify-center rounded-full ring-2 ring-accent/40 p-0.5 shrink-0 bg-background shadow-gold-glow">
               <UserAvatar
                 src={auth?.avatar}
                 name={auth?.full_name || auth?.username || "Admin"}
@@ -92,7 +99,7 @@ export default function Header({ sidebarOpen = true, onToggleSidebar }: HeaderPr
 
             <ChevronDown
               size={14}
-              className={`text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+              className={`text-muted-foreground transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`}
             />
           </button>
 
