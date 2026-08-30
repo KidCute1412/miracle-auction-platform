@@ -6,61 +6,124 @@ interface SawakoMouthProps {
   mouthOpenRatio: number;
 }
 
+/**
+ * SawakoMouth - Expressive Anime Chibi Mouth with Lip-Sync Cadence
+ * Provides tailored expressions for normal speaking, pout, happy smile, and dizzy wobbly mouth.
+ */
 export function SawakoMouth({ expression, mouthOpenRatio }: SawakoMouthProps) {
+  // Pout Expression: Cute tiny grumbling pout (>3<)
   if (expression === "pout") {
     return (
-      <g>
-        <path d="M 352 460 Q 368 450 384 460" stroke="#be123c" strokeWidth={4} strokeLinecap="round" fill="none" />
+      <g id="mouth-pout">
+        <path
+          d="M 356 448 Q 368 438 380 448"
+          stroke="#be123c"
+          strokeWidth={3.5}
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Soft lower pout lip shade */}
+        <path
+          d="M 362 453 Q 368 456 374 453"
+          stroke="#f43f5e"
+          strokeWidth={2}
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.8"
+        />
       </g>
     );
   }
 
+  // Dizzy Expression: Wavy trembling mouth (@~@)
   if (expression === "dizzy") {
     return (
-      <g>
-        <path d="M 350 458 Q 359 450 368 458 Q 377 466 386 458" stroke="#be123c" strokeWidth={3.5} strokeLinecap="round" fill="none" />
+      <g id="mouth-dizzy">
+        <path
+          d="M 352 446 Q 360 438 368 446 Q 376 454 384 446"
+          stroke="#be123c"
+          strokeWidth={3}
+          strokeLinecap="round"
+          fill="none"
+        />
       </g>
     );
   }
 
+  // Happy Expression: Radiant wide smile with cute pink tongue
   if (expression === "happy") {
     return (
-      <g>
-        <path d="M 350 450 Q 368 472 386 450 Z" fill="#f43f5e" stroke="#be123c" strokeWidth={2.5} />
+      <g id="mouth-happy">
+        {/* Mouth cavity */}
+        <path
+          d="M 352 438 Q 368 464 384 438 Z"
+          fill="#be123c"
+          stroke="#be123c"
+          strokeWidth={2}
+        />
+        {/* Cute rosy tongue */}
+        <path
+          d="M 358 448 Q 368 444 378 448 Q 368 464 358 448 Z"
+          fill="#fda4af"
+        />
       </g>
     );
   }
 
-  // Lip-Sync Speaking Cadence: Mouth opening and closing
-  const openHeight = 4 + mouthOpenRatio * 14;
+  // Sleepy Expression: Gentle sleeping relaxed mouth
+  if (expression === "sleepy") {
+    return (
+      <g id="mouth-sleepy">
+        <path
+          d="M 362 446 Q 368 450 374 446"
+          stroke="#be123c"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </g>
+    );
+  }
+
+  // Lip-Sync Speaking Cadence: Dynamic opening and closing
+  const openHeight = 4 + mouthOpenRatio * 16;
+  const openWidth = 9 + mouthOpenRatio * 5;
 
   return (
-    <g>
-      {/* Upper Lip Shadow Line */}
-      <path
-        d={`M 352 452 Q 368 ${450 - mouthOpenRatio * 2} 384 452`}
-        stroke="#be123c"
-        strokeWidth={3}
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Dynamic Parted Mouth Opening */}
+    <g id="mouth-speaking">
+      {/* Dynamic parted mouth opening */}
       <ellipse
         cx="368"
-        cy={454 + mouthOpenRatio * 3}
-        rx={10 + mouthOpenRatio * 4}
+        cy={446 + mouthOpenRatio * 2}
+        rx={openWidth}
         ry={openHeight / 2}
-        fill="#fda4af"
+        fill="#881337"
         stroke="#be123c"
         strokeWidth={2}
       />
-      {/* Lower Lip Shadow */}
+      {/* Tongue visible when speaking */}
+      {mouthOpenRatio > 0.25 && (
+        <path
+          d={`M ${368 - openWidth * 0.6} ${447 + openHeight * 0.15} Q 368 ${447 + openHeight * 0.05} ${368 + openWidth * 0.6} ${447 + openHeight * 0.15} Q 368 ${446 + openHeight * 0.55} ${368 - openWidth * 0.6} ${447 + openHeight * 0.15} Z`}
+          fill="#fda4af"
+        />
+      )}
+      {/* Upper Lip definition */}
       <path
-        d={`M 356 ${458 + openHeight} Q 368 ${462 + openHeight} 380 ${458 + openHeight}`}
-        stroke="#e1828f"
-        strokeWidth={2.5}
+        d={`M 354 444 Q 368 ${442 - mouthOpenRatio * 2} 382 444`}
+        stroke="#be123c"
+        strokeWidth={2.8}
         strokeLinecap="round"
         fill="none"
+      />
+      {/* Lower Lip hint */}
+      <path
+        d={`M 360 ${447 + openHeight} Q 368 ${451 + openHeight} 376 ${447 + openHeight}`}
+        stroke="#fb7185"
+        strokeWidth={2}
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.85"
       />
     </g>
   );
