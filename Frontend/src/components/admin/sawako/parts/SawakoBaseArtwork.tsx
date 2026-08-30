@@ -3,21 +3,28 @@ import type { SawakoExpression } from "../types";
 
 interface SawakoBaseArtworkProps {
   expression?: SawakoExpression;
+  isHovered?: boolean;
+  onPokeStarClip?: (e: React.MouseEvent) => void;
+  onHeadpatStroke?: (e: React.MouseEvent) => void;
 }
 
 /**
- * SawakoBaseArtwork - Ethereal Muse Dress with Scooped Neckline
- * Features:
- * - Scooped-in romantic muse neckline (khoét cổ sâu thanh thoát) showcasing graceful neck & clavicle
- * - Ruffled lace trim along the scooped neckline and delicate satin rosette bow
- * - Romantic ruched gathered bust and tiered cascading billowing ruffled skirt
- * - Pure pristine white silk with pearlescent and silver-silk gradient shading
- * - Slender anime oval face with soft cute chin and bashful blushing cheeks
- * - Sleek, fluttering silky hair with angel ring gloss sheen
- * - 3D white star hairpin on temple
+ * SawakoBaseArtwork - Ethereal Muse Chibi with Authentic Shoujo Anime Hair
+ * Faithfully redesigned to eliminate the "ngố" (dorky high bangs) look:
+ * - Bangs lengthened down to eye level (Y=312-316), gracefully skimming above upper lashes
+ * - Sleek side hime locks (tóc mai ôm má) framing the cheeks down to Y=370
+ * - Soft feathery airy fringe tips with delicate forehead glimpses
+ * - Clean white star clip with dual dark bobby pins
+ * - Pure white scooped-neckline muse dress with cascading ruffled flounces
+ * - Slender anime oval face with delicate blushing cheeks
  */
-export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
-  const isShy = expression === "shy";
+export function SawakoBaseArtwork({
+  expression,
+  isHovered,
+  onPokeStarClip,
+  onHeadpatStroke,
+}: SawakoBaseArtworkProps) {
+  const isShy = expression === "shy" || Boolean(isHovered);
 
   return (
     <g className="sawako-base-artwork">
@@ -36,21 +43,21 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           <stop offset="100%" stopColor="#FEE9DC" stopOpacity="0" />
         </linearGradient>
 
-        {/* Deep Silky Hair Gradient */}
+        {/* Deep Silky Hair Gradient - Obsidian with subtle violet-indigo undertone */}
         <linearGradient id="sawakoHairBase" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#181922" />
-          <stop offset="35%" stopColor="#111218" />
-          <stop offset="80%" stopColor="#0B0C10" />
+          <stop offset="0%" stopColor="#1C1D26" />
+          <stop offset="25%" stopColor="#14151E" />
+          <stop offset="65%" stopColor="#0E0F15" />
           <stop offset="100%" stopColor="#07080B" />
         </linearGradient>
 
-        {/* Hair Gloss Angel Ring */}
+        {/* Hair Gloss Angel Ring - High-end Shoujo Anime Luster */}
         <linearGradient id="sawakoHairSheen" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#6C728F" stopOpacity="0" />
-          <stop offset="45%" stopColor="#A4ABC9" stopOpacity="0.75" />
-          <stop offset="55%" stopColor="#DDE3FB" stopOpacity="0.9" />
-          <stop offset="65%" stopColor="#A4ABC9" stopOpacity="0.75" />
-          <stop offset="100%" stopColor="#6C728F" stopOpacity="0" />
+          <stop offset="0%" stopColor="#5E6584" stopOpacity="0" />
+          <stop offset="35%" stopColor="#8F96B8" stopOpacity="0.65" />
+          <stop offset="50%" stopColor="#E4E9FC" stopOpacity="0.95" />
+          <stop offset="65%" stopColor="#8F96B8" stopOpacity="0.65" />
+          <stop offset="100%" stopColor="#5E6584" stopOpacity="0" />
         </linearGradient>
 
         {/* Soft Airbrush Cheeks Blush */}
@@ -75,63 +82,15 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
         </linearGradient>
 
-        {/* Bangs Forehead Drop Shadow */}
-        <linearGradient id="sawakoBangsShadow" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#4A3B42" stopOpacity="0.32" />
-          <stop offset="100%" stopColor="#4A3B42" stopOpacity="0" />
+        {/* Soft Natural Forehead Shadow directly under lengthened bangs */}
+        <linearGradient id="sawakoForeheadShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#2E2026" stopOpacity="0.32" />
+          <stop offset="70%" stopColor="#2E2026" stopOpacity="0.1" />
+          <stop offset="100%" stopColor="#2E2026" stopOpacity="0" />
         </linearGradient>
       </defs>
 
-      {/* ===================== 1. SLEEK, FLUTTERING BACK HAIR ===================== */}
-      <g id="back-hair-layer">
-        <path
-          d="
-            M 368 135
-            C 255 135, 165 210, 146 335
-            C 132 450, 134 600, 146 750
-            C 154 845, 180 910, 225 930
-            C 256 942, 286 910, 304 875
-            C 328 825, 342 775, 368 775
-            C 394 775, 408 825, 432 875
-            C 450 910, 480 942, 511 930
-            C 556 910, 582 845, 590 750
-            C 602 600, 604 450, 590 335
-            C 571 210, 481 135, 368 135
-            Z
-          "
-          fill="url(#sawakoHairBase)"
-          stroke="#07080B"
-          strokeWidth={2.4}
-        />
-
-        <path
-          d="
-            M 166 360
-            C 152 480, 150 670, 178 820
-            C 186 865, 204 880, 218 860
-            C 200 750, 186 560, 194 400
-            Z
-          "
-          fill="#08090C"
-          opacity="0.75"
-        />
-        <path
-          d="
-            M 570 360
-            C 584 480, 586 670, 558 820
-            C 550 865, 532 880, 518 860
-            C 536 750, 550 560, 542 400
-            Z
-          "
-          fill="#08090C"
-          opacity="0.75"
-        />
-
-        <path d="M 186 440 C 172 580, 178 720, 202 840" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.65" />
-        <path d="M 550 440 C 564 580, 558 720, 534 840" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.65" />
-      </g>
-
-      {/* ===================== 2. ETHEREAL MUSE DRESS (ĐẦM NÀNG THƠ KHOÉT CỔ SÂU) ===================== */}
+      {/* ===================== 1. ETHEREAL MUSE DRESS ===================== */}
       <g id="pure-white-muse-dress">
         {/* Under-layer Main Silhouette */}
         <path
@@ -150,8 +109,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           strokeWidth={2.2}
         />
 
-        {/* --- Bodice with Scooped Neckline --- */}
-        {/* Soft gathered ruched fabric under scooped bust */}
+        {/* Bodice with Scooped Neckline */}
         <path
           d="
             M 306 526
@@ -167,7 +125,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           strokeWidth={1.6}
         />
 
-        {/* Scooped Neckline Scalloped Lace Frill Trim (Khoét cổ sâu quyến rũ) */}
+        {/* Scooped Neckline Scalloped Lace Frill Trim */}
         <path
           d="
             M 304 526
@@ -193,7 +151,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           fill="none"
         />
 
-        {/* Muse Bodice Ribbons / Corsetry Ruching */}
+        {/* Muse Bodice Ribbons */}
         <g stroke="#E2E8F0" strokeWidth={1.4} strokeLinecap="round" fill="none">
           <path d="M 338 548 C 340 566, 344 584, 348 600" />
           <path d="M 358 556 C 360 572, 362 588, 364 601" />
@@ -201,7 +159,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           <path d="M 398 548 C 396 566, 392 584, 388 600" />
         </g>
 
-        {/* Petite Center Silk Bow at Scooped Neckline Apex */}
+        {/* Petite Center Silk Bow at Scooped Neckline */}
         <g id="muse-bodice-bow" transform="translate(368, 558)">
           <circle cx="0" cy="0" r="3.5" fill="#FDE2E4" stroke="#F472B6" strokeWidth={1.2} />
           <path d="M 0 0 C -7 -7, -15 -5, -13 2 C -11 6, -4 2, 0 0 Z" fill="#FFF1F2" stroke="#F472B6" strokeWidth={1} />
@@ -225,7 +183,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           fill="none"
         />
 
-        {/* --- Skirt Tier 1: Flowing Upper Flounce --- */}
+        {/* Skirt Tier 1: Flowing Upper Flounce */}
         <path
           d="
             M 288 660
@@ -257,7 +215,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           fill="url(#museTierShadow)"
         />
 
-        {/* --- Skirt Tier 2: Billowing Lower Flounce with Cascading Folds --- */}
+        {/* Skirt Tier 2: Billowing Lower Flounce with Cascading Folds */}
         <g stroke="#CBD5E1" strokeWidth={2} strokeLinecap="round" fill="none">
           <path d="M 248 768 C 242 805, 230 836, 218 852" />
           <path d="M 290 772 C 288 808, 280 844, 274 860" />
@@ -268,7 +226,7 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
           <path d="M 488 768 C 494 805, 506 836, 518 852" />
         </g>
 
-        {/* Luminous Pure White Silk Highlights on Flounce */}
+        {/* Luminous Silk Highlights on Flounce */}
         <g stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round" fill="none" opacity="0.95">
           <path d="M 270 774 C 268 810, 260 844, 252 858" />
           <path d="M 312 772 C 314 814, 312 852, 308 864" />
@@ -297,35 +255,34 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
         />
       </g>
 
-      {/* ===================== 3. DELICATE NECK & EXTENDED CLAVICLE ===================== */}
+      {/* ===================== 3. DELICATE NECK & CLAVICLE ===================== */}
       <g id="neck-layer">
-        {/* Slender neck extending down to scooped neckline */}
         <path d="M 346 480 L 346 548 Q 368 556 390 548 L 390 480 Z" fill="#FEE5D8" />
         <path d="M 346 482 Q 368 506 390 482 L 390 502 Q 368 522 346 502 Z" fill="url(#sawakoNeckShadow)" />
 
-        {/* Delicate Clavicle Definition Lines (Xương quai xanh duyên dáng) */}
+        {/* Clavicle Lines */}
         <path d="M 342 534 Q 354 538 364 535" stroke="#DFB49C" strokeWidth={1.8} strokeLinecap="round" fill="none" />
         <path d="M 394 534 Q 382 538 372 535" stroke="#DFB49C" strokeWidth={1.8} strokeLinecap="round" fill="none" />
         <circle cx="368" cy="535" r="1.4" fill="#DFB49C" />
 
         <g id="left-ear">
-          <ellipse cx="214" cy="358" rx="13" ry="20" fill="#FEE7DA" stroke="#1c1d24" strokeWidth={2} />
-          <path d="M 216 350 Q 210 358 216 366" stroke="#E6B4A0" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+          <ellipse cx="218" cy="356" rx="12.5" ry="19" fill="#FEE7DA" stroke="#1c1d24" strokeWidth={2} />
+          <path d="M 220 348 Q 214 356 220 364" stroke="#E6B4A0" strokeWidth={1.8} strokeLinecap="round" fill="none" />
         </g>
         <g id="right-ear">
-          <ellipse cx="522" cy="358" rx="13" ry="20" fill="#FEE7DA" stroke="#1c1d24" strokeWidth={2} />
-          <path d="M 520 350 Q 526 358 520 366" stroke="#E6B4A0" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+          <ellipse cx="518" cy="356" rx="12.5" ry="19" fill="#FEE7DA" stroke="#1c1d24" strokeWidth={2} />
+          <path d="M 516 348 Q 522 356 516 364" stroke="#E6B4A0" strokeWidth={1.8} strokeLinecap="round" fill="none" />
         </g>
       </g>
 
-      {/* ===================== 4. SLENDER ANIME OVAL FACE ===================== */}
+      {/* ===================== 4. BALANCED SWEET SHOUJO OVAL FACE ===================== */}
       <path
         d="
-          M 216 324
-          C 206 396, 252 474, 368 486
-          C 484 474, 530 396, 520 324
-          C 520 224, 476 174, 368 174
-          C 260 174, 216 224, 216 324
+          M 218 318
+          C 214 382, 262 462, 368 484
+          C 474 462, 522 382, 518 318
+          C 518 222, 474 174, 368 174
+          C 262 174, 218 222, 218 318
           Z
         "
         fill="url(#sawakoFaceSkin)"
@@ -333,29 +290,30 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
         strokeWidth={2.6}
       />
 
+      {/* Forehead Shadow softly placed under the long bangs */}
       <path
-        d="M 220 270 Q 368 285 516 270 L 516 312 Q 368 322 220 312 Z"
-        fill="url(#sawakoBangsShadow)"
+        d="M 218 260 Q 368 274 518 260 L 518 320 Q 368 330 218 320 Z"
+        fill="url(#sawakoForeheadShadow)"
       />
 
       {/* ===================== 5. AIRBRUSH CHEEKS BLUSH & HATCHINGS ===================== */}
       <g id="cheeks-blush-layer">
-        <ellipse cx="272" cy="382" rx={isShy ? 44 : 40} ry={isShy ? 26 : 24} fill="url(#sawakoCheekAirbrush)" />
-        <g stroke="#FF4D4D" strokeWidth={isShy ? 2.1 : 1.8} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
-          <line x1="254" y1="384" x2="262" y2="372" />
-          <line x1="262" y1="387" x2="270" y2="372" />
-          <line x1="270" y1="388" x2="278" y2="372" />
-          <line x1="278" y1="388" x2="286" y2="372" />
-          <line x1="286" y1="386" x2="294" y2="374" />
+        <ellipse cx="274" cy="380" rx={isShy ? 41 : 37} ry={isShy ? 24 : 22} fill="url(#sawakoCheekAirbrush)" />
+        <g stroke="#FF4D4D" strokeWidth={isShy ? 2 : 1.75} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
+          <line x1="258" y1="382" x2="266" y2="370" />
+          <line x1="266" y1="385" x2="274" y2="370" />
+          <line x1="274" y1="386" x2="282" y2="370" />
+          <line x1="282" y1="386" x2="290" y2="370" />
+          <line x1="290" y1="384" x2="298" y2="372" />
         </g>
 
-        <ellipse cx="464" cy="382" rx={isShy ? 44 : 40} ry={isShy ? 26 : 24} fill="url(#sawakoCheekAirbrush)" />
-        <g stroke="#FF4D4D" strokeWidth={isShy ? 2.1 : 1.8} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
-          <line x1="442" y1="384" x2="450" y2="374" />
-          <line x1="450" y1="386" x2="458" y2="372" />
-          <line x1="458" y1="388" x2="466" y2="372" />
-          <line x1="466" y1="388" x2="474" y2="372" />
-          <line x1="474" y1="387" x2="482" y2="372" />
+        <ellipse cx="462" cy="380" rx={isShy ? 41 : 37} ry={isShy ? 24 : 22} fill="url(#sawakoCheekAirbrush)" />
+        <g stroke="#FF4D4D" strokeWidth={isShy ? 2 : 1.75} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
+          <line x1="438" y1="382" x2="446" y2="372" />
+          <line x1="446" y1="384" x2="454" y2="370" />
+          <line x1="454" y1="386" x2="462" y2="370" />
+          <line x1="462" y1="386" x2="470" y2="370" />
+          <line x1="470" y1="385" x2="478" y2="370" />
         </g>
       </g>
 
@@ -365,70 +323,166 @@ export function SawakoBaseArtwork({ expression }: SawakoBaseArtworkProps) {
         <circle cx="368" cy="392" r="1.5" fill="#B9695C" />
       </g>
 
-      {/* ===================== 6. STRAIGHT BANGS & STAR HAIRPIN ===================== */}
-      <g id="front-bangs-layer">
+      {/* ===================== 6. SIGNATURE LONG ANIME BANGS & HIME CHEEK LOCKS ===================== */}
+      {/*
+        True to Kuronuma Sawako in "Sawako better.jpg":
+        1. Length: Bangs reach down to eye level (Y=312 to 316), skimming right over the upper eyelashes.
+           Completely removes the "ngố" (dorky high bangs) appearance.
+        2. Cheek Locks (Tóc mai ôm má): Tapered strands hug both cheeks down to Y=370, giving Sawako her
+           iconic slender, innocent, beautiful shoujo anime face.
+        3. Center Lock: Soft, feathery, natural center bang falling between the eyes.
+        4. Airy Slits: Small organic peeks showing the soft brow line underneath.
+      */}
+      <g id="sawako-lengthened-shoujo-bangs">
+        {/* Main Hair Silhouette: Crown, Long Bangs reaching down to eyes (Y=314), and Cheek-Framing Strands (Y=370) */}
         <path
           d="
-            M 204 304
-            C 198 230, 244 146, 368 146
-            C 492 146, 538 230, 532 304
-            C 520 298, 514 292, 504 308
-            L 496 270
-            C 484 298, 474 308, 460 308
-            L 452 270
-            C 438 298, 428 308, 414 308
-            L 406 270
-            C 392 298, 384 308, 368 308
-            C 352 308, 344 298, 330 270
-            L 322 308
-            C 308 308, 298 298, 284 270
-            L 276 308
-            C 262 308, 252 298, 240 270
-            L 232 308
-            C 222 292, 214 298, 204 304
+            M 204 316
+            C 192 220, 244 136, 368 136
+            C 492 136, 544 220, 532 316
+            C 528 348, 516 380, 508 372
+            C 502 344, 498 316, 490 312
+            C 482 290, 474 290, 468 312
+            C 462 316, 452 316, 446 312
+            C 438 292, 430 292, 424 312
+            C 418 316, 404 316, 396 314
+            L 392 316
+            C 384 317, 352 317, 344 316
+            L 340 314
+            C 332 316, 318 316, 312 312
+            C 306 292, 298 292, 290 312
+            C 284 316, 274 316, 268 312
+            C 262 290, 254 290, 246 312
+            C 238 316, 234 344, 228 372
+            C 220 380, 208 348, 204 316
             Z
           "
-          fill="#14151D"
-          stroke="#0A0B0E"
-          strokeWidth={2.2}
+          fill="url(#sawakoHairBase)"
+          stroke="#07080B"
+          strokeWidth={2.4}
+          strokeLinejoin="round"
         />
 
-        <g stroke="#2C2E3C" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.8">
-          <line x1="250" y1="200" x2="256" y2="280" />
-          <line x1="298" y1="185" x2="302" y2="285" />
-          <line x1="346" y1="180" x2="348" y2="288" />
-          <line x1="390" y1="180" x2="388" y2="288" />
-          <line x1="438" y1="185" x2="434" y2="285" />
-          <line x1="486" y1="200" x2="480" y2="280" />
+        {/* Delicate inner separation shadow lines for feathery depth */}
+        <g stroke="#090A0E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.85">
+          {/* Cheek Framing Strands Separation */}
+          <path d="M 226 318 C 228 340, 226 360, 228 372" />
+          <path d="M 510 318 C 508 340, 510 360, 508 372" />
+
+          {/* Left Bangs Feathery Slits */}
+          <path d="M 258 288 C 262 300, 266 312, 268 312" />
+          <path d="M 280 290 C 284 302, 288 312, 290 312" />
+          <path d="M 302 290 C 306 302, 310 312, 312 312" />
+
+          {/* Center Signature Fringe Boundaries */}
+          <path d="M 342 284 L 342 315" />
+          <path d="M 394 284 L 394 315" />
+          <line x1="368" y1="290" x2="368" y2="316" stroke="#252736" strokeWidth={1.2} />
+
+          {/* Right Bangs Feathery Slits */}
+          <path d="M 424 312 C 426 302, 430 290, 434 290" />
+          <path d="M 446 312 C 448 302, 452 290, 456 290" />
+          <path d="M 468 312 C 470 300, 474 288, 478 288" />
         </g>
 
+        {/* Fine, flowing hair luster lines running along the length */}
+        <g stroke="#3A3E54" strokeWidth={1.2} strokeLinecap="round" fill="none" opacity="0.6">
+          {/* Left Cheek Lock Luster */}
+          <path d="M 214 260 C 218 295, 220 335, 222 365" />
+          <line x1="246" y1="240" x2="248" y2="308" />
+          <line x1="276" y1="225" x2="278" y2="306" />
+          <line x1="308" y1="215" x2="308" y2="306" />
+          {/* Center Lock Luster */}
+          <line x1="356" y1="205" x2="356" y2="310" />
+          <line x1="380" y1="205" x2="380" y2="310" />
+          {/* Right Bangs Luster */}
+          <line x1="428" y1="215" x2="428" y2="306" />
+          <line x1="458" y1="225" x2="458" y2="306" />
+          <line x1="490" y1="240" x2="488" y2="308" />
+          {/* Right Cheek Lock Luster */}
+          <path d="M 522 260 C 518 295, 516 335, 514 365" />
+        </g>
+
+        {/* Luminous Angel-Ring Curved Hair Sheen */}
         <path
-          d="M 236 228 Q 368 200 500 228 Q 368 214 236 228 Z"
+          d="M 220 220 Q 368 186 516 220 Q 368 200 220 220 Z"
           fill="url(#sawakoHairSheen)"
         />
 
-        <g id="star-hairclip" transform="translate(260, 218) rotate(-14) scale(1.35)">
-          <line x1="-18" y1="0" x2="18" y2="0" stroke="#6B7280" strokeWidth={3} strokeLinecap="round" />
-          <polygon
-            points="0,-17 4.9,-5.2 17.5,-5.2 7.4,2.2 11.2,14.5 0,7 -11.2,14.5 -7.4,2.2 -17.5,-5.2 -4.9,-5.2"
-            fill="#000000"
-            opacity="0.35"
-            transform="translate(1.5, 2)"
-          />
-          <polygon
-            points="0,-17 4.9,-5.2 17.5,-5.2 7.4,2.2 11.2,14.5 0,7 -11.2,14.5 -7.4,2.2 -17.5,-5.2 -4.9,-5.2"
-            fill="#FFFFFF"
-            stroke="#CBD5E1"
-            strokeWidth={1.5}
-            strokeLinejoin="round"
-          />
-          <polygon points="0,-17 0,0 4.9,-5.2" fill="#F8FAFC" opacity="0.9" />
-          <polygon points="17.5,-5.2 0,0 7.4,2.2" fill="#E2E8F0" opacity="0.7" />
-          <polygon points="11.2,14.5 0,0 0,7" fill="#CBD5E1" opacity="0.6" />
-          <polygon points="-11.2,14.5 0,0 -7.4,2.2" fill="#F1F5F9" opacity="0.9" />
-          <polygon points="-17.5,-5.2 0,0 -4.9,-5.2" fill="#FFFFFF" />
-          <circle cx="-1" cy="-2" r="3.2" fill="#FFFDE7" />
+        {/* Secondary gentle hair highlight shimmer */}
+        <path
+          d="M 244 232 Q 368 208 492 232 Q 368 218 244 232 Z"
+          fill="#FFFFFF"
+          fillOpacity={0.22}
+        />
+
+        {/* Crisp Anime Rim Light Contour on Top Crown */}
+        <path
+          d="M 216 280 C 206 215, 252 140, 368 140 C 484 140, 530 215, 520 280"
+          stroke="#686F8E"
+          strokeWidth={1.3}
+          strokeLinecap="round"
+          fill="none"
+          opacity={0.8}
+        />
+
+        {/* ===================== 7. AUTHENTIC WHITE STAR HAIRPIN & BOBBY PINS ===================== */}
+        {/* Crisp pure white star with dual dark bobby pins pinning hair, faithful to Sawako better.jpg */}
+        <g
+          id="star-hairclip"
+          data-testid="sawako-star-clip-target"
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPokeStarClip?.(e);
+          }}
+          className="cursor-pointer pointer-events-auto group focus:outline-hidden"
+          aria-label="Touch Sawako's white star clip"
+          transform="translate(252, 210) rotate(-14)"
+        >
+          {/* Stable circular invisible hit target preventing cursor edge flutter */}
+          <circle cx="10" cy="0" r="32" fill="transparent" pointerEvents="all" />
+
+          {/* Dual Dark Bobby Pins underneath the star */}
+          <line x1="-16" y1="-5" x2="36" y2="-5" stroke="#101116" strokeWidth={3.8} strokeLinecap="round" />
+          <line x1="-12" y1="5" x2="32" y2="5" stroke="#101116" strokeWidth={3.8} strokeLinecap="round" />
+          <line x1="-15" y1="-5" x2="35" y2="-5" stroke="#373B4D" strokeWidth={1.5} strokeLinecap="round" />
+          <line x1="-11" y1="5" x2="31" y2="5" stroke="#373B4D" strokeWidth={1.5} strokeLinecap="round" />
+
+          {/* Crisp Pure White Five-Pointed Star (★) */}
+          <g transform="translate(4, 0) scale(1.4)">
+            {/* Star Drop Shadow */}
+            <polygon
+              points="0,-16 4.7,-4.9 16.6,-4.9 7,2.1 10.7,13.7 0,6.6 -10.7,13.7 -7,2.1 -16.6,-4.9 -4.7,-4.9"
+              fill="#000000"
+              opacity="0.3"
+              transform="translate(1, 1.5)"
+            />
+            {/* Solid Pure White Star */}
+            <polygon
+              points="0,-16 4.7,-4.9 16.6,-4.9 7,2.1 10.7,13.7 0,6.6 -10.7,13.7 -7,2.1 -16.6,-4.9 -4.7,-4.9"
+              fill="#FFFFFF"
+              stroke="#CBD5E1"
+              strokeWidth={1.2}
+              strokeLinejoin="round"
+            />
+            {/* Gentle Star Highlight */}
+            <polygon points="0,-16 0,0 4.7,-4.9" fill="#F8FAFC" opacity="0.9" />
+            <polygon points="-10.7,13.7 0,0 -7,2.1" fill="#F1F5F9" opacity="0.9" />
+          </g>
         </g>
+
+        {/* ===================== 8. HEADPAT INTERACTIVE SENSING ZONE ===================== */}
+        {/* Generous sensory area covering crown and bangs for gentle stroking */}
+        <path
+          d="M 218 200 C 218 130, 368 118, 518 130 C 530 190, 520 280, 500 320 C 440 330, 300 330, 236 320 Z"
+          fill="transparent"
+          data-testid="sawako-headpat-target"
+          className="cursor-pointer pointer-events-auto"
+          onMouseMove={onHeadpatStroke}
+          aria-label="Pet Sawako's hair"
+        />
       </g>
     </g>
   );

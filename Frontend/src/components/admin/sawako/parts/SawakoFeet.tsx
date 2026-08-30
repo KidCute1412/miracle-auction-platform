@@ -18,15 +18,12 @@ interface SawakoFeetProps {
  */
 export function SawakoFeet({
   isDragging,
-  hoveredZone,
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
   const feetClass = isDragging
     ? "animate-[airborneFeetDangle_0.42s_ease-in-out_infinite]"
-    : hoveredZone === "foot"
-      ? "animate-[shyFeetFlutter_0.5s_ease-in-out_infinite]"
-      : "transition-transform duration-200 ease-out";
+    : "transition-transform duration-200 ease-out";
 
   return (
     <g

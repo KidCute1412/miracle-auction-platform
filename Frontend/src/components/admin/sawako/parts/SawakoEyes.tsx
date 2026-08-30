@@ -53,46 +53,42 @@ export function SawakoEyes({
     );
   }
 
-  // Shy Expression: Iconic Anime `><` Tightly Shut Bashful Eyes
+  // Shy Expression: Iconic Anime `><` Tightly Shut Bashful Eyes (Brought closer together)
   if (expression === "shy") {
     return (
       <g id="eyes-shy-anime">
-        {/* Bashful Eyebrows tilted in shy embarrassment */}
-        <path d="M 248 274 Q 282 288 318 278" stroke="#16171E" strokeWidth={4.2} strokeLinecap="round" fill="none" />
-        <path d="M 418 278 Q 454 288 488 274" stroke="#16171E" strokeWidth={4.2} strokeLinecap="round" fill="none" />
+        {/* Bashful Eyebrows tilted in shy embarrassment (shifted closer to center) */}
+        <path d="M 266 274 Q 298 288 332 278" stroke="#16171E" strokeWidth={4.2} strokeLinecap="round" fill="none" />
+        <path d="M 404 278 Q 438 288 470 274" stroke="#16171E" strokeWidth={4.2} strokeLinecap="round" fill="none" />
 
-        {/* Left Eye: `>` shape */}
+        {/* Left Eye: `>` shape (shifted inward towards center) */}
         <g id="left-eye-shy">
           <path
-            d="M 256 318 L 302 338 L 256 358"
+            d="M 280 318 L 326 338 L 280 358"
             stroke="#0E0F14"
             strokeWidth={7.5}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
           />
-          {/* Upper & lower lash flicks */}
-          <line x1="256" y1="318" x2="246" y2="310" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
-          <line x1="256" y1="358" x2="246" y2="366" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
-          {/* Sparkle droplet at eye apex */}
-          <circle cx="308" cy="338" r="3.2" fill="#FFFFFF" />
+          <line x1="280" y1="318" x2="270" y2="310" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          <line x1="280" y1="358" x2="270" y2="366" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          <circle cx="331" cy="338" r="3.2" fill="#FFFFFF" />
         </g>
 
-        {/* Right Eye: `<` shape */}
+        {/* Right Eye: `<` shape (shifted inward towards center) */}
         <g id="right-eye-shy">
           <path
-            d="M 480 318 L 434 338 L 480 358"
+            d="M 456 318 L 410 338 L 456 358"
             stroke="#0E0F14"
             strokeWidth={7.5}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
           />
-          {/* Upper & lower lash flicks */}
-          <line x1="480" y1="318" x2="490" y2="310" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
-          <line x1="480" y1="358" x2="490" y2="366" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
-          {/* Sparkle droplet at eye apex */}
-          <circle cx="428" cy="338" r="3.2" fill="#FFFFFF" />
+          <line x1="456" y1="318" x2="466" y2="310" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          <line x1="456" y1="358" x2="466" y2="366" stroke="#0E0F14" strokeWidth={4} strokeLinecap="round" />
+          <circle cx="405" cy="338" r="3.2" fill="#FFFFFF" />
         </g>
       </g>
     );
