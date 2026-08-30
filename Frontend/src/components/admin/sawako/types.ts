@@ -26,6 +26,8 @@ export interface SawakoPhysics {
   isBlinking: boolean;
 }
 
+export type SawakoTimeOfDay = 'day' | 'sunset' | 'night';
+
 export interface SawakoSvgProps {
   expression: SawakoExpression;
   symbol: SawakoSymbol;
@@ -37,4 +39,11 @@ export interface SawakoSvgProps {
   scaleY?: number;
   onPokeHand?: (e: React.MouseEvent) => void;
   onPokeFoot?: (e: React.MouseEvent) => void;
+  onPokeStarClip?: (e: React.MouseEvent) => void;
+  isProtectingStar?: boolean;
+  isBeingPatted?: boolean;
+  onHeadpatStroke?: (e: React.MouseEvent) => void;
+  timeOfDay?: SawakoTimeOfDay;
+  onCycleTimeOfDay?: () => void;
 }
+
