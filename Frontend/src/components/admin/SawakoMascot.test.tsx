@@ -73,7 +73,7 @@ describe("SawakoMascot Component", () => {
     expect(
       bubble.textContent?.includes("@.@") ||
       bubble.textContent?.includes("spinning") ||
-      bubble.textContent?.includes("ribbon") ||
+      bubble.textContent?.includes("star") ||
       bubble.textContent?.includes("floating")
     ).toBe(true);
   });

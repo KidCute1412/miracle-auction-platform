@@ -290,12 +290,12 @@ export default function SawakoMascot() {
           title="Sawako is napping. Click to wake her up!"
           aria-label="Wake up Sawako the mascot"
         >
-          {/* Miniature cute pink ribbon icon */}
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-400/20 text-sm">
-            🎀
+          {/* Miniature cute star clip icon */}
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400/20 text-sm">
+            ⭐
           </span>
           <span className="hidden sm:inline font-sans tracking-wide">Sawako (Napping)</span>
-          <Sparkles className="h-3.5 w-3.5 text-pink-400 animate-pulse" />
+          <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
         </button>
       </div>
     );
@@ -329,8 +329,8 @@ export default function SawakoMascot() {
           style={{ transformOrigin: "bottom right" }}
         >
           <div className="flex items-start justify-between gap-1.5">
-            <span className="text-[10px] font-bold tracking-wider text-pink-300 font-mono">
-              Sawako 🎀
+            <span className="text-[10px] font-bold tracking-wider text-amber-300 font-mono">
+              Sawako ⭐
             </span>
             <button
               onClick={(e) => {

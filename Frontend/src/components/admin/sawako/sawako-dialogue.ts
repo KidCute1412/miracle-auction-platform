@@ -7,7 +7,7 @@ export const POKE_LINES: SawakoLine[] = [
     symbol: "anger",
   },
   {
-    text: "Eep! Hands off my ribbon!",
+    text: "Eep! Hands off my star clip!",
     expression: "pout",
     symbol: "anger",
   },
@@ -40,7 +40,7 @@ export const DIZZY_LINES: SawakoLine[] = [
     symbol: "sweat",
   },
   {
-    text: "M-Mercy! My ribbon is tangled! @.@",
+    text: "M-Mercy! My star clip is spinning! @.@",
     expression: "dizzy",
     symbol: "sweat",
   },
