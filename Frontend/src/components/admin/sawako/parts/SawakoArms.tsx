@@ -12,8 +12,8 @@ interface SawakoArmsProps {
 /**
  * SawakoArms - Romantic Muse Puffed Sleeves & Articulated Chibi Hands
  * Features:
- * - Dreamy puffed lantern sleeves with delicate lace frill cuffs matching the muse dress
- * - Bare slender forearms and soft blushing chibi fingertips
+ * - Slightly puffed sleeves with a clean, soft cuff
+ * - Connected forearms and plain, bun-shaped chibi hands
  * - Fluid kinematics: airborne flailing when dragged, cute bashful chest clutching when startled
  * - Interactive hotspot with `sawako-hands-target`
  */
@@ -50,13 +50,13 @@ export function SawakoArms({
             transform: translate(0, 0) rotate(0deg);
           }
           14% {
-            transform: translate(26px, -40px) rotate(14deg);
+            transform: translate(16px, -24px) rotate(8deg);
           }
           22% {
-            transform: translate(22px, -34px) rotate(11deg);
+            transform: translate(14px, -21px) rotate(7deg);
           }
           78% {
-            transform: translate(22px, -34px) rotate(11deg);
+            transform: translate(14px, -21px) rotate(7deg);
           }
           100% {
             transform: translate(0, 0) rotate(0deg);
@@ -67,13 +67,13 @@ export function SawakoArms({
             transform: translate(0, 0) rotate(0deg);
           }
           14% {
-            transform: translate(-26px, -40px) rotate(-14deg);
+            transform: translate(-16px, -24px) rotate(-8deg);
           }
           22% {
-            transform: translate(-22px, -34px) rotate(-11deg);
+            transform: translate(-14px, -21px) rotate(-7deg);
           }
           78% {
-            transform: translate(-22px, -34px) rotate(-11deg);
+            transform: translate(-14px, -21px) rotate(-7deg);
           }
           100% {
             transform: translate(0, 0) rotate(0deg);
@@ -146,13 +146,13 @@ export function SawakoArms({
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="left-sleeve-group"
-          className={isProtectingStar ? "animate-[shrugSleeveLeft_1.8s_ease-in-out]" : ""}
+          className=""
         >
           <path
             d="
               M 276 524
-              C 230 545, 224 600, 258 622
-              C 272 628, 290 620, 296 606
+              C 222 545, 214 604, 254 628
+              C 270 636, 292 625, 300 606
               C 284 570, 288 544, 308 532
               Z
             "
@@ -165,11 +165,11 @@ export function SawakoArms({
           <path d="M 242 568 Q 262 584 278 574" stroke="#CBD5E1" strokeWidth={1.5} strokeLinecap="round" fill="none" />
           <path d="M 252 590 Q 270 602 284 594" stroke="#CBD5E1" strokeWidth={1.5} strokeLinecap="round" fill="none" />
 
-          {/* Ruffled Lace Cuff at Puffed Sleeve Hem */}
+          {/* Clean cuff; no extra white layer or lace decoration */}
           <path
-            d="M 256 620 Q 266 628 276 622 Q 286 628 296 616"
-            stroke="#E2E8F0"
-            strokeWidth={2.4}
+            d="M 252 626 Q 270 637 298 620"
+            stroke="#CBD5E1"
+            strokeWidth={2}
             fill="none"
           />
         </g>
@@ -194,16 +194,9 @@ export function SawakoArms({
             strokeWidth={1.2}
           />
 
-          {/* Petite Chibi Left Hand */}
+          {/* Plain bun-shaped left hand */}
           <g id="left-chibi-hand" transform="translate(292, 664)">
-            <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1.2} />
-            {/* Thumb */}
-            <path d="M 12 4 C 16 5, 17 9, 14 12 C 12 11, 10 7, 12 4 Z" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1} />
-            <ellipse cx="14" cy="8" rx="2.5" ry="2.5" fill="url(#fingerBlush)" />
-            {/* Fingers */}
-            <path d="M 4 17 Q 6 19 8 17" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
-            <path d="M 0 16 Q 2 18 4 16" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
-            <ellipse cx="6" cy="14" rx="4.5" ry="3" fill="url(#fingerBlush)" />
+            <ellipse cx="7" cy="10" rx="13" ry="12" fill="#FEE3D4" stroke="#D8AA95" strokeWidth={1.4} />
           </g>
         </g>
       </g>
@@ -213,13 +206,13 @@ export function SawakoArms({
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="right-sleeve-group"
-          className={isProtectingStar ? "animate-[shrugSleeveRight_1.8s_ease-in-out]" : ""}
+          className=""
         >
           <path
             d="
               M 460 524
-              C 506 545, 512 600, 478 622
-              C 464 628, 446 620, 440 606
+              C 514 545, 522 604, 482 628
+              C 466 636, 444 625, 436 606
               C 452 570, 448 544, 428 532
               Z
             "
@@ -232,11 +225,11 @@ export function SawakoArms({
           <path d="M 494 568 Q 474 584 458 574" stroke="#CBD5E1" strokeWidth={1.5} strokeLinecap="round" fill="none" />
           <path d="M 484 590 Q 466 602 452 594" stroke="#CBD5E1" strokeWidth={1.5} strokeLinecap="round" fill="none" />
 
-          {/* Ruffled Lace Cuff at Puffed Sleeve Hem */}
+          {/* Clean cuff; no extra white layer or lace decoration */}
           <path
-            d="M 480 620 Q 470 628 460 622 Q 450 628 440 616"
-            stroke="#E2E8F0"
-            strokeWidth={2.4}
+            d="M 484 626 Q 466 637 438 620"
+            stroke="#CBD5E1"
+            strokeWidth={2}
             fill="none"
           />
         </g>
@@ -261,16 +254,9 @@ export function SawakoArms({
             strokeWidth={1.2}
           />
 
-          {/* Petite Chibi Right Hand */}
+          {/* Plain bun-shaped right hand */}
           <g id="right-chibi-hand" transform="translate(432, 664)">
-            <ellipse cx="6" cy="8" rx="9" ry="11" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1.2} />
-            {/* Thumb */}
-            <path d="M 0 4 C -4 5, -5 9, -2 12 C 0 11, 2 7, 0 4 Z" fill="#FEE3D4" stroke="#CBD5E1" strokeWidth={1} />
-            <ellipse cx="-2" cy="8" rx="2.5" ry="2.5" fill="url(#fingerBlush)" />
-            {/* Fingers */}
-            <path d="M 4 17 Q 6 19 8 17" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
-            <path d="M 8 16 Q 10 18 12 16" stroke="#DDBEA8" strokeWidth={1.2} fill="none" strokeLinecap="round" />
-            <ellipse cx="6" cy="14" rx="4.5" ry="3" fill="url(#fingerBlush)" />
+            <ellipse cx="5" cy="10" rx="13" ry="12" fill="#FEE3D4" stroke="#D8AA95" strokeWidth={1.4} />
           </g>
         </g>
       </g>

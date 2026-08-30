@@ -47,6 +47,23 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     expect(handlePokeHand).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the star clip clickable above the headpat sensing layer", () => {
+    const handlePokeStarClip = vi.fn();
+    const { getByTestId } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        onPokeStarClip={handlePokeStarClip}
+      />
+    );
+
+    fireEvent.click(getByTestId("sawako-star-clip-target"));
+    expect(handlePokeStarClip).toHaveBeenCalledTimes(1);
+  });
+
   it("handles independent foot click events and triggers onPokeFoot", () => {
     const handlePokeFoot = vi.fn();
     const { getByTestId } = render(
@@ -134,6 +151,20 @@ describe("SawakoSvg Modular Puppet Rig", () => {
 
     const firefliesLayer = container.querySelector("#sawako-fireflies-layer");
     expect(firefliesLayer).not.toBeNull();
+  });
+
+  it("renders the wandering butterfly decor around Sawako", () => {
+    const { container } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+      />
+    );
+
+    expect(container.querySelector("#sawako-wandering-butterfly")).not.toBeNull();
   });
 
   it("renders crescent moon ambient accent during night timeOfDay", () => {

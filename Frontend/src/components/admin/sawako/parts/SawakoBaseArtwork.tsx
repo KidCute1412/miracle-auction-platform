@@ -4,8 +4,10 @@ import type { SawakoExpression } from "../types";
 interface SawakoBaseArtworkProps {
   expression?: SawakoExpression;
   isHovered?: boolean;
+  isShyPeeking?: boolean;
   onPokeStarClip?: (e: React.MouseEvent) => void;
   onHeadpatStroke?: (e: React.MouseEvent) => void;
+  children?: React.ReactNode;
 }
 
 /**
@@ -21,8 +23,10 @@ interface SawakoBaseArtworkProps {
 export function SawakoBaseArtwork({
   expression,
   isHovered,
+  isShyPeeking,
   onPokeStarClip,
   onHeadpatStroke,
+  children,
 }: SawakoBaseArtworkProps) {
   const isShy = expression === "shy" || Boolean(isHovered);
 
@@ -60,12 +64,12 @@ export function SawakoBaseArtwork({
           <stop offset="100%" stopColor="#5E6584" stopOpacity="0" />
         </linearGradient>
 
-        {/* Soft Airbrush Cheeks Blush */}
+        {/* Soft Airbrush Cheeks Blush - Dreamy, Clear & Glowing without hard borders */}
         <radialGradient id="sawakoCheekAirbrush" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FF6B6B" stopOpacity={isShy ? 0.75 : 0.6} />
-          <stop offset="45%" stopColor="#FF8F8F" stopOpacity={isShy ? 0.45 : 0.35} />
-          <stop offset="75%" stopColor="#FFB8B8" stopOpacity={isShy ? 0.2 : 0.12} />
-          <stop offset="100%" stopColor="#FFB8B8" stopOpacity="0" />
+          <stop offset="0%" stopColor="#FF315F" stopOpacity={isShy ? 0.94 : 0.54} />
+          <stop offset="45%" stopColor="#FF5F82" stopOpacity={isShy ? 0.68 : 0.3} />
+          <stop offset="75%" stopColor="#FFA4B8" stopOpacity={isShy ? 0.3 : 0.1} />
+          <stop offset="100%" stopColor="#FFA4B8" stopOpacity="0" />
         </radialGradient>
 
         {/* Pristine White Muse Silk Dress Gradient */}
@@ -91,167 +95,76 @@ export function SawakoBaseArtwork({
       </defs>
 
       {/* ===================== 1. ETHEREAL MUSE DRESS ===================== */}
+      {/* ===================== 1. VINTAGE MILK-TEA KNIT VEST & PUFF BLOUSE ===================== */}
       <g id="pure-white-muse-dress">
-        {/* Under-layer Main Silhouette */}
+        {/* Chân váy xòe mềm màu nâu socola dịu dàng */}
         <path
           d="
-            M 276 522
-            Q 368 534 460 522
-            C 472 570, 466 618, 444 656
-            C 482 710, 514 772, 526 846
-            Q 368 876 210 846
-            C 222 772, 254 710, 292 656
-            C 270 618, 264 570, 276 522
+            M 295 650
+            L 226 865
+            Q 368 890 510 865
+            L 441 650
+            Q 368 662 295 650
             Z
           "
-          fill="url(#museDressSilk)"
-          stroke="#CBD5E1"
-          strokeWidth={2.2}
-        />
-
-        {/* Bodice with Scooped Neckline */}
-        <path
-          d="
-            M 306 526
-            C 324 554, 346 558, 368 556
-            C 390 558, 412 554, 430 526
-            C 434 560, 426 592, 404 602
-            C 386 592, 370 592, 352 602
-            C 328 592, 318 560, 306 526
-            Z
-          "
-          fill="#FFFFFF"
-          stroke="#E2E8F0"
-          strokeWidth={1.6}
-        />
-
-        {/* Scooped Neckline Scalloped Lace Frill Trim */}
-        <path
-          d="
-            M 304 526
-            Q 316 540 326 534
-            Q 336 548 348 544
-            Q 358 556 368 554
-            Q 378 556 388 544
-            Q 400 548 410 534
-            Q 420 540 432 526
-          "
-          stroke="#CBD5E1"
-          strokeWidth={2.2}
-          fill="none"
-        />
-        <path
-          d="
-            M 306 528
-            C 326 554, 346 558, 368 556
-            C 390 558, 410 554, 430 528
-          "
-          stroke="#FFFFFF"
-          strokeWidth={2.6}
-          fill="none"
-        />
-
-        {/* Muse Bodice Ribbons */}
-        <g stroke="#E2E8F0" strokeWidth={1.4} strokeLinecap="round" fill="none">
-          <path d="M 338 548 C 340 566, 344 584, 348 600" />
-          <path d="M 358 556 C 360 572, 362 588, 364 601" />
-          <path d="M 378 556 C 376 572, 374 588, 372 601" />
-          <path d="M 398 548 C 396 566, 392 584, 388 600" />
-        </g>
-
-        {/* Petite Center Silk Bow at Scooped Neckline */}
-        <g id="muse-bodice-bow" transform="translate(368, 558)">
-          <circle cx="0" cy="0" r="3.5" fill="#FDE2E4" stroke="#F472B6" strokeWidth={1.2} />
-          <path d="M 0 0 C -7 -7, -15 -5, -13 2 C -11 6, -4 2, 0 0 Z" fill="#FFF1F2" stroke="#F472B6" strokeWidth={1} />
-          <path d="M 0 0 C 7 -7, 15 -5, 13 2 C 11 6, 4 2, 0 0 Z" fill="#FFF1F2" stroke="#F472B6" strokeWidth={1} />
-          <path d="M -2 2 Q -5 14 -8 24" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
-          <path d="M 2 2 Q 5 14 8 24" stroke="#F472B6" strokeWidth={1.5} fill="none" strokeLinecap="round" />
-        </g>
-
-        {/* Fitted High-Empire Waist Sash */}
-        <path
-          d="M 292 656 Q 368 668 444 656"
-          stroke="#CBD5E1"
-          strokeWidth={2.4}
-          fill="none"
-          strokeLinecap="round"
-        />
-        <path
-          d="M 296 660 Q 368 672 440 660"
-          stroke="#FFFFFF"
+          fill="#78350F"
+          stroke="#451A03"
           strokeWidth={2}
-          fill="none"
         />
+        {/* Nếp xếp rủ chân váy */}
+        <g stroke="#92400E" strokeWidth={1.8} strokeLinecap="round" fill="none">
+          <path d="M 330 655 C 322 720, 305 800, 290 866" />
+          <path d="M 368 656 C 368 725, 368 805, 368 876" stroke="#B45309" strokeWidth={2.2} />
+          <path d="M 406 655 C 414 720, 431 800, 446 866" />
+        </g>
 
-        {/* Skirt Tier 1: Flowing Upper Flounce */}
+        {/* Áo sơ mi trắng bên trong */}
+        {/* Áo gile len dệt họa tiết quả trám màu trà sữa (Milk-Tea Argyle Vest) */}
         <path
           d="
-            M 288 660
-            C 264 705, 252 748, 250 762
-            Q 368 784 486 762
-            C 484 748, 472 705, 448 660
-            Q 368 672 288 660
+            M 292 524
+            L 334 580
+            L 368 550
+            L 402 580
+            L 444 524
+            L 434 650
+            Q 368 662 302 650
             Z
           "
-          fill="#FFFFFF"
-          stroke="#CBD5E1"
+          fill="#FDE68A"
+          stroke="#D97706"
           strokeWidth={1.8}
         />
+
+        {/* Cổ sơ mi trắng bẻ tròn & nơ lụa nhỏ */}
         <path
-          d="
-            M 250 762
-            Q 276 774 302 768
-            Q 328 776 354 770
-            Q 380 776 406 770
-            Q 432 776 458 768
-            Q 476 774 486 762
-          "
+          d="M 334 522 Q 350 545 368 538 Q 386 545 402 522 Z"
+          fill="#FFFFFF"
           stroke="#CBD5E1"
-          strokeWidth={2}
+          strokeWidth={1.6}
+        />
+        <circle cx={368} cy={548} r={2.4} fill="#B45309" />
+
+        {/* Họa tiết quả trám dệt len */}
+        <polygon
+          points="368,575 382,595 368,615 354,595"
           fill="none"
+          stroke="#D97706"
+          strokeWidth={1.4}
         />
-        <path
-          d="M 252 764 Q 368 786 484 764 Q 368 778 252 764 Z"
-          fill="url(#museTierShadow)"
-        />
-
-        {/* Skirt Tier 2: Billowing Lower Flounce with Cascading Folds */}
-        <g stroke="#CBD5E1" strokeWidth={2} strokeLinecap="round" fill="none">
-          <path d="M 248 768 C 242 805, 230 836, 218 852" />
-          <path d="M 290 772 C 288 808, 280 844, 274 860" />
-          <path d="M 334 772 C 334 812, 332 850, 328 864" />
-          <path d="M 368 774 C 368 815, 368 854, 368 866" strokeWidth={2.4} stroke="#94A3B8" />
-          <path d="M 402 772 C 402 812, 404 850, 408 864" />
-          <path d="M 446 772 C 448 808, 456 844, 462 860" />
-          <path d="M 488 768 C 494 805, 506 836, 518 852" />
-        </g>
-
-        {/* Luminous Silk Highlights on Flounce */}
-        <g stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round" fill="none" opacity="0.95">
-          <path d="M 270 774 C 268 810, 260 844, 252 858" />
-          <path d="M 312 772 C 314 814, 312 852, 308 864" />
-          <path d="M 424 772 C 422 814, 424 852, 428 864" />
-          <path d="M 466 774 C 468 810, 476 844, 484 858" />
-        </g>
-
-        {/* Dreamy Ruffled Scalloped Bottom Hem */}
-        <path
-          d="
-            M 210 846
-            Q 240 860 270 854
-            Q 302 864 336 858
-            Q 368 866 400 858
-            Q 434 864 466 854
-            Q 496 860 526 846
-          "
-          stroke="#FFFFFF"
-          strokeWidth={3.6}
+        <polygon
+          points="368,615 382,635 368,655 354,635"
           fill="none"
+          stroke="#D97706"
+          strokeWidth={1.4}
         />
+
+        {/* Viền sọc len ở gấu áo gile */}
         <path
-          d="M 212 848 Q 368 878 524 848 Q 368 868 212 848 Z"
-          fill="#CBD5E1"
-          opacity="0.5"
+          d="M 305 644 Q 368 656 431 644"
+          stroke="#B45309"
+          strokeWidth={1.5}
+          fill="none"
         />
       </g>
 
@@ -276,11 +189,13 @@ export function SawakoBaseArtwork({
       </g>
 
       {/* ===================== 4. BALANCED SWEET SHOUJO OVAL FACE ===================== */}
+      {/* Phương Án 3: Cằm Trứng Oval Dịu Nhẹ (Y=479, giảm 50% độ nhọn, thanh tú và nữ tính) */}
       <path
         d="
           M 218 318
-          C 214 382, 262 462, 368 484
-          C 474 462, 522 382, 518 318
+          C 214 382, 258 456, 340 478
+          C 358 481, 378 481, 396 478
+          C 478 456, 522 382, 518 318
           C 518 222, 474 174, 368 174
           C 262 174, 218 222, 218 318
           Z
@@ -296,25 +211,23 @@ export function SawakoBaseArtwork({
         fill="url(#sawakoForeheadShadow)"
       />
 
-      {/* ===================== 5. AIRBRUSH CHEEKS BLUSH & HATCHINGS ===================== */}
+      {/* ===================== 5. AIRBRUSH CHEEKS BLUSH ===================== */}
       <g id="cheeks-blush-layer">
-        <ellipse cx="274" cy="380" rx={isShy ? 41 : 37} ry={isShy ? 24 : 22} fill="url(#sawakoCheekAirbrush)" />
-        <g stroke="#FF4D4D" strokeWidth={isShy ? 2 : 1.75} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
-          <line x1="258" y1="382" x2="266" y2="370" />
-          <line x1="266" y1="385" x2="274" y2="370" />
-          <line x1="274" y1="386" x2="282" y2="370" />
-          <line x1="282" y1="386" x2="290" y2="370" />
-          <line x1="290" y1="384" x2="298" y2="372" />
-        </g>
-
-        <ellipse cx="462" cy="380" rx={isShy ? 41 : 37} ry={isShy ? 24 : 22} fill="url(#sawakoCheekAirbrush)" />
-        <g stroke="#FF4D4D" strokeWidth={isShy ? 2 : 1.75} strokeLinecap="round" opacity={isShy ? 0.92 : 0.82}>
-          <line x1="438" y1="382" x2="446" y2="372" />
-          <line x1="446" y1="384" x2="454" y2="370" />
-          <line x1="454" y1="386" x2="462" y2="370" />
-          <line x1="462" y1="386" x2="470" y2="370" />
-          <line x1="470" y1="385" x2="478" y2="370" />
-        </g>
+        {/* Má hồng sương mai tán mịn chuẩn Anime: rõ nét, ngọt ngào nhưng tán dần về 0% không viền cứng */}
+        <ellipse
+          cx="276"
+          cy="376"
+          rx={isShyPeeking ? 34 : isShy ? 29 : 26}
+          ry={isShyPeeking ? 20 : isShy ? 17 : 15}
+          fill="url(#sawakoCheekAirbrush)"
+        />
+        <ellipse
+          cx="460"
+          cy="376"
+          rx={isShyPeeking ? 34 : isShy ? 29 : 26}
+          ry={isShyPeeking ? 20 : isShy ? 17 : 15}
+          fill="url(#sawakoCheekAirbrush)"
+        />
       </g>
 
       {/* Tiny Delicate Anime Nose */}
@@ -323,38 +236,50 @@ export function SawakoBaseArtwork({
         <circle cx="368" cy="392" r="1.5" fill="#B9695C" />
       </g>
 
-      {/* ===================== 6. SIGNATURE LONG ANIME BANGS & HIME CHEEK LOCKS ===================== */}
+      {/* ===================== FACIAL FEATURES (EYES, MOUTH) ===================== */}
+      {/* Rendered directly on the face skin, perfectly layered UNDER the bangs */}
+      {children}
+
+      {/* ===================== 6. UNIFIED COMPLETE SHOUJO HAIR SILHOUETTE ===================== */}
       {/*
-        True to Kuronuma Sawako in "Sawako better.jpg":
-        1. Length: Bangs reach down to eye level (Y=312 to 316), skimming right over the upper eyelashes.
-           Completely removes the "ngố" (dorky high bangs) appearance.
-        2. Cheek Locks (Tóc mai ôm má): Tapered strands hug both cheeks down to Y=370, giving Sawako her
-           iconic slender, innocent, beautiful shoujo anime face.
-        3. Center Lock: Soft, feathery, natural center bang falling between the eyes.
-        4. Airy Slits: Small organic peeks showing the soft brow line underneath.
+        Hợp nhất 100% thành 1 Path duy nhất (Single Unified Silhouette):
+        - Vòm đầu (Crown)
+        - 2 Lọn tóc trước buông rủ dày dặn (Y=798) phủ trước thân áo đầm
+        - Mái chữ nhật dịu dàng không chóp nhọn
+        ==> 100% Tự nhiên, ZERO vết cắt, xóa sạch cảm giác tóc giả!
       */}
-      <g id="sawako-lengthened-shoujo-bangs">
-        {/* Main Hair Silhouette: Crown, Long Bangs reaching down to eyes (Y=314), and Cheek-Framing Strands (Y=370) */}
+      <g id="sawako-lengthened-shoujo-bangs" className="pointer-events-none">
+        {/* Main Unified Hair Silhouette */}
         <path
           d="
             M 204 316
             C 192 220, 244 136, 368 136
             C 492 136, 544 220, 532 316
-            C 528 348, 516 380, 508 372
-            C 502 344, 498 316, 490 312
-            C 482 290, 474 290, 468 312
-            C 462 316, 452 316, 446 312
-            C 438 292, 430 292, 424 312
-            C 418 316, 404 316, 396 314
-            L 392 316
-            C 384 317, 352 317, 344 316
-            L 340 314
-            C 332 316, 318 316, 312 312
-            C 306 292, 298 292, 290 312
-            C 284 316, 274 316, 268 312
-            C 262 290, 254 290, 246 312
-            C 238 316, 234 344, 228 372
-            C 220 380, 208 348, 204 316
+            C 532 400, 524 490, 508 575
+            C 496 635, 484 705, 496 760
+            C 500 775, 506 790, 502 798
+            C 498 790, 488 765, 478 715
+            C 464 645, 462 565, 476 485
+            C 486 425, 490 370, 492 316
+            L 414 316
+            C 410 316, 408 312, 408 304
+            L 408 298
+            C 408 295, 396 295, 396 298
+            L 396 304
+            C 396 312, 394 316, 390 316
+            L 346 316
+            C 342 316, 340 312, 340 304
+            L 340 298
+            C 340 295, 328 295, 328 298
+            L 328 304
+            C 328 312, 326 316, 322 316
+            L 244 316
+            C 246 370, 250 425, 260 485
+            C 274 565, 272 645, 258 715
+            C 248 765, 238 790, 234 798
+            C 230 790, 236 775, 240 760
+            C 252 705, 242 635, 230 575
+            C 216 490, 208 400, 204 316
             Z
           "
           fill="url(#sawakoHairBase)"
@@ -363,45 +288,21 @@ export function SawakoBaseArtwork({
           strokeLinejoin="round"
         />
 
-        {/* Delicate inner separation shadow lines for feathery depth */}
-        <g stroke="#090A0E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.85">
-          {/* Cheek Framing Strands Separation */}
-          <path d="M 226 318 C 228 340, 226 360, 228 372" />
-          <path d="M 510 318 C 508 340, 510 360, 508 372" />
+        {/* Các đường kẽ chỉ uốn lượn tự nhiên & phân tách lọn tóc */}
+        <g stroke="#090A0E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity={0.85}>
+          {/* Rãnh mái trán */}
+          <line x1="284" y1="286" x2="284" y2="315" />
+          <line x1="368" y1="286" x2="368" y2="315" />
+          <line x1="452" y1="286" x2="452" y2="315" />
 
-          {/* Left Bangs Feathery Slits */}
-          <path d="M 258 288 C 262 300, 266 312, 268 312" />
-          <path d="M 280 290 C 284 302, 288 312, 290 312" />
-          <path d="M 302 290 C 306 302, 310 312, 312 312" />
+          {/* Đường gân phản quang lụa dọc thân 2 lọn tóc trước */}
+          <path d="M 226 340 C 220 440, 242 550, 246 650 C 248 710, 242 755, 238 785" stroke="#5E6584" strokeWidth={2} opacity={0.7} />
+          <path d="M 510 340 C 516 440, 494 550, 490 650 C 488 710, 494 755, 498 785" stroke="#5E6584" strokeWidth={2} opacity={0.7} />
 
-          {/* Center Signature Fringe Boundaries */}
-          <path d="M 342 284 L 342 315" />
-          <path d="M 394 284 L 394 315" />
-          <line x1="368" y1="290" x2="368" y2="316" stroke="#252736" strokeWidth={1.2} />
-
-          {/* Right Bangs Feathery Slits */}
-          <path d="M 424 312 C 426 302, 430 290, 434 290" />
-          <path d="M 446 312 C 448 302, 452 290, 456 290" />
-          <path d="M 468 312 C 470 300, 474 288, 478 288" />
+          <path d="M 238 410 C 236 500, 256 590, 252 680" stroke="#8F96B8" strokeWidth={1.3} opacity="0.45" />
+          <path d="M 498 410 C 500 500, 480 590, 484 680" stroke="#8F96B8" strokeWidth={1.3} opacity="0.45" />
         </g>
 
-        {/* Fine, flowing hair luster lines running along the length */}
-        <g stroke="#3A3E54" strokeWidth={1.2} strokeLinecap="round" fill="none" opacity="0.6">
-          {/* Left Cheek Lock Luster */}
-          <path d="M 214 260 C 218 295, 220 335, 222 365" />
-          <line x1="246" y1="240" x2="248" y2="308" />
-          <line x1="276" y1="225" x2="278" y2="306" />
-          <line x1="308" y1="215" x2="308" y2="306" />
-          {/* Center Lock Luster */}
-          <line x1="356" y1="205" x2="356" y2="310" />
-          <line x1="380" y1="205" x2="380" y2="310" />
-          {/* Right Bangs Luster */}
-          <line x1="428" y1="215" x2="428" y2="306" />
-          <line x1="458" y1="225" x2="458" y2="306" />
-          <line x1="490" y1="240" x2="488" y2="308" />
-          {/* Right Cheek Lock Luster */}
-          <path d="M 522 260 C 518 295, 516 335, 514 365" />
-        </g>
 
         {/* Luminous Angel-Ring Curved Hair Sheen */}
         <path
@@ -424,6 +325,16 @@ export function SawakoBaseArtwork({
           strokeLinecap="round"
           fill="none"
           opacity={0.8}
+        />
+
+        {/* Headpat sensing stays behind the interactive star hit target. */}
+        <path
+          d="M 218 200 C 218 130, 368 118, 518 130 C 530 190, 520 280, 500 320 C 440 330, 300 330, 236 320 Z"
+          fill="transparent"
+          data-testid="sawako-headpat-target"
+          className="cursor-pointer pointer-events-auto"
+          onMouseMove={onHeadpatStroke}
+          aria-label="Pet Sawako's hair"
         />
 
         {/* ===================== 7. AUTHENTIC WHITE STAR HAIRPIN & BOBBY PINS ===================== */}
@@ -475,14 +386,6 @@ export function SawakoBaseArtwork({
 
         {/* ===================== 8. HEADPAT INTERACTIVE SENSING ZONE ===================== */}
         {/* Generous sensory area covering crown and bangs for gentle stroking */}
-        <path
-          d="M 218 200 C 218 130, 368 118, 518 130 C 530 190, 520 280, 500 320 C 440 330, 300 330, 236 320 Z"
-          fill="transparent"
-          data-testid="sawako-headpat-target"
-          className="cursor-pointer pointer-events-auto"
-          onMouseMove={onHeadpatStroke}
-          aria-label="Pet Sawako's hair"
-        />
       </g>
     </g>
   );

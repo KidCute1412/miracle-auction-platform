@@ -46,4 +46,3 @@ export interface SawakoSvgProps {
   timeOfDay?: SawakoTimeOfDay;
   onCycleTimeOfDay?: () => void;
 }
-

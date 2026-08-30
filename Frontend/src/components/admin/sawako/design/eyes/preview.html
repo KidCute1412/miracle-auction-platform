@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bộ Sưu Tập Mới: 10 Trang Phục Nàng Thơ Dịu Dàng Cho Sawako (Giữ #04 & #06)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-main: #0A0910;
+      --bg-card: rgba(20, 17, 30, 0.95);
+      --border-card: rgba(244, 214, 225, 0.16);
+      --accent-rose: #E0A7B5;
+      --accent-gold: #E8D3A7;
+      --accent-blue: #38BDF8;
+      --accent-glow: rgba(224, 167, 181, 0.28);
+      --text-main: #FAF5F7;
+      --text-sub: #A89CA2;
+    }
+
+    [data-theme="light"] {
+      --bg-main: #FAF7F9;
+      --bg-card: rgba(255, 255, 255, 0.98);
+      --border-card: rgba(214, 164, 178, 0.25);
+      --accent-rose: #B85973;
+      --accent-gold: #B48325;
+      --accent-blue: #0284C7;
+      --accent-glow: rgba(184, 89, 115, 0.22);
+      --text-main: #23181C;
+      --text-sub: #635359;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 3rem 1.5rem 6rem;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(224, 167, 181, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 90%, rgba(232, 211, 167, 0.1) 0%, transparent 45%);
+    }
+
+    .container { max-width: 1640px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 3rem; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.5rem 1.4rem;
+      border-radius: 9999px;
+      background: rgba(224, 167, 181, 0.16);
+      border: 1px solid rgba(224, 167, 181, 0.45);
+      color: var(--accent-rose);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #FFF 0%, #E8D3A7 50%, #E0A7B5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    [data-theme="light"] h1 {
+      background: linear-gradient(135deg, #23181C 0%, #6E3B4E 50%, #A04D65 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-sub);
+      font-size: 1.12rem;
+      max-width: 960px;
+      margin: 0 auto 2rem;
+      line-height: 1.7;
+    }
+
+    .theme-toggle-btn {
+      padding: 0.6rem 1.35rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-bottom: 2.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--accent-rose);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 2.5rem;
+      margin-bottom: 4rem;
+    }
+
+    .dress-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 1.4rem;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      position: relative;
+    }
+
+    .dress-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-rose);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35), 0 0 26px var(--accent-glow);
+    }
+
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .variant-number {
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      background: rgba(224, 167, 181, 0.18);
+      color: var(--accent-rose);
+    }
+
+    .variant-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.18rem;
+      font-weight: 700;
+      flex-grow: 1;
+      margin-left: 0.75rem;
+    }
+
+    .stage-wrapper {
+      padding: 1.25rem 1rem;
+      background: #FFF4ED;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 540px;
+      overflow: hidden;
+      position: relative;
+      border-bottom: 1px solid var(--border-card);
+    }
+
+    .card-body {
+      padding: 1.5rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .concept-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .desc-list {
+      list-style: none;
+      margin-bottom: 1.25rem;
+    }
+
+    .desc-list li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--text-sub);
+      line-height: 1.55;
+    }
+
+    .desc-list li::before {
+      content: "✦";
+      position: absolute;
+      left: 0.1rem;
+      color: var(--accent-rose);
+      font-size: 0.82rem;
+      line-height: 1.2;
+    }
+
+    .select-btn {
+      width: 100%;
+      padding: 0.88rem;
+      border-radius: 0.85rem;
+      border: 1px solid var(--border-card);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .select-btn:hover {
+      background: var(--accent-rose);
+      color: #0E0C12;
+      border-color: var(--accent-rose);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+    /* Arm design lab */
+    .arm-lab { margin: 0 0 3.5rem; padding: 2rem; border: 1px solid rgba(232,211,167,.42); border-radius: 1.5rem; background: linear-gradient(145deg, rgba(38,29,41,.98), rgba(17,17,26,.98)); box-shadow: 0 18px 55px rgba(0,0,0,.32), 0 0 32px rgba(232,211,167,.09); }
+    [data-theme="light"] .arm-lab { background: rgba(255,255,255,.96); }
+    .arm-lab-intro { text-align: center; max-width: 860px; margin: 0 auto 1.8rem; }
+    .arm-lab-intro h2 { font-family: 'Playfair Display', serif; font-size: clamp(1.7rem,3vw,2.35rem); margin: .55rem 0 .65rem; }
+    .arm-lab-intro p { color: var(--text-sub); line-height: 1.65; }
+    .arm-lab-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 1.25rem; }
+    .arm-option { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-card); border-radius: 1.15rem; background: rgba(255,255,255,.045); transition: transform .25s ease,border-color .25s ease,box-shadow .25s ease; }
+    .arm-option:hover { transform: translateY(-5px); border-color: var(--accent-gold); box-shadow: 0 14px 30px rgba(0,0,0,.2); }
+    .arm-option.recommended { border-color: var(--accent-rose); box-shadow: 0 0 20px rgba(224,167,181,.12); }
+    .arm-option-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .9rem 1rem; border-bottom: 1px solid var(--border-card); }
+    .arm-option-head strong { font-family: 'Playfair Display', serif; font-size: 1.08rem; }
+    .arm-pill { color: var(--accent-gold); font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .arm-canvas { min-height: 310px; padding: 1rem; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%,#fffdfa,#f9e9e3 78%); }
+    .arm-canvas svg { width: 100%; max-width: 330px; height: 285px; overflow: visible; }
+    .arm-option-body { display: flex; flex: 1; flex-direction: column; padding: 1rem; }
+    .arm-option-body p { flex: 1; color: var(--text-sub); font-size: .82rem; line-height: 1.6; margin-bottom: 1rem; }
+    .arm-option-body p strong { color: var(--text-main); }
+    .arm-option .select-btn { padding: .72rem; font-size: .82rem; }
+    .legacy-arm-studio { display: none !important; }
+    @media (max-width: 640px) { .arm-lab { padding: 1.15rem; } .arm-lab-grid { grid-template-columns: 1fr; } }
+    .arm-lab { display: none !important; }
+    .arm-only-lab { margin: 0 0 3.5rem; padding: 2rem; border: 1px solid rgba(232,211,167,.42); border-radius: 1.5rem; background: linear-gradient(145deg, rgba(38,29,41,.98), rgba(17,17,26,.98)); box-shadow: 0 18px 55px rgba(0,0,0,.32); }
+    [data-theme="light"] .arm-only-lab { background: rgba(255,255,255,.96); }
+    .arm-only-intro { text-align: center; max-width: 800px; margin: 0 auto 1.7rem; }
+    .arm-only-intro h2 { font-family: 'Playfair Display',serif; font-size: clamp(1.7rem,3vw,2.3rem); margin: .55rem 0 .6rem; }
+    .arm-only-intro p { color: var(--text-sub); line-height: 1.65; }
+    .arm-only-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 1.25rem; }
+    .arm-only-card { display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--border-card); border-radius:1.1rem; background:rgba(255,255,255,.045); }
+    .arm-only-card:first-child { border-color:var(--accent-rose); }
+    .arm-only-title { padding:.9rem 1rem; border-bottom:1px solid var(--border-card); display:flex; justify-content:space-between; gap:.5rem; font-family:'Playfair Display',serif; }
+    .arm-only-title small { color:var(--accent-gold); font:700 .65rem 'Plus Jakarta Sans',sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+    .arm-only-stage { min-height:260px; display:grid; place-items:center; padding:1rem; background:radial-gradient(circle,#fffdfa,#f9e9e3 78%); }
+    .arm-only-stage svg { width:100%; max-width:330px; height:240px; overflow:visible; }
+    .arm-only-copy { padding:1rem; color:var(--text-sub); font-size:.82rem; line-height:1.6; }
+    .arm-only-copy strong { color:var(--text-main); }
+    .arm-only-copy .select-btn { margin-top:.9rem; padding:.72rem; font-size:.82rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">Tuyển Tập Nàng Thơ • Giữ Lại #04 & #06, Đổi Mới 8 Phong Cách Ấm Áp Dịu Dàng</div>
+      <h1>10 Phong Cách Nàng Thơ Dịu Dàng Cho Sawako</h1>
+      <p class="subtitle">
+        Theo sở thích của bạn: <strong>Giữ lại Thiết Kế #04 (Nữ sinh thanh xuân Kimi ni Todoke) và #06 (Thiếu nữ mùa thu áo len ấm áp)</strong>, đồng thời sáng tạo 8 phong cách mới xoay quanh cảm hứng trang phục phối layer, len dệt kim, sơ mi vintage và đầm mềm mại đậm chất anime lãng mạn!
+      </p>
+      <button class="theme-toggle-btn" onclick="document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light')">
+        🌗 Đổi Giao Diện Sáng / Tối
+      </button>
+    </header>
+
+    <section class="arm-only-lab" aria-labelledby="arm-only-title">
+      <div class="arm-only-intro">
+        <span class="badge">Arm Detail Study · Sleeve + Hand Only</span>
+        <h2 id="arm-only-title">Thiết kế riêng phần cánh tay và bàn tay</h2>
+        <p>Không minh họa thân người. Tập trung vào dáng tay áo và bàn tay tròn mũm mĩm kiểu bánh bao, ít nét ngón để nhìn tự nhiên hơn.</p>
+      </div>
+      <div class="arm-only-grid">
+        <article class="arm-only-card"><div class="arm-only-title"><span>A · Tay áo sơ mi tự nhiên</span><small>Gợi ý chính</small></div><div class="arm-only-stage"><svg viewBox="0 0 330 240" role="img" aria-label="Cánh tay áo sơ mi với bàn tay thả tự nhiên"><defs><linearGradient id="oa" x1="0" x2="1"><stop stop-color="#fff"/><stop offset=".6" stop-color="#e9eef4"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path d="M78 25 C48 44 35 82 44 122 C50 148 65 164 88 158 L137 132 L151 49 L119 28Z" fill="url(#oa)" stroke="#aeb9c7" stroke-width="2.5"/><path d="M252 25 C282 44 295 82 286 122 C280 148 265 164 242 158 L193 132 L179 49 L211 28Z" fill="url(#oa)" stroke="#aeb9c7" stroke-width="2.5"/><path d="M48 105 Q76 119 111 101 M282 105 Q254 119 219 101" fill="none" stroke="#c1cad5" stroke-width="2" stroke-linecap="round"/><path d="M73 151 L104 160 L96 181 L65 171Z M257 151 L226 160 L234 181 L265 171Z" fill="#fff" stroke="#8998a8" stroke-width="2"/><circle cx="86" cy="164" r="2.5" fill="#b8863d"/><circle cx="244" cy="164" r="2.5" fill="#b8863d"/><path d="M78 173 C78 194 83 211 96 222 L115 214 L109 177Z M252 173 C252 194 247 211 234 222 L215 214 L221 177Z" fill="#f8d8c7" stroke="#bd8a78" stroke-width="2"/><path d="M94 211 C77 207 67 217 72 229 C77 239 95 240 108 231 L119 218 L111 211Z M236 211 C253 207 263 217 258 229 C253 239 235 240 222 231 L211 218 L219 211Z" fill="#ffe4d5" stroke="#bd8a78" stroke-width="2"/><path d="M82 222 Q94 227 104 220 M248 222 Q236 227 226 220" fill="none" stroke="#a97668" stroke-width="1.5"/></svg></div><div class="arm-only-copy"><strong>Thon, rõ khớp, không bị cứng.</strong> Cuff vuông nhẹ, cổ tay nối thẳng vào bàn tay và ngón cái tách vừa đủ để bàn tay có chiều sâu.<button class="select-btn" style="background:var(--accent-rose);color:#0E0C12" onclick="alert('Đã chọn A · Tay áo sơ mi tự nhiên')">Chọn A</button></div></article>
+
+        <article class="arm-only-card"><div class="arm-only-title"><span>B · Tay áo phồng cổ tay</span><small>Mềm mại</small></div><div class="arm-only-stage"><svg viewBox="0 0 330 240" role="img" aria-label="Cánh tay áo phồng với bàn tay khép nhẹ"><path d="M78 25 C42 42 32 92 48 132 C59 157 78 164 101 151 L139 126 L150 47 L118 28Z M252 25 C288 42 298 92 282 132 C271 157 252 164 229 151 L191 126 L180 47 L212 28Z" fill="#fff8fb" stroke="#c79aae" stroke-width="2.5"/><path d="M49 113 Q77 128 108 111 M281 113 Q253 128 222 111" fill="none" stroke="#c18ba1" stroke-width="2"/><path d="M73 148 Q89 159 107 148 L111 170 Q92 181 76 169Z M257 148 Q241 159 223 148 L219 170 Q238 181 254 169Z" fill="#f5e5eb" stroke="#b9859a" stroke-width="2"/><path d="M82 164 Q83 193 97 214 L116 207 L109 168Z M248 164 Q247 193 233 214 L214 207 L221 168Z" fill="#f8d7c5" stroke="#bd8a78" stroke-width="2"/><path d="M95 203 Q78 198 73 211 Q72 224 88 229 Q105 231 116 217 L121 208 L111 202Z M235 203 Q252 198 257 211 Q258 224 242 229 Q225 231 214 217 L209 208 L219 202Z" fill="#ffe4d5" stroke="#bd8a78" stroke-width="2"/><path d="M85 214 Q96 218 105 212 M245 214 Q234 218 225 212" fill="none" stroke="#a97668" stroke-width="1.5"/></svg></div><div class="arm-only-copy"><strong>Cổ tay gom nhẹ, bàn tay khép.</strong> Phù hợp dáng e ấp; phần phồng chỉ nằm ở tay áo, không làm cánh tay trông ngắn hoặc nặng.<button class="select-btn" onclick="alert('Đã chọn B · Tay áo phồng cổ tay')">Chọn B</button></div></article>
+
+        <article class="arm-only-card"><div class="arm-only-title"><span>C · Tay áo len bo gân</span><small>Ấm áp</small></div><div class="arm-only-stage"><svg viewBox="0 0 330 240" role="img" aria-label="Cánh tay áo len bo gân với bàn tay nắm mềm"><path d="M78 25 C46 45 38 89 49 130 C57 157 78 166 101 151 L139 126 L150 47 L118 28Z M252 25 C284 45 292 89 281 130 C273 157 252 166 229 151 L191 126 L180 47 L212 28Z" fill="#f2d783" stroke="#b78932" stroke-width="2.5"/><g fill="none" stroke="#c19643" stroke-width="2"><path d="M67 43 Q54 90 78 135"/><path d="M84 36 Q72 92 95 137"/><path d="M263 43 Q276 90 252 135"/><path d="M246 36 Q258 92 235 137"/></g><path d="M72 147 Q91 158 109 147 L114 172 Q92 183 70 170Z M258 147 Q239 158 221 147 L216 172 Q238 183 260 170Z" fill="#d4ad57" stroke="#a5792d" stroke-width="2"/><path d="M80 168 L111 171 L119 207 L99 218 L80 203Z M250 168 L219 171 L211 207 L231 218 L250 203Z" fill="#f8d8c7" stroke="#bd8a78" stroke-width="2"/><path d="M96 204 Q79 199 74 212 Q73 226 90 231 Q106 232 119 218 L122 208 L112 202Z M234 204 Q251 199 256 212 Q257 226 240 231 Q224 232 211 218 L208 208 L218 202Z" fill="#ffe3d2" stroke="#bd8a78" stroke-width="2"/><path d="M86 215 Q97 220 107 213 M244 215 Q233 220 223 213" fill="none" stroke="#a97668" stroke-width="1.5"/></svg></div><div class="arm-only-copy"><strong>Gọn và chắc ở cổ tay.</strong> Gân dọc giúp tay áo có cấu trúc, bàn tay nắm rất nhẹ để vẫn giữ vẻ dịu dàng anime.<button class="select-btn" onclick="alert('Đã chọn C · Tay áo len bo gân')">Chọn C</button></div></article>
+
+        <article class="arm-only-card"><div class="arm-only-title"><span>D · Tay áo rơi tự nhiên</span><small>Tối giản</small></div><div class="arm-only-stage"><svg viewBox="0 0 330 240" role="img" aria-label="Cánh tay áo rơi tự nhiên với bàn tay thả lỏng"><path d="M82 24 C54 49 48 93 57 137 C63 162 81 172 105 158 L143 130 L151 45 L119 26Z M248 24 C276 49 282 93 273 137 C267 162 249 172 225 158 L187 130 L179 45 L211 26Z" fill="#e9edf3" stroke="#9caabd" stroke-width="2.5"/><path d="M59 126 Q84 140 111 125 M271 126 Q246 140 219 125" fill="none" stroke="#b4bfce" stroke-width="2"/><path d="M80 157 L109 164 L104 181 L76 174Z M250 157 L221 164 L226 181 L254 174Z" fill="#dbe2ec" stroke="#8d9db0" stroke-width="2"/><path d="M86 173 Q87 199 98 218 L115 221 L122 207 L108 174Z M244 173 Q243 199 232 218 L215 221 L208 207 L222 174Z" fill="#f8d8c7" stroke="#bd8a78" stroke-width="2"/><path d="M100 211 Q84 208 80 220 Q82 232 96 235 Q111 235 121 222 L123 211 L113 208Z M230 211 Q246 208 250 220 Q248 232 234 235 Q219 235 209 222 L207 211 L217 208Z" fill="#ffe4d5" stroke="#bd8a78" stroke-width="2"/><path d="M91 221 Q100 225 110 220 M239 221 Q230 225 220 220" fill="none" stroke="#a97668" stroke-width="1.5"/></svg></div><div class="arm-only-copy"><strong>Ít chi tiết, tự nhiên nhất.</strong> Đường tay áo thẳng và bàn tay thả lỏng phù hợp nếu muốn thiết kế cuối cùng sạch, nhẹ, không quá điệu.<button class="select-btn" onclick="alert('Đã chọn D · Tay áo rơi tự nhiên')">Chọn D</button></div></article>
+      </div>
+    </section>
+
+    <section class="arm-lab" aria-labelledby="arm-lab-title">
+      <div class="arm-lab-intro">
+        <span class="badge">Arm &amp; Sleeve Design Lab · New Pass</span>
+        <h2 id="arm-lab-title">4 hướng thiết kế tay áo, cánh tay &amp; bàn tay mới</h2>
+        <p>Ưu tiên tỷ lệ tay thanh hơn, cổ tay chuyển tiếp tự nhiên và bàn tay có dáng rõ ràng khi thu nhỏ. Mỗi option dùng cùng một thân Sawako để bạn tập trung vào phần tay.</p>
+      </div>
+
+      <div class="arm-lab-grid">
+        <article class="arm-option recommended">
+          <div class="arm-option-head"><strong>A · Tailored Cuff</strong><span class="arm-pill">Recommended</span></div>
+          <div class="arm-canvas"><svg viewBox="0 0 360 300" role="img" aria-label="Tay áo sơ mi dài với cổ tay may đo và bàn tay mở nhẹ"><defs><linearGradient id="shirtA" x1="0" x2="1"><stop stop-color="#fff"/><stop offset=".55" stop-color="#eef2f6"/><stop offset="1" stop-color="#fff"/></linearGradient><linearGradient id="skinA" x1="0" x2="1"><stop stop-color="#f8d6c4"/><stop offset="1" stop-color="#ffe9dc"/></linearGradient></defs><path d="M114 57Q180 78 246 57L270 246Q180 270 90 246Z" fill="#f6d47b" stroke="#c78b32" stroke-width="2"/><path d="M140 57Q160 75 180 72Q200 75 220 57L207 108Q180 122 153 108Z" fill="#fff" stroke="#cbd5e1" stroke-width="2"/><path d="M113 61C78 74 50 115 62 163C68 184 84 197 106 188L137 157L147 76Z" fill="url(#shirtA)" stroke="#aeb9c7" stroke-width="2.2"/><path d="M247 61C282 74 310 115 298 163C292 184 276 197 254 188L223 157L213 76Z" fill="url(#shirtA)" stroke="#aeb9c7" stroke-width="2.2"/><path d="M72 142Q93 154 124 143M68 157Q91 169 119 160M288 142Q267 154 236 143M292 157Q269 169 241 160" fill="none" stroke="#c5ced8" stroke-width="2" stroke-linecap="round"/><path d="M88 180L115 190L108 210L82 200Z M272 180L245 190L252 210L278 200Z" fill="#fff" stroke="#8c9bab" stroke-width="2"/><circle cx="101" cy="195" r="2" fill="#c79b52"/><circle cx="259" cy="195" r="2" fill="#c79b52"/><path d="M95 204C91 220 94 235 105 245L122 237L120 207Z M265 204C269 220 266 235 255 245L238 237L240 207Z" fill="url(#skinA)" stroke="#c99884" stroke-width="1.8"/><path d="M103 238C88 234 80 242 85 253C90 263 105 264 116 257L126 248L119 240Z M257 238C272 234 280 242 275 253C270 263 255 264 244 257L234 248L241 240Z" fill="url(#skinA)" stroke="#c99884" stroke-width="1.8"/><path d="M94 248Q103 252 112 247M266 248Q257 252 248 247" fill="none" stroke="#b77f70" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="arm-option-body"><p><strong>Thanh lịch và dễ ghép nhất.</strong> Tay áo rủ theo cánh tay, cuff có đường may và nút nhỏ; bàn tay mở nhẹ tạo silhouette mềm, không còn cảm giác “cục khoai”.</p><button class="select-btn" style="background:var(--accent-rose);color:#0E0C12" onclick="alert('Đã chọn A · Tailored Cuff')">Chọn phương án A</button></div>
+        </article>
+
+        <article class="arm-option">
+          <div class="arm-option-head"><strong>B · Poet Sleeve</strong><span class="arm-pill">Soft &amp; Romantic</span></div>
+          <div class="arm-canvas"><svg viewBox="0 0 360 300" role="img" aria-label="Tay áo phồng nhẹ với cổ tay xếp ly và bàn tay chụm"><path d="M115 58Q180 77 245 58L264 244Q180 264 96 244Z" fill="#f5cfda" stroke="#bf7890" stroke-width="2"/><path d="M145 58Q180 82 215 58L205 108Q180 120 155 108Z" fill="#fff" stroke="#d5bac5" stroke-width="2"/><path d="M112 62C62 74 38 110 60 161C68 180 88 193 110 181L144 148L146 77Z M248 62C298 74 322 110 300 161C292 180 272 193 250 181L216 148L214 77Z" fill="#fff8fb" stroke="#cbaebb" stroke-width="2.2"/><path d="M58 153Q84 167 118 151M302 153Q276 167 242 151" fill="none" stroke="#c08ca0" stroke-width="2"/><path d="M83 178Q102 188 121 177L116 197Q101 204 87 195Z M277 178Q258 188 239 177L244 197Q259 204 273 195Z" fill="#f8edf2" stroke="#b9869a" stroke-width="2"/><path d="M91 194Q94 223 110 239L127 232L117 196Z M269 194Q266 223 250 239L233 232L243 196Z" fill="#f8d8c8" stroke="#c99884" stroke-width="1.8"/><path d="M107 234Q96 228 88 238Q85 248 96 253Q111 257 122 247L130 239L121 233Z M253 234Q264 228 272 238Q275 248 264 253Q249 257 238 247L230 239L239 233Z" fill="#ffe5d6" stroke="#c99884" stroke-width="1.8"/><path d="M101 242Q108 245 115 242M259 242Q252 245 245 242" fill="none" stroke="#b77f70" stroke-width="1.4"/></svg></div>
+          <div class="arm-option-body"><p><strong>Nữ tính, thơ mộng.</strong> Phần phồng được gom ở cuff bằng xếp ly nhỏ, giúp tay áo có nhịp điệu thay vì một mảng trắng phẳng.</p><button class="select-btn" onclick="alert('Đã chọn B · Poet Sleeve')">Chọn phương án B</button></div>
+        </article>
+
+        <article class="arm-option">
+          <div class="arm-option-head"><strong>C · Ribbed Knit</strong><span class="arm-pill">Cozy</span></div>
+          <div class="arm-canvas"><svg viewBox="0 0 360 300" role="img" aria-label="Tay áo len bo gân với bàn tay nắm mềm"><path d="M112 58Q180 77 248 58L263 246Q180 264 97 246Z" fill="#f8df98" stroke="#b78932" stroke-width="2"/><path d="M145 58Q180 80 215 58L204 110Q180 122 156 110Z" fill="#fff" stroke="#d1b66d" stroke-width="2"/><path d="M112 62C71 72 47 112 60 159C67 184 87 194 109 183L143 151L147 78Z M248 62C289 72 313 112 300 159C293 184 273 194 251 183L217 151L213 78Z" fill="#f2d783" stroke="#b78932" stroke-width="2.2"/><g stroke="#c19643" stroke-width="2" opacity=".8"><path d="M80 83Q70 122 91 169"/><path d="M96 77Q87 125 106 162"/><path d="M280 83Q290 122 269 169"/><path d="M264 77Q273 125 254 162"/></g><path d="M87 181Q101 189 119 181L123 204Q103 215 85 204Z M273 181Q259 189 241 181L237 204Q257 215 275 204Z" fill="#d8b15d" stroke="#a77b2c" stroke-width="2"/><path d="M94 202L119 204L126 238L108 247L93 231Z M266 202L241 204L234 238L252 247L267 231Z" fill="#f7d5c2" stroke="#bf8d79" stroke-width="1.8"/><path d="M105 231C91 226 83 234 87 247C92 259 108 259 121 249L126 239L117 232Z M255 231C269 226 277 234 273 247C268 259 252 259 239 249L234 239L243 232Z" fill="#ffe3d2" stroke="#bf8d79" stroke-width="1.8"/><path d="M98 242Q108 247 116 241M262 242Q252 247 244 241" fill="none" stroke="#aa7668" stroke-width="1.4"/></svg></div>
+          <div class="arm-option-body"><p><strong>Ấm áp và đồng bộ áo len.</strong> Cổ tay bo gân tạo điểm kết thúc chắc, các đường knit dọc làm cánh tay gọn hơn và hợp với outfit mùa thu.</p><button class="select-btn" onclick="alert('Đã chọn C · Ribbed Knit')">Chọn phương án C</button></div>
+        </article>
+
+        <article class="arm-option">
+          <div class="arm-option-head"><strong>D · Soft Cape</strong><span class="arm-pill">Editorial</span></div>
+          <div class="arm-canvas"><svg viewBox="0 0 360 300" role="img" aria-label="Tay áo cape mềm với cánh tay lộ nhẹ và bàn tay thả tự nhiên"><path d="M113 58Q180 78 247 58L260 246Q180 264 100 246Z" fill="#d6e2f4" stroke="#8197bc" stroke-width="2"/><path d="M143 58Q180 81 217 58L205 108Q180 121 155 108Z" fill="#fff" stroke="#b5c4da" stroke-width="2"/><path d="M112 62Q60 77 51 130Q48 164 75 184Q100 195 124 174L146 119L145 75Z M248 62Q300 77 309 130Q312 164 285 184Q260 195 236 174L214 119L215 75Z" fill="#e5edfb" stroke="#8197bc" stroke-width="2.2"/><path d="M68 159Q90 179 122 162M292 159Q270 179 238 162" fill="none" stroke="#a4b7d3" stroke-width="2"/><path d="M94 176Q108 187 124 177L119 195Q105 202 91 193Z M266 176Q252 187 236 177L241 195Q255 202 269 193Z" fill="#eef4ff" stroke="#8197bc" stroke-width="2"/><path d="M96 191Q95 219 103 240L119 245L128 231L117 193Z M264 191Q265 219 257 240L241 245L232 231L243 193Z" fill="#f7d7c5" stroke="#bf8d79" stroke-width="1.8"/><path d="M105 236Q90 233 87 245Q87 258 101 261Q115 261 126 247L128 237L118 234Z M255 236Q270 233 273 245Q273 258 259 261Q245 261 234 247L232 237L242 234Z" fill="#ffe5d6" stroke="#bf8d79" stroke-width="1.8"/><path d="M99 248Q108 252 117 246M261 248Q252 252 243 246" fill="none" stroke="#aa7668" stroke-width="1.4"/></svg></div>
+          <div class="arm-option-body"><p><strong>Thoáng và có tính minh họa.</strong> Cape tạo đường vai mềm, để lộ một đoạn cẳng tay giúp tổng thể nhẹ và duyên hơn khi đặt cạnh tóc dài của Sawako.</p><button class="select-btn" onclick="alert('Đã chọn D · Soft Cape')">Chọn phương án D</button></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ==================== STUDIO THIẾT KẾ CÁNH TAY, NẮM TAY & TAY ÁO SƠ MI ==================== -->
+    <div class="legacy-arm-studio" style="background: var(--bg-card); border: 2px solid var(--accent-rose); border-radius: 1.5rem; padding: 2.2rem; margin-bottom: 3.5rem; box-shadow: 0 16px 48px rgba(0,0,0,0.35), 0 0 30px var(--accent-glow);">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge" style="background: rgba(224, 167, 181, 0.25); border-color: var(--accent-rose); font-size: 0.9rem;">
+          Studio Thiết Kế Cánh Tay, Nắm Tay & Tay Áo
+        </span>
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 2rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+          Bạn Nhận Xét Cực Kỳ Tinh Tế: Tay Áo Cũ Là Tay Váy Đầm, Chưa Phải Tay Áo Sơ Mi!
+        </h2>
+        <p style="color: var(--text-sub); max-width: 860px; margin: 0 auto; line-height: 1.65; font-size: 0.95rem;">
+          Tay áo trước đây là tay phồng lửng viền ren sò của bộ đầm dạ hội cũ, cẳng tay thô và bàn tay bị vẽ dạng elip giống củ khoai. Dưới đây là <strong>3 kiểu thiết kế tay áo sơ mi & bàn tay anime e ấp chuẩn mực</strong> để phối hợp hoàn hảo với áo gile len số #03!
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2rem;">
+
+        <!-- KIỂU A: TAY SƠ MI DÀI BO CỔ TAY CÓ CÚC & NẮM TAY E ẤP -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1.5px solid var(--accent-rose); border-radius: 1.25rem; overflow: hidden; display: flex; flex-direction: column;">
+          <div style="padding: 1rem 1.25rem; background: rgba(224, 167, 181, 0.15); font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
+            <span>Kiểu A: Tay Sơ Mi Dài Bo Cổ Tay & Nắm Tay E Ấp</span>
+            <span style="font-size: 0.75rem; color: var(--accent-rose);">★ KHUYÊN DÙNG</span>
+          </div>
+          <div style="background: #FFF4ED; display: flex; justify-content: center; align-items: center; padding: 1.5rem; min-height: 380px;">
+            <svg viewBox="200 490 336 240" width="280" height="200">
+              <defs>
+                <radialGradient id="armBlushA" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#FFA6A6" stop-opacity="0.8" />
+                  <stop offset="100%" stop-color="#FFA6A6" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <!-- Thân áo gile len #03 làm nền -->
+              <path d="M 292 524 L 334 580 L 368 550 L 402 580 L 444 524 L 434 650 Q 368 662 302 650 Z" fill="#FDE68A" stroke="#D97706" stroke-width="1.8" />
+              <!-- Cổ sơ mi & nơ -->
+              <path d="M 334 522 Q 350 545 368 538 Q 386 545 402 522 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" />
+              <circle cx="368" cy="548" r="2.4" fill="#B45309" />
+              <polygon points="368,575 382,595 368,615 354,595" fill="none" stroke="#D97706" stroke-width="1.4" />
+              <!-- Váy nâu -->
+              <path d="M 302 650 L 250 720 Q 368 740 486 720 L 434 650 Z" fill="#78350F" stroke="#451A03" stroke-width="1.6" />
+
+              <!-- TAY ÁO SƠ MI DÀI TAY TRÁI (LONG SLEEVE) -->
+              <path d="M 276 524 C 236 545, 230 600, 252 638 C 266 648, 282 642, 290 635 C 280 595, 284 555, 306 530 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+              <!-- Nếp nhăn lụa sơ mi ở khuỷu tay -->
+              <path d="M 248 580 Q 268 596 280 584" stroke="#CBD5E1" stroke-width="1.4" stroke-linecap="round" fill="none" />
+              <path d="M 256 605 Q 272 616 284 606" stroke="#CBD5E1" stroke-width="1.4" stroke-linecap="round" fill="none" />
+              <!-- Bo cổ tay áo sơ mi có viền may & cúc nhỏ -->
+              <path d="M 268 632 L 294 638 L 290 646 L 264 640 Z" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.4" />
+              <circle cx="280" cy="638" r="1.4" fill="#94A3B8" />
+
+              <!-- NẮM TAY TRÁI ANIME E ẤP (SHY ANIME FIST) -->
+              <g transform="translate(282, 642)">
+                <!-- Cổ tay thon -->
+                <path d="M 2 0 L 14 3 L 13 8 L 1 5 Z" fill="#FFF4ED" />
+                <!-- Mu bàn tay tròn mềm -->
+                <ellipse cx="10" cy="11" rx="8" ry="7.5" fill="#FEE3D4" stroke="#CBD5E1" stroke-width="1.2" />
+                <!-- 4 ngón tay cuộn tròn mềm mại -->
+                <path d="M 5 8 C 3 11, 4 15, 7 17 C 10 19, 14 18, 17 14 C 18 11, 16 7, 13 6" fill="#FEE3D4" stroke="#DDBEA8" stroke-width="1.2" />
+                <!-- Các rãnh khớp ngón tay -->
+                <path d="M 7 12 Q 10 13 13 11" stroke="#DDBEA8" stroke-width="1" fill="none" stroke-linecap="round" />
+                <path d="M 8 15 Q 11 16 14 14" stroke="#DDBEA8" stroke-width="1" fill="none" stroke-linecap="round" />
+                <!-- Ngón cái khép nhẹ tự nhiên -->
+                <path d="M 14 7 C 17 8, 18 12, 15 14" stroke="#DDBEA8" stroke-width="1.2" fill="#FEE3D4" />
+                <!-- Phấn hồng đầu ngón tay -->
+                <ellipse cx="10" cy="13" rx="4" ry="3.5" fill="url(#armBlushA)" />
+              </g>
+
+              <!-- TAY ÁO SƠ MI DÀI TAY PHẢI (LONG SLEEVE) -->
+              <path d="M 460 524 C 500 545, 506 600, 484 638 C 470 648, 454 642, 446 635 C 456 595, 452 555, 430 530 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+              <!-- Nếp nhăn lụa sơ mi ở khuỷu tay -->
+              <path d="M 488 580 Q 468 596 456 584" stroke="#CBD5E1" stroke-width="1.4" stroke-linecap="round" fill="none" />
+              <path d="M 480 605 Q 464 616 452 606" stroke="#CBD5E1" stroke-width="1.4" stroke-linecap="round" fill="none" />
+              <!-- Bo cổ tay áo sơ mi có viền may & cúc nhỏ -->
+              <path d="M 468 632 L 442 638 L 446 646 L 472 640 Z" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.4" />
+              <circle cx="456" cy="638" r="1.4" fill="#94A3B8" />
+
+              <!-- NẮM TAY PHẢI ANIME E ẤP (SHY ANIME FIST) -->
+              <g transform="translate(436, 642)">
+                <!-- Cổ tay thon -->
+                <path d="M 14 0 L 2 3 L 3 8 L 15 5 Z" fill="#FFF4ED" />
+                <!-- Mu bàn tay tròn mềm -->
+                <ellipse cx="6" cy="11" rx="8" ry="7.5" fill="#FEE3D4" stroke="#CBD5E1" stroke-width="1.2" />
+                <!-- 4 ngón tay cuộn tròn mềm mại -->
+                <path d="M 11 8 C 13 11, 12 15, 9 17 C 6 19, 2 18, -1 14 C -2 11, 0 7, 3 6" fill="#FEE3D4" stroke="#DDBEA8" stroke-width="1.2" />
+                <!-- Các rãnh khớp ngón tay -->
+                <path d="M 9 12 Q 6 13 3 11" stroke="#DDBEA8" stroke-width="1" fill="none" stroke-linecap="round" />
+                <path d="M 8 15 Q 5 16 2 14" stroke="#DDBEA8" stroke-width="1" fill="none" stroke-linecap="round" />
+                <!-- Ngón cái khép nhẹ tự nhiên -->
+                <path d="M 2 7 C -1 8, -2 12, 1 14" stroke="#DDBEA8" stroke-width="1.2" fill="#FEE3D4" />
+                <!-- Phấn hồng đầu ngón tay -->
+                <ellipse cx="6" cy="13" rx="4" ry="3.5" fill="url(#armBlushA)" />
+              </g>
+            </svg>
+          </div>
+          <div style="padding: 1.25rem;">
+            <p style="font-size: 0.88rem; color: var(--text-sub); line-height: 1.55; margin-bottom: 1rem;">
+              • <strong>Tay áo dài đúng chất sơ mi vintage</strong>: Rủ mềm mại từ nách áo gile xuống tận cổ tay, có bo gấu sơ mi và cúc ngọc trai nhỏ.<br />
+              • <strong>Đôi nắm tay anime e ấp</strong>: 4 ngón tay cuộn tròn bẽn lẽn, ngón cái khép nhẹ, khớp tay tròn trịa có má hồng phớt cực kỳ tự nhiên.
+            </p>
+            <button class="select-btn" style="background: var(--accent-rose); color: #0E0C12;" onclick="alert('Đã chọn Kiểu A!')">Áp Dụng Kiểu A (Khuyên Dùng)</button>
+          </div>
+        </div>
+
+        <!-- KIỂU B: TAY SƠ MI LỬNG QUA KHUỶU BO CHUN & BÀN TAY KHÉP -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-card); border-radius: 1.25rem; overflow: hidden; display: flex; flex-direction: column;">
+          <div style="padding: 1rem 1.25rem; background: rgba(255, 255, 255, 0.05); font-weight: 700;">
+            Kiểu B: Tay Sơ Mi Lửng Bo Chun Bèo & Bàn Tay Khép
+          </div>
+          <div style="background: #FFF4ED; display: flex; justify-content: center; align-items: center; padding: 1.5rem; min-height: 380px;">
+            <svg viewBox="200 490 336 240" width="280" height="200">
+              <!-- Thân áo gile len #03 làm nền -->
+              <path d="M 292 524 L 334 580 L 368 550 L 402 580 L 444 524 L 434 650 Q 368 662 302 650 Z" fill="#FDE68A" stroke="#D97706" stroke-width="1.8" />
+              <!-- Cổ sơ mi & nơ -->
+              <path d="M 334 522 Q 350 545 368 538 Q 386 545 402 522 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" />
+              <circle cx="368" cy="548" r="2.4" fill="#B45309" />
+              <!-- Váy nâu -->
+              <path d="M 302 650 L 250 720 Q 368 740 486 720 L 434 650 Z" fill="#78350F" stroke="#451A03" stroke-width="1.6" />
+
+              <!-- Tay lửng trái bo chun bèo -->
+              <path d="M 276 524 C 230 540, 226 585, 256 605 C 270 610, 286 602, 294 590 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+              <path d="M 252 604 Q 262 612 274 606 Q 284 612 294 602" stroke="#CBD5E1" stroke-width="1.6" fill="none" />
+              <!-- Cẳng tay trắng ngọc ngà -->
+              <path d="M 264 604 C 260 625, 276 652, 294 656 L 302 648 C 292 632, 282 616, 284 604 Z" fill="#FFF4ED" stroke="#CBD5E1" stroke-width="1.2" />
+              <!-- Bàn tay khép ngón đoan trang -->
+              <ellipse cx="300" cy="658" rx="7.5" ry="9" fill="#FEE3D4" stroke="#CBD5E1" stroke-width="1.2" />
+              <path d="M 295 662 Q 300 666 305 662" stroke="#DDBEA8" stroke-width="1" fill="none" />
+
+              <!-- Tay lửng phải bo chun bèo -->
+              <path d="M 460 524 C 506 540, 510 585, 480 605 C 466 610, 450 602, 442 590 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+              <path d="M 484 604 Q 474 612 462 606 Q 452 612 442 602" stroke="#CBD5E1" stroke-width="1.6" fill="none" />
+              <!-- Cẳng tay phải -->
+              <path d="M 472 604 C 476 625, 460 652, 442 656 L 434 648 C 444 632, 454 616, 452 604 Z" fill="#FFF4ED" stroke="#CBD5E1" stroke-width="1.2" />
+              <!-- Bàn tay khép ngón phải -->
+              <ellipse cx="436" cy="658" rx="7.5" ry="9" fill="#FEE3D4" stroke="#CBD5E1" stroke-width="1.2" />
+              <path d="M 441 662 Q 436 666 431 662" stroke="#DDBEA8" stroke-width="1" fill="none" />
+            </svg>
+          </div>
+          <div style="padding: 1.25rem;">
+            <p style="font-size: 0.88rem; color: var(--text-sub); line-height: 1.55; margin-bottom: 1rem;">
+              • <strong>Tay áo lửng qua khuỷu bo bèo nhún</strong>: Để lộ cẳng tay thanh mảnh, nhẹ nhàng.<br />
+              • <strong>Bàn tay khép đoan trang</strong>: Ngón tay khép nhẹ e lệ trước ngực.
+            </p>
+            <button class="select-btn" onclick="alert('Đã chọn Kiểu B!')">Chọn Kiểu B</button>
+          </div>
+        </div>
+
+        <!-- KIỂU C: TAY BỒNG NGẮN NĂNG ĐỘNG & NẮM TAY CHIBI -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-card); border-radius: 1.25rem; overflow: hidden; display: flex; flex-direction: column;">
+          <div style="padding: 1rem 1.25rem; background: rgba(255, 255, 255, 0.05); font-weight: 700;">
+            Kiểu C: Tay Bồng Ngắn & Nắm Tay Chibi Tròn Tròn
+          </div>
+          <div style="background: #FFF4ED; display: flex; justify-content: center; align-items: center; padding: 1.5rem; min-height: 380px;">
+            <svg viewBox="200 490 336 240" width="280" height="200">
+              <!-- Thân áo gile len #03 làm nền -->
+              <path d="M 292 524 L 334 580 L 368 550 L 402 580 L 444 524 L 434 650 Q 368 662 302 650 Z" fill="#FDE68A" stroke="#D97706" stroke-width="1.8" />
+              <!-- Cổ sơ mi & nơ -->
+              <path d="M 334 522 Q 350 545 368 538 Q 386 545 402 522 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" />
+              <circle cx="368" cy="548" r="2.4" fill="#B45309" />
+              <!-- Váy nâu -->
+              <path d="M 302 650 L 250 720 Q 368 740 486 720 L 434 650 Z" fill="#78350F" stroke="#451A03" stroke-width="1.6" />
+
+              <!-- Tay áo bồng ngắn trái -->
+              <ellipse cx="260" cy="555" rx="20" ry="24" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+              <path d="M 260 575 L 290 645" stroke="#FEE3D4" stroke-width="10" stroke-linecap="round" />
+              <circle cx="295" cy="650" r="10" fill="#FEE3D4" stroke="#CBD5E1" stroke-width="1.2" />
+
+              <!-- Tay áo bồng ngắn phải -->
+              <ellipse cx="476" cy="555" rx="20" ry="24" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+              <path d="M 476 575 L 446 645" stroke="#FEE3D4" stroke-width="10" stroke-linecap="round" />
+              <circle cx="441" cy="650" r="10" fill="#FEE3D4" stroke="#CBD5E1" stroke-width="1.2" />
+            </svg>
+          </div>
+          <div style="padding: 1.25rem;">
+            <p style="font-size: 0.88rem; color: var(--text-sub); line-height: 1.55; margin-bottom: 1rem;">
+              • <strong>Tay bồng tròn ngắn bo gấu gọn</strong>: Năng động, thanh xuân và tươi tắn.<br />
+              • <strong>Nắm tay tròn chibi</strong>: Phong cách ngộ nghĩnh, tinh nghịch.
+            </p>
+            <button class="select-btn" onclick="alert('Đã chọn Kiểu C!')">Chọn Kiểu C</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <div class="showcase-grid">
+
+      <!-- ==================== #01 (MỚI): CARDIGAN XANH BABY & ĐẦM LỤA XẾP NẾP ==================== -->
+      <div class="dress-card" id="dress-1">
+        <div class="card-header">
+          <span class="variant-number">#01</span>
+          <div class="variant-title">Cardigan Xanh Baby & Đầm Lụa Mềm (Mới)</div>
+          <span style="font-size: 0.75rem; color: #38BDF8; font-weight: 700;">DỊU MÁT THANH KHIẾT</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Váy lụa mềm xếp nếp rủ suôn mượt -->
+            <path d="M 288 640 L 220 865 Q 368 890 516 865 L 448 640 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+            <g stroke="#CBD5E1" stroke-width="1.8" stroke-linecap="round" fill="none">
+              <path d="M 368 645 L 368 875" stroke="#94A3B8" stroke-width="2.2" />
+              <path d="M 324 648 C 314 720, 296 800, 280 866" />
+              <path d="M 412 648 C 422 720, 440 800, 456 866" />
+            </g>
+            <!-- Áo len Cardigan mỏng màu xanh Baby dịu mát khoác ngoài -->
+            <path d="M 276 524 C 260 560, 270 610, 290 648 Q 368 662 446 648 C 466 610, 476 560, 460 524 Q 368 534 276 524 Z" fill="#BAE6FD" stroke="#38BDF8" stroke-width="1.8" />
+            <!-- Cổ tim mở hờ để lộ xương quai xanh & cúc ngọc trai đơn -->
+            <path d="M 318 526 C 334 554, 350 560, 368 558 C 386 560, 402 554, 418 526 Z" fill="#F8DDCB" stroke="#1c1d24" stroke-width="2" />
+            <circle cx="368" cy="578" r="2.8" fill="#FFFFFF" stroke="#38BDF8" stroke-width="1" />
+            <circle cx="368" cy="608" r="2.8" fill="#FFFFFF" stroke="#38BDF8" stroke-width="1" />
+            <!-- Tay áo len xanh baby bồng nhẹ -->
+            <path d="M 276 524 C 230 545, 224 600, 258 622 C 272 628, 290 620, 296 606 Z" fill="#BAE6FD" stroke="#38BDF8" stroke-width="1.8" />
+            <path d="M 460 524 C 506 545, 512 600, 478 622 C 464 628, 446 620, 440 606 Z" fill="#BAE6FD" stroke="#38BDF8" stroke-width="1.8" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Baby Blue Cardigan & Silk Slip</div>
+          <ul class="desc-list">
+            <li><strong>Áo len cardigan xanh Baby mỏng nhẹ</strong>: Tạo cảm giác trong lành như bầu trời sớm mai.</li>
+            <li><strong>Đầm lụa trắng rủ suôn mượt</strong>: Hòa quyện nét thanh xuân và sự ấm dịu.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #01!')">Chọn Thiết Kế #01</button>
+        </div>
+      </div>
+
+      <!-- ==================== #02 (MỚI): TIỂU THƯ MÙA ĐÔNG KHĂN LEN ĐỎ ==================== -->
+      <div class="dress-card" id="dress-2">
+        <div class="card-header">
+          <span class="variant-number">#02</span>
+          <div class="variant-title">Mùa Đông Ấm Áp Khăn Len Đỏ (Mới)</div>
+          <span style="font-size: 0.75rem; color: #EF4444; font-weight: 700;">LÃNG MẠN TUYẾT TRẮNG</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Áo măng tô dạ cashmere màu kem ấm áp -->
+            <path d="M 276 524 C 284 570, 288 630, 290 680 L 230 865 Q 368 890 506 865 L 446 680 C 448 630, 452 570, 460 524 Z" fill="#FEFCE8" stroke="#CBD5E1" stroke-width="2" />
+            <!-- Khăn quàng len đỏ thắm ấm áp quấn quanh cổ (Kỷ niệm tuyết đầu mùa) -->
+            <g id="red-winter-scarf">
+              <!-- Vòng quấn cổ bồng ấm -->
+              <path d="M 300 520 Q 368 535 436 520 Q 445 555 368 565 Q 290 555 300 520 Z" fill="#DC2626" stroke="#991B1B" stroke-width="1.8" />
+              <!-- Dải khăn len đỏ buông rủ dọc ngực áo -->
+              <path d="M 346 560 L 340 680 L 366 685 L 368 564 Z" fill="#DC2626" stroke="#991B1B" stroke-width="1.6" />
+              <!-- Tua rua khăn len -->
+              <line x1="342" y1="680" x2="340" y2="695" stroke="#DC2626" stroke-width="2" />
+              <line x1="350" y1="682" x2="349" y2="697" stroke="#DC2626" stroke-width="2" />
+              <line x1="358" y1="683" x2="358" y2="698" stroke="#DC2626" stroke-width="2" />
+              <line x1="365" y1="685" x2="366" y2="700" stroke="#DC2626" stroke-width="2" />
+            </g>
+            <!-- Tay áo khoác dạ bồng nhẹ -->
+            <path d="M 276 524 C 226 545, 220 610, 256 635 C 270 642, 288 632, 294 616 Z" fill="#FEFCE8" stroke="#CBD5E1" stroke-width="1.8" />
+            <path d="M 460 524 C 510 545, 516 610, 480 635 C 466 642, 448 632, 442 616 Z" fill="#FEFCE8" stroke="#CBD5E1" stroke-width="1.8" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Winter Cashmere & Red Scarf</div>
+          <ul class="desc-list">
+            <li><strong>Khăn len đỏ thắm nổi bật</strong>: Chi tiết kinh điển trong các khoảnh khắc lãng mạn nhất của *Kimi ni Todoke*.</li>
+            <li><strong>Áo dạ cashmere màu kem ấm áp</strong>: Dịu dàng, che chở và đong đầy tình cảm.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #02!')">Chọn Thiết Kế #02</button>
+        </div>
+      </div>
+
+      <!-- ==================== #03 (MỚI): GILE LEN TRÀ SỮA & SƠ MI TAY BỒNG ==================== -->
+      <div class="dress-card" id="dress-3">
+        <div class="card-header">
+          <span class="variant-number">#03</span>
+          <div class="variant-title">Gile Len Trà Sữa & Sơ Mi Tay Bồng (Mới)</div>
+          <span style="font-size: 0.75rem; color: #D97706; font-weight: 700;">HỌC VIỆN THƠ MỘNG</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Chân váy xòe nâu socola dịu dàng -->
+            <path d="M 295 650 L 226 865 Q 368 890 510 865 L 441 650 Z" fill="#78350F" stroke="#451A03" stroke-width="2" />
+            <!-- Áo sơ mi trắng tay phồng bồng bềnh bên trong -->
+            <path d="M 270 524 C 220 545, 212 610, 248 638 C 264 645, 284 635, 292 618 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+            <path d="M 466 524 C 516 545, 524 610, 488 638 C 472 645, 452 635, 444 618 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+            <!-- Áo gile len dệt quả trám màu trà sữa (Milk-Tea Argyle Vest) -->
+            <path d="M 292 524 L 334 580 L 368 550 L 402 580 L 444 524 L 434 650 Q 368 662 302 650 Z" fill="#FDE68A" stroke="#D97706" stroke-width="1.8" />
+            <!-- Cổ sơ mi trắng bẻ tròn & nơ lụa nhỏ -->
+            <path d="M 334 522 Q 350 545 368 538 Q 386 545 402 522 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" />
+            <circle cx="368" cy="548" r="2.4" fill="#B45309" />
+            <!-- Họa tiết quả trám dệt len -->
+            <polygon points="368,575 382,595 368,615 354,595" fill="none" stroke="#D97706" stroke-width="1.4" />
+            <polygon points="368,615 382,635 368,655 354,635" fill="none" stroke="#D97706" stroke-width="1.4" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Vintage Knit Vest & Puff Shirt</div>
+          <ul class="desc-list">
+            <li><strong>Áo gile len dệt họa tiết quả trám</strong>: Phong cách nữ sinh tri thức cổ điển, nền nã.</li>
+            <li><strong>Sơ mi trắng tay bồng</strong>: Tôn vinh nét dịu dàng, ngoan hiền của Sawako.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #03!')">Chọn Thiết Kế #03</button>
+        </div>
+      </div>
+
+      <!-- ==================== #04 (GIỮ LẠI THEO YÊU CẦU): NỮ SINH THANH XUÂN KIMI NI TODOKE ==================== -->
+      <div class="dress-card" id="dress-4" style="border-color: #38BDF8; box-shadow: 0 0 26px rgba(56, 189, 248, 0.3);">
+        <div class="card-header">
+          <span class="variant-number">#04</span>
+          <div class="variant-title">Nữ Sinh Thanh Xuân (Kimi ni Todoke Classic)</div>
+          <span style="font-size: 0.75rem; color: #38BDF8; font-weight: 700;">★ BẠN ĐÃ DUYỆT GIỮ LẠI</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Váy xếp ly nữ sinh xanh navy thanh thuần -->
+            <path d="M 300 645 L 230 855 Q 368 875 506 855 L 436 645 Z" fill="#1E293B" stroke="#0F172A" stroke-width="2" />
+            <!-- Nếp gấp xếp ly học đường -->
+            <g stroke="#334155" stroke-width="1.6" stroke-linecap="round" fill="none">
+              <line x1="280" y1="655" x2="260" y2="855" />
+              <line x1="324" y1="655" x2="310" y2="858" />
+              <line x1="368" y1="655" x2="368" y2="860" stroke="#475569" stroke-width="2" />
+              <line x1="412" y1="655" x2="426" y2="858" />
+              <line x1="456" y1="655" x2="476" y2="855" />
+            </g>
+            <!-- Áo len dệt kim mỏng màu be ấm khoác ngoài sơ mi -->
+            <path d="M 276 524 C 260 560, 270 610, 290 648 Q 368 662 446 648 C 466 610, 476 560, 460 524 Q 368 534 276 524 Z" fill="#FEF3C7" stroke="#D97706" stroke-width="1.8" />
+            <!-- Cổ sơ mi trắng bẻ ve & Nơ lụa đỏ thanh xuân -->
+            <path d="M 334 522 L 350 554 L 368 536 L 386 554 L 402 522 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" />
+            <polygon points="368,548 375,558 368,568 361,558" fill="#EF4444" />
+            <path d="M 364 564 L 356 585" stroke="#EF4444" stroke-width="2" stroke-linecap="round" />
+            <path d="M 372 564 L 380 585" stroke="#EF4444" stroke-width="2" stroke-linecap="round" />
+            <!-- Tay áo len màu be phồng nhẹ -->
+            <path d="M 276 524 C 230 545, 224 600, 258 622 C 272 628, 290 620, 296 606 Z" fill="#FEF3C7" stroke="#D97706" stroke-width="1.6" />
+            <path d="M 460 524 C 506 545, 512 600, 478 622 C 464 628, 446 620, 440 606 Z" fill="#FEF3C7" stroke="#D97706" stroke-width="1.6" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Schoolgirl Nostalgia (Kimi ni Todoke)</div>
+          <ul class="desc-list">
+            <li><strong>Hình tượng nữ sinh nguyên bản</strong>: Tái hiện trọn vẹn sự thuần khiết, trong sáng của Sawako trong *Kimi ni Todoke*.</li>
+            <li><strong>Áo len dệt kim màu be & nơ đỏ</strong>: Dịu dàng, ngây thơ và cực kỳ gần gũi ấm áp.</li>
+          </ul>
+          <button class="select-btn" style="background: var(--accent-blue); color: #0E0C12;" onclick="alert('Đã chọn #04!')">Chọn Thiết Kế #04 (Đã Duyệt)</button>
+        </div>
+      </div>
+
+      <!-- ==================== #05 (MỚI): MƯA ĐẦU HẠ ÁO KHOÁC VOAN TRONG SUỐT ==================== -->
+      <div class="dress-card" id="dress-5">
+        <div class="card-header">
+          <span class="variant-number">#05</span>
+          <div class="variant-title">Mưa Đầu Hạ Áo Khoác Mờ Sương (Mới)</div>
+          <span style="font-size: 0.75rem; color: #A855F7; font-weight: 700;">MỘNG MƠ LÃNG MẠN</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Đầm hoa nhí tím oải hương bên trong -->
+            <path d="M 288 640 L 220 865 Q 368 890 516 865 L 448 640 Z" fill="#F3E8FF" stroke="#C084FC" stroke-width="1.8" />
+            <!-- Họa tiết chấm hoa nhí li ti -->
+            <g fill="#A855F7" opacity="0.6">
+              <circle cx="280" cy="720" r="1.5" /><circle cx="340" cy="750" r="1.5" /><circle cx="400" cy="730" r="1.5" /><circle cx="460" cy="760" r="1.5" />
+              <circle cx="310" cy="810" r="1.5" /><circle cx="370" cy="830" r="1.5" /><circle cx="430" cy="820" r="1.5" />
+            </g>
+            <!-- Áo khoác voan mỏng như sương mờ mưa mùa hạ buông lơi -->
+            <path d="M 276 524 C 250 560, 260 620, 280 660 Q 368 676 456 660 C 476 620, 486 560, 460 524 Q 368 534 276 524 Z" fill="#FAF5FF" fill-opacity="0.8" stroke="#D8B4FE" stroke-width="1.8" />
+            <!-- Mũ áo hoodie mỏng phía sau lưng -->
+            <path d="M 314 522 Q 368 554 422 522 Q 368 566 314 522 Z" fill="#F3E8FF" stroke="#C084FC" stroke-width="1.6" />
+            <!-- Dây rút nơ áo xinh xắn -->
+            <line x1="356" y1="550" x2="352" y2="580" stroke="#C084FC" stroke-width="1.6" stroke-linecap="round" />
+            <line x1="380" y1="550" x2="384" y2="580" stroke="#C084FC" stroke-width="1.6" stroke-linecap="round" />
+            <!-- Tay áo voan phồng nhẹ -->
+            <path d="M 276 524 C 230 545, 224 600, 258 622 C 272 628, 290 620, 296 606 Z" fill="#FAF5FF" fill-opacity="0.8" stroke="#D8B4FE" stroke-width="1.6" />
+            <path d="M 460 524 C 506 545, 512 600, 478 622 C 464 628, 446 620, 440 606 Z" fill="#FAF5FF" fill-opacity="0.8" stroke="#D8B4FE" stroke-width="1.6" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Summer Mist Chiffon Coat</div>
+          <ul class="desc-list">
+            <li><strong>Chất voan mờ như sương chiều mưa hạ</strong>: Khơi gợi những kỷ niệm thanh xuân lãng mạn dưới tán ô.</li>
+            <li><strong>Tông tím oải hương mộng mơ</strong>: Dịu dàng, e lệ và đầy chất thơ.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #05!')">Chọn Thiết Kế #05</button>
+        </div>
+      </div>
+
+      <!-- ==================== #06 (GIỮ LẠI THEO YÊU CẦU): THIẾU NỮ MÙA THU ÁO LEN ẤM ÁP ==================== -->
+      <div class="dress-card" id="dress-6" style="border-color: #F59E0B; box-shadow: 0 0 26px rgba(245, 158, 11, 0.3);">
+        <div class="card-header">
+          <span class="variant-number">#06</span>
+          <div class="variant-title">Thiếu Nữ Mùa Thu (Cozy Autumn Cable-Knit)</div>
+          <span style="font-size: 0.75rem; color: #F59E0B; font-weight: 700;">★ BẠN ĐÃ DUYỆT GIỮ LẠI</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Váy voan rủ tầng dưới -->
+            <path d="M 288 640 L 220 865 Q 368 890 516 865 L 448 640 Z" fill="#FFFDF8" stroke="#CBD5E1" stroke-width="2" />
+            <!-- Áo len vặn thừng dày màu trà sữa ấm áp (Oversized Cable Knit) -->
+            <path d="M 270 524 C 250 560, 260 620, 280 670 Q 368 686 456 670 C 476 620, 486 560, 466 524 Q 368 534 270 524 Z" fill="#FDE68A" stroke="#D97706" stroke-width="2" />
+            <!-- Cổ áo len cuộn tròn ấm áp -->
+            <path d="M 314 522 Q 368 538 422 522 Q 368 548 314 522 Z" fill="#FCD34D" stroke="#D97706" stroke-width="1.8" />
+            <!-- Gân vặn thừng dệt nổi dọc thân áo -->
+            <g stroke="#D97706" stroke-width="1.8" stroke-linecap="round" fill="none">
+              <path d="M 342 545 C 344 580, 340 615, 342 660" />
+              <path d="M 368 548 C 368 585, 368 620, 368 665" stroke-width="2.2" />
+              <path d="M 394 545 C 392 580, 396 615, 394 660" />
+            </g>
+            <!-- Tay áo len bồng ấm áp -->
+            <path d="M 270 524 C 220 545, 214 620, 252 650 C 266 656, 286 644, 292 624 Z" fill="#FDE68A" stroke="#D97706" stroke-width="2" />
+            <path d="M 466 524 C 516 545, 522 620, 484 650 C 470 656, 450 644, 444 624 Z" fill="#FDE68A" stroke="#D97706" stroke-width="2" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Cozy Autumn Cable-Knit</div>
+          <ul class="desc-list">
+            <li><strong>Áo len dệt vặn thừng màu trà sữa ấm áp</strong>: Cảm giác êm ái, được bao bọc, e ấp và bình yên.</li>
+            <li><strong>Phong cách mùa thu dịu ngọt</strong>: Bạn đã ưng ý và quyết định giữ lại trong bộ sưu tập.</li>
+          </ul>
+          <button class="select-btn" style="background: var(--accent-gold); color: #0E0C12;" onclick="alert('Đã chọn #06!')">Chọn Thiết Kế #06 (Đã Duyệt)</button>
+        </div>
+      </div>
+
+      <!-- ==================== #07 (MỚI): NÀNG THƠ THƯ VIỆN CARDIGAN DÁNG DÀI ==================== -->
+      <div class="dress-card" id="dress-7">
+        <div class="card-header">
+          <span class="variant-number">#07</span>
+          <div class="variant-title">Nàng Thơ Thư Viện Cardigan Dài (Mới)</div>
+          <span style="font-size: 0.75rem; color: #64748B; font-weight: 700;">TRẦM LẶNG TRI THỨC</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Đầm dập ly trắng ngà thanh tao bên trong -->
+            <path d="M 306 526 L 260 868 Q 368 890 476 868 L 430 526 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+            <path d="M 368 550 L 368 878" stroke="#CBD5E1" stroke-width="1.8" />
+            <!-- Áo Cardigan len dáng dài màu xám khói buông qua hông -->
+            <path d="M 276 524 C 250 560, 246 640, 252 740 C 256 790, 276 810, 288 810 C 282 720, 284 620, 306 530 Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.8" />
+            <path d="M 460 524 C 486 560, 490 640, 484 740 C 480 790, 460 810, 448 810 C 454 720, 452 620, 430 530 Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.8" />
+            <!-- Cổ tim mở hờ khoe xương quai xanh -->
+            <path d="M 306 526 C 324 554, 346 558, 368 556 C 390 558, 412 554, 430 526 Z" fill="#F8DDCB" stroke="#1c1d24" stroke-width="2" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Library Long Cardigan & Pleats</div>
+          <ul class="desc-list">
+            <li><strong>Áo len cardigan dáng dài buông lơi</strong>: Toát lên thần thái của cô nữ sinh mê đọc sách trong thư viện vắng người.</li>
+            <li><strong>Màu xám khói & trắng ngà</strong>: Nhã nhặn, kín đáo và thuần khiết.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #07!')">Chọn Thiết Kế #07</button>
+        </div>
+      </div>
+
+      <!-- ==================== #08 (MỚI): HOA ANH ĐÀO MÙA XUÂN ÁO KHOÁC HỒNG PHẤN ==================== -->
+      <div class="dress-card" id="dress-8">
+        <div class="card-header">
+          <span class="variant-number">#08</span>
+          <div class="variant-title">Hoa Anh Đào Mùa Xuân (Sakura Blossom) (Mới)</div>
+          <span style="font-size: 0.75rem; color: #F472B6; font-weight: 700;">NGỌT NGÀO THANH XUÂN</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Đầm trắng xòe bồng bềnh dưới tán hoa anh đào -->
+            <path d="M 288 640 L 220 865 Q 368 890 516 865 L 448 640 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+            <!-- Áo khoác lửng len dệt màu hồng phấn hoa anh đào (Sakura Cropped Cardigan) -->
+            <path d="M 276 524 C 260 550, 270 595, 290 625 Q 368 638 446 625 C 466 595, 476 550, 460 524 Q 368 534 276 524 Z" fill="#FCE7F3" stroke="#F472B6" stroke-width="1.8" />
+            <!-- Cổ tim & 3 cúc ngọc trai hồng phấn -->
+            <path d="M 320 526 C 336 554, 352 560, 368 558 C 384 560, 400 554, 416 526 Z" fill="#F8DDCB" stroke="#1c1d24" stroke-width="2" />
+            <circle cx="368" cy="575" r="2.5" fill="#FFFFFF" stroke="#F472B6" stroke-width="1" />
+            <circle cx="368" cy="595" r="2.5" fill="#FFFFFF" stroke="#F472B6" stroke-width="1" />
+            <circle cx="368" cy="615" r="2.5" fill="#FFFFFF" stroke="#F472B6" stroke-width="1" />
+            <!-- Tay áo len hồng phấn phồng nhẹ -->
+            <path d="M 276 524 C 230 545, 224 600, 258 622 C 272 628, 290 620, 296 606 Z" fill="#FCE7F3" stroke="#F472B6" stroke-width="1.6" />
+            <path d="M 460 524 C 506 545, 512 600, 478 622 C 464 628, 446 620, 440 606 Z" fill="#FCE7F3" stroke="#F472B6" stroke-width="1.6" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Sakura Cropped Cardigan</div>
+          <ul class="desc-list">
+            <li><strong>Khoảnh khắc gặp gỡ dưới tán anh đào</strong>: Tái hiện cuộc gặp định mệnh làm rung động trái tim người hâm mộ.</li>
+            <li><strong>Tông hồng phấn dịu ngọt</strong>: Tôn vinh nụ cười bẽn lẽn, đáng yêu của thiếu nữ.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #08!')">Chọn Thiết Kế #08</button>
+        </div>
+      </div>
+
+      <!-- ==================== #09 (MỚI): NÀNG THƠ HỘI HỌA YẾM NÂU CARAMEL ==================== -->
+      <div class="dress-card" id="dress-9">
+        <div class="card-header">
+          <span class="variant-number">#09</span>
+          <div class="variant-title">Nàng Thơ Hội Họa Yếm Nâu Caramel (Mới)</div>
+          <span style="font-size: 0.75rem; color: #B45309; font-weight: 700;">VINTAGE NGHỆ THUẬT</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Đầm yếm vải dạ nâu caramel cổ V sâu -->
+            <path d="M 288 650 L 220 865 Q 368 890 516 865 L 448 650 Z" fill="#92400E" stroke="#78350F" stroke-width="2" />
+            <!-- Thân yếm chữ V -->
+            <path d="M 296 524 L 340 650 L 396 650 L 440 524 Z" fill="#92400E" stroke="#78350F" stroke-width="1.8" />
+            <!-- Sơ mi trắng cổ bèo vintage bên trong -->
+            <path d="M 334 522 Q 350 545 368 538 Q 386 545 402 522 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" />
+            <path d="M 346 548 Q 368 556 390 548" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+            <!-- Tay sơ mi bồng tròn -->
+            <path d="M 276 524 C 230 545, 224 600, 258 622 C 272 628, 290 620, 296 606 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+            <path d="M 460 524 C 506 545, 512 600, 478 622 C 464 628, 446 620, 440 606 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+            <!-- Cúc gỗ cổ điển -->
+            <circle cx="368" cy="590" r="2.5" fill="#78350F" />
+            <circle cx="368" cy="620" r="2.5" fill="#78350F" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Art Studio Caramel Pinafore</div>
+          <ul class="desc-list">
+            <li><strong>Đầm yếm dạ màu nâu caramel</strong>: Cảm giác ấm áp, mộc mạc và đậm chất nghệ thuật hội họa.</li>
+            <li><strong>Sơ mi trắng cổ bèo vintage</strong>: Vẻ đẹp tiểu thư e ấp, đoan trang và thanh lịch.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #09!')">Chọn Thiết Kế #09</button>
+        </div>
+      </div>
+
+      <!-- ==================== #10 (MỚI): NÀNG THƠ SỚM MAI ÁO LEN TRỄ VAI & VÁY LỤA ==================== -->
+      <div class="dress-card" id="dress-10">
+        <div class="card-header">
+          <span class="variant-number">#10</span>
+          <div class="variant-title">Nàng Thơ Sớm Mai Áo Len Trễ Vai (Mới)</div>
+          <span style="font-size: 0.75rem; color: #14B8A6; font-weight: 700;">TINH KHÔI E ẤP</span>
+        </div>
+        <div class="stage-wrapper">
+          <svg viewBox="190 130 355 740" width="310" height="645">
+            <!-- Đầm lụa trắng suôn mềm mại -->
+            <path d="M 288 640 L 220 865 Q 368 890 516 865 L 448 640 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
+            <path d="M 368 645 L 368 875" stroke="#CBD5E1" stroke-width="2" />
+            <!-- Áo len dệt kim cổ thuyền trễ nhẹ qua bờ vai màu xanh ngọc bích nhạt -->
+            <path d="M 286 534 C 264 565, 270 615, 290 648 Q 368 662 446 648 C 466 615, 472 565, 450 534 Q 368 554 286 534 Z" fill="#CCFBF1" stroke="#14B8A6" stroke-width="1.8" />
+            <!-- Cổ thuyền trễ để lộ bờ vai thon mềm -->
+            <path d="M 286 534 Q 368 560 450 534 Q 368 544 286 534 Z" fill="#F8DDCB" stroke="#1c1d24" stroke-width="1.8" />
+            <!-- Tay áo len bồng mềm buông rủ -->
+            <path d="M 276 534 C 230 550, 222 610, 258 632 C 272 638, 290 628, 296 612 Z" fill="#CCFBF1" stroke="#14B8A6" stroke-width="1.8" />
+            <path d="M 460 534 C 506 550, 514 610, 478 632 C 464 638, 446 628, 440 612 Z" fill="#CCFBF1" stroke="#14B8A6" stroke-width="1.8" />
+            <!-- Đầu & Tóc -->
+            <path d="M 218 318 C 214 382, 258 456, 340 478 C 358 481, 378 481, 396 478 C 478 456, 522 382, 518 318 C 518 222, 474 174, 368 174 C 262 174, 218 222, 218 318 Z" fill="#FFF4ED" stroke="#1c1d24" stroke-width="2.6"/>
+            <ellipse cx="276" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" /><ellipse cx="460" cy="376" rx="26" ry="15" fill="#FF3E6C" fill-opacity="0.38" />
+            <line x1="368" y1="385" x2="368" y2="392" stroke="#D18374" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="368" cy="445" rx="8.5" ry="4.8" fill="#BE185D" />
+            <path d="M 204 316 C 192 220, 244 136, 368 136 C 492 136, 544 220, 532 316 C 532 400, 524 490, 508 575 C 496 635, 484 705, 496 760 C 500 775, 506 790, 502 798 C 498 790, 488 765, 478 715 C 464 645, 462 565, 476 485 C 486 425, 490 370, 492 316 L 414 316 C 410 316, 408 312, 408 304 L 408 298 C 408 295, 396 295, 396 298 L 396 304 C 396 312, 394 316, 390 316 L 346 316 C 342 316, 340 312, 340 304 L 340 298 C 340 295, 328 295, 328 298 L 328 304 C 328 312, 326 316, 322 316 L 244 316 C 246 370, 250 425, 260 485 C 274 565, 272 645, 258 715 C 248 765, 238 790, 234 798 C 230 790, 236 775, 240 760 C 252 705, 242 635, 230 575 C 216 490, 208 400, 204 316 Z" fill="#14151E" stroke="#07080B" stroke-width="2.4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="concept-tag">Phong Cách: Morning Breeze Mint Knit</div>
+          <ul class="desc-list">
+            <li><strong>Áo len trễ vai xanh ngọc bích nhạt</strong>: Dịu mát, trong trẻo như làn gió sớm đầu ngày.</li>
+            <li><strong>Tà váy lụa trắng buông lơi</strong>: E ấp, mỏng manh và vô cùng duyên dáng.</li>
+          </ul>
+          <button class="select-btn" onclick="alert('Đã chọn #10!')">Chọn Thiết Kế #10</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -27,14 +27,15 @@ export function SawakoHairBack() {
         <path
           d="
             M 368 135
-            C 255 135, 168 210, 150 335
-            C 138 450, 142 620, 154 750
-            C 160 820, 164 880, 172 905
-            Q 176 915, 195 915
-            L 541 915
-            Q 560 915, 564 905
-            C 572 880, 576 820, 582 750
-            C 594 620, 598 450, 586 335
+            C 260 135, 178 210, 165 335
+            C 154 450, 157 620, 168 750
+            C 172 775, 176 805, 182 810
+            Q 186 820, 202 820
+            L 534 820
+            Q 550 820, 554 810
+            C 560 805, 564 775, 568 750
+            C 579 620, 582 450, 571 335
+            C 558 210, 476 135, 368 135
             C 568 210, 481 135, 368 135
             Z
           "
@@ -46,11 +47,11 @@ export function SawakoHairBack() {
         {/* Left Sleek Straight Depth Shading */}
         <path
           d="
-            M 166 360
-            C 152 480, 154 670, 166 820
-            C 170 870, 174 905, 185 910
-            L 222 910
-            C 212 840, 195 680, 192 420
+            M 180 360
+            C 166 480, 168 640, 178 770
+            C 182 795, 186 810, 194 815
+            L 224 815
+            C 214 790, 202 650, 200 420
             Z
           "
           fill="#08090C"
@@ -60,11 +61,11 @@ export function SawakoHairBack() {
         {/* Right Sleek Straight Depth Shading */}
         <path
           d="
-            M 570 360
-            C 584 480, 582 670, 570 820
-            C 566 870, 562 905, 551 910
-            L 514 910
-            C 524 840, 541 680, 544 420
+            M 556 360
+            C 570 480, 568 640, 558 770
+            C 554 795, 550 810, 542 815
+            L 512 815
+            C 522 790, 534 650, 536 420
             Z
           "
           fill="#08090C"
@@ -72,15 +73,15 @@ export function SawakoHairBack() {
         />
 
         {/* Delicate Silky Hair Texture Grain Lines Running Straight Down */}
-        <path d="M 184 440 C 172 580, 174 740, 180 890" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.6" />
-        <path d="M 215 500 C 205 640, 202 770, 208 895" stroke="#2B2D3A" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity="0.5" />
-        <path d="M 552 440 C 564 580, 562 740, 556 890" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.6" />
-        <path d="M 521 500 C 531 640, 534 770, 528 895" stroke="#2B2D3A" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity="0.5" />
+        <path d="M 194 440 C 182 550, 184 670, 190 800" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.6" />
+        <path d="M 215 500 C 205 620, 202 720, 208 830" stroke="#2B2D3A" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity="0.5" />
+        <path d="M 542 440 C 554 550, 552 670, 546 800" stroke="#3A3D4E" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity="0.6" />
+        <path d="M 521 500 C 531 620, 534 720, 528 830" stroke="#2B2D3A" strokeWidth={1.5} strokeLinecap="round" fill="none" opacity="0.5" />
 
         {/* ===================== DIRECTION 1: CRISP ANIME RIM LIGHT LINES ===================== */}
         {/* Slender, crisp silver-indigo edge contours that cleanly separate hair on Dark Mode */}
         <path
-          d="M 152 335 C 140 450, 144 620, 156 750 C 162 820, 166 880, 174 905 Q 178 915, 195 915"
+          d="M 167 335 C 155 450, 159 620, 170 750 C 174 775, 178 805, 184 810 Q 188 820, 202 820"
           stroke="#5E6584"
           strokeWidth={1.3}
           strokeLinecap="round"
@@ -88,7 +89,7 @@ export function SawakoHairBack() {
           opacity={0.8}
         />
         <path
-          d="M 584 335 C 592 450, 590 620, 580 750 C 570 820, 566 880, 562 905 Q 558 915, 541 915"
+          d="M 569 335 C 581 450, 577 620, 566 750 C 562 775, 558 805, 552 810 Q 548 820, 534 820"
           stroke="#5E6584"
           strokeWidth={1.3}
           strokeLinecap="round"
@@ -96,10 +97,10 @@ export function SawakoHairBack() {
           opacity={0.8}
         />
         <line
-          x1="195"
-          y1="914"
-          x2="541"
-          y2="914"
+          x1="202"
+          y1="819"
+          x2="534"
+          y2="819"
           stroke="#687094"
           strokeWidth={1.2}
           strokeLinecap="round"

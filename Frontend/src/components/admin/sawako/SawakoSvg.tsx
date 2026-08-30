@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { SawakoSvgProps, SawakoExpression } from "./types";
 import { useSawakoPhysics } from "./hooks/useSawakoPhysics";
 import { useSawakoLipSync } from "./hooks/useSawakoLipSync";
@@ -42,6 +42,22 @@ export default function SawakoSvg({
   onCycleTimeOfDay,
 }: SawakoSvgProps) {
   const [hoveredZone, setHoveredZone] = useState<"hand" | "foot" | null>(null);
+  const [isShyPeeking, setIsShyPeeking] = useState(false);
+
+  useEffect(() => {
+    if (!isHovered) {
+      setIsShyPeeking(false);
+      return;
+    }
+
+    const revealTimer = window.setTimeout(() => setIsShyPeeking(true), 2200);
+    const resetTimer = window.setTimeout(() => setIsShyPeeking(false), 4400);
+    return () => {
+      window.clearTimeout(revealTimer);
+      window.clearTimeout(resetTimer);
+    };
+  }, [isHovered]);
+
 
   // Independent physical kinematics & lip-sync hooks
   const { pupilX, pupilY, headRotate, isBlinking } = useSawakoPhysics(
@@ -57,7 +73,6 @@ export default function SawakoSvg({
     : isDragging && expression !== "dizzy"
       ? "shy"
       : expression;
-
   // Overall scale scaled down to 80% size for refined mascot presence
   const finalScaleX = scaleX * 0.82;
   const finalScaleY = scaleY * 0.82;
@@ -115,8 +130,31 @@ export default function SawakoSvg({
           100% { transform: translateY(0px) rotate(0deg); }
         }
         @keyframes headpatPurrLean {
-          0%, 100% { transform: rotate(5deg) translateY(-2px); }
-          50% { transform: rotate(-5deg) translateY(-5px); }
+          0%, 100% { transform: rotate(3deg) translateY(-1px); }
+          50% { transform: rotate(-3deg) translateY(-3px); }
+        }
+        @keyframes shyPeek {
+          0%, 100% { transform: rotate(0deg) translateY(0); }
+          35% { transform: rotate(2.5deg) translateY(-2px); }
+          70% { transform: rotate(-1.5deg) translateY(-1px); }
+        }
+        @keyframes butterflyWander {
+          0% { transform: translate(224px, -18px) rotate(-8deg); }
+          9% { transform: translate(288px, -126px) rotate(14deg); }
+          19% { transform: translate(176px, -286px) rotate(-21deg); }
+          31% { transform: translate(-12px, -338px) rotate(9deg); }
+          42% { transform: translate(-248px, -244px) rotate(26deg); }
+          53% { transform: translate(-306px, -38px) rotate(-16deg); }
+          64% { transform: translate(-218px, 168px) rotate(7deg); }
+          75% { transform: translate(-42px, 314px) rotate(-24deg); }
+          86% { transform: translate(252px, 238px) rotate(17deg); }
+          94% { transform: translate(312px, 76px) rotate(-11deg); }
+          100% { transform: translate(224px, -18px) rotate(-8deg); }
+        }
+        @keyframes butterflyWingBeat {
+          0%, 100% { transform: scaleX(1); }
+          44% { transform: scaleX(0.42); }
+          72% { transform: scaleX(0.78); }
         }
       `}</style>
 
@@ -132,7 +170,7 @@ export default function SawakoSvg({
       >
         <svg
           viewBox="0 0 736 1104"
-          className="w-full h-full drop-shadow-[0_16px_28px_rgba(0,0,0,0.32)] overflow-visible transition-all duration-200"
+          className="w-full h-full overflow-visible transition-all duration-200"
           role="img"
           aria-label="Sawako Anime Mascot"
         >
@@ -148,6 +186,25 @@ export default function SawakoSvg({
           {/* Ethereal Ground Mist directly under chibi feet */}
           <ellipse cx="368" cy="1010" rx="180" ry="20" fill="url(#sawakoGroundMist)" />
           <ellipse cx="368" cy="1012" rx="110" ry="11" fill="#fce7f3" fillOpacity={0.35} />
+
+          {/* Small pastel butterfly following an irregular, organic path */}
+          <g
+            id="sawako-wandering-butterfly"
+            className="pointer-events-none"
+            transform="translate(368 600)"
+            style={{ opacity: isDragging ? 0.22 : 0.82, transition: "opacity 0.3s ease" }}
+          >
+            <g className="animate-[butterflyWander_11.5s_ease-in-out_infinite]">
+              <g className="animate-[butterflyWingBeat_0.78s_ease-in-out_infinite]" style={{ transformOrigin: "0px 0px" }}>
+              <path d="M -3 0 C -28 -30 -58 -20 -47 5 C -39 22 -17 18 -3 5 Z" fill="#8B5CF6" stroke="#6D28D9" strokeWidth="3" />
+              <path d="M 3 0 C 28 -30 58 -20 47 5 C 39 22 17 18 3 5 Z" fill="#A78BFA" stroke="#6D28D9" strokeWidth="3" />
+              </g>
+              <ellipse cx="0" cy="4" rx="5" ry="16" fill="#FDE68A" stroke="#D99A2B" strokeWidth="2" />
+              <path d="M -2 -10 Q -12 -25 -19 -18 M 2 -10 Q 12 -25 19 -18" fill="none" stroke="#FDE68A" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="-18" cy="-18" r="2" fill="#FFF7C2" />
+              <circle cx="18" cy="-18" r="2" fill="#FFF7C2" />
+            </g>
+          </g>
 
           {/* ===================== LAYER 0: SLEEK BACK HAIR (BEHIND LEGS & ENTIRE BODY) ===================== */}
           <g
@@ -171,48 +228,48 @@ export default function SawakoSvg({
 
           {/* ===================== LAYER 2: HEAD & UPPER BODY WITH ROTATION ===================== */}
           <g
-            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : ""}
+            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : isShyPeeking ? "animate-[shyPeek_1.8s_ease-in-out]" : ""}
             style={{
               transform: isBeingPatted ? undefined : `rotate(${headRotate}deg)`,
               transformOrigin: "368px 486px",
               transition: "transform 0.15s ease-out",
             }}
           >
-            {/* 1. Base Artwork: Back hair, neck, oval face, scooped white muse dress (overlapping legs) */}
+            {/* 1. Base Artwork with nested arms, eyes, and mouth (all under the cascading unified hair) */}
             <SawakoBaseArtwork
               expression={activeExpression}
               isHovered={isHovered}
+              isShyPeeking={isShyPeeking}
               onPokeStarClip={onPokeStarClip}
               onHeadpatStroke={onHeadpatStroke}
-            />
+            >
+              {/* 2. Relaxed Puffed Sleeves & Hands (rendered on dress, UNDER the cascading front hair locks) */}
+              <SawakoArms
+                isHovered={isHovered}
+                isDragging={isDragging}
+                hoveredZone={hoveredZone}
+                onPokeHand={onPokeHand}
+                setHoveredZone={setHoveredZone}
+                isProtectingStar={isProtectingStar}
+              />
 
-            {/* 2. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
-            <SawakoEyes
-              expression={activeExpression}
-              pupilX={pupilX}
-              pupilY={pupilY}
-              isBlinking={isBlinking}
-            />
+              {/* 3. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
+              <SawakoEyes
+                expression={activeExpression}
+                pupilX={pupilX}
+                pupilY={pupilY}
+                isBlinking={isBlinking}
+              />
 
-            {/* 3. Independent Mouth (Innocent parted anime mouth without robotic flapping) */}
-            <SawakoMouth
-              expression={activeExpression}
-              mouthOpenRatio={mouthOpenRatio}
-            />
+              {/* 4. Independent Mouth (Innocent parted anime mouth without robotic flapping) */}
+              <SawakoMouth
+                expression={activeExpression}
+                mouthOpenRatio={mouthOpenRatio}
+              />
+            </SawakoBaseArtwork>
 
-            {/* 4. Independent Front Hair (Sleek front silky locks swaying) */}
             <SawakoHairFront isDragging={isDragging} />
           </g>
-
-          {/* ===================== LAYER 3: RELAXED PUFFED SLEEVES & HANDS ===================== */}
-          <SawakoArms
-            isHovered={isHovered}
-            isDragging={isDragging}
-            hoveredZone={hoveredZone}
-            onPokeHand={onPokeHand}
-            setHoveredZone={setHoveredZone}
-            isProtectingStar={isProtectingStar}
-          />
 
           {/* ===================== LAYER 4: ETHEREAL LUMINOUS FIREFLIES ===================== */}
           <SawakoFireflies isHovered={isHovered} isDragging={isDragging} />

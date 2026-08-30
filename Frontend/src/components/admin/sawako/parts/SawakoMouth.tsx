@@ -90,46 +90,36 @@ export function SawakoMouth({ expression }: SawakoMouthProps) {
     );
   }
 
-  // Default / Speaking Natural Resting Mouth (from Sawako better.jpg)
-  // Clean, serene, delicately parted anime mouth without repetitive flapping
+  // Default / Speaking Natural Resting Mouth (from Preview Kiểu 1)
+  // Đôi môi Chibi Tiểu Thư Hồng Anh Đào thanh nhã, duyên dáng và trong sáng
   return (
     <g id="mouth-default">
-      {/* Soft Mouth Interior Cavity */}
+      {/* Khối môi oval hồng anh đào ngọt ngào chuẩn Preview Kiểu 1 */}
       <ellipse
         cx="368"
-        cy={446}
-        rx={9}
+        cy={445}
+        rx={8.5}
         ry={4.8}
-        fill="#7F1D1D"
-        stroke="#991B1B"
-        strokeWidth={1.6}
+        fill="#BE185D"
       />
-      {/* Inner Pink Tongue Tone */}
+
+      {/* Ánh sáng bóng nhẹ lòng môi tạo độ mọng nước tự nhiên */}
       <ellipse
         cx="368"
-        cy={447.5}
-        rx={6.5}
-        ry={2.4}
-        fill="#FDA4AF"
+        cy={446.2}
+        rx={5.5}
+        ry={2.2}
+        fill="#F472B6"
+        opacity={0.6}
       />
 
-      {/* Upper Lip Definition Curve */}
+      {/* Đường viền mí môi trên thanh mảnh */}
       <path
-        d="M 356 444 Q 368 442 380 444"
-        stroke="#881337"
-        strokeWidth={2.6}
+        d="M 360 443 Q 368 441.5 376 443"
+        stroke="#9D174D"
+        strokeWidth={1.5}
         strokeLinecap="round"
         fill="none"
-      />
-
-      {/* Subtle Lower Lip Shadow */}
-      <path
-        d="M 362 451 Q 368 453.5 374 451"
-        stroke="#FB7185"
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.85"
       />
     </g>
   );
