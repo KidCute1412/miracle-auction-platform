@@ -41,24 +41,32 @@ export default function SawakoSvg({
         role="img"
       >
         <defs>
-          {/* Hair Gradient: Jet black to deep charcoal */}
+          {/* Hair Gradient: Jet black to silky charcoal with subtle cool blue sheen */}
           <linearGradient id="sawakoHairGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#1c1c22" />
-            <stop offset="50%" stopColor="#141418" />
-            <stop offset="100%" stopColor="#0d0d10" />
+            <stop offset="0%" stopColor="#1a1a20" />
+            <stop offset="45%" stopColor="#141419" />
+            <stop offset="100%" stopColor="#0b0b0e" />
           </linearGradient>
 
-          {/* Hair Gloss Sheen */}
-          <linearGradient id="sawakoHairGloss" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#3d3d4e" stopOpacity="0" />
-            <stop offset="50%" stopColor="#55556d" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#3d3d4e" stopOpacity="0" />
+          {/* Silky Hair Shine Arc (Tenshi no wa) */}
+          <linearGradient id="sawakoHairGlossArc" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#4a4a5e" stopOpacity="0" />
+            <stop offset="25%" stopColor="#686882" stopOpacity="0.45" />
+            <stop offset="50%" stopColor="#8282a0" stopOpacity="0.6" />
+            <stop offset="75%" stopColor="#686882" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#4a4a5e" stopOpacity="0" />
           </linearGradient>
 
-          {/* Skin Gradient: Soft porcelain peach */}
+          {/* Skin Gradient: Pure porcelain with soft warmth */}
           <linearGradient id="sawakoSkinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#fffaf6" />
             <stop offset="100%" stopColor="#fdeee6" />
+          </linearGradient>
+
+          {/* Forehead Shadow Cast by Bangs */}
+          <linearGradient id="bangsShadowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ecc0b0" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="#ecc0b0" stopOpacity="0" />
           </linearGradient>
 
           {/* Eye Iris Gradient: Deep anime charcoal */}
@@ -110,10 +118,10 @@ export default function SawakoSvg({
         {/* ===================== SOFT GROUND SHADOW ===================== */}
         <ellipse cx="100" cy="240" rx="38" ry="4.5" fill="url(#groundShadow)" />
 
-        {/* ===================== LONG BACK HAIR ===================== */}
+        {/* ===================== LONG BACK HAIR (SILKY FLOW) ===================== */}
         <g className="transition-transform duration-300">
           <path
-            d="M 52 50 C 35 85, 30 140, 36 215 C 40 226, 48 226, 54 212 C 60 190, 68 160, 72 135 C 72 135, 128 135, 128 135 C 132 160, 140 190, 146 212 C 152 226, 160 226, 164 215 C 170 140, 165 85, 148 50 Z"
+            d="M 52 48 C 34 82, 28 138, 35 215 C 39 226, 48 226, 54 212 C 60 190, 68 160, 72 135 C 72 135, 128 135, 128 135 C 132 160, 140 190, 146 212 C 152 226, 161 226, 165 215 C 172 138, 166 82, 148 48 Z"
             fill="url(#sawakoHairGrad)"
             className={isDragging ? "animate-pulse" : ""}
           />
@@ -205,12 +213,23 @@ export default function SawakoSvg({
           <circle cx="142" cy="159" r="4.2" fill="url(#sawakoSkinGrad)" stroke="#f2d7ca" strokeWidth="0.6" />
         </g>
 
-        {/* ===================== FRONT HAIR STRANDS ===================== */}
+        {/* ===================== FRONT HAIR STRANDS (SILKY DRAPING) ===================== */}
         <g>
-          {/* Left front strand falling down chest */}
-          <path d="M 62 55 C 57 80, 59 120, 58 165 C 58 175, 54 180, 57 182 C 60 180, 62 172, 62 165 C 64 120, 65 85, 70 65 Z" fill="url(#sawakoHairGrad)" />
-          {/* Right front strand falling down chest */}
-          <path d="M 138 55 C 143 80, 141 120, 142 165 C 142 175, 146 180, 143 182 C 140 180, 138 172, 138 165 C 136 120, 135 85, 130 65 Z" fill="url(#sawakoHairGrad)" />
+          {/* Left front strand falling smoothly over chest */}
+          <path
+            d="M 60 52 C 55 76, 56 112, 56 160 C 56 174, 52 181, 56 182 C 60 181, 62 172, 62 160 C 64 116, 66 80, 71 62 Z"
+            fill="url(#sawakoHairGrad)"
+          />
+          {/* Left front strand hair highlight line */}
+          <path d="M 61 70 C 58 100, 59 135, 59 160" stroke="#373748" strokeWidth="0.9" strokeLinecap="round" fill="none" />
+
+          {/* Right front strand falling smoothly over chest */}
+          <path
+            d="M 140 52 C 145 76, 144 112, 144 160 C 144 174, 148 181, 144 182 C 140 181, 138 172, 138 160 C 136 116, 134 80, 129 62 Z"
+            fill="url(#sawakoHairGrad)"
+          />
+          {/* Right front strand hair highlight line */}
+          <path d="M 139 70 C 142 100, 141 135, 141 160" stroke="#373748" strokeWidth="0.9" strokeLinecap="round" fill="none" />
         </g>
 
         {/* ===================== HEAD & CUTE FACE (MATCHING SAWAKO.JPG) ===================== */}
@@ -230,6 +249,9 @@ export default function SawakoSvg({
             d="M 60 52 C 57 80, 66 98, 100 102 C 134 98, 143 80, 140 52 C 138 28, 62 28, 60 52 Z"
             fill="url(#sawakoSkinGrad)"
           />
+
+          {/* Soft Forehead Shadow cast under bangs */}
+          <path d="M 62 50 C 62 66, 75 74, 100 74 C 125 74, 138 66, 138 50 Z" fill="url(#bangsShadowGrad)" />
 
           {/* Delicate Ears */}
           <ellipse cx="59" cy="70" rx="3.5" ry="6" fill="url(#sawakoSkinGrad)" />
@@ -330,7 +352,7 @@ export default function SawakoSvg({
             </g>
           )}
 
-          {/* Thin Delicate Eyebrows (peeking under bangs) */}
+          {/* Thin Delicate Eyebrows (visible through natural bangs gaps) */}
           <path d="M 72 54 Q 80 50 88 53" stroke="#22222a" strokeWidth="1.8" strokeLinecap="round" fill="none" />
           <path d="M 128 54 Q 120 50 112 53" stroke="#22222a" strokeWidth="1.8" strokeLinecap="round" fill="none" />
 
@@ -355,34 +377,65 @@ export default function SawakoSvg({
             </g>
           )}
 
-          {/* ===================== STRAIGHT FRINGE BANGS ===================== */}
+          {/* ===================== NATURAL ANIME STRAIGHT BLUNT BANGS ===================== */}
           <g>
-            {/* Top Crown Cap */}
+            {/* Smooth Rounded Head Crown (Dome Contour) */}
             <path
-              d="M 58 52 C 56 22, 70 12, 100 12 C 130 12, 144 22, 142 52 C 132 48, 68 48, 58 52 Z"
+              d="M 58 52 C 55 20, 72 10, 100 10 C 128 10, 145 20, 142 52 C 130 46, 70 46, 58 52 Z"
               fill="url(#sawakoHairGrad)"
             />
-            {/* Gloss Sheen on Crown */}
-            <ellipse cx="100" cy="24" rx="36" ry="6" fill="url(#sawakoHairGloss)" />
 
-            {/* Straight neat fringe bangs (from Sawako.jpg) */}
-            <path d="M 60 50 L 65 74 L 70 54 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 70 52 L 75 73 L 80 53 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 80 50 L 86 71 L 91 52 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 91 50 L 97 70 L 103 50 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 103 50 L 109 71 L 115 52 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 115 52 L 121 73 L 126 53 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 126 50 L 132 74 L 138 52 Z" fill="url(#sawakoHairGrad)" />
+            {/* Tenshi no wa (Silky Gloss Halo Arc across Crown) */}
+            <path
+              d="M 64 36 C 74 27, 90 23, 100 23 C 110 23, 126 27, 136 36 C 126 31, 110 28, 100 28 C 90 28, 74 31, 64 36 Z"
+              fill="url(#sawakoHairGlossArc)"
+            />
 
-            {/* Side framing locks */}
-            <path d="M 58 52 C 55 72, 58 92, 61 104 L 64 100 C 62 86, 62 66, 64 54 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 142 52 C 145 72, 142 92, 139 104 L 136 100 C 138 86, 138 66, 136 54 Z" fill="url(#sawakoHairGrad)" />
+            {/* Organic Straight Blunt Bangs with Natural Bezier Curves & Rounded Tips (matching Sawako.jpg) */}
+            <path
+              d="
+                M 58 52
+                C 56 64, 57 80, 60 96
+                C 62 98, 65 98, 66 94
+                C 65 82, 66 70, 68 62
+                C 68 66, 68 74, 70 76
+                C 71 78, 74 78, 75 75
+                C 76 70, 77 65, 78 58
+                C 79 64, 80 72, 82 74
+                C 83 76, 86 76, 87 73
+                C 88 68, 89 62, 90 56
+                C 91 62, 92 70, 95 72
+                C 96 74, 99 74, 100 71
+                C 101 65, 102 60, 103 56
+                C 104 62, 105 70, 108 72
+                C 109 74, 112 74, 113 71
+                C 114 66, 115 60, 116 56
+                C 117 62, 118 71, 121 73
+                C 122 75, 125 75, 126 72
+                C 127 67, 128 62, 129 58
+                C 130 64, 131 73, 133 75
+                C 134 77, 137 77, 138 73
+                C 139 66, 140 60, 141 54
+                C 142 68, 143 82, 141 94
+                C 142 98, 145 98, 147 95
+                C 149 80, 146 64, 142 52
+                Z
+              "
+              fill="url(#sawakoHairGrad)"
+            />
+
+            {/* Delicate Interior Hair Flow Accent Lines */}
+            <path d="M 72 38 C 72 48, 73 60, 73 72" stroke="#2b2b38" strokeWidth="0.8" strokeLinecap="round" fill="none" />
+            <path d="M 85 32 C 85 44, 85 58, 85 70" stroke="#2b2b38" strokeWidth="0.8" strokeLinecap="round" fill="none" />
+            <path d="M 100 28 C 100 42, 100 56, 100 68" stroke="#2b2b38" strokeWidth="0.8" strokeLinecap="round" fill="none" />
+            <path d="M 115 32 C 115 44, 115 58, 115 70" stroke="#2b2b38" strokeWidth="0.8" strokeLinecap="round" fill="none" />
+            <path d="M 128 38 C 128 48, 127 60, 127 72" stroke="#2b2b38" strokeWidth="0.8" strokeLinecap="round" fill="none" />
           </g>
 
           {/* ===================== ICONIC PUFFY PINK RIBBON BOW ===================== */}
           {/* Positioned on left side of her hair (viewer's right) as in Sawako.jpg */}
           <g
-            transform="translate(136, 34) rotate(10)"
+            transform="translate(135, 34) rotate(10)"
             className={isHovered ? "transition-transform duration-200 scale-110" : "transition-transform duration-300"}
           >
             {/* Left Bow Loop */}
