@@ -33,7 +33,7 @@ describe("SawakoMascot Component", () => {
     );
 
     expect(screen.getByTestId("sawako-speech-bubble")).toBeDefined();
-    expect(screen.getByText(/Chief Auditor Sawako on duty!/i)).toBeDefined();
+    expect(screen.getByText(/Sawako on duty!/i)).toBeDefined();
   });
 
   it("triggers poke interaction and displays a tsundere quote when clicked", () => {
@@ -100,7 +100,7 @@ describe("SawakoMascot Component", () => {
 
     // Character is restored
     expect(screen.getByTestId("sawako-character-body")).toBeDefined();
-    expect(screen.getByText(/You finally realized you can't manage this auction without me!/i)).toBeDefined();
+    expect(screen.getByText(/Admin-san, you came back/i)).toBeDefined();
   });
 
   it("allows muting speech bubbles via the mute toggle button", () => {

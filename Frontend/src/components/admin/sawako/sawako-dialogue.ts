@@ -2,50 +2,50 @@ import type { SawakoLine } from './types';
 
 export const POKE_LINES: SawakoLine[] = [
   {
-    text: "H-Hey! Don't touch me so casually, b-baka!",
+    text: "B-Baka! Don't poke me~",
     expression: "pout",
     symbol: "anger",
   },
   {
-    text: "I'm busy auditing the auction records! Stop poking my cheeks!",
+    text: "Eep! Hands off my ribbon!",
     expression: "pout",
     symbol: "anger",
   },
   {
-    text: "Keep poking me and I'll revoke your admin privileges... j-just kidding, but stop!",
+    text: "Y-You're teasing me again...!",
     expression: "pout",
     symbol: "sweat",
   },
   {
-    text: "Eep?! Watch where your cursor goes, don't mess up my pink hair ribbon!",
-    expression: "pout",
-    symbol: "anger",
+    text: "Hmph! Look at the dashboard, not me!",
+    expression: "smug",
+    symbol: "question",
   },
   {
-    text: "It's not like I enjoy you clicking on me or anything... hmph!",
+    text: "M-My cheeks are not squish toys!",
     expression: "pout",
     symbol: "heart",
   },
   {
-    text: "Are you inspecting the merchandise or inspecting me?! Focus on the dashboard!",
-    expression: "smug",
-    symbol: "question",
+    text: "W-What is it, Admin-san...?",
+    expression: "normal",
+    symbol: "sparkle",
   },
 ];
 
 export const DIZZY_LINES: SawakoLine[] = [
   {
-    text: "Wh-whoaaaa! Stop clicking so fast, the whole room is spinning! @.@",
+    text: "Wahh! S-Spinning... @.@",
     expression: "dizzy",
     symbol: "sweat",
   },
   {
-    text: "M-Mercy! My hair ribbon is tangled up! Have some decorum, admin!",
+    text: "M-Mercy! My ribbon is tangled! @.@",
     expression: "dizzy",
     symbol: "sweat",
   },
   {
-    text: "A-Auctions... bids... gold coins... everything is floating away...",
+    text: "Too fast! Everything is floating... @.@",
     expression: "dizzy",
     symbol: "sweat",
   },
@@ -53,12 +53,12 @@ export const DIZZY_LINES: SawakoLine[] = [
 
 export const DRAG_LINES: SawakoLine[] = [
   {
-    text: "Kyaa! Put me down! You're dragging Chief Auditor Sawako like a ragdoll!",
+    text: "Kyaa! Put me down gently!",
     expression: "dizzy",
     symbol: "sweat",
   },
   {
-    text: "W-Where are we relocating my audit desk?! Don't drop me!",
+    text: "W-Where are you taking me?!",
     expression: "pout",
     symbol: "anger",
   },
@@ -66,13 +66,13 @@ export const DRAG_LINES: SawakoLine[] = [
 
 export const DROP_LINES: SawakoLine[] = [
   {
-    text: "Oof! Safe landing... A-Any other place would be fine, I guess!",
-    expression: "smug",
+    text: "Oof! Safe landing~",
+    expression: "happy",
     symbol: "sparkle",
   },
   {
-    text: "Hmph, good spot. I have an even better angle to monitor your work now.",
-    expression: "happy",
+    text: "Hmph, I'll watch you from here!",
+    expression: "smug",
     symbol: "sparkle",
   },
 ];
@@ -80,86 +80,86 @@ export const DROP_LINES: SawakoLine[] = [
 export const ROUTE_LINES: Record<string, SawakoLine[]> = {
   "/admin/dashboard": [
     {
-      text: "Revenue analytics looking sharp! Don't get arrogant just because numbers are green!",
-      expression: "smug",
+      text: "Admin-san, ganbatte!",
+      expression: "happy",
       symbol: "sparkle",
     },
     {
-      text: "Checking the overview? Good, an attentive admin is slightly less troublesome.",
+      text: "Dashboard looks tidy today~",
       expression: "normal",
       symbol: "none",
     },
   ],
   "/admin/users": [
     {
-      text: "Reviewing users? Keep an eye out for shady bidders and banned accounts!",
+      text: "Keep our bidders safe, okay?",
       expression: "normal",
       symbol: "none",
     },
     {
-      text: "Hmph, make sure our community stays prestigious. No low-ballers allowed!",
+      text: "No suspicious accounts allowed!",
       expression: "smug",
       symbol: "sparkle",
     },
   ],
   "/admin/products": [
     {
-      text: "Look at all these luxury auctions... N-Not that I want any rare antiques, hmph!",
-      expression: "pout",
+      text: "So many shiny treasures today~",
+      expression: "happy",
       symbol: "sparkle",
     },
     {
-      text: "Ensure all auction reserve prices and descriptions meet Vanguard standards!",
-      expression: "normal",
+      text: "Check item reserve prices, hmph!",
+      expression: "pout",
       symbol: "none",
     },
   ],
   "/admin/seller-applications": [
     {
-      text: "Seller applications are waiting! Don't leave eager merchants hanging!",
+      text: "New merchants waiting for review!",
       expression: "pout",
       symbol: "question",
     },
     {
-      text: "Audit their business documents carefully. Sawako's reputation is on the line!",
-      expression: "smug",
+      text: "Be a fair auditor, Admin-san~",
+      expression: "normal",
       symbol: "sparkle",
     },
   ],
   "/admin/categories": [
     {
-      text: "Organizing categories? Keep it tidy, a messy catalog gives me a headache!",
+      text: "Keep the catalog neat and pretty~",
       expression: "normal",
       symbol: "none",
     },
   ],
   "/admin/visitor-analytics": [
     {
-      text: "Look at that traffic! If servers crash under high bids, you're explaining it to the boss!",
-      expression: "pout",
-      symbol: "sweat",
+      text: "Look at all those visitors! Wow~",
+      expression: "happy",
+      symbol: "sparkle",
     },
   ],
 };
 
 export const IDLE_LINES: SawakoLine[] = [
   {
-    text: "Are you staring at me? G-Get back to managing the auctions!",
+    text: "Staring again? G-Get to work!",
     expression: "pout",
     symbol: "anger",
   },
   {
-    text: "*Yawn*... N-No, I wasn't napping on duty! My eyes were merely resting!",
+    text: "*Yawn*... I-I wasn't napping!",
     expression: "sleepy",
     symbol: "zzz",
   },
   {
-    text: "If you work extra hard today, maybe I'll praise you... m-maybe!",
+    text: "You're doing great today... maybe.",
     expression: "happy",
     symbol: "heart",
   },
   {
-    text: "Everything is running smoothly so far. Don't jinx it!",
+    text: "Need some green tea, Admin-san?",
     expression: "normal",
     symbol: "sparkle",
   },

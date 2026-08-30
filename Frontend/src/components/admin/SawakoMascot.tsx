@@ -15,6 +15,7 @@ import {
   ROUTE_LINES,
   IDLE_LINES,
 } from "./sawako/sawako-dialogue";
+import { sawakoSound } from "./sawako/sawako-sound";
 import { X, Volume2, VolumeX, Minus, Sparkles } from "lucide-react";
 
 const STORAGE_KEY = "sawako_mascot_prefs_v1";
@@ -45,7 +46,7 @@ export default function SawakoMascot() {
   const [expression, setExpression] = useState<SawakoExpression>("normal");
   const [symbol, setSymbol] = useState<SawakoSymbol>("none");
   const [currentLine, setCurrentLine] = useState<string | null>(
-    "Chief Auditor Sawako on duty! Don't cause trouble, baka!",
+    "Sawako on duty! Don't tease me, baka~",
   );
   const [bubbleVisible, setBubbleVisible] = useState(true);
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
@@ -81,9 +82,12 @@ export default function SawakoMascot() {
 
   // Display dialogue helper
   const say = useCallback(
-    (line: SawakoLine, durationMs = 5000) => {
+    (line: SawakoLine, durationMs = 4500) => {
       if (prefs.muted) return;
       if (bubbleTimerRef.current) clearTimeout(bubbleTimerRef.current);
+
+      sawakoSound.setMuted(prefs.muted);
+      sawakoSound.playChime();
 
       setCurrentLine(line.text);
       setExpression(line.expression);
@@ -138,15 +142,21 @@ export default function SawakoMascot() {
     if (rapidClickCountRef.current >= 6) {
       // Trigger Dizzy Easter Egg!
       rapidClickCountRef.current = 0;
+      sawakoSound.setMuted(prefs.muted);
+      sawakoSound.playDizzy();
       const dizzyLine = DIZZY_LINES[Math.floor(Math.random() * DIZZY_LINES.length)];
-      say(dizzyLine, 6000);
+      say(dizzyLine, 5000);
       return;
     }
 
+    // Play cute poke squeak sound
+    sawakoSound.setMuted(prefs.muted);
+    sawakoSound.playPoke();
+
     // Pick random poke response
     const line = POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)];
-    say(line, 4500);
-  }, [isDragging, say, triggerSquashAndStretch]);
+    say(line, 4000);
+  }, [isDragging, prefs.muted, say, triggerSquashAndStretch]);
 
   // Route change awareness
   useEffect(() => {
@@ -244,6 +254,9 @@ export default function SawakoMascot() {
       window.removeEventListener("mouseup", onMouseUp);
       setIsDragging(false);
 
+      sawakoSound.setMuted(prefs.muted);
+      sawakoSound.playBounce();
+
       // Jelly bounce on drop
       triggerSquashAndStretch();
 
@@ -265,13 +278,15 @@ export default function SawakoMascot() {
         <button
           onClick={() => {
             updatePrefs((p) => ({ ...p, minimized: false }));
+            sawakoSound.setMuted(prefs.muted);
+            sawakoSound.playChime();
             say({
-              text: "Aha! You finally realized you can't manage this auction without me!",
-              expression: "smug",
+              text: "A-Admin-san, you came back~!",
+              expression: "happy",
               symbol: "sparkle",
             });
           }}
-          className="flex items-center gap-2 rounded-full border border-amber-400/40 bg-zinc-950/90 px-3.5 py-2 text-xs font-semibold text-amber-300 shadow-xl backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-amber-400 hover:bg-zinc-900 cursor-pointer"
+          className="flex items-center gap-2 rounded-full border border-pink-400/40 bg-zinc-950/90 px-3.5 py-2 text-xs font-semibold text-pink-300 shadow-xl backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-pink-400 hover:bg-zinc-900 cursor-pointer"
           title="Sawako is napping. Click to wake her up!"
           aria-label="Wake up Sawako the mascot"
         >
@@ -306,16 +321,16 @@ export default function SawakoMascot() {
       onMouseLeave={() => setIsHovered(false)}
       onMouseDown={handleMouseDown}
     >
-      {/* ===================== SPEECH BUBBLE ===================== */}
+      {/* ===================== CUTE SPEECH BUBBLE ===================== */}
       {bubbleVisible && currentLine && !prefs.muted && (
         <div
           data-testid="sawako-speech-bubble"
-          className="relative mb-2 max-w-64 rounded-2xl border border-amber-400/30 bg-zinc-950/95 px-3.5 py-2.5 shadow-2xl backdrop-blur-lg animate-in fade-in zoom-in-95 duration-200"
+          className="relative mb-2 max-w-56 rounded-2xl border border-pink-400/30 bg-zinc-950/95 px-3 py-2 shadow-2xl backdrop-blur-lg animate-in fade-in zoom-in-95 duration-200"
           style={{ transformOrigin: "bottom right" }}
         >
           <div className="flex items-start justify-between gap-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400/90 font-mono">
-              Sawako • Chief Auditor
+            <span className="text-[10px] font-bold tracking-wider text-pink-300 font-mono">
+              Sawako 🎀
             </span>
             <button
               onClick={(e) => {
@@ -329,12 +344,12 @@ export default function SawakoMascot() {
             </button>
           </div>
 
-          <p className="mt-1 text-xs font-medium leading-relaxed text-zinc-100 select-text">
+          <p className="mt-0.5 text-xs font-medium leading-relaxed text-zinc-100 select-text">
             {currentLine}
           </p>
 
           {/* Comic Bubble Pointer Tail */}
-          <div className="absolute -bottom-2 right-10 h-3 w-3 rotate-45 border-r border-b border-amber-400/30 bg-zinc-950/95" />
+          <div className="absolute -bottom-2 right-8 h-2.5 w-2.5 rotate-45 border-r border-b border-pink-400/30 bg-zinc-950/95" />
         </div>
       )}
 
@@ -346,15 +361,17 @@ export default function SawakoMascot() {
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
           }`}
         >
-          {/* Mute dialogue button */}
+          {/* Mute dialogue & audio button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
-              updatePrefs((p) => ({ ...p, muted: !p.muted }));
-              if (!prefs.muted) setBubbleVisible(false);
+              const nextMuted = !prefs.muted;
+              sawakoSound.setMuted(nextMuted);
+              updatePrefs((p) => ({ ...p, muted: nextMuted }));
+              if (nextMuted) setBubbleVisible(false);
             }}
-            className="p-1 text-zinc-400 hover:text-amber-300 transition-colors"
-            title={prefs.muted ? "Unmute dialogue" : "Mute dialogue"}
+            className="p-1 text-zinc-400 hover:text-pink-300 transition-colors"
+            title={prefs.muted ? "Unmute dialogue & sound" : "Mute dialogue & sound"}
             aria-label={prefs.muted ? "Unmute dialogue" : "Mute dialogue"}
           >
             {prefs.muted ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}

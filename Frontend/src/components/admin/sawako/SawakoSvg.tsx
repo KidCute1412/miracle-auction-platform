@@ -19,12 +19,12 @@ export default function SawakoSvg({
   scaleX = 1,
   scaleY = 1,
 }: SawakoSvgProps) {
-  // Clamp eye tracking offset (proportional to eye dimensions)
-  const pupilX = Math.max(-4, Math.min(4, eyeOffset.x * 4));
-  const pupilY = Math.max(-3.5, Math.min(3.5, eyeOffset.y * 3.5));
+  // Clamp pupil tracking
+  const pupilX = Math.max(-3.5, Math.min(3.5, eyeOffset.x * 3.5));
+  const pupilY = Math.max(-3, Math.min(3, eyeOffset.y * 3));
 
-  // Head tilt based on tracking
-  const headRotate = Math.max(-5, Math.min(5, eyeOffset.x * 5));
+  // Gentle head tilt
+  const headRotate = Math.max(-4, Math.min(4, eyeOffset.x * 4));
 
   return (
     <div
@@ -35,504 +35,421 @@ export default function SawakoSvg({
       }}
     >
       <svg
-        viewBox="0 0 240 380"
-        className="w-44 h-72 drop-shadow-[0_16px_28px_rgba(0,0,0,0.4)] overflow-visible"
+        viewBox="0 0 200 245"
+        className="w-36 h-44 drop-shadow-[0_12px_20px_rgba(0,0,0,0.35)] overflow-visible"
         aria-label="Sawako Anime Mascot"
         role="img"
       >
         <defs>
-          {/* Hair gradient: Jet black with subtle deep slate sheen as in Kimi ni Todoke */}
-          <linearGradient id="sawakoHairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1a1a1f" />
-            <stop offset="50%" stopColor="#22222a" />
-            <stop offset="100%" stopColor="#121216" />
+          {/* Hair Gradient: Jet black to deep charcoal */}
+          <linearGradient id="sawakoHairGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#1c1c22" />
+            <stop offset="50%" stopColor="#141418" />
+            <stop offset="100%" stopColor="#0d0d10" />
           </linearGradient>
 
-          {/* Hair shine band */}
-          <linearGradient id="sawakoHairShine" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#3b3b47" stopOpacity="0" />
-            <stop offset="50%" stopColor="#525263" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#3b3b47" stopOpacity="0" />
+          {/* Hair Gloss Sheen */}
+          <linearGradient id="sawakoHairGloss" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#3d3d4e" stopOpacity="0" />
+            <stop offset="50%" stopColor="#55556d" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#3d3d4e" stopOpacity="0" />
           </linearGradient>
 
-          {/* Skin gradient: Pure fair porcelain with delicate warmth */}
+          {/* Skin Gradient: Soft porcelain peach */}
           <linearGradient id="sawakoSkinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#fff7f2" />
-            <stop offset="100%" stopColor="#fae7de" />
+            <stop offset="0%" stopColor="#fffaf6" />
+            <stop offset="100%" stopColor="#fdeee6" />
           </linearGradient>
 
-          {/* Eye Iris Gradient: Deep reflective charcoal-black */}
+          {/* Eye Iris Gradient: Deep anime charcoal */}
           <linearGradient id="sawakoEyeIris" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#2c2d35" />
-            <stop offset="40%" stopColor="#1f2026" />
-            <stop offset="100%" stopColor="#0d0e12" />
+            <stop offset="0%" stopColor="#2b2d36" />
+            <stop offset="40%" stopColor="#1a1b22" />
+            <stop offset="100%" stopColor="#0a0a0e" />
           </linearGradient>
 
-          {/* Iconic Pink Ribbon Bow Gradient (matching Sawako.jpg) */}
-          <linearGradient id="sawakoPinkBowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffd1dc" />
-            <stop offset="40%" stopColor="#fba3b7" />
-            <stop offset="100%" stopColor="#f47290" />
+          {/* Puffy Pink Hair Bow Gradient (matching Sawako.jpg) */}
+          <linearGradient id="sawakoBowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffd8e2" />
+            <stop offset="45%" stopColor="#fcaec1" />
+            <stop offset="100%" stopColor="#f47895" />
           </linearGradient>
 
-          {/* Ribbon Bow Highlight */}
-          <linearGradient id="bowHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+          {/* Cream School Cardigan Gradient */}
+          <linearGradient id="sawakoCardigan" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#fcf9f4" />
+            <stop offset="100%" stopColor="#ede5d8" />
           </linearGradient>
 
-          {/* Blouse / Cardigan Gradient: Soft cream school knitwear */}
-          <linearGradient id="sawakoCardiganGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#faf7f2" />
-            <stop offset="100%" stopColor="#eee7dc" />
+          {/* Navy Pleated Skirt Gradient */}
+          <linearGradient id="sawakoSkirt" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#25334a" />
+            <stop offset="100%" stopColor="#121b2a" />
           </linearGradient>
 
-          {/* Cardigan Shading */}
-          <linearGradient id="sawakoCardiganShade" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#e3dbce" />
-            <stop offset="15%" stopColor="#f3eee6" />
-            <stop offset="85%" stopColor="#f3eee6" />
-            <stop offset="100%" stopColor="#dfd7c9" />
+          {/* Dark Knee-High Socks */}
+          <linearGradient id="sawakoSocks" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#1f2430" />
+            <stop offset="100%" stopColor="#0f1218" />
           </linearGradient>
 
-          {/* Pleated Navy School Skirt */}
-          <linearGradient id="sawakoSkirtGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#1e293b" />
-            <stop offset="100%" stopColor="#0f172a" />
-          </linearGradient>
-
-          {/* Socks Gradient: Dark Charcoal Navy */}
-          <linearGradient id="sawakoSocksGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#1e2430" />
-            <stop offset="100%" stopColor="#11141c" />
-          </linearGradient>
-
-          {/* Loafers Gradient */}
-          <linearGradient id="sawakoShoesGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#45271d" />
-            <stop offset="100%" stopColor="#24140e" />
-          </linearGradient>
-
-          {/* Cheek Blush Radial Gradient */}
-          <radialGradient id="sawakoCheekBlush" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ff7b92" stopOpacity="0.65" />
-            <stop offset="70%" stopColor="#ff7b92" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#ff7b92" stopOpacity="0" />
+          {/* Cute Strawberry Cheek Blush */}
+          <radialGradient id="cuteBlush" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ff6584" stopOpacity="0.65" />
+            <stop offset="65%" stopColor="#ff6584" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#ff6584" stopOpacity="0" />
           </radialGradient>
 
-          {/* Soft Ground Drop Shadow */}
+          {/* Soft Ground Shadow */}
           <radialGradient id="groundShadow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#000000" stopOpacity="0.45" />
+            <stop offset="0%" stopColor="#000000" stopOpacity="0.38" />
             <stop offset="100%" stopColor="#000000" stopOpacity="0" />
           </radialGradient>
         </defs>
 
-        {/* ===================== GROUND DROP SHADOW ===================== */}
-        <ellipse cx="120" cy="374" rx="46" ry="6" fill="url(#groundShadow)" />
+        {/* ===================== SOFT GROUND SHADOW ===================== */}
+        <ellipse cx="100" cy="240" rx="38" ry="4.5" fill="url(#groundShadow)" />
 
-        {/* ===================== BACK HAIR (FULL BODY LENGTH) ===================== */}
+        {/* ===================== LONG BACK HAIR ===================== */}
         <g className="transition-transform duration-300">
-          {/* Long cascading straight black hair extending down past hips */}
           <path
-            d="M 68 80 C 45 130, 38 210, 48 310 C 52 335, 62 345, 75 330 C 85 305, 90 270, 92 230 C 92 230, 148 230, 148 230 C 150 270, 155 305, 165 330 C 178 345, 188 335, 192 310 C 202 210, 195 130, 172 80 Z"
+            d="M 52 50 C 35 85, 30 140, 36 215 C 40 226, 48 226, 54 212 C 60 190, 68 160, 72 135 C 72 135, 128 135, 128 135 C 132 160, 140 190, 146 212 C 152 226, 160 226, 164 215 C 170 140, 165 85, 148 50 Z"
             fill="url(#sawakoHairGrad)"
             className={isDragging ? "animate-pulse" : ""}
           />
-          {/* Hair shine overlay band */}
-          <rect x="42" y="140" width="156" height="28" fill="url(#sawakoHairShine)" />
         </g>
 
-        {/* ===================== LEGS & SOCKS & SHOES (FULL BODY) ===================== */}
+        {/* ===================== FULL BODY: LEGS & SHOES ===================== */}
         <g>
-          {/* Left Leg (Dark Knee-high Sock) */}
+          {/* Left Leg & Sock */}
           <path
-            d="M 98 270 L 96 348 C 96 352, 98 356, 102 356 L 108 356 C 112 356, 114 352, 114 348 L 112 270 Z"
-            fill="url(#sawakoSocksGrad)"
+            d="M 83 185 L 81 228 C 81 231, 83 233, 86 233 L 90 233 C 93 233, 95 231, 95 228 L 94 185 Z"
+            fill="url(#sawakoSocks)"
           />
-          {/* Left Sock Top Band */}
-          <line x1="98" y1="278" x2="112" y2="278" stroke="#334155" strokeWidth="1.5" />
+          {/* Left Shoe */}
+          <path
+            d="M 79 230 C 79 227, 88 226, 96 227 C 98 229, 99 233, 97 238 C 95 240, 92 241, 82 241 C 78 241, 78 238, 79 233 Z"
+            fill="#301c14"
+            stroke="#170c08"
+            strokeWidth="0.8"
+          />
+          <ellipse cx="88" cy="230" rx="3.5" ry="1.2" fill="#ffffff" fillOpacity="0.3" />
 
-          {/* Left Loafer / School Shoe */}
+          {/* Right Leg & Sock */}
           <path
-            d="M 94 352 C 94 348, 104 346, 114 348 C 118 350, 120 356, 118 364 C 117 367, 112 368, 98 368 C 93 368, 92 364, 93 358 Z"
-            fill="url(#sawakoShoesGrad)"
-            stroke="#1c0f0a"
-            strokeWidth="1"
+            d="M 106 185 L 105 228 C 105 231, 107 233, 110 233 L 114 233 C 117 233, 119 231, 119 228 L 117 185 Z"
+            fill="url(#sawakoSocks)"
           />
-          {/* Left Shoe Sole */}
-          <path d="M 92 365 L 118 365 L 117 369 L 93 369 Z" fill="#1c0f0a" />
-          {/* Left Shoe Highlight */}
-          <ellipse cx="106" cy="354" rx="5" ry="2" fill="#ffffff" fillOpacity="0.3" />
-
-          {/* Right Leg (Dark Knee-high Sock) */}
+          {/* Right Shoe */}
           <path
-            d="M 128 270 L 126 348 C 126 352, 128 356, 132 356 L 138 356 C 142 356, 144 352, 144 348 L 142 270 Z"
-            fill="url(#sawakoSocksGrad)"
+            d="M 104 230 C 104 227, 113 226, 121 227 C 123 229, 124 233, 122 238 C 120 240, 117 241, 107 241 C 103 241, 103 238, 104 233 Z"
+            fill="#301c14"
+            stroke="#170c08"
+            strokeWidth="0.8"
           />
-          {/* Right Sock Top Band */}
-          <line x1="128" y1="278" x2="142" y2="278" stroke="#334155" strokeWidth="1.5" />
-
-          {/* Right Loafer / School Shoe */}
-          <path
-            d="M 124 352 C 124 348, 134 346, 144 348 C 148 350, 150 356, 148 364 C 147 367, 142 368, 128 368 C 123 368, 122 364, 123 358 Z"
-            fill="url(#sawakoShoesGrad)"
-            stroke="#1c0f0a"
-            strokeWidth="1"
-          />
-          {/* Right Shoe Sole */}
-          <path d="M 122 365 L 148 365 L 147 369 L 123 369 Z" fill="#1c0f0a" />
-          {/* Right Shoe Highlight */}
-          <ellipse cx="136" cy="354" rx="5" ry="2" fill="#ffffff" fillOpacity="0.3" />
+          <ellipse cx="113" cy="230" rx="3.5" ry="1.2" fill="#ffffff" fillOpacity="0.3" />
         </g>
 
-        {/* ===================== PLEATED NAVY SKIRT ===================== */}
+        {/* ===================== FULL BODY: PLEATED SKIRT ===================== */}
         <g>
-          {/* Base skirt */}
           <path
-            d="M 85 228 L 155 228 L 168 272 C 145 277, 95 277, 72 272 Z"
-            fill="url(#sawakoSkirtGrad)"
-            stroke="#0b1120"
-            strokeWidth="1"
+            d="M 72 155 L 128 155 L 138 186 C 120 190, 80 190, 62 186 Z"
+            fill="url(#sawakoSkirt)"
+            stroke="#0d141e"
+            strokeWidth="0.8"
           />
-          {/* Skirt pleat lines & shadow folds */}
-          <path d="M 94 228 L 86 273" stroke="#334155" strokeWidth="1.2" />
-          <path d="M 107 228 L 103 274" stroke="#334155" strokeWidth="1.2" />
-          <path d="M 120 228 L 120 275" stroke="#334155" strokeWidth="1.2" />
-          <path d="M 133 228 L 137 274" stroke="#334155" strokeWidth="1.2" />
-          <path d="M 146 228 L 154 273" stroke="#334155" strokeWidth="1.2" />
+          {/* Skirt pleats */}
+          <line x1="80" y1="155" x2="74" y2="187" stroke="#334155" strokeWidth="1" />
+          <line x1="92" y1="155" x2="89" y2="188" stroke="#334155" strokeWidth="1" />
+          <line x1="100" y1="155" x2="100" y2="188" stroke="#334155" strokeWidth="1" />
+          <line x1="108" y1="155" x2="111" y2="188" stroke="#334155" strokeWidth="1" />
+          <line x1="120" y1="155" x2="126" y2="187" stroke="#334155" strokeWidth="1" />
         </g>
 
-        {/* ===================== CARDIGAN / BLOUSE (MATCHING SAWAKO.JPG) ===================== */}
+        {/* ===================== FULL BODY: CARDIGAN / BLOUSE ===================== */}
         <g>
-          {/* Cardigan Torso */}
+          {/* Cream School Cardigan */}
           <path
-            d="M 78 142 C 72 155, 68 185, 66 228 C 84 232, 156 232, 174 228 C 172 185, 168 155, 162 142 C 148 138, 92 138, 78 142 Z"
-            fill="url(#sawakoCardiganShade)"
-            stroke="#d5cbbe"
-            strokeWidth="1.2"
-          />
-
-          {/* Gentle scooped V-neck collar from Sawako.jpg */}
-          <path
-            d="M 100 140 Q 120 156 140 140 L 134 162 Q 120 172 106 162 Z"
-            fill="url(#sawakoSkinGrad)"
-          />
-          {/* Collarbones / Neck shadow */}
-          <path d="M 112 155 Q 120 159 128 155" stroke="#ecc8b8" strokeWidth="1" strokeLinecap="round" fill="none" />
-
-          {/* Front Button Placket */}
-          <line x1="120" y1="168" x2="120" y2="230" stroke="#d5cbbe" strokeWidth="1.5" />
-
-          {/* Cardigan Buttons (as in Sawako.jpg) */}
-          <circle cx="120" cy="178" r="3.2" fill="#ffffff" stroke="#c4b8a7" strokeWidth="1" />
-          <circle cx="120" cy="195" r="3.2" fill="#ffffff" stroke="#c4b8a7" strokeWidth="1" />
-          <circle cx="120" cy="212" r="3.2" fill="#ffffff" stroke="#c4b8a7" strokeWidth="1" />
-
-          {/* Cardigan Hem Band */}
-          <path d="M 68 224 Q 120 231 172 224" stroke="#c4b8a7" strokeWidth="2.5" fill="none" />
-
-          {/* Left Sleeve & Hand */}
-          <path
-            d="M 80 144 C 68 165, 58 195, 64 226 C 68 228, 74 224, 76 218 C 76 195, 82 170, 88 152 Z"
-            fill="url(#sawakoCardiganGrad)"
-            stroke="#d5cbbe"
+            d="M 68 106 C 64 115, 61 130, 59 156 C 72 159, 128 159, 141 156 C 139 130, 136 115, 132 106 C 122 103, 78 103, 68 106 Z"
+            fill="url(#sawakoCardigan)"
+            stroke="#d8cfc0"
             strokeWidth="1"
           />
-          {/* Left Hand / Fingers */}
-          <ellipse cx="64" cy="232" rx="5" ry="6" fill="url(#sawakoSkinGrad)" stroke="#f0d5c8" strokeWidth="0.8" />
 
-          {/* Right Sleeve & Hand */}
+          {/* Neck Opening */}
+          <path d="M 86 104 Q 100 114 114 104 L 110 118 Q 100 125 90 118 Z" fill="url(#sawakoSkinGrad)" />
+
+          {/* Front Button Line */}
+          <line x1="100" y1="122" x2="100" y2="157" stroke="#d5cbbe" strokeWidth="1.2" />
+          {/* Delicate Cardigan Buttons (from Sawako.jpg) */}
+          <circle cx="100" cy="129" r="2.4" fill="#ffffff" stroke="#c2b6a4" strokeWidth="0.8" />
+          <circle cx="100" cy="141" r="2.4" fill="#ffffff" stroke="#c2b6a4" strokeWidth="0.8" />
+          <circle cx="100" cy="152" r="2.4" fill="#ffffff" stroke="#c2b6a4" strokeWidth="0.8" />
+
+          {/* Left Sleeve & Petite Hand */}
           <path
-            d="M 160 144 C 172 165, 182 195, 176 226 C 172 228, 166 224, 164 218 C 164 195, 158 170, 152 152 Z"
-            fill="url(#sawakoCardiganGrad)"
-            stroke="#d5cbbe"
-            strokeWidth="1"
+            d="M 69 108 C 60 122, 53 140, 57 155 C 60 156, 64 154, 66 150 C 67 136, 71 122, 75 112 Z"
+            fill="url(#sawakoCardigan)"
+            stroke="#d8cfc0"
+            strokeWidth="0.8"
           />
-          {/* Right Hand / Fingers */}
-          <ellipse cx="176" cy="232" rx="5" ry="6" fill="url(#sawakoSkinGrad)" stroke="#f0d5c8" strokeWidth="0.8" />
+          <circle cx="58" cy="159" r="4.2" fill="url(#sawakoSkinGrad)" stroke="#f2d7ca" strokeWidth="0.6" />
+
+          {/* Right Sleeve & Petite Hand */}
+          <path
+            d="M 131 108 C 140 122, 147 140, 143 155 C 140 156, 136 154, 134 150 C 133 136, 129 122, 125 112 Z"
+            fill="url(#sawakoCardigan)"
+            stroke="#d8cfc0"
+            strokeWidth="0.8"
+          />
+          <circle cx="142" cy="159" r="4.2" fill="url(#sawakoSkinGrad)" stroke="#f2d7ca" strokeWidth="0.6" />
         </g>
 
-        {/* ===================== FRONT LONG HAIR STRANDS ===================== */}
+        {/* ===================== FRONT HAIR STRANDS ===================== */}
         <g>
-          {/* Left long hair strand falling over shoulder & chest (as in Sawako.jpg) */}
-          <path
-            d="M 72 82 C 65 110, 68 160, 68 220 C 68 245, 62 270, 66 278 C 70 270, 74 245, 74 220 C 76 160, 78 115, 84 90 Z"
-            fill="url(#sawakoHairGrad)"
-          />
-          {/* Right long hair strand falling over shoulder & chest (as in Sawako.jpg) */}
-          <path
-            d="M 168 82 C 175 110, 172 160, 172 220 C 172 245, 178 270, 174 278 C 170 270, 166 245, 166 220 C 164 160, 162 115, 156 90 Z"
-            fill="url(#sawakoHairGrad)"
-          />
+          {/* Left front strand falling down chest */}
+          <path d="M 62 55 C 57 80, 59 120, 58 165 C 58 175, 54 180, 57 182 C 60 180, 62 172, 62 165 C 64 120, 65 85, 70 65 Z" fill="url(#sawakoHairGrad)" />
+          {/* Right front strand falling down chest */}
+          <path d="M 138 55 C 143 80, 141 120, 142 165 C 142 175, 146 180, 143 182 C 140 180, 138 172, 138 165 C 136 120, 135 85, 130 65 Z" fill="url(#sawakoHairGrad)" />
         </g>
 
-        {/* ===================== HEAD GROUP (TILTS WITH MOUSE) ===================== */}
+        {/* ===================== HEAD & CUTE FACE (MATCHING SAWAKO.JPG) ===================== */}
         <g
           style={{
             transform: `rotate(${headRotate}deg)`,
-            transformOrigin: "120px 105px",
+            transformOrigin: "100px 75px",
             transition: "transform 0.15s ease-out",
           }}
         >
-          {/* Neck */}
-          <path d="M 112 125 L 112 145 L 128 145 L 128 125 Z" fill="url(#sawakoSkinGrad)" />
-          {/* Soft neck shadow below chin */}
-          <polygon points="112,125 128,125 120,136" fill="#f0d3c6" />
+          {/* Slender Petite Neck */}
+          <path d="M 94 92 L 94 106 L 106 106 L 106 92 Z" fill="url(#sawakoSkinGrad)" />
+          <polygon points="94,92 106,92 100,101" fill="#f1d6ca" />
 
-          {/* Sawako's Delicate Face Contour */}
+          {/* Cute Round Face Contour with soft chubby anime cheeks */}
           <path
-            d="M 72 75 C 68 105, 80 134, 120 140 C 160 134, 172 105, 168 75 C 165 42, 75 42, 72 75 Z"
+            d="M 60 52 C 57 80, 66 98, 100 102 C 134 98, 143 80, 140 52 C 138 28, 62 28, 60 52 Z"
             fill="url(#sawakoSkinGrad)"
           />
 
-          {/* Ears */}
-          <ellipse cx="71" cy="98" rx="4.5" ry="8" fill="url(#sawakoSkinGrad)" />
-          <ellipse cx="169" cy="98" rx="4.5" ry="8" fill="url(#sawakoSkinGrad)" />
+          {/* Delicate Ears */}
+          <ellipse cx="59" cy="70" rx="3.5" ry="6" fill="url(#sawakoSkinGrad)" />
+          <ellipse cx="141" cy="70" rx="3.5" ry="6" fill="url(#sawakoSkinGrad)" />
 
-          {/* ===================== CHEEK BLUSH (SAWAKO'S SIGNATURE WARM BLUSH) ===================== */}
+          {/* ===================== CUTE CHEEK BLUSH (EXACT TO SAWAKO.JPG) ===================== */}
           <g>
             {/* Left Cheek Blush */}
-            <ellipse cx="88" cy="114" rx="14" ry="8" fill="url(#sawakoCheekBlush)" />
-            {/* Delicate fine anime blush lines across left cheek as in Sawako.jpg */}
-            <line x1="82" y1="112" x2="84" y2="117" stroke="#ff7b92" strokeWidth="1" strokeLinecap="round" />
-            <line x1="86" y1="111" x2="88" y2="117" stroke="#ff7b92" strokeWidth="1" strokeLinecap="round" />
-            <line x1="90" y1="112" x2="92" y2="117" stroke="#ff7b92" strokeWidth="1" strokeLinecap="round" />
+            <ellipse cx="76" cy="80" rx="12" ry="7" fill="url(#cuteBlush)" />
+            {/* Fine delicate anime blush ticks */}
+            <line x1="71" y1="78" x2="72.5" y2="83" stroke="#ff6584" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="75" y1="77" x2="76.5" y2="83" stroke="#ff6584" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="79" y1="78" x2="80.5" y2="83" stroke="#ff6584" strokeWidth="0.9" strokeLinecap="round" />
 
             {/* Right Cheek Blush */}
-            <ellipse cx="152" cy="114" rx="14" ry="8" fill="url(#sawakoCheekBlush)" />
-            {/* Delicate fine anime blush lines across right cheek as in Sawako.jpg */}
-            <line x1="148" y1="112" x2="150" y2="117" stroke="#ff7b92" strokeWidth="1" strokeLinecap="round" />
-            <line x1="152" y1="111" x2="154" y2="117" stroke="#ff7b92" strokeWidth="1" strokeLinecap="round" />
-            <line x1="156" y1="112" x2="158" y2="117" stroke="#ff7b92" strokeWidth="1" strokeLinecap="round" />
+            <ellipse cx="124" cy="80" rx="12" ry="7" fill="url(#cuteBlush)" />
+            {/* Fine delicate anime blush ticks */}
+            <line x1="119" y1="78" x2="120.5" y2="83" stroke="#ff6584" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="123" y1="77" x2="124.5" y2="83" stroke="#ff6584" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="127" y1="78" x2="128.5" y2="83" stroke="#ff6584" strokeWidth="0.9" strokeLinecap="round" />
 
-            {/* Subtle warmth over nose bridge */}
-            <ellipse cx="120" cy="112" rx="8" ry="3.5" fill="url(#sawakoCheekBlush)" />
+            {/* Soft Warmth over Nose Bridge */}
+            <ellipse cx="100" cy="78" rx="6" ry="2.5" fill="url(#cuteBlush)" />
           </g>
 
-          {/* Tiny beauty mark / drop circle on lower cheek from Sawako.jpg */}
-          <circle cx="152" cy="125" r="1.2" fill="#d9777f" fillOpacity="0.75" />
+          {/* Tiny beauty mark circle from Sawako.jpg on lower cheek */}
+          <circle cx="124" cy="89" r="1.1" fill="#d9777f" fillOpacity="0.8" />
 
-          {/* ===================== EYES (LARGE, INNOCENT, DEEP ANIME EYES) ===================== */}
+          {/* ===================== BIG CUTE INNOCENT EYES ===================== */}
           {expression === "dizzy" ? (
             // Comedic Hypnotic Swirl Eyes (@.@)
             <g>
-              <circle cx="94" cy="98" r="13" fill="#ffffff" stroke="#1f2026" strokeWidth="2.5" />
+              <circle cx="80" cy="69" r="11" fill="#ffffff" stroke="#1f2026" strokeWidth="2.2" />
               <path
-                d="M 94 98 m -8, 0 a 8,8 0 1,0 16,0 a 5,5 0 1,0 -10,0 a 2.5,2.5 0 1,0 5,0"
+                d="M 80 69 m -7, 0 a 7,7 0 1,0 14,0 a 4.5,4.5 0 1,0 -9,0 a 2.2,2.2 0 1,0 4.4,0"
                 fill="none"
                 stroke="#6366f1"
-                strokeWidth="2.2"
+                strokeWidth="2"
                 strokeLinecap="round"
-                className="animate-spin origin-[94px_98px]"
+                className="animate-spin origin-[80px_69px]"
               />
-              <circle cx="146" cy="98" r="13" fill="#ffffff" stroke="#1f2026" strokeWidth="2.5" />
+              <circle cx="120" cy="69" r="11" fill="#ffffff" stroke="#1f2026" strokeWidth="2.2" />
               <path
-                d="M 146 98 m -8, 0 a 8,8 0 1,0 16,0 a 5,5 0 1,0 -10,0 a 2.5,2.5 0 1,0 5,0"
+                d="M 120 69 m -7, 0 a 7,7 0 1,0 14,0 a 4.5,4.5 0 1,0 -9,0 a 2.2,2.2 0 1,0 4.4,0"
                 fill="none"
                 stroke="#6366f1"
-                strokeWidth="2.2"
+                strokeWidth="2"
                 strokeLinecap="round"
-                className="animate-spin origin-[146px_98px]"
+                className="animate-spin origin-[120px_69px]"
               />
             </g>
           ) : expression === "sleepy" ? (
-            // Sweet peaceful sleepy eyes (^ ^)
+            // Sweet happy closed eyes (^ ^)
             <g>
-              <path d="M 84 100 Q 94 108 104 100" stroke="#1f2026" strokeWidth="3.2" strokeLinecap="round" fill="none" />
-              <path d="M 136 100 Q 146 108 156 100" stroke="#1f2026" strokeWidth="3.2" strokeLinecap="round" fill="none" />
+              <path d="M 72 70 Q 80 77 88 70" stroke="#1c1d24" strokeWidth="2.8" strokeLinecap="round" fill="none" />
+              <path d="M 112 70 Q 120 77 128 70" stroke="#1c1d24" strokeWidth="2.8" strokeLinecap="round" fill="none" />
             </g>
           ) : (
-            // Sawako's big iconic anime eyes with pupil tracking
+            // Sawako's large, wide, innocent round eyes (from Sawako.jpg)
             <g>
               {/* Left Eye Whites */}
-              <ellipse cx="94" cy="98" rx="14" ry="16" fill="#ffffff" stroke="#1f2026" strokeWidth="1.8" />
+              <ellipse cx="80" cy="68" rx="12.5" ry="14" fill="#ffffff" stroke="#1c1d24" strokeWidth="1.5" />
               {/* Left Iris & Pupil */}
               <g transform={`translate(${pupilX}, ${pupilY})`}>
-                <ellipse cx="94" cy="98" rx="10" ry="13" fill="url(#sawakoEyeIris)" />
-                <circle cx="94" cy="99" r="6" fill="#090a0d" />
-                {/* Specular White Highlights (matching Sawako.jpg) */}
-                <circle cx="91" cy="93" r="3.6" fill="#ffffff" />
-                <circle cx="97" cy="103" r="1.8" fill="#ffffff" fillOpacity="0.85" />
+                <ellipse cx="80" cy="68" rx="9" ry="11.5" fill="url(#sawakoEyeIris)" />
+                <circle cx="80" cy="69" r="5" fill="#08080b" />
+                {/* Big cute specular shine in upper-left */}
+                <circle cx="77.5" cy="64" r="3.2" fill="#ffffff" />
+                {/* Secondary soft reflection in lower-right */}
+                <circle cx="83" cy="72" r="1.5" fill="#ffffff" fillOpacity="0.8" />
               </g>
-              {/* Left Upper Eyelash (thick black anime lash line) */}
-              <path d="M 78 92 Q 94 85 110 93" stroke="#111217" strokeWidth="3.8" strokeLinecap="round" fill="none" />
-              {/* Left Lower Eyelash Ticks (fine lash flicks as in Sawako.jpg) */}
-              <path d="M 83 108 L 81 112" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M 89 111 L 88 115" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M 96 111 L 96 115" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M 103 109 L 104 113" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
+              {/* Left Upper Lash Line (thick arched anime curve) */}
+              <path d="M 66 64 Q 80 57 94 65" stroke="#101115" strokeWidth="3.4" strokeLinecap="round" fill="none" />
+              {/* Delicate Lower Eyelash Ticks (from Sawako.jpg) */}
+              <line x1="71" y1="77" x2="69.5" y2="80" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="76" y1="79" x2="75.5" y2="82.5" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="82" y1="79" x2="82" y2="82.5" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="87" y1="78" x2="88" y2="81" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
 
               {/* Right Eye Whites */}
-              <ellipse cx="146" cy="98" rx="14" ry="16" fill="#ffffff" stroke="#1f2026" strokeWidth="1.8" />
+              <ellipse cx="120" cy="68" rx="12.5" ry="14" fill="#ffffff" stroke="#1c1d24" strokeWidth="1.5" />
               {/* Right Iris & Pupil */}
               <g transform={`translate(${pupilX}, ${pupilY})`}>
-                <ellipse cx="146" cy="98" rx="10" ry="13" fill="url(#sawakoEyeIris)" />
-                <circle cx="146" cy="99" r="6" fill="#090a0d" />
-                {/* Specular White Highlights (matching Sawako.jpg) */}
-                <circle cx="143" cy="93" r="3.6" fill="#ffffff" />
-                <circle cx="149" cy="103" r="1.8" fill="#ffffff" fillOpacity="0.85" />
+                <ellipse cx="120" cy="68" rx="9" ry="11.5" fill="url(#sawakoEyeIris)" />
+                <circle cx="120" cy="69" r="5" fill="#08080b" />
+                {/* Big cute specular shine in upper-left */}
+                <circle cx="117.5" cy="64" r="3.2" fill="#ffffff" />
+                {/* Secondary soft reflection in lower-right */}
+                <circle cx="123" cy="72" r="1.5" fill="#ffffff" fillOpacity="0.8" />
               </g>
-              {/* Right Upper Eyelash (thick black anime lash line) */}
-              <path d="M 130 93 Q 146 85 162 92" stroke="#111217" strokeWidth="3.8" strokeLinecap="round" fill="none" />
-              {/* Right Lower Eyelash Ticks (fine lash flicks as in Sawako.jpg) */}
-              <path d="M 137 109 L 136 113" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M 144 111 L 144 115" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M 151 111 L 152 115" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M 157 108 L 159 112" stroke="#111217" strokeWidth="1.4" strokeLinecap="round" />
+              {/* Right Upper Lash Line (thick arched anime curve) */}
+              <path d="M 106 65 Q 120 57 134 64" stroke="#101115" strokeWidth="3.4" strokeLinecap="round" fill="none" />
+              {/* Delicate Lower Eyelash Ticks (from Sawako.jpg) */}
+              <line x1="113" y1="78" x2="112" y2="81" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="118" y1="79" x2="118" y2="82.5" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="124" y1="79" x2="124.5" y2="82.5" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="129" y1="77" x2="130.5" y2="80" stroke="#101115" strokeWidth="1.2" strokeLinecap="round" />
             </g>
           )}
 
-          {/* Delicate Eyebrows (fine thin straight lines visible through hair) */}
-          {expression === "pout" ? (
-            <>
-              <path d="M 84 81 Q 94 85 104 83" stroke="#22222a" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-              <path d="M 156 81 Q 146 85 136 83" stroke="#22222a" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-            </>
-          ) : (
-            <>
-              <path d="M 84 80 Q 94 76 104 80" stroke="#22222a" strokeWidth="2" strokeLinecap="round" fill="none" />
-              <path d="M 156 80 Q 146 76 136 80" stroke="#22222a" strokeWidth="2" strokeLinecap="round" fill="none" />
-            </>
-          )}
+          {/* Thin Delicate Eyebrows (peeking under bangs) */}
+          <path d="M 72 54 Q 80 50 88 53" stroke="#22222a" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+          <path d="M 128 54 Q 120 50 112 53" stroke="#22222a" strokeWidth="1.8" strokeLinecap="round" fill="none" />
 
-          {/* Nose (delicate vertical anime line from Sawako.jpg) */}
-          <line x1="120" y1="112" x2="121" y2="117" stroke="#944d56" strokeWidth="1.4" strokeLinecap="round" />
+          {/* Tiny Nose Mark (from Sawako.jpg) */}
+          <line x1="100" y1="77" x2="100.5" y2="81" stroke="#9e5660" strokeWidth="1.2" strokeLinecap="round" />
 
-          {/* Mouth (small, delicate, gentle as in Sawako.jpg) */}
+          {/* ===================== CUTE SHY MOUTH (MATCHING SAWAKO.JPG) ===================== */}
           {expression === "pout" ? (
             // Cute flustered wavy pout
-            <path d="M 113 128 Q 120 123 127 128" stroke="#be123c" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <path d="M 95 91 Q 100 87 105 91" stroke="#be123c" strokeWidth="2" strokeLinecap="round" fill="none" />
           ) : expression === "dizzy" ? (
-            // Flustered squiggly mouth
-            <path d="M 112 127 Q 116 124 120 127 Q 124 130 128 127" stroke="#be123c" strokeWidth="2" strokeLinecap="round" fill="none" />
+            // Squiggly dizzy mouth
+            <path d="M 94 90 Q 97 87 100 90 Q 103 93 106 90" stroke="#be123c" strokeWidth="1.8" strokeLinecap="round" fill="none" />
           ) : expression === "happy" ? (
-            // Sweet open smile
-            <path d="M 112 125 Q 120 133 128 125 Z" fill="#f43f5e" stroke="#be123c" strokeWidth="1.5" />
+            // Sweet beaming smile
+            <path d="M 94 88 Q 100 95 106 88 Z" fill="#f43f5e" stroke="#be123c" strokeWidth="1.2" />
           ) : (
-            // Gentle slightly-parted lips from Sawako.jpg
+            // Shy slightly-open gentle lips from Sawako.jpg
             <g>
-              <path d="M 114 125 Q 120 128 126 125" stroke="#be123c" strokeWidth="2" strokeLinecap="round" fill="none" />
-              <line x1="117" y1="130" x2="123" y2="130" stroke="#f47290" strokeWidth="1.5" strokeLinecap="round" />
+              <ellipse cx="100" cy="89" rx="4.5" ry="2.2" fill="#fda4af" stroke="#be123c" strokeWidth="1.2" />
+              <line x1="97" y1="93" x2="103" y2="93" stroke="#fb7185" strokeWidth="1.2" strokeLinecap="round" />
             </g>
           )}
 
-          {/* ===================== SAWAKO'S ICONIC STRAIGHT FRINGE BANGS ===================== */}
+          {/* ===================== STRAIGHT FRINGE BANGS ===================== */}
           <g>
-            {/* Outer Hair Crown Cap */}
+            {/* Top Crown Cap */}
             <path
-              d="M 68 80 C 66 38, 85 24, 120 24 C 155 24, 174 38, 172 80 C 160 76, 80 76, 68 80 Z"
+              d="M 58 52 C 56 22, 70 12, 100 12 C 130 12, 144 22, 142 52 C 132 48, 68 48, 58 52 Z"
               fill="url(#sawakoHairGrad)"
             />
+            {/* Gloss Sheen on Crown */}
+            <ellipse cx="100" cy="24" rx="36" ry="6" fill="url(#sawakoHairGloss)" />
 
-            {/* Straight anime fringe / bangs cut straight across with neat gaps (matching Sawako.jpg) */}
-            {/* Left side strand */}
-            <path d="M 70 78 L 76 112 L 82 86 Z" fill="url(#sawakoHairGrad)" />
-            {/* Left mid strand */}
-            <path d="M 82 82 L 88 108 L 94 84 Z" fill="url(#sawakoHairGrad)" />
-            {/* Center-left strand */}
-            <path d="M 94 80 L 102 106 L 108 82 Z" fill="url(#sawakoHairGrad)" />
-            {/* Center strand */}
-            <path d="M 108 80 L 116 104 L 124 80 Z" fill="url(#sawakoHairGrad)" />
-            {/* Center-right strand */}
-            <path d="M 124 82 L 132 106 L 140 82 Z" fill="url(#sawakoHairGrad)" />
-            {/* Right mid strand */}
-            <path d="M 140 82 L 148 108 L 154 84 Z" fill="url(#sawakoHairGrad)" />
-            {/* Right side strand */}
-            <path d="M 154 78 L 164 112 L 170 82 Z" fill="url(#sawakoHairGrad)" />
+            {/* Straight neat fringe bangs (from Sawako.jpg) */}
+            <path d="M 60 50 L 65 74 L 70 54 Z" fill="url(#sawakoHairGrad)" />
+            <path d="M 70 52 L 75 73 L 80 53 Z" fill="url(#sawakoHairGrad)" />
+            <path d="M 80 50 L 86 71 L 91 52 Z" fill="url(#sawakoHairGrad)" />
+            <path d="M 91 50 L 97 70 L 103 50 Z" fill="url(#sawakoHairGrad)" />
+            <path d="M 103 50 L 109 71 L 115 52 Z" fill="url(#sawakoHairGrad)" />
+            <path d="M 115 52 L 121 73 L 126 53 Z" fill="url(#sawakoHairGrad)" />
+            <path d="M 126 50 L 132 74 L 138 52 Z" fill="url(#sawakoHairGrad)" />
 
-            {/* Side framing hime locks */}
-            <path d="M 68 80 C 65 110, 68 140, 72 155 L 76 150 C 73 130, 73 100, 76 82 Z" fill="url(#sawakoHairGrad)" />
-            <path d="M 172 80 C 175 110, 172 140, 168 155 L 164 150 C 167 130, 167 100, 164 82 Z" fill="url(#sawakoHairGrad)" />
+            {/* Side framing locks */}
+            <path d="M 58 52 C 55 72, 58 92, 61 104 L 64 100 C 62 86, 62 66, 64 54 Z" fill="url(#sawakoHairGrad)" />
+            <path d="M 142 52 C 145 72, 142 92, 139 104 L 136 100 C 138 86, 138 66, 136 54 Z" fill="url(#sawakoHairGrad)" />
           </g>
 
-          {/* ===================== THE ICONIC PINK RIBBON BOW (MATCHING SAWAKO.JPG) ===================== */}
-          {/* Positioned on the left side of Sawako's hair (viewer's right, at x ~ 162, y ~ 52) */}
+          {/* ===================== ICONIC PUFFY PINK RIBBON BOW ===================== */}
+          {/* Positioned on left side of her hair (viewer's right) as in Sawako.jpg */}
           <g
-            transform="translate(162, 52) rotate(12)"
+            transform="translate(136, 34) rotate(10)"
             className={isHovered ? "transition-transform duration-200 scale-110" : "transition-transform duration-300"}
           >
             {/* Left Bow Loop */}
             <path
-              d="M 0 0 C -16 -12, -26 -2, -18 8 C -14 12, -4 4, 0 0 Z"
-              fill="url(#sawakoPinkBowGrad)"
+              d="M 0 0 C -13 -10, -21 -2, -15 6 C -11 10, -3 3, 0 0 Z"
+              fill="url(#sawakoBowGrad)"
               stroke="#e16182"
-              strokeWidth="1.5"
+              strokeWidth="1.2"
             />
-            {/* Left Bow Inner Hole */}
-            <ellipse cx="-12" cy="0" rx="3.5" ry="2.5" fill="#fdf2f4" />
+            <ellipse cx="-9.5" cy="0" rx="3" ry="2" fill="#fff5f7" />
 
             {/* Right Bow Loop */}
             <path
-              d="M 0 0 C 16 -12, 26 -2, 18 8 C 14 12, 4 4, 0 0 Z"
-              fill="url(#sawakoPinkBowGrad)"
+              d="M 0 0 C 13 -10, 21 -2, 15 6 C 11 10, 3 3, 0 0 Z"
+              fill="url(#sawakoBowGrad)"
               stroke="#e16182"
-              strokeWidth="1.5"
+              strokeWidth="1.2"
             />
-            {/* Right Bow Inner Hole */}
-            <ellipse cx="12" cy="0" rx="3.5" ry="2.5" fill="#fdf2f4" />
+            <ellipse cx="9.5" cy="0" rx="3" ry="2" fill="#fff5f7" />
 
-            {/* Center Bow Knot */}
-            <ellipse cx="0" cy="0" rx="5.5" ry="6" fill="#f47290" stroke="#be123c" strokeWidth="1.2" />
-            <circle cx="-1" cy="-1.5" r="1.5" fill="#ffffff" fillOpacity="0.75" />
+            {/* Center Knot */}
+            <ellipse cx="0" cy="0" rx="4.5" ry="5" fill="#f47290" stroke="#be123c" strokeWidth="1" />
+            <circle cx="-1" cy="-1" r="1.2" fill="#ffffff" fillOpacity="0.8" />
 
-            {/* Gentle Ribbon Tail ends */}
-            <path d="M -3 4 C -8 14, -14 18, -12 22 C -8 20, -4 14, -1 6 Z" fill="url(#sawakoPinkBowGrad)" stroke="#e16182" strokeWidth="1" />
-            <path d="M 3 4 C 8 14, 14 18, 12 22 C 8 20, 4 14, 1 6 Z" fill="url(#sawakoPinkBowGrad)" stroke="#e16182" strokeWidth="1" />
+            {/* Cute Ribbon Tails */}
+            <path d="M -2 3 C -6 11, -11 14, -9 18 C -6 16, -3 11, -1 5 Z" fill="url(#sawakoBowGrad)" stroke="#e16182" strokeWidth="0.8" />
+            <path d="M 2 3 C 6 11, 11 14, 9 18 C 6 16, 3 11, 1 5 Z" fill="url(#sawakoBowGrad)" stroke="#e16182" strokeWidth="0.8" />
           </g>
         </g>
 
         {/* ===================== FLOATING ANIME SYMBOLS ===================== */}
         {symbol === "anger" && (
-          // Anime anger vein mark 💢
-          <g transform="translate(182, 38) scale(0.9)" className="animate-bounce">
-            <path
-              d="M 0 6 L 16 6 M 6 0 L 6 16 M 10 0 L 10 16 M 0 10 L 16 10"
-              stroke="#ef4444"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-            />
+          <g transform="translate(152, 22) scale(0.8)" className="animate-bounce">
+            <path d="M 0 6 L 16 6 M 6 0 L 6 16 M 10 0 L 10 16 M 0 10 L 16 10" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
           </g>
         )}
 
         {symbol === "sweat" && (
-          // Classic Sawako giant blue sweatdrop 💧
-          <g transform="translate(184, 58)" className="animate-pulse">
-            <path d="M 8 0 C 14 8, 16 14, 10 18 C 4 22, -2 16, 2 10 Z" fill="#38bdf8" />
-            <circle cx="5" cy="14" r="1.5" fill="#ffffff" />
+          <g transform="translate(154, 40)" className="animate-pulse">
+            <path d="M 7 0 C 12 7, 14 12, 9 15 C 4 18, -1 13, 2 8 Z" fill="#38bdf8" />
+            <circle cx="4" cy="11" r="1.2" fill="#ffffff" />
           </g>
         )}
 
         {symbol === "sparkle" && (
-          // Sparkling stars ✨
-          <g transform="translate(186, 42)" className="animate-spin origin-[186px_42px]">
-            <polygon points="10,0 13,7 20,10 13,13 10,20 7,13 0,10 7,7" fill="#facc15" />
+          <g transform="translate(154, 25)" className="animate-spin origin-[154px_25px]">
+            <polygon points="8,0 10,5 16,8 10,11 8,16 6,11 0,8 6,5" fill="#facc15" />
           </g>
         )}
 
         {symbol === "zzz" && (
-          // Sleepy Zzz
-          <g transform="translate(178, 36)" className="animate-bounce">
-            <text x="0" y="10" fill="#93c5fd" fontSize="14" fontWeight="bold" fontFamily="monospace">
+          <g transform="translate(148, 20)" className="animate-bounce">
+            <text x="0" y="10" fill="#93c5fd" fontSize="12" fontWeight="bold" fontFamily="monospace">
               Zzz..
             </text>
           </g>
         )}
 
         {symbol === "heart" && (
-          // Anime shy heart ❤️
-          <g transform="translate(182, 40)" className="animate-ping origin-center">
-            <path
-              d="M 12 4 A 4 4 0 0 0 6 9 A 4 4 0 0 0 0 4 A 4 4 0 0 0 6 0 A 4 4 0 0 0 12 4 Z"
-              fill="#f43f5e"
-              transform="rotate(45 6 6)"
-            />
+          <g transform="translate(152, 24)" className="animate-ping origin-center">
+            <path d="M 10 3 A 3.5 3.5 0 0 0 5 7.5 A 3.5 3.5 0 0 0 0 3 A 3.5 3.5 0 0 0 5 0 A 3.5 3.5 0 0 0 10 3 Z" fill="#f43f5e" transform="rotate(45 5 5)" />
           </g>
         )}
 
         {symbol === "question" && (
-          // Question mark ❓
-          <g transform="translate(184, 38)" className="animate-bounce">
-            <text x="0" y="16" fill="#f59e0b" fontSize="18" fontWeight="black" fontFamily="sans-serif">
+          <g transform="translate(152, 22)" className="animate-bounce">
+            <text x="0" y="14" fill="#f59e0b" fontSize="16" fontWeight="black" fontFamily="sans-serif">
               ?
             </text>
           </g>
