@@ -130,4 +130,30 @@ describe("SawakoMascot Component", () => {
 
     expect(screen.getByTestId("sawako-mascot-container")).toBeDefined();
   });
+
+  it("triggers special cute dialogue when clicking hands or feet", () => {
+    render(
+      <MemoryRouter>
+        <SawakoMascot />
+      </MemoryRouter>,
+    );
+
+    // Test hand interaction
+    const handBtn = screen.getByTestId("sawako-hands-target");
+    expect(handBtn).toBeDefined();
+    act(() => {
+      fireEvent.click(handBtn);
+    });
+    const bubbleAfterHand = screen.getByTestId("sawako-speech-bubble");
+    expect(/hand|cold/i.test(bubbleAfterHand.textContent || "")).toBe(true);
+
+    // Test foot interaction
+    const footBtn = screen.getByTestId("sawako-feet-target");
+    expect(footBtn).toBeDefined();
+    act(() => {
+      fireEvent.click(footBtn);
+    });
+    const bubbleAfterFoot = screen.getByTestId("sawako-speech-bubble");
+    expect(/feet|tickl|dress|hem|ghost/i.test(bubbleAfterFoot.textContent || "")).toBe(true);
+  });
 });

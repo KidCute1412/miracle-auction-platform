@@ -33,6 +33,42 @@ export const POKE_LINES: SawakoLine[] = [
   },
 ];
 
+export const HAND_POKE_LINES: SawakoLine[] = [
+  {
+    text: "E-Eep! Don't hold my hands, baka~!",
+    expression: "pout",
+    symbol: "heart",
+  },
+  {
+    text: "Kyaa! My hands are cold like a ghost...!",
+    expression: "pout",
+    symbol: "sweat",
+  },
+  {
+    text: "H-Hey! Hands to yourself, Admin-san!",
+    expression: "pout",
+    symbol: "anger",
+  },
+];
+
+export const FOOT_POKE_LINES: SawakoLine[] = [
+  {
+    text: "Wahh! Ticklish! Don't touch my feet~!",
+    expression: "pout",
+    symbol: "sweat",
+  },
+  {
+    text: "Eep! G-Ghosts don't like tickles!",
+    expression: "pout",
+    symbol: "anger",
+  },
+  {
+    text: "M-My dress hem is fluttering... baka!",
+    expression: "pout",
+    symbol: "heart",
+  },
+];
+
 export const DIZZY_LINES: SawakoLine[] = [
   {
     text: "Wahh! S-Spinning... @.@",

@@ -9,6 +9,8 @@ import type {
 } from "./sawako/types";
 import {
   POKE_LINES,
+  HAND_POKE_LINES,
+  FOOT_POKE_LINES,
   DIZZY_LINES,
   DRAG_LINES,
   DROP_LINES,
@@ -157,6 +159,32 @@ export default function SawakoMascot() {
     const line = POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)];
     say(line, 4000);
   }, [isDragging, prefs.muted, say, triggerSquashAndStretch]);
+
+  // Interactive Hand Poke handler
+  const handlePokeHand = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      triggerSquashAndStretch();
+      sawakoSound.setMuted(prefs.muted);
+      sawakoSound.playChime();
+      const line = HAND_POKE_LINES[Math.floor(Math.random() * HAND_POKE_LINES.length)];
+      say(line, 4000);
+    },
+    [prefs.muted, say, triggerSquashAndStretch],
+  );
+
+  // Interactive Foot Poke handler
+  const handlePokeFoot = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      triggerSquashAndStretch();
+      sawakoSound.setMuted(prefs.muted);
+      sawakoSound.playBounce();
+      const line = FOOT_POKE_LINES[Math.floor(Math.random() * FOOT_POKE_LINES.length)];
+      say(line, 4000);
+    },
+    [prefs.muted, say, triggerSquashAndStretch],
+  );
 
   // Route change awareness
   useEffect(() => {
@@ -414,6 +442,8 @@ export default function SawakoMascot() {
             isDragging={isDragging}
             scaleX={scale.x}
             scaleY={scale.y}
+            onPokeHand={handlePokeHand}
+            onPokeFoot={handlePokeFoot}
           />
         </div>
       </div>
