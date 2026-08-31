@@ -60,6 +60,11 @@ function AccountLogin() {
               toast.success("Logged in successfully!");
               await trackVisitorEvent("auth_succeeded", { method: "email" });
               if (data.role === "admin") {
+                try {
+                  sessionStorage.setItem("admin_initial_redirect_done", "true");
+                } catch {
+                  // Ignore storage write error
+                }
                 navigate(`/admin/dashboard`);
               } else {
                 navigate(`/`);
@@ -84,6 +89,11 @@ function AccountLogin() {
           toast.success(data.message || "Logged in successfully!");
           await trackVisitorEvent("auth_succeeded", { method: "google" });
           if (data.role === "admin") {
+            try {
+              sessionStorage.setItem("admin_initial_redirect_done", "true");
+            } catch {
+              // Ignore storage write error
+            }
             navigate(`/admin/dashboard`);
           } else {
             navigate(`/`);

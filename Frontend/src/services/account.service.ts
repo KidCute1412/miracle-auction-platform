@@ -76,6 +76,11 @@ export const accountService = {
   },
 
   logout: async (): Promise<LegacyCodeResponse> => {
+    try {
+      sessionStorage.removeItem("admin_initial_redirect_done");
+    } catch {
+      // Ignore errors when sessionStorage is inaccessible
+    }
     return apiRequest(`/accounts/sessions`, {
       method: "DELETE",
     });

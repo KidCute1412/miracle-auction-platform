@@ -1,4 +1,6 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/routes/ProtectedRouter";
 import Section1 from "@/pages/home/sections/Section1";
 import SectionCategoryQuickNav from "@/pages/home/sections/SectionCategoryQuickNav";
 
@@ -15,7 +17,38 @@ const SectionFallback = () => (
   </div>
 );
 
+export const ADMIN_INITIAL_REDIRECT_KEY = "admin_initial_redirect_done";
+
 function Home() {
+  const { auth, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (auth?.role === "admin") {
+      try {
+        const hasRedirected = sessionStorage.getItem(ADMIN_INITIAL_REDIRECT_KEY);
+        if (!hasRedirected) {
+          sessionStorage.setItem(ADMIN_INITIAL_REDIRECT_KEY, "true");
+          navigate("/admin/dashboard", { replace: true });
+        }
+      } catch (err) {
+        console.error("Failed to read/write sessionStorage for admin redirect guard:", err);
+      }
+    }
+  }, [auth, loading, navigate]);
+
+  // Prevent flash of storefront content when admin enters root initially in this session
+  const isFirstAdminSessionVisit =
+    !loading &&
+    auth?.role === "admin" &&
+    typeof window !== "undefined" &&
+    !sessionStorage.getItem(ADMIN_INITIAL_REDIRECT_KEY);
+
+  if (isFirstAdminSessionVisit) {
+    return null;
+  }
   return (
     <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
       {/* Continuous Ambient Cosmic Mesh Background (responsive GPU optimization) */}
