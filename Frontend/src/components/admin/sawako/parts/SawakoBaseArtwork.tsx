@@ -5,6 +5,7 @@ interface SawakoBaseArtworkProps {
   expression?: SawakoExpression;
   isHovered?: boolean;
   isShyPeeking?: boolean;
+  isSippingTea?: boolean;
   onPokeStarClip?: (e: React.MouseEvent) => void;
   onHeadpatStroke?: (e: React.MouseEvent) => void;
   children?: React.ReactNode;
@@ -24,6 +25,7 @@ export function SawakoBaseArtwork({
   expression,
   isHovered,
   isShyPeeking,
+  isSippingTea = false,
   onPokeStarClip,
   onHeadpatStroke,
   children,
@@ -97,26 +99,91 @@ export function SawakoBaseArtwork({
       {/* ===================== 1. ETHEREAL MUSE DRESS ===================== */}
       {/* ===================== 1. VINTAGE MILK-TEA KNIT VEST & PUFF BLOUSE ===================== */}
       <g id="pure-white-muse-dress">
-        {/* Chân váy xòe mềm màu nâu socola dịu dàng */}
-        <path
-          d="
-            M 295 650
-            L 226 865
-            Q 368 890 510 865
-            L 441 650
-            Q 368 662 295 650
-            Z
-          "
-          fill="#78350F"
-          stroke="#451A03"
-          strokeWidth={2}
-        />
-        {/* Nếp xếp rủ chân váy */}
-        <g stroke="#92400E" strokeWidth={1.8} strokeLinecap="round" fill="none">
-          <path d="M 330 655 C 322 720, 305 800, 290 866" />
-          <path d="M 368 656 C 368 725, 368 805, 368 876" stroke="#B45309" strokeWidth={2.2} />
-          <path d="M 406 655 C 414 720, 431 800, 446 866" />
-        </g>
+        {/* Chân váy xòe mềm màu nâu socola dịu dàng: Phân biệt dáng đứng và dáng ngồi/quỳ */}
+        {isSippingTea ? (
+          /* Dáng ngồi quỳ Seiza Chibi: Váy trùm phủ bồng bềnh chạm sàn, ôm trọn và để lộ hai đầu gối tròn xinh ở chính diện */
+          <g id="sawako-sitting-skirt-group">
+            {/* Lớp bóng đổ mềm của chân váy lên mặt sàn */}
+            <ellipse cx="368" cy="856" rx="140" ry="16" fill="#5B2607" opacity="0.25" />
+
+            {/* Tà váy chính trùm phủ hai đùi, ôm lượn theo hai đầu gối ở chính diện */}
+            <path
+              d="
+                M 295 650
+                C 260 695, 238 770, 246 835
+                C 250 856, 276 858, 312 840
+                C 322 830, 330 826, 340 826
+                C 352 826, 360 832, 368 834
+                C 376 832, 384 826, 396 826
+                C 406 826, 414 830, 424 840
+                C 460 858, 486 856, 490 835
+                C 498 770, 476 695, 441 650
+                Q 368 662 295 650
+                Z
+              "
+              fill="#78350F"
+            />
+
+            {/* Đường viền tà váy bên hông (viền đậm tự nhiên) */}
+            <path
+              d="M 295 650 C 260 695, 238 770, 246 835 C 250 856, 276 858, 312 840"
+              stroke="#451A03"
+              strokeWidth={2}
+              fill="none"
+            />
+            <path
+              d="M 424 840 C 460 858, 486 856, 490 835 C 498 770, 476 695, 441 650"
+              stroke="#451A03"
+              strokeWidth={2}
+              fill="none"
+            />
+            {/* Viền gấu váy trước tiếp giáp gối mềm mại thanh thoát (không cắt xẻ vào da) */}
+            <path
+              d="M 312 840 C 322 830, 330 826, 340 826 C 352 826, 360 832, 368 834 C 376 832, 384 826, 396 826 C 406 826, 414 830, 424 840"
+              stroke="#5B2607"
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              fill="none"
+            />
+
+            {/* Nếp gấp 3D bồng bềnh của chân váy & nếp ôm chạy thẳng vào hai đầu gối */}
+            <g stroke="#92400E" strokeWidth={2.2} strokeLinecap="round" fill="none">
+              {/* Nếp đùi trái chạy thẳng vào đỉnh đầu gối trái (X = 340) */}
+              <path d="M 300 660 C 312 725, 328 780, 340 825" />
+              {/* Nếp rủ khe giữa hai đầu gối chụm ở chính diện (X = 368) */}
+              <path d="M 368 662 C 368 720, 368 775, 368 833" stroke="#B45309" strokeWidth={2.6} />
+              {/* Nếp đùi phải chạy thẳng vào đỉnh đầu gối phải (X = 396) */}
+              <path d="M 436 660 C 424 725, 408 780, 396 825" />
+
+              {/* Nếp xếp vải nhẹ hai bên hông đùi chạm sàn */}
+              <path d="M 258 765 C 252 805, 258 835, 276 852" stroke="#5B2607" strokeWidth={1.6} />
+              <path d="M 478 765 C 484 805, 478 835, 460 852" stroke="#5B2607" strokeWidth={1.6} />
+            </g>
+          </g>
+        ) : (
+          /* Dáng đứng truyền thống hình chữ A */
+          <>
+            <path
+              d="
+                M 295 650
+                L 226 865
+                Q 368 890 510 865
+                L 441 650
+                Q 368 662 295 650
+                Z
+              "
+              fill="#78350F"
+              stroke="#451A03"
+              strokeWidth={2}
+            />
+            {/* Nếp xếp rủ chân váy */}
+            <g stroke="#92400E" strokeWidth={1.8} strokeLinecap="round" fill="none">
+              <path d="M 330 655 C 322 720, 305 800, 290 866" />
+              <path d="M 368 656 C 368 725, 368 805, 368 876" stroke="#B45309" strokeWidth={2.2} />
+              <path d="M 406 655 C 414 720, 431 800, 446 866" />
+            </g>
+          </>
+        )}
 
         {/* Áo sơ mi trắng bên trong */}
         {/* Áo gile len dệt họa tiết quả trám màu trà sữa (Milk-Tea Argyle Vest) */}

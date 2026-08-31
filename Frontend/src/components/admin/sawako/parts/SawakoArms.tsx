@@ -10,6 +10,7 @@ interface SawakoArmsProps {
   isProtectingStar?: boolean;
   isWalking?: boolean;
   walkDirection?: SawakoWalkDirection;
+  isSippingTea?: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ interface SawakoArmsProps {
  * - Slightly puffed sleeves with a clean, soft cuff
  * - Connected forearms and plain, bun-shaped chibi hands
  * - Fluid kinematics: airborne flailing when dragged, cute bashful chest clutching when startled, gentle natural swinging when walking
+ * - Holding warm ceramic matcha teacup when sipping tea (isSippingTea)
  * - Interactive hotspot with `sawako-hands-target`
  */
 export function SawakoArms({
@@ -25,10 +27,23 @@ export function SawakoArms({
   onPokeHand,
   setHoveredZone,
   isProtectingStar,
+  isSippingTea = false,
 }: SawakoArmsProps) {
+  const isSipping = isSippingTea && !isDragging;
+
   const armClass = isDragging
     ? "animate-[airborneArmsFlail_0.45s_ease-in-out_infinite]"
-    : "transition-transform duration-200 ease-out";
+    : isSipping
+      ? "animate-[teaCupGentleSip_3.2s_ease-in-out_infinite]"
+      : "transition-transform duration-200 ease-out";
+
+  const leftForearmStyle: React.CSSProperties = isSipping
+    ? { transform: "translate(22px, -14px) rotate(26deg)", transformOrigin: "280px 614px", transition: "transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)" }
+    : { transformOrigin: "280px 614px", transition: "transform 0.5s ease-out" };
+
+  const rightForearmStyle: React.CSSProperties = isSipping
+    ? { transform: "translate(-22px, -14px) rotate(-26deg)", transformOrigin: "456px 614px", transition: "transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)" }
+    : { transformOrigin: "456px 614px", transition: "transform 0.5s ease-out" };
 
   return (
     <g
@@ -116,8 +131,65 @@ export function SawakoArms({
             transform: translateY(0);
           }
         }
+        @keyframes teaSteamRise1 {
+          0% {
+            opacity: 0;
+            transform: translateY(0px) scaleX(0.7);
+          }
+          35% {
+            opacity: 0.85;
+            transform: translateY(-8px) scaleX(1);
+          }
+          75% {
+            opacity: 0.45;
+            transform: translateY(-20px) scaleX(1.3);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-34px) scaleX(0.8);
+          }
+        }
+        @keyframes teaSteamRise2 {
+          0% {
+            opacity: 0;
+            transform: translateY(0px) scaleX(0.7);
+          }
+          40% {
+            opacity: 0.75;
+            transform: translateY(-10px) scaleX(1.1);
+          }
+          80% {
+            opacity: 0.35;
+            transform: translateY(-22px) scaleX(1.4);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-36px) scaleX(0.9);
+          }
+        }
+        @keyframes teaCupGentleSip {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-3px) rotate(0.6deg);
+          }
+        }
       `}</style>
       <defs>
+        {/* Ceramic Teacup Gradient */}
+        <linearGradient id="ceramicTeacupSkin" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="60%" stopColor="#F1F5F9" />
+          <stop offset="100%" stopColor="#CBD5E1" />
+        </linearGradient>
+
+        {/* Hot Matcha Liquid Gradient */}
+        <radialGradient id="matchaLiquidGradient" cx="45%" cy="45%" r="55%">
+          <stop offset="0%" stopColor="#65A30D" />
+          <stop offset="70%" stopColor="#4D7C0F" />
+          <stop offset="100%" stopColor="#365314" />
+        </radialGradient>
         {/* Puffed Muse Sleeve Gradient */}
         <linearGradient id="musePuffSleeveLeft" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#FFFFFF" />
@@ -181,7 +253,7 @@ export function SawakoArms({
         <g
           id="left-forearm-hand-group"
           className={isProtectingStar ? "animate-[clutchChestLeft_1.8s_cubic-bezier(0.34,1.2,0.64,1)]" : ""}
-          style={{ transformOrigin: "280px 614px" }}
+          style={leftForearmStyle}
         >
           {/* Bare Forearm extending down from puffed sleeve */}
           <path
@@ -241,7 +313,7 @@ export function SawakoArms({
         <g
           id="right-forearm-hand-group"
           className={isProtectingStar ? "animate-[clutchChestRight_1.8s_cubic-bezier(0.34,1.2,0.64,1)]" : ""}
-          style={{ transformOrigin: "456px 614px" }}
+          style={rightForearmStyle}
         >
           {/* Bare Forearm extending down from puffed sleeve */}
           <path
@@ -263,6 +335,70 @@ export function SawakoArms({
           </g>
         </g>
       </g>
+
+      {/* ===================== WARM CERAMIC MATCHA TEACUP & STEAM ===================== */}
+      {isSipping && (
+        <g
+          id="sawako-matcha-teacup"
+          data-testid="sawako-matcha-teacup"
+          className="pointer-events-none animate-[teaCupGentleSip_3.2s_ease-in-out_infinite]"
+          style={{ transformOrigin: "368px 665px" }}
+        >
+          {/* Subtle warm glow aura behind teacup */}
+          <ellipse cx="368" cy="668" rx="28" ry="16" fill="#86EFAC" opacity="0.22" />
+
+          {/* Saucer / Coaster */}
+          <ellipse cx="368" cy="682" rx="22" ry="5" fill="#E2E8F0" stroke="#94A3B8" strokeWidth={1.2} />
+
+          {/* Ceramic Chawan Teacup Body */}
+          <path
+            d="
+              M 348 654
+              C 346 673, 353 681, 368 681
+              C 383 681, 390 673, 388 654
+              Z
+            "
+            fill="url(#ceramicTeacupSkin)"
+            stroke="#64748B"
+            strokeWidth={1.8}
+          />
+
+          {/* Teacup Rim Ellipse */}
+          <ellipse cx="368" cy="654" rx="20" ry="6.5" fill="#F8FAFC" stroke="#64748B" strokeWidth={1.4} />
+
+          {/* Hot Green Matcha Tea Liquid Inside */}
+          <ellipse cx="368" cy="655" rx="16.5" ry="4.8" fill="url(#matchaLiquidGradient)" />
+
+          {/* Tea Liquid Highlight / Sheen */}
+          <ellipse cx="365" cy="654" rx="9" ry="2" fill="#BEF264" opacity="0.8" />
+
+          {/* Cute Pink Sakura Petal Stamp on cup */}
+          <circle cx="368" cy="668" r="3.2" fill="#F472B6" opacity="0.9" />
+          <circle cx="368" cy="668" r="1.3" fill="#FFFFFF" />
+
+          {/* Rising Curling Wisps of Steam */}
+          <g id="tea-steam-wisps">
+            {/* Wisp 1 */}
+            <path
+              d="M 363 646 Q 359 634 364 622 T 361 606"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              className="animate-[teaSteamRise1_2.4s_ease-out_infinite]"
+            />
+            {/* Wisp 2 */}
+            <path
+              d="M 373 646 Q 378 635 372 624 T 376 608"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="2"
+              strokeLinecap="round"
+              className="animate-[teaSteamRise2_2.8s_ease-out_infinite]"
+            />
+          </g>
+        </g>
+      )}
     </g>
   );
 }

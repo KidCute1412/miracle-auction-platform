@@ -41,6 +41,7 @@ export interface SawakoSvgProps {
   scaleY?: number;
   isWalking?: boolean;
   walkDirection?: SawakoWalkDirection;
+  isSippingTea?: boolean;
   onPokeHand?: (e: React.MouseEvent) => void;
   onPokeFoot?: (e: React.MouseEvent) => void;
   onPokeStarClip?: (e: React.MouseEvent) => void;

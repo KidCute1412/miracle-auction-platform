@@ -5,7 +5,8 @@ interface SawakoFeetProps {
   isDragging: boolean;
   isWalking?: boolean;
   walkDirection?: SawakoWalkDirection;
-  hoveredZone: "hand" | "foot" | null;
+  isSippingTea?: boolean;
+  hoveredZone?: "hand" | "foot" | null;
   onPokeFoot?: (e: React.MouseEvent) => void;
   setHoveredZone: (zone: "hand" | "foot" | null) => void;
 }
@@ -18,33 +19,45 @@ interface SawakoFeetProps {
  * - Positioned behind the white muse dress skirt
  * - Dynamic kinematics: airborne pendular dangling when dragged, shy fluttering when hovered
  * - Authentic directional walking (Left & Right strides without mirroring/flipping)
+ * - Cozy folded legs pose when sitting and sipping tea (isSippingTea)
  * - Interactive hotspot with `sawako-feet-target`
  */
 export function SawakoFeet({
   isDragging,
   isWalking = false,
   walkDirection = "left",
+  isSippingTea = false,
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
+  const isSitting = isSippingTea && !isDragging;
+
   const feetClass = isDragging
     ? "animate-[airborneFeetDangle_0.42s_ease-in-out_infinite]"
-    : "transition-transform duration-200 ease-out";
+    : "transition-transform duration-300 ease-out";
 
-  const isWalkingLeft = !isDragging && isWalking && walkDirection === "left";
-  const isWalkingRight = !isDragging && isWalking && walkDirection === "right";
+  const isWalkingLeft = !isDragging && !isSitting && isWalking && walkDirection === "left";
+  const isWalkingRight = !isDragging && !isSitting && isWalking && walkDirection === "right";
 
   const leftLegClass = isWalkingLeft
     ? "animate-[gentleStrideLeftLead_0.95s_ease-in-out_infinite]"
     : isWalkingRight
       ? "animate-[gentleStrideRightFollow_0.95s_ease-in-out_infinite]"
-      : "";
+      : "transition-transform duration-300 ease-out";
 
   const rightLegClass = isWalkingLeft
     ? "animate-[gentleStrideLeftFollow_0.95s_ease-in-out_infinite]"
     : isWalkingRight
       ? "animate-[gentleStrideRightLead_0.95s_ease-in-out_infinite]"
-      : "";
+      : "transition-transform duration-300 ease-out";
+
+  const leftLegStyle: React.CSSProperties = isSitting
+    ? { transform: "translate(-8px, -2px) rotate(8deg)", transformOrigin: "329px 978px", transition: "transform 0.25s ease-out" }
+    : { transformOrigin: "329px 888px" };
+
+  const rightLegStyle: React.CSSProperties = isSitting
+    ? { transform: "translate(8px, -2px) rotate(-8deg)", transformOrigin: "407px 978px", transition: "transform 0.25s ease-out" }
+    : { transformOrigin: "407px 888px" };
 
   return (
     <g
@@ -119,11 +132,56 @@ export function SawakoFeet({
       </defs>
 
       {/* ===================== CHIBI LEGS & BLACK HIGH-TOP BOOTS ===================== */}
-      <g id="chibi-legs-render">
+      {isSitting ? (
+        /* ===================== DÁNG NGỒI QUỲ CHIBI (CHỈ LỘ HAI ĐẦU GỐI, TỰ NHIÊN HÒA QUYỆN CÙNG VÁY) ===================== */
+        <g id="sawako-w-sitting-legs">
+          {/* Lớp bóng tiếp xúc của hai đầu gối chạm sàn */}
+          <ellipse cx="340" cy="968" rx="22" ry="6" fill="#451A03" opacity="0.3" />
+          <ellipse cx="396" cy="968" rx="22" ry="6" fill="#451A03" opacity="0.3" />
+
+          {/* Khối hai đầu gối tròn xinh da trắng sứ chạm sàn ở chính diện, ăn sâu lên váy */}
+          <path
+            id="kneeling-knees-unified"
+            d="
+              M 312 840
+              L 312 946
+              C 312 960, 324 968, 340 968
+              C 356 968, 366 960, 368 948
+              C 370 960, 380 968, 396 968
+              C 412 968, 424 960, 424 946
+              L 424 840
+              Z
+            "
+            fill="#FFF8F3"
+            stroke="#DFBBA8"
+            strokeWidth={1.4}
+          />
+
+          {/* Đường tiếp xúc giữa hai đầu gối chạm sát nhau */}
+          <line x1="368" y1="944" x2="368" y2="964" stroke="#DFBBA8" strokeWidth={1.2} />
+
+          {/* Đốm sáng phản chiếu dễ thương trên hai đầu gối tròn */}
+          <ellipse cx="340" cy="956" rx="5" ry="3" fill="#FFFFFF" opacity="0.65" />
+          <ellipse cx="396" cy="956" rx="5" ry="3" fill="#FFFFFF" opacity="0.65" />
+        </g>
+      ) : (
+        /* ===================== CHIBI LEGS & BLACK HIGH-TOP BOOTS (ĐỨNG / ĐI BỘ) ===================== */
+        <g id="chibi-legs-render">
         {/* ==================== LEFT LEG & BLACK HIGH-TOP BOOT ==================== */}
-        <g id="left-boot-leg" className={leftLegClass} style={{ transformOrigin: "329px 888px" }}>
-          {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
-          <path d="M 314 770 L 314 888 L 344 888 L 344 770 Z" fill="url(#thighSkin)" />
+        <g id="left-boot-leg" className={leftLegClass} style={leftLegStyle}>
+          {/* Bare Leg & Calf (Thon mềm mại với đường viền da tự nhiên) */}
+          <path
+            d="
+              M 314 770
+              C 310 805, 311 850, 313 888
+              L 345 888
+              C 347 850, 348 805, 344 770
+              Z
+            "
+            fill="url(#thighSkin)"
+            stroke="#E2B8A2"
+            strokeWidth={1}
+          />
 
           {/* Ruffled White Lace Sock Collar peeking out from boot */}
           <g id="left-sock-frill">
@@ -208,9 +266,20 @@ export function SawakoFeet({
         </g>
 
         {/* ==================== RIGHT LEG & BLACK HIGH-TOP BOOT ==================== */}
-        <g id="right-boot-leg" className={rightLegClass} style={{ transformOrigin: "407px 888px" }}>
-          {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
-          <path d="M 392 770 L 392 888 L 422 888 L 422 770 Z" fill="url(#thighSkin)" />
+        <g id="right-boot-leg" className={rightLegClass} style={rightLegStyle}>
+          {/* Bare Leg & Calf (Thon mềm mại với đường viền da tự nhiên) */}
+          <path
+            d="
+              M 392 770
+              C 388 805, 389 850, 391 888
+              L 423 888
+              C 425 850, 426 805, 422 770
+              Z
+            "
+            fill="url(#thighSkin)"
+            stroke="#E2B8A2"
+            strokeWidth={1}
+          />
 
           {/* Ruffled White Lace Sock Collar peeking out from boot */}
           <g id="right-sock-frill">
@@ -294,12 +363,13 @@ export function SawakoFeet({
           <rect x="385" y="974" width="11" height="6" rx="1.5" fill="#0A0B0E" />
         </g>
       </g>
+      )}
 
       {/* Invisible broad hotspot over feet */}
       <rect
-        x="260"
+        x={isSitting ? "130" : "260"}
         y="830"
-        width="216"
+        width={isSitting ? "476" : "216"}
         height="180"
         fill="transparent"
         className="cursor-pointer"

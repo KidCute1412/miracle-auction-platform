@@ -288,7 +288,35 @@ export const ROUTE_LINES: Record<string, SawakoLine[]> = {
   ],
 };
 
+export const SIPPING_TEA_LINES: SawakoLine[] = [
+  {
+    text: "*Sip*... Warm green tea is the best, Admin-san~ 🍵",
+    expression: "happy",
+    symbol: "sparkle",
+  },
+  {
+    text: "Need some green tea, Admin-san? It calms the mind ✨",
+    expression: "happy",
+    symbol: "heart",
+  },
+  {
+    text: "Rest a bit, Admin-san... *sips tea gently* 🍵",
+    expression: "happy",
+    symbol: "sparkle",
+  },
+  {
+    text: "The tea steam smells so soothing... ehehe~",
+    expression: "shy",
+    symbol: "heart",
+  },
+];
+
 export const IDLE_LINES: SawakoLine[] = [
+  {
+    text: "*Sip*... Warm green tea is the best, Admin-san~ 🍵",
+    expression: "happy",
+    symbol: "sparkle",
+  },
   {
     text: "Staring again? G-Get to work!",
     expression: "pout",
@@ -306,7 +334,7 @@ export const IDLE_LINES: SawakoLine[] = [
   },
   {
     text: "Need some green tea, Admin-san?",
-    expression: "normal",
+    expression: "happy",
     symbol: "sparkle",
   },
   {
