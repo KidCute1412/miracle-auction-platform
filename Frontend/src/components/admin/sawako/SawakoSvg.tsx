@@ -183,32 +183,38 @@ export default function SawakoSvg({
           44% { transform: scaleX(0.42); }
           72% { transform: scaleX(0.78); }
         }
-        /* Dáng đi Chibi Tekuteku: Thân người nhún nảy 2 nhịp kết hợp lắc lư trái-phải theo bước chân */
+        /* Dáng đi Chibi Gentle: Thân người nhún nảy êm ái, khẽ nghiêng người theo bước chân đoan trang */
         @keyframes waddleBodyBobLeft {
-          0% { transform: translateY(0px) rotate(-3.5deg); }
-          25% { transform: translateY(-5px) rotate(-1.5deg); }
-          50% { transform: translateY(0px) rotate(0.5deg); }
-          75% { transform: translateY(-5px) rotate(-1.5deg); }
-          100% { transform: translateY(0px) rotate(-3.5deg); }
+          0% { transform: translateY(0px) rotate(-1.8deg); }
+          25% { transform: translateY(-2.5px) rotate(-0.8deg); }
+          50% { transform: translateY(0px) rotate(0.4deg); }
+          75% { transform: translateY(-2.5px) rotate(-0.8deg); }
+          100% { transform: translateY(0px) rotate(-1.8deg); }
         }
         @keyframes waddleBodyBobRight {
-          0% { transform: translateY(0px) rotate(3.5deg); }
-          25% { transform: translateY(-5px) rotate(1.5deg); }
-          50% { transform: translateY(0px) rotate(-0.5deg); }
-          75% { transform: translateY(-5px) rotate(1.5deg); }
-          100% { transform: translateY(0px) rotate(3.5deg); }
+          0% { transform: translateY(0px) rotate(1.8deg); }
+          25% { transform: translateY(-2.5px) rotate(0.8deg); }
+          50% { transform: translateY(0px) rotate(-0.4deg); }
+          75% { transform: translateY(-2.5px) rotate(0.8deg); }
+          100% { transform: translateY(0px) rotate(1.8deg); }
         }
         @keyframes waddleHairSwayLeft {
-          0%, 100% { transform: rotate(1.5deg); }
-          25% { transform: rotate(-2deg); }
-          50% { transform: rotate(-1.5deg); }
-          75% { transform: rotate(2deg); }
+          0%, 100% { transform: rotate(1deg); }
+          25% { transform: rotate(-1.2deg); }
+          50% { transform: rotate(-1deg); }
+          75% { transform: rotate(1.2deg); }
         }
         @keyframes waddleHairSwayRight {
-          0%, 100% { transform: rotate(-1.5deg); }
-          25% { transform: rotate(2deg); }
-          50% { transform: rotate(1.5deg); }
-          75% { transform: rotate(-2deg); }
+          0%, 100% { transform: rotate(-1deg); }
+          25% { transform: rotate(1.2deg); }
+          50% { transform: rotate(1deg); }
+          75% { transform: rotate(-1.2deg); }
+        }
+        @keyframes groundShadowBreath {
+          0%, 100% { transform: scale(1); opacity: 0.45; }
+          25% { transform: scale(0.92, 0.88); opacity: 0.32; }
+          50% { transform: scale(1.05, 1.04); opacity: 0.52; }
+          75% { transform: scale(0.92, 0.88); opacity: 0.32; }
         }
       `}</style>
 
@@ -223,8 +229,8 @@ export default function SawakoSvg({
                 ? "animate-[chibiBobbing_4.8s_ease-in-out_infinite]"
                 : isWalking
                   ? walkDirection === "left"
-                    ? "animate-[waddleBodyBobLeft_0.8s_ease-in-out_infinite]"
-                    : "animate-[waddleBodyBobRight_0.8s_ease-in-out_infinite]"
+                    ? "animate-[waddleBodyBobLeft_1.0s_ease-in-out_infinite]"
+                    : "animate-[waddleBodyBobRight_1.0s_ease-in-out_infinite]"
                   : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
@@ -243,9 +249,18 @@ export default function SawakoSvg({
             </radialGradient>
           </defs>
 
-          {/* Ethereal Ground Mist directly under chibi feet */}
-          <ellipse cx="368" cy="1010" rx={isSippingTea ? 220 : 180} ry={isSippingTea ? 26 : 20} fill="url(#sawakoGroundMist)" />
-          <ellipse cx="368" cy="1012" rx={isSippingTea ? 130 : 110} ry={11} fill="#fce7f3" fillOpacity={0.35} />
+          {/* Ethereal Ground Mist directly under chibi feet - co giãn theo nhịp chân bước */}
+          <g
+            className={
+              isWalking && !isDragging && !isSippingTea
+                ? "animate-[groundShadowBreath_1.0s_ease-in-out_infinite]"
+                : ""
+            }
+            style={{ transformOrigin: "368px 1010px" }}
+          >
+            <ellipse cx="368" cy="1010" rx={isSippingTea ? 220 : 180} ry={isSippingTea ? 26 : 20} fill="url(#sawakoGroundMist)" />
+            <ellipse cx="368" cy="1012" rx={isSippingTea ? 130 : 110} ry={11} fill="#fce7f3" fillOpacity={0.35} />
+          </g>
 
           {/* Small pastel butterfly following an irregular, organic path */}
           <g
@@ -282,8 +297,8 @@ export default function SawakoSvg({
                     ? "animate-[shyPeek_1.8s_ease-in-out]"
                     : isWalking && !isDragging
                       ? walkDirection === "left"
-                        ? "animate-[waddleHairSwayLeft_0.8s_ease-in-out_infinite]"
-                        : "animate-[waddleHairSwayRight_0.8s_ease-in-out_infinite]"
+                        ? "animate-[waddleHairSwayLeft_1.0s_ease-in-out_infinite]"
+                        : "animate-[waddleHairSwayRight_1.0s_ease-in-out_infinite]"
                       : ""
               }
               style={{ transformOrigin: "368px 486px" }}
@@ -327,6 +342,8 @@ export default function SawakoSvg({
                 isHovered={isHovered}
                 isShyPeeking={isShyPeeking}
                 isSippingTea={isSippingTea}
+                isWalking={isWalking}
+                walkDirection={walkDirection}
                 onPokeStarClip={onPokeStarClip}
                 onHeadpatStroke={onHeadpatStroke}
               >

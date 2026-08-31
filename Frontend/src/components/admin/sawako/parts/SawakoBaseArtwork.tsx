@@ -1,11 +1,13 @@
 import React from "react";
-import type { SawakoExpression } from "../types";
+import type { SawakoExpression, SawakoWalkDirection } from "../types";
 
 interface SawakoBaseArtworkProps {
   expression?: SawakoExpression;
   isHovered?: boolean;
   isShyPeeking?: boolean;
   isSippingTea?: boolean;
+  isWalking?: boolean;
+  walkDirection?: SawakoWalkDirection;
   onPokeStarClip?: (e: React.MouseEvent) => void;
   onHeadpatStroke?: (e: React.MouseEvent) => void;
   children?: React.ReactNode;
@@ -26,14 +28,27 @@ export function SawakoBaseArtwork({
   isHovered,
   isShyPeeking,
   isSippingTea = false,
+  isWalking = false,
+  walkDirection = "left",
   onPokeStarClip,
   onHeadpatStroke,
   children,
 }: SawakoBaseArtworkProps) {
-  const isShy = expression === "shy" || Boolean(isHovered);
+  const isShy = expression === "shy" || Boolean(isHovered) || isWalking;
 
   return (
     <g className="sawako-base-artwork">
+      <style>{`
+        /* Dáng váy đung đưa thướt tha khi tản bộ (Ojousama Skirt Sway) */
+        @keyframes skirtSwayLeft {
+          0%, 100% { transform: rotate(-2.2deg) skewX(-1.2deg); }
+          50% { transform: rotate(1.8deg) skewX(1.0deg); }
+        }
+        @keyframes skirtSwayRight {
+          0%, 100% { transform: rotate(2.2deg) skewX(1.2deg); }
+          50% { transform: rotate(-1.8deg) skewX(-1.0deg); }
+        }
+      `}</style>
       <defs>
         {/* Soft Face Skin Gradient */}
         <radialGradient id="sawakoFaceSkin" cx="50%" cy="40%" r="58%">
@@ -161,8 +176,18 @@ export function SawakoBaseArtwork({
             </g>
           </g>
         ) : (
-          /* Dáng đứng truyền thống hình chữ A */
-          <>
+          /* Dáng đứng truyền thống hình chữ A - Đung đưa thướt tha khi tản bộ */
+          <g
+            id="sawako-standing-skirt"
+            className={
+              isWalking
+                ? walkDirection === "left"
+                  ? "animate-[skirtSwayLeft_1.0s_ease-in-out_infinite]"
+                  : "animate-[skirtSwayRight_1.0s_ease-in-out_infinite]"
+                : ""
+            }
+            style={{ transformOrigin: "368px 650px" }}
+          >
             <path
               d="
                 M 295 650
@@ -182,7 +207,7 @@ export function SawakoBaseArtwork({
               <path d="M 368 656 C 368 725, 368 805, 368 876" stroke="#B45309" strokeWidth={2.2} />
               <path d="M 406 655 C 414 720, 431 800, 446 866" />
             </g>
-          </>
+          </g>
         )}
 
         {/* Áo sơ mi trắng bên trong */}

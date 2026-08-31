@@ -40,15 +40,15 @@ export function SawakoFeet({
   const isWalkingRight = !isDragging && !isSitting && isWalking && walkDirection === "right";
 
   const leftLegClass = isWalkingLeft
-    ? "animate-[gentleStrideLeftLead_0.8s_ease-in-out_infinite]"
+    ? "animate-[gentleStrideLeftLead_1.0s_ease-in-out_infinite]"
     : isWalkingRight
-      ? "animate-[gentleStrideRightFollow_0.8s_ease-in-out_infinite]"
+      ? "animate-[gentleStrideRightFollow_1.0s_ease-in-out_infinite]"
       : "transition-transform duration-300 ease-out";
 
   const rightLegClass = isWalkingLeft
-    ? "animate-[gentleStrideLeftFollow_0.8s_ease-in-out_infinite]"
+    ? "animate-[gentleStrideLeftFollow_1.0s_ease-in-out_infinite]"
     : isWalkingRight
-      ? "animate-[gentleStrideRightLead_0.8s_ease-in-out_infinite]"
+      ? "animate-[gentleStrideRightLead_1.0s_ease-in-out_infinite]"
       : "transition-transform duration-300 ease-out";
 
   const leftLegStyle: React.CSSProperties = isSitting
@@ -77,36 +77,36 @@ export function SawakoFeet({
       }}
     >
       <style>{`
-        /* Chibi Tekuteku Stride - Đi qua trái (Articulated Elliptical Stride) */
+        /* Chibi Gentle Stride - Bước đi nhón gót khẽ khàng, đoan trang, dịu dàng */
         @keyframes gentleStrideLeftLead {
           0% { transform: translate(0px, 0px) rotate(0deg); }
-          25% { transform: translate(-10px, -14px) rotate(-8deg); }
-          50% { transform: translate(-14px, 0px) rotate(-3deg); }
-          75% { transform: translate(6px, 1px) rotate(4deg); }
+          25% { transform: translate(-3px, -5px) rotate(-2.5deg); }
+          50% { transform: translate(-4px, 0px) rotate(-1deg); }
+          75% { transform: translate(2px, 0.5px) rotate(1.5deg); }
           100% { transform: translate(0px, 0px) rotate(0deg); }
         }
         @keyframes gentleStrideLeftFollow {
-          0% { transform: translate(-14px, 0px) rotate(-3deg); }
-          25% { transform: translate(6px, 1px) rotate(4deg); }
+          0% { transform: translate(-4px, 0px) rotate(-1deg); }
+          25% { transform: translate(2px, 0.5px) rotate(1.5deg); }
           50% { transform: translate(0px, 0px) rotate(0deg); }
-          75% { transform: translate(-10px, -14px) rotate(-8deg); }
-          100% { transform: translate(-14px, 0px) rotate(-3deg); }
+          75% { transform: translate(-3px, -5px) rotate(-2.5deg); }
+          100% { transform: translate(-4px, 0px) rotate(-1deg); }
         }
 
-        /* Chibi Tekuteku Stride - Đi qua phải (Articulated Elliptical Stride) */
+        /* Chibi Gentle Stride - Đi qua phải */
         @keyframes gentleStrideRightLead {
           0% { transform: translate(0px, 0px) rotate(0deg); }
-          25% { transform: translate(10px, -14px) rotate(8deg); }
-          50% { transform: translate(14px, 0px) rotate(3deg); }
-          75% { transform: translate(-6px, 1px) rotate(-4deg); }
+          25% { transform: translate(3px, -5px) rotate(2.5deg); }
+          50% { transform: translate(4px, 0px) rotate(1deg); }
+          75% { transform: translate(-2px, 0.5px) rotate(-1.5deg); }
           100% { transform: translate(0px, 0px) rotate(0deg); }
         }
         @keyframes gentleStrideRightFollow {
-          0% { transform: translate(14px, 0px) rotate(3deg); }
-          25% { transform: translate(-6px, 1px) rotate(-4deg); }
+          0% { transform: translate(4px, 0px) rotate(1deg); }
+          25% { transform: translate(-2px, 0.5px) rotate(-1.5deg); }
           50% { transform: translate(0px, 0px) rotate(0deg); }
-          75% { transform: translate(10px, -14px) rotate(8deg); }
-          100% { transform: translate(14px, 0px) rotate(3deg); }
+          75% { transform: translate(3px, -5px) rotate(2.5deg); }
+          100% { transform: translate(4px, 0px) rotate(1deg); }
         }
       `}</style>
       <defs>

@@ -100,10 +100,10 @@ export function useSawakoRoaming({
           return;
         }
 
-        // Chibi Tekuteku Waddle speed: ~40px per second matching 0.8s step cadence (~32px per full 2-step cycle)
-        // Ensure duration completes on an integer multiple of 0.8s cycles for clean footstep landing
-        const rawDurationSec = Math.max(2.4, Math.min(6.4, actualDistance / 40));
-        const durationSec = Math.max(2.4, Math.round(rawDurationSec / 0.8) * 0.8);
+        // Chibi Gentle Stroll speed: ~25px per second matching 1.0s step cadence (~25px per full 2-step cycle)
+        // Ensure duration completes on an integer multiple of 1.0s cycles for clean footstep landing
+        const rawDurationSec = Math.max(3.0, Math.min(7.0, actualDistance / 25));
+        const durationSec = Math.max(3.0, Math.round(rawDurationSec / 1.0) * 1.0);
         const deltaX = direction === "left" ? -actualDistance : actualDistance;
         const nextOffset = roamingOffsetRef.current + deltaX;
 

@@ -37,15 +37,15 @@ export function SawakoArms({
   const isWalkingRight = !isDragging && !isSipping && isWalking && walkDirection === "right";
 
   const leftArmWalkClass = isWalkingLeft
-    ? "animate-[waddleArmSwingBack_0.8s_ease-in-out_infinite]"
+    ? "animate-[waddleArmSwingBack_1.0s_ease-in-out_infinite]"
     : isWalkingRight
-      ? "animate-[waddleArmSwingForward_0.8s_ease-in-out_infinite]"
+      ? "animate-[waddleArmSwingForward_1.0s_ease-in-out_infinite]"
       : "transition-transform duration-200 ease-out";
 
   const rightArmWalkClass = isWalkingLeft
-    ? "animate-[waddleArmSwingForward_0.8s_ease-in-out_infinite]"
+    ? "animate-[waddleArmSwingForward_1.0s_ease-in-out_infinite]"
     : isWalkingRight
-      ? "animate-[waddleArmSwingBack_0.8s_ease-in-out_infinite]"
+      ? "animate-[waddleArmSwingBack_1.0s_ease-in-out_infinite]"
       : "transition-transform duration-200 ease-out";
 
   const armClass = isDragging
@@ -54,13 +54,19 @@ export function SawakoArms({
       ? "animate-[teaCupGentleSip_3.2s_ease-in-out_infinite]"
       : "transition-transform duration-200 ease-out";
 
+  const isWalkingActive = isWalking && !isDragging && !isSipping;
+
   const leftForearmStyle: React.CSSProperties = isSipping
     ? { transform: "translate(22px, -14px) rotate(26deg)", transformOrigin: "280px 614px", transition: "transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)" }
-    : { transformOrigin: "280px 614px", transition: "transform 0.5s ease-out" };
+    : isWalkingActive
+      ? { transform: "translate(6px, -10px) rotate(12deg)", transformOrigin: "280px 614px", transition: "transform 0.4s ease-out" }
+      : { transformOrigin: "280px 614px", transition: "transform 0.5s ease-out" };
 
   const rightForearmStyle: React.CSSProperties = isSipping
     ? { transform: "translate(-22px, -14px) rotate(-26deg)", transformOrigin: "456px 614px", transition: "transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)" }
-    : { transformOrigin: "456px 614px", transition: "transform 0.5s ease-out" };
+    : isWalkingActive
+      ? { transform: "translate(-6px, -10px) rotate(-12deg)", transformOrigin: "456px 614px", transition: "transform 0.4s ease-out" }
+      : { transformOrigin: "456px 614px", transition: "transform 0.5s ease-out" };
 
   return (
     <g
@@ -80,19 +86,19 @@ export function SawakoArms({
       }}
     >
       <style>{`
-        /* Vung tay so le khi đi bộ lon ton (Chibi Tekuteku Alternating Arm Swing) */
+        /* Vung tay khẽ khàng, e thẹn dịu dàng khẽ ôm nhẹ mép váy khi bước đi */
         @keyframes waddleArmSwingBack {
           0% { transform: rotate(0deg) translate(0px, 0px); }
-          25% { transform: rotate(-8deg) translate(-2px, -3px); }
+          25% { transform: rotate(-2.5deg) translate(-1px, -1px); }
           50% { transform: rotate(0deg) translate(0px, 0px); }
-          75% { transform: rotate(10deg) translate(2px, -4px); }
+          75% { transform: rotate(3deg) translate(1px, -1.5px); }
           100% { transform: rotate(0deg) translate(0px, 0px); }
         }
         @keyframes waddleArmSwingForward {
           0% { transform: rotate(0deg) translate(0px, 0px); }
-          25% { transform: rotate(10deg) translate(2px, -4px); }
+          25% { transform: rotate(3deg) translate(1px, -1.5px); }
           50% { transform: rotate(0deg) translate(0px, 0px); }
-          75% { transform: rotate(-8deg) translate(-2px, -3px); }
+          75% { transform: rotate(-2.5deg) translate(-1px, -1px); }
           100% { transform: rotate(0deg) translate(0px, 0px); }
         }
 
