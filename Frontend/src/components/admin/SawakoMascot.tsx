@@ -21,6 +21,7 @@ import {
   IDLE_LINES,
 } from "./sawako/sawako-dialogue";
 import { sawakoSound } from "./sawako/sawako-sound";
+import { useSawakoRoaming } from "./sawako/hooks/useSawakoRoaming";
 import { X, Volume2, VolumeX, Minus } from "lucide-react";
 
 const STORAGE_KEY = "sawako_mascot_prefs_v1";
@@ -68,6 +69,19 @@ export default function SawakoMascot() {
   const [isBeingPatted, setIsBeingPatted] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<SawakoTimeOfDay>(getRealTimeOfDay);
   const scale = { x: 1, y: 1 };
+
+  // Gentle autonomous roaming hook
+  const {
+    roamingOffsetX,
+    isWalking,
+    walkDirection,
+    walkDurationSec,
+    resetRoaming,
+  } = useSawakoRoaming({
+    basePosX: prefs.position?.x ?? 0,
+    isDragging,
+    minimized: prefs.minimized,
+  });
 
   // Sync ambient mood with real clock every 30 seconds
   useEffect(() => {
@@ -438,14 +452,22 @@ export default function SawakoMascot() {
 
     const startX = e.clientX;
     const startY = e.clientY;
-    const initialPosX = prefs.position?.x ?? 0;
-    const initialPosY = prefs.position?.y ?? 0;
+    const currentPosX = (prefs.position?.x ?? 0) + roamingOffsetX;
+    const currentPosY = prefs.position?.y ?? 0;
+
+    if (roamingOffsetX !== 0) {
+      resetRoaming();
+      updatePrefs((p) => ({
+        ...p,
+        position: { x: currentPosX, y: currentPosY },
+      }));
+    }
 
     dragStartRef.current = {
       mouseX: startX,
       mouseY: startY,
-      initialX: initialPosX,
-      initialY: initialPosY,
+      initialX: currentPosX,
+      initialY: currentPosY,
     };
 
     const onMouseMove = (moveEvent: MouseEvent) => {
@@ -467,8 +489,8 @@ export default function SawakoMascot() {
         updatePrefs((p) => ({
           ...p,
           position: {
-            x: initialPosX + deltaX,
-            y: initialPosY + deltaY,
+            x: currentPosX + deltaX,
+            y: currentPosY + deltaY,
           },
         }));
       }
@@ -538,8 +560,14 @@ export default function SawakoMascot() {
     );
   }
 
-  const posX = prefs.position?.x ?? 0;
+  const posX = (prefs.position?.x ?? 0) + roamingOffsetX;
   const posY = prefs.position?.y ?? 0;
+
+  const containerTransition = isDragging
+    ? "none"
+    : isWalking
+      ? `transform ${walkDurationSec}s linear, opacity 200ms`
+      : "transform 300ms ease-out, opacity 200ms";
 
   return (
     <aside
@@ -547,12 +575,13 @@ export default function SawakoMascot() {
       role="complementary"
       aria-label="Sawako Admin Mascot Companion"
       data-testid="sawako-mascot-container"
-      className={`fixed bottom-4 right-4 z-40 flex flex-col items-end select-none transition-opacity duration-200 ${
+      className={`fixed bottom-4 right-4 z-40 flex flex-col items-end select-none ${
         isHovered ? "opacity-100" : "opacity-95"
       }`}
       style={{
         transform: `translate(${posX}px, ${posY}px)`,
         cursor: isDragging ? "grabbing" : "grab",
+        transition: containerTransition,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -657,6 +686,8 @@ export default function SawakoMascot() {
             isSpeaking={bubbleVisible && Boolean(currentLine)}
             scaleX={scale.x}
             scaleY={scale.y}
+            isWalking={isWalking}
+            walkDirection={walkDirection}
             onPokeHand={handlePokeHand}
             onPokeFoot={handlePokeFoot}
             onPokeStarClip={handlePokeStarClip}

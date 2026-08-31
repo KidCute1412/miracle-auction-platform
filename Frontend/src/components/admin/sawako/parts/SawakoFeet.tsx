@@ -2,6 +2,7 @@ import React from "react";
 
 interface SawakoFeetProps {
   isDragging: boolean;
+  isWalking?: boolean;
   hoveredZone: "hand" | "foot" | null;
   onPokeFoot?: (e: React.MouseEvent) => void;
   setHoveredZone: (zone: "hand" | "foot" | null) => void;
@@ -13,17 +14,25 @@ interface SawakoFeetProps {
  * - Stylish black high-top boots (giày đen cao cổ) with polished leather gloss and silver eyelets
  * - Delicate ruffled white lace socks peeking out just above the boot collar
  * - Positioned behind the white muse dress skirt
- * - Dynamic kinematics: airborne pendular dangling when dragged, shy fluttering when hovered
+ * - Dynamic kinematics: airborne pendular dangling when dragged, shy fluttering when hovered, trotting steps when walking
  * - Interactive hotspot with `sawako-feet-target`
  */
 export function SawakoFeet({
   isDragging,
+  isWalking = false,
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
   const feetClass = isDragging
     ? "animate-[airborneFeetDangle_0.42s_ease-in-out_infinite]"
     : "transition-transform duration-200 ease-out";
+
+  const leftLegClass = !isDragging && isWalking
+    ? "animate-[shimejiStepLeft_0.65s_ease-in-out_infinite]"
+    : "";
+  const rightLegClass = !isDragging && isWalking
+    ? "animate-[shimejiStepRight_0.65s_ease-in-out_infinite]"
+    : "";
 
   return (
     <g
@@ -42,6 +51,20 @@ export function SawakoFeet({
         transformOrigin: "368px 770px",
       }}
     >
+      <style>{`
+        @keyframes shimejiStepLeft {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-7px) rotate(-8deg); }
+          50% { transform: translateY(0px) rotate(0deg); }
+          75% { transform: translateY(2px) rotate(5deg); }
+        }
+        @keyframes shimejiStepRight {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(2px) rotate(5deg); }
+          50% { transform: translateY(0px) rotate(0deg); }
+          75% { transform: translateY(-7px) rotate(-8deg); }
+        }
+      `}</style>
       <defs>
         {/* Black Polished Leather Boot Gradient */}
         <linearGradient id="blackBootLeather" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -67,7 +90,7 @@ export function SawakoFeet({
       {/* ===================== CHIBI LEGS & BLACK HIGH-TOP BOOTS ===================== */}
       <g id="chibi-legs-render">
         {/* ==================== LEFT LEG & BLACK HIGH-TOP BOOT ==================== */}
-        <g id="left-boot-leg">
+        <g id="left-boot-leg" className={leftLegClass} style={{ transformOrigin: "329px 780px" }}>
           {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
           <path d="M 314 770 L 314 888 L 344 888 L 344 770 Z" fill="url(#thighSkin)" />
 
@@ -154,7 +177,7 @@ export function SawakoFeet({
         </g>
 
         {/* ==================== RIGHT LEG & BLACK HIGH-TOP BOOT ==================== */}
-        <g id="right-boot-leg">
+        <g id="right-boot-leg" className={rightLegClass} style={{ transformOrigin: "407px 780px" }}>
           {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
           <path d="M 392 770 L 392 888 L 422 888 L 422 770 Z" fill="url(#thighSkin)" />
 

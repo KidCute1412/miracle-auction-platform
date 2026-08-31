@@ -28,6 +28,8 @@ export interface SawakoPhysics {
 
 export type SawakoTimeOfDay = 'day' | 'sunset' | 'night';
 
+export type SawakoWalkDirection = 'left' | 'right';
+
 export interface SawakoSvgProps {
   expression: SawakoExpression;
   symbol: SawakoSymbol;
@@ -37,6 +39,8 @@ export interface SawakoSvgProps {
   isSpeaking?: boolean;
   scaleX?: number;
   scaleY?: number;
+  isWalking?: boolean;
+  walkDirection?: SawakoWalkDirection;
   onPokeHand?: (e: React.MouseEvent) => void;
   onPokeFoot?: (e: React.MouseEvent) => void;
   onPokeStarClip?: (e: React.MouseEvent) => void;

@@ -218,4 +218,23 @@ describe("SawakoMascot Component", () => {
     const bubble = screen.getByTestId("sawako-speech-bubble");
     expect(/warm|Kazehaya|praising|Headpats|hair/i.test(bubble.textContent || "")).toBe(true);
   });
+
+  it("initiates gentle autonomous roaming along the horizontal axis after rest delay", () => {
+    render(
+      <MemoryRouter>
+        <SawakoMascot />
+      </MemoryRouter>,
+    );
+
+    const container = screen.getByTestId("sawako-mascot-container");
+    expect(container).toBeDefined();
+
+    // Advance time past the roaming rest cycle
+    act(() => {
+      vi.advanceTimersByTime(17000);
+    });
+
+    // Container should reflect translation offset from walking
+    expect(container.style.transform).toMatch(/translate\(-?\d+(\.\d+)?px,\s*0px\)/);
+  });
 });

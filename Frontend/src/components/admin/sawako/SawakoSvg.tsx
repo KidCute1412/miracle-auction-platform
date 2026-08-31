@@ -32,6 +32,8 @@ export default function SawakoSvg({
   isSpeaking = false,
   scaleX = 1,
   scaleY = 1,
+  isWalking = false,
+  walkDirection = "left",
   onPokeHand,
   onPokeFoot,
   onPokeStarClip,
@@ -73,8 +75,9 @@ export default function SawakoSvg({
     : isDragging && expression !== "dizzy"
       ? "shy"
       : expression;
-  // Overall scale scaled down to 80% size for refined mascot presence
-  const finalScaleX = scaleX * 0.82;
+  // Overall scale scaled down to 80% size for refined mascot presence with horizontal direction mirroring
+  const directionMultiplier = walkDirection === "left" ? -1 : 1;
+  const finalScaleX = scaleX * 0.82 * directionMultiplier;
   const finalScaleY = scaleY * 0.82;
 
   return (
@@ -156,6 +159,12 @@ export default function SawakoSvg({
           44% { transform: scaleX(0.42); }
           72% { transform: scaleX(0.78); }
         }
+        @keyframes shimejiWalkBobbing {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-5px) rotate(1.2deg); }
+          50% { transform: translateY(0px) rotate(0deg); }
+          75% { transform: translateY(-5px) rotate(-1.2deg); }
+        }
       `}</style>
 
       {/* Levitation Floating Container */}
@@ -165,7 +174,9 @@ export default function SawakoSvg({
             ? "animate-[startledHop_1.8s_ease-in-out]"
             : isDragging
               ? "translate-y-[-6px]"
-              : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
+              : isWalking
+                ? "animate-[shimejiWalkBobbing_0.65s_ease-in-out_infinite]"
+                : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
         <svg
@@ -221,6 +232,7 @@ export default function SawakoSvg({
           {/* ===================== LAYER 1: ARTICULATED LEGS & BLACK BOOTS (ON TOP OF BACK HAIR) ===================== */}
           <SawakoFeet
             isDragging={isDragging}
+            isWalking={isWalking}
             hoveredZone={hoveredZone}
             onPokeFoot={onPokeFoot}
             setHoveredZone={setHoveredZone}
