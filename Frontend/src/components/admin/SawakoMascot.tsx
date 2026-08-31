@@ -608,7 +608,7 @@ export default function SawakoMascot() {
   const containerTransition = isDragging
     ? "none"
     : isWalking
-      ? `transform ${walkDurationSec}s linear, opacity 200ms`
+      ? `transform ${walkDurationSec}s cubic-bezier(0.37, 0, 0.63, 1), opacity 200ms`
       : "transform 300ms ease-out, opacity 200ms";
 
   return (

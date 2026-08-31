@@ -91,7 +91,7 @@ export default function SawakoSvg({
   // - Gaze: eyes still freely track the cursor for a cute, natural glance
   let effectiveHeadRotate = headRotate;
   if (isWalking && !isDragging && !isBeingPatted) {
-    effectiveHeadRotate = walkDirection === "left" ? -2.5 : 2.5;
+    effectiveHeadRotate = walkDirection === "left" ? -1.5 : 1.5;
   }
   const effectivePupilX = isWalking && !isDragging
     ? Math.max(-5, Math.min(5, pupilX + (walkDirection === "left" ? -1.2 : 1.2)))
@@ -183,14 +183,32 @@ export default function SawakoSvg({
           44% { transform: scaleX(0.42); }
           72% { transform: scaleX(0.78); }
         }
-        /* Người đung đưa nhẹ nhàng, không nhún nhảy 0.95s */
-        @keyframes gentleBodySwayLeft {
-          0%, 100% { transform: rotate(-2deg); }
-          50% { transform: rotate(0.6deg); }
+        /* Dáng đi Chibi Tekuteku: Thân người nhún nảy 2 nhịp kết hợp lắc lư trái-phải theo bước chân */
+        @keyframes waddleBodyBobLeft {
+          0% { transform: translateY(0px) rotate(-3.5deg); }
+          25% { transform: translateY(-5px) rotate(-1.5deg); }
+          50% { transform: translateY(0px) rotate(0.5deg); }
+          75% { transform: translateY(-5px) rotate(-1.5deg); }
+          100% { transform: translateY(0px) rotate(-3.5deg); }
         }
-        @keyframes gentleBodySwayRight {
-          0%, 100% { transform: rotate(2deg); }
-          50% { transform: rotate(-0.6deg); }
+        @keyframes waddleBodyBobRight {
+          0% { transform: translateY(0px) rotate(3.5deg); }
+          25% { transform: translateY(-5px) rotate(1.5deg); }
+          50% { transform: translateY(0px) rotate(-0.5deg); }
+          75% { transform: translateY(-5px) rotate(1.5deg); }
+          100% { transform: translateY(0px) rotate(3.5deg); }
+        }
+        @keyframes waddleHairSwayLeft {
+          0%, 100% { transform: rotate(1.5deg); }
+          25% { transform: rotate(-2deg); }
+          50% { transform: rotate(-1.5deg); }
+          75% { transform: rotate(2deg); }
+        }
+        @keyframes waddleHairSwayRight {
+          0%, 100% { transform: rotate(-1.5deg); }
+          25% { transform: rotate(2deg); }
+          50% { transform: rotate(1.5deg); }
+          75% { transform: rotate(-2deg); }
         }
       `}</style>
 
@@ -205,8 +223,8 @@ export default function SawakoSvg({
                 ? "animate-[chibiBobbing_4.8s_ease-in-out_infinite]"
                 : isWalking
                   ? walkDirection === "left"
-                    ? "animate-[gentleBodySwayLeft_0.95s_ease-in-out_infinite]"
-                    : "animate-[gentleBodySwayRight_0.95s_ease-in-out_infinite]"
+                    ? "animate-[waddleBodyBobLeft_0.8s_ease-in-out_infinite]"
+                    : "animate-[waddleBodyBobRight_0.8s_ease-in-out_infinite]"
                   : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
@@ -262,7 +280,11 @@ export default function SawakoSvg({
                   ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]"
                   : isShyPeeking
                     ? "animate-[shyPeek_1.8s_ease-in-out]"
-                    : ""
+                    : isWalking && !isDragging
+                      ? walkDirection === "left"
+                        ? "animate-[waddleHairSwayLeft_0.8s_ease-in-out_infinite]"
+                        : "animate-[waddleHairSwayRight_0.8s_ease-in-out_infinite]"
+                      : ""
               }
               style={{ transformOrigin: "368px 486px" }}
             >

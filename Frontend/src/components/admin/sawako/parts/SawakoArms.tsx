@@ -27,9 +27,26 @@ export function SawakoArms({
   onPokeHand,
   setHoveredZone,
   isProtectingStar,
+  isWalking = false,
+  walkDirection = "left",
   isSippingTea = false,
 }: SawakoArmsProps) {
   const isSipping = isSippingTea && !isDragging;
+
+  const isWalkingLeft = !isDragging && !isSipping && isWalking && walkDirection === "left";
+  const isWalkingRight = !isDragging && !isSipping && isWalking && walkDirection === "right";
+
+  const leftArmWalkClass = isWalkingLeft
+    ? "animate-[waddleArmSwingBack_0.8s_ease-in-out_infinite]"
+    : isWalkingRight
+      ? "animate-[waddleArmSwingForward_0.8s_ease-in-out_infinite]"
+      : "transition-transform duration-200 ease-out";
+
+  const rightArmWalkClass = isWalkingLeft
+    ? "animate-[waddleArmSwingForward_0.8s_ease-in-out_infinite]"
+    : isWalkingRight
+      ? "animate-[waddleArmSwingBack_0.8s_ease-in-out_infinite]"
+      : "transition-transform duration-200 ease-out";
 
   const armClass = isDragging
     ? "animate-[airborneArmsFlail_0.45s_ease-in-out_infinite]"
@@ -63,6 +80,22 @@ export function SawakoArms({
       }}
     >
       <style>{`
+        /* Vung tay so le khi đi bộ lon ton (Chibi Tekuteku Alternating Arm Swing) */
+        @keyframes waddleArmSwingBack {
+          0% { transform: rotate(0deg) translate(0px, 0px); }
+          25% { transform: rotate(-8deg) translate(-2px, -3px); }
+          50% { transform: rotate(0deg) translate(0px, 0px); }
+          75% { transform: rotate(10deg) translate(2px, -4px); }
+          100% { transform: rotate(0deg) translate(0px, 0px); }
+        }
+        @keyframes waddleArmSwingForward {
+          0% { transform: rotate(0deg) translate(0px, 0px); }
+          25% { transform: rotate(10deg) translate(2px, -4px); }
+          50% { transform: rotate(0deg) translate(0px, 0px); }
+          75% { transform: rotate(-8deg) translate(-2px, -3px); }
+          100% { transform: rotate(0deg) translate(0px, 0px); }
+        }
+
         @keyframes clutchChestLeft {
           0% {
             transform: translate(0, 0) rotate(0deg);
@@ -217,7 +250,7 @@ export function SawakoArms({
       </defs>
 
       {/* ===================== LEFT ARM & HAND ===================== */}
-      <g id="left-arm-render">
+      <g id="left-arm-render" className={leftArmWalkClass} style={{ transformOrigin: "276px 524px" }}>
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="left-sleeve-group"
@@ -277,7 +310,7 @@ export function SawakoArms({
       </g>
 
       {/* ===================== RIGHT ARM & HAND ===================== */}
-      <g id="right-arm-render">
+      <g id="right-arm-render" className={rightArmWalkClass} style={{ transformOrigin: "460px 524px" }}>
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="right-sleeve-group"

@@ -199,7 +199,8 @@ describe("SawakoSvg Modular Puppet Rig", () => {
 
     const puppetWrapper = leftContainer.firstElementChild as HTMLElement;
     expect(puppetWrapper.style.transform).toContain("scale(0.82, 0.82)");
-    expect(leftContainer.innerHTML).toContain("gentleBodySwayLeft");
+    expect(leftContainer.innerHTML).toContain("waddleBodyBobLeft");
+    expect(leftContainer.innerHTML).toContain("waddleArmSwingBack");
 
     const { container: rightContainer } = render(
       <SawakoSvg
@@ -214,7 +215,8 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     );
 
     expect((rightContainer.firstElementChild as HTMLElement).style.transform).toContain("scale(0.82, 0.82)");
-    expect(rightContainer.innerHTML).toContain("gentleBodySwayRight");
+    expect(rightContainer.innerHTML).toContain("waddleBodyBobRight");
+    expect(rightContainer.innerHTML).toContain("waddleArmSwingForward");
   });
 
   it("renders sitting pose with matcha teacup and rising steam when isSippingTea is true", () => {
