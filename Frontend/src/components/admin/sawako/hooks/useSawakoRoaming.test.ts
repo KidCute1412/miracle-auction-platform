@@ -5,9 +5,11 @@ import { useSawakoRoaming } from "./useSawakoRoaming";
 describe("useSawakoRoaming Hook", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -36,9 +38,9 @@ describe("useSawakoRoaming Hook", () => {
 
     expect(result.current.isWalking).toBe(false);
 
-    // Advance past max rest delay (16s)
+    // With Math.random() = 0.5, restDelay is exactly 12000ms
     act(() => {
-      vi.advanceTimersByTime(17000);
+      vi.advanceTimersByTime(12500);
     });
 
     // Should now be walking with an offset applied
@@ -68,7 +70,7 @@ describe("useSawakoRoaming Hook", () => {
 
     // Trigger walking
     act(() => {
-      vi.advanceTimersByTime(17000);
+      vi.advanceTimersByTime(12500);
     });
     expect(result.current.isWalking).toBe(true);
 
@@ -110,7 +112,7 @@ describe("useSawakoRoaming Hook", () => {
     );
 
     act(() => {
-      vi.advanceTimersByTime(17000);
+      vi.advanceTimersByTime(12500);
     });
     expect(result.current.roamingOffsetX).not.toBe(0);
 

@@ -1,8 +1,10 @@
 import React from "react";
+import type { SawakoWalkDirection } from "../types";
 
 interface SawakoFeetProps {
   isDragging: boolean;
   isWalking?: boolean;
+  walkDirection?: SawakoWalkDirection;
   hoveredZone: "hand" | "foot" | null;
   onPokeFoot?: (e: React.MouseEvent) => void;
   setHoveredZone: (zone: "hand" | "foot" | null) => void;
@@ -14,12 +16,14 @@ interface SawakoFeetProps {
  * - Stylish black high-top boots (giày đen cao cổ) with polished leather gloss and silver eyelets
  * - Delicate ruffled white lace socks peeking out just above the boot collar
  * - Positioned behind the white muse dress skirt
- * - Dynamic kinematics: airborne pendular dangling when dragged, shy fluttering when hovered, trotting steps when walking
+ * - Dynamic kinematics: airborne pendular dangling when dragged, shy fluttering when hovered
+ * - Authentic directional walking (Left & Right strides without mirroring/flipping)
  * - Interactive hotspot with `sawako-feet-target`
  */
 export function SawakoFeet({
   isDragging,
   isWalking = false,
+  walkDirection = "left",
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
@@ -27,12 +31,20 @@ export function SawakoFeet({
     ? "animate-[airborneFeetDangle_0.42s_ease-in-out_infinite]"
     : "transition-transform duration-200 ease-out";
 
-  const leftLegClass = !isDragging && isWalking
-    ? "animate-[shimejiStepLeft_0.65s_ease-in-out_infinite]"
-    : "";
-  const rightLegClass = !isDragging && isWalking
-    ? "animate-[shimejiStepRight_0.65s_ease-in-out_infinite]"
-    : "";
+  const isWalkingLeft = !isDragging && isWalking && walkDirection === "left";
+  const isWalkingRight = !isDragging && isWalking && walkDirection === "right";
+
+  const leftLegClass = isWalkingLeft
+    ? "animate-[shimejiStrideLeftLead_0.65s_ease-in-out_infinite]"
+    : isWalkingRight
+      ? "animate-[shimejiStrideRightFollow_0.65s_ease-in-out_infinite]"
+      : "";
+
+  const rightLegClass = isWalkingLeft
+    ? "animate-[shimejiStrideLeftFollow_0.65s_ease-in-out_infinite]"
+    : isWalkingRight
+      ? "animate-[shimejiStrideRightLead_0.65s_ease-in-out_infinite]"
+      : "";
 
   return (
     <g
@@ -52,17 +64,32 @@ export function SawakoFeet({
       }}
     >
       <style>{`
-        @keyframes shimejiStepLeft {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(-7px) rotate(-8deg); }
-          50% { transform: translateY(0px) rotate(0deg); }
-          75% { transform: translateY(2px) rotate(5deg); }
+        /* Walking Leftwards: Left leg leads, Right leg pushes & follows */
+        @keyframes shimejiStrideLeftLead {
+          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+          25% { transform: translate(-8px, -7px) rotate(-11deg); }
+          50% { transform: translate(-3px, 0px) rotate(-4deg); }
+          75% { transform: translate(1px, 2px) rotate(3deg); }
         }
-        @keyframes shimejiStepRight {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(2px) rotate(5deg); }
-          50% { transform: translateY(0px) rotate(0deg); }
-          75% { transform: translateY(-7px) rotate(-8deg); }
+        @keyframes shimejiStrideLeftFollow {
+          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+          25% { transform: translate(1px, 2px) rotate(3deg); }
+          50% { transform: translate(0px, 0px) rotate(0deg); }
+          75% { transform: translate(-6px, -6px) rotate(-8deg); }
+        }
+
+        /* Walking Rightwards: Right leg leads, Left leg pushes & follows */
+        @keyframes shimejiStrideRightLead {
+          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+          25% { transform: translate(8px, -7px) rotate(11deg); }
+          50% { transform: translate(3px, 0px) rotate(4deg); }
+          75% { transform: translate(-1px, 2px) rotate(-3deg); }
+        }
+        @keyframes shimejiStrideRightFollow {
+          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+          25% { transform: translate(-1px, 2px) rotate(-3deg); }
+          50% { transform: translate(0px, 0px) rotate(0deg); }
+          75% { transform: translate(6px, -6px) rotate(8deg); }
         }
       `}</style>
       <defs>

@@ -183,4 +183,37 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     const moon = container.querySelector("#ambient-crescent-moon");
     expect(moon).not.toBeNull();
   });
+
+  it("maintains positive scaleX (no flipping) and applies distinct directional walk animations", () => {
+    const { container: leftContainer } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        isWalking={true}
+        walkDirection="left"
+      />
+    );
+
+    const puppetWrapper = leftContainer.firstElementChild as HTMLElement;
+    expect(puppetWrapper.style.transform).toContain("scale(0.82, 0.82)");
+    expect(leftContainer.innerHTML).toContain("shimejiWalkLeft");
+
+    const { container: rightContainer } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        isWalking={true}
+        walkDirection="right"
+      />
+    );
+
+    expect((rightContainer.firstElementChild as HTMLElement).style.transform).toContain("scale(0.82, 0.82)");
+    expect(rightContainer.innerHTML).toContain("shimejiWalkRight");
+  });
 });

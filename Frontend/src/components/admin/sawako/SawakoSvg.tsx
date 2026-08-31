@@ -75,10 +75,19 @@ export default function SawakoSvg({
     : isDragging && expression !== "dizzy"
       ? "shy"
       : expression;
-  // Overall scale scaled down to 80% size for refined mascot presence with horizontal direction mirroring
-  const directionMultiplier = walkDirection === "left" ? -1 : 1;
-  const finalScaleX = scaleX * 0.82 * directionMultiplier;
+
+  // Overall scale scaled down to 80% size for refined mascot presence (Unflipped authentic perspective)
+  const finalScaleX = scaleX * 0.82;
   const finalScaleY = scaleY * 0.82;
+
+  // Authentic directional cues: head and gaze subtly lean towards walking direction without mirroring
+  let effectiveHeadRotate = headRotate;
+  if (isWalking && !isDragging && !isBeingPatted) {
+    effectiveHeadRotate += walkDirection === "left" ? -4.5 : 4.5;
+  }
+  const effectivePupilX = isWalking && !isDragging
+    ? Math.max(-5, Math.min(5, pupilX + (walkDirection === "left" ? -1.8 : 1.8)))
+    : pupilX;
 
   return (
     <div
@@ -159,11 +168,17 @@ export default function SawakoSvg({
           44% { transform: scaleX(0.42); }
           72% { transform: scaleX(0.78); }
         }
-        @keyframes shimejiWalkBobbing {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(-5px) rotate(1.2deg); }
-          50% { transform: translateY(0px) rotate(0deg); }
-          75% { transform: translateY(-5px) rotate(-1.2deg); }
+        @keyframes shimejiWalkLeft {
+          0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
+          25% { transform: translateY(-5px) rotate(-3.2deg); }
+          50% { transform: translateY(0px) rotate(-1.5deg); }
+          75% { transform: translateY(-5px) rotate(-3.2deg); }
+        }
+        @keyframes shimejiWalkRight {
+          0%, 100% { transform: translateY(0px) rotate(1.5deg); }
+          25% { transform: translateY(-5px) rotate(3.2deg); }
+          50% { transform: translateY(0px) rotate(1.5deg); }
+          75% { transform: translateY(-5px) rotate(3.2deg); }
         }
       `}</style>
 
@@ -175,7 +190,9 @@ export default function SawakoSvg({
             : isDragging
               ? "translate-y-[-6px]"
               : isWalking
-                ? "animate-[shimejiWalkBobbing_0.65s_ease-in-out_infinite]"
+                ? walkDirection === "left"
+                  ? "animate-[shimejiWalkLeft_0.65s_ease-in-out_infinite]"
+                  : "animate-[shimejiWalkRight_0.65s_ease-in-out_infinite]"
                 : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
@@ -221,7 +238,7 @@ export default function SawakoSvg({
           <g
             className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : ""}
             style={{
-              transform: isBeingPatted ? undefined : `rotate(${headRotate}deg)`,
+              transform: isBeingPatted ? undefined : `rotate(${effectiveHeadRotate}deg)`,
               transformOrigin: "368px 486px",
               transition: "transform 0.15s ease-out",
             }}
@@ -233,6 +250,7 @@ export default function SawakoSvg({
           <SawakoFeet
             isDragging={isDragging}
             isWalking={isWalking}
+            walkDirection={walkDirection}
             hoveredZone={hoveredZone}
             onPokeFoot={onPokeFoot}
             setHoveredZone={setHoveredZone}
@@ -242,7 +260,7 @@ export default function SawakoSvg({
           <g
             className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : isShyPeeking ? "animate-[shyPeek_1.8s_ease-in-out]" : ""}
             style={{
-              transform: isBeingPatted ? undefined : `rotate(${headRotate}deg)`,
+              transform: isBeingPatted ? undefined : `rotate(${effectiveHeadRotate}deg)`,
               transformOrigin: "368px 486px",
               transition: "transform 0.15s ease-out",
             }}
@@ -268,7 +286,7 @@ export default function SawakoSvg({
               {/* 3. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
               <SawakoEyes
                 expression={activeExpression}
-                pupilX={pupilX}
+                pupilX={effectivePupilX}
                 pupilY={pupilY}
                 isBlinking={isBlinking}
               />
