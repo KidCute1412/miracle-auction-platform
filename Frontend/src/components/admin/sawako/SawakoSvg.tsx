@@ -34,6 +34,7 @@ export default function SawakoSvg({
   scaleY = 1,
   isWalking = false,
   walkDirection = "left",
+  isSippingTea = false,
   onPokeHand,
   onPokeFoot,
   onPokeStarClip,
@@ -69,25 +70,38 @@ export default function SawakoSvg({
   );
   const { mouthOpenRatio } = useSawakoLipSync(isSpeaking);
 
-  // Guarantee happy smiling eyes (⌒ ⌒) and blushing cheeks during headpat
+  // Blissful smiling eyes when sipping tea, or happy during headpat
+  const baseExpression = isSippingTea && (expression === "normal" || expression === "sleepy")
+    ? "happy"
+    : expression;
+
   const activeExpression: SawakoExpression = isBeingPatted
     ? "happy"
-    : isDragging && expression !== "dizzy"
+    : isDragging && baseExpression !== "dizzy"
       ? "shy"
-      : expression;
+      : baseExpression;
 
   // Overall scale scaled down to 80% size for refined mascot presence (Unflipped authentic perspective)
   const finalScaleX = scaleX * 0.82;
   const finalScaleY = scaleY * 0.82;
 
-  // Authentic directional cues: head and gaze subtly lean towards walking direction without mirroring
+  // Authentic directional cues:
+  // - While walking: body tilt strictly follows walking momentum without mouse jitter
+  // - Gaze: eyes still freely track the cursor for a cute, natural glance
   let effectiveHeadRotate = headRotate;
   if (isWalking && !isDragging && !isBeingPatted) {
-    effectiveHeadRotate += walkDirection === "left" ? -2.5 : 2.5;
+    effectiveHeadRotate = walkDirection === "left" ? -2.5 : 2.5;
   }
   const effectivePupilX = isWalking && !isDragging
     ? Math.max(-5, Math.min(5, pupilX + (walkDirection === "left" ? -1.2 : 1.2)))
     : pupilX;
+
+  // In sitting pose: upper body lowers by 115px to sit stably on the floor without swaying skirt off knees
+  const upperBodyTransform = isSippingTea
+    ? "translate(0px, 115px)"
+    : isBeingPatted
+      ? undefined
+      : `rotate(${effectiveHeadRotate}deg)`;
 
   return (
     <div
@@ -174,8 +188,8 @@ export default function SawakoSvg({
           50% { transform: rotate(0.6deg); }
         }
         @keyframes gentleBodySwayRight {
-          0%, 100% { transform: rotate(-0.6deg); }
-          50% { transform: rotate(2deg); }
+          0%, 100% { transform: rotate(2deg); }
+          50% { transform: rotate(-0.6deg); }
         }
       `}</style>
 
@@ -186,11 +200,13 @@ export default function SawakoSvg({
             ? "animate-[startledHop_1.8s_ease-in-out]"
             : isDragging
               ? "translate-y-[-6px]"
-              : isWalking
-                ? walkDirection === "left"
-                  ? "animate-[gentleBodySwayLeft_0.95s_ease-in-out_infinite]"
-                  : "animate-[gentleBodySwayRight_0.95s_ease-in-out_infinite]"
-                : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
+              : isSippingTea
+                ? "animate-[chibiBobbing_4.8s_ease-in-out_infinite]"
+                : isWalking
+                  ? walkDirection === "left"
+                    ? "animate-[gentleBodySwayLeft_0.95s_ease-in-out_infinite]"
+                    : "animate-[gentleBodySwayRight_0.95s_ease-in-out_infinite]"
+                  : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
         <svg
@@ -209,8 +225,8 @@ export default function SawakoSvg({
           </defs>
 
           {/* Ethereal Ground Mist directly under chibi feet */}
-          <ellipse cx="368" cy="1010" rx="180" ry="20" fill="url(#sawakoGroundMist)" />
-          <ellipse cx="368" cy="1012" rx="110" ry="11" fill="#fce7f3" fillOpacity={0.35} />
+          <ellipse cx="368" cy="1010" rx={isSippingTea ? 220 : 180} ry={isSippingTea ? 26 : 20} fill="url(#sawakoGroundMist)" />
+          <ellipse cx="368" cy="1012" rx={isSippingTea ? 130 : 110} ry={11} fill="#fce7f3" fillOpacity={0.35} />
 
           {/* Small pastel butterfly following an irregular, organic path */}
           <g
@@ -233,14 +249,24 @@ export default function SawakoSvg({
 
           {/* ===================== LAYER 0: SLEEK BACK HAIR (BEHIND LEGS & ENTIRE BODY) ===================== */}
           <g
-            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : ""}
             style={{
-              transform: isBeingPatted ? undefined : `rotate(${effectiveHeadRotate}deg)`,
+              transform: upperBodyTransform,
               transformOrigin: "368px 486px",
-              transition: "transform 0.15s ease-out",
+              transition: "transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)",
             }}
           >
-            <SawakoHairBack />
+            <g
+              className={
+                isBeingPatted
+                  ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]"
+                  : isShyPeeking
+                    ? "animate-[shyPeek_1.8s_ease-in-out]"
+                    : ""
+              }
+              style={{ transformOrigin: "368px 486px" }}
+            >
+              <SawakoHairBack />
+            </g>
           </g>
 
           {/* ===================== LAYER 1: ARTICULATED LEGS & BLACK BOOTS (ON TOP OF BACK HAIR) ===================== */}
@@ -248,6 +274,7 @@ export default function SawakoSvg({
             isDragging={isDragging}
             isWalking={isWalking}
             walkDirection={walkDirection}
+            isSippingTea={isSippingTea}
             hoveredZone={hoveredZone}
             onPokeFoot={onPokeFoot}
             setHoveredZone={setHoveredZone}
@@ -255,49 +282,61 @@ export default function SawakoSvg({
 
           {/* ===================== LAYER 2: HEAD & UPPER BODY WITH ROTATION ===================== */}
           <g
-            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : isShyPeeking ? "animate-[shyPeek_1.8s_ease-in-out]" : ""}
             style={{
-              transform: isBeingPatted ? undefined : `rotate(${effectiveHeadRotate}deg)`,
+              transform: upperBodyTransform,
               transformOrigin: "368px 486px",
-              transition: "transform 0.15s ease-out",
+              transition: "transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)",
             }}
           >
-            {/* 1. Base Artwork with nested arms, eyes, and mouth (all under the cascading unified hair) */}
-            <SawakoBaseArtwork
-              expression={activeExpression}
-              isHovered={isHovered}
-              isShyPeeking={isShyPeeking}
-              onPokeStarClip={onPokeStarClip}
-              onHeadpatStroke={onHeadpatStroke}
+            <g
+              className={
+                isBeingPatted
+                  ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]"
+                  : isShyPeeking
+                    ? "animate-[shyPeek_1.8s_ease-in-out]"
+                    : ""
+              }
+              style={{ transformOrigin: "368px 486px" }}
             >
-              {/* 2. Relaxed Puffed Sleeves & Hands (rendered on dress, UNDER the cascading front hair locks) */}
-              <SawakoArms
+              {/* 1. Base Artwork with nested arms, eyes, and mouth (all under the cascading unified hair) */}
+              <SawakoBaseArtwork
+                expression={activeExpression}
                 isHovered={isHovered}
-                isDragging={isDragging}
-                hoveredZone={hoveredZone}
-                onPokeHand={onPokeHand}
-                setHoveredZone={setHoveredZone}
-                isProtectingStar={isProtectingStar}
-                isWalking={isWalking}
-                walkDirection={walkDirection}
-              />
+                isShyPeeking={isShyPeeking}
+                isSippingTea={isSippingTea}
+                onPokeStarClip={onPokeStarClip}
+                onHeadpatStroke={onHeadpatStroke}
+              >
+                {/* 2. Relaxed Puffed Sleeves & Hands (rendered on dress, UNDER the cascading front hair locks) */}
+                <SawakoArms
+                  isHovered={isHovered}
+                  isDragging={isDragging}
+                  hoveredZone={hoveredZone}
+                  onPokeHand={onPokeHand}
+                  setHoveredZone={setHoveredZone}
+                  isProtectingStar={isProtectingStar}
+                  isWalking={isWalking}
+                  walkDirection={walkDirection}
+                  isSippingTea={isSippingTea}
+                />
 
-              {/* 3. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
-              <SawakoEyes
-                expression={activeExpression}
-                pupilX={effectivePupilX}
-                pupilY={pupilY}
-                isBlinking={isBlinking}
-              />
+                {/* 3. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
+                <SawakoEyes
+                  expression={activeExpression}
+                  pupilX={effectivePupilX}
+                  pupilY={pupilY}
+                  isBlinking={isBlinking}
+                />
 
-              {/* 4. Independent Mouth (Innocent parted anime mouth without robotic flapping) */}
-              <SawakoMouth
-                expression={activeExpression}
-                mouthOpenRatio={mouthOpenRatio}
-              />
-            </SawakoBaseArtwork>
+                {/* 4. Independent Mouth (Innocent parted anime mouth without robotic flapping) */}
+                <SawakoMouth
+                  expression={activeExpression}
+                  mouthOpenRatio={mouthOpenRatio}
+                />
+              </SawakoBaseArtwork>
 
-            <SawakoHairFront isDragging={isDragging} />
+              <SawakoHairFront isDragging={isDragging} />
+            </g>
           </g>
 
           {/* ===================== LAYER 4: ETHEREAL LUMINOUS FIREFLIES ===================== */}

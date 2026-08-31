@@ -216,4 +216,23 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     expect((rightContainer.firstElementChild as HTMLElement).style.transform).toContain("scale(0.82, 0.82)");
     expect(rightContainer.innerHTML).toContain("gentleBodySwayRight");
   });
+
+  it("renders sitting pose with matcha teacup and rising steam when isSippingTea is true", () => {
+    const { getByTestId, container } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        isSippingTea={true}
+      />
+    );
+
+    expect(getByTestId("sawako-matcha-teacup")).toBeDefined();
+    expect(container.innerHTML).toContain("tea-steam-wisps");
+    expect(container.innerHTML).toContain("translate(0px, 115px)");
+    expect(container.innerHTML).toContain("chibiBobbing_4.8s");
+    expect(container.querySelector("#sawako-w-sitting-legs")).not.toBeNull();
+  });
 });
