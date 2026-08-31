@@ -168,23 +168,13 @@ export default function SawakoSvg({
           44% { transform: scaleX(0.42); }
           72% { transform: scaleX(0.78); }
         }
-        @keyframes shimejiWalkLeft {
-          0% { transform: translateY(0px) rotate(-0.8deg); }
-          25% { transform: translateY(-3px) rotate(-1.6deg); }
-          50% { transform: translateY(0px) rotate(-0.8deg); }
-          75% { transform: translateY(-3px) rotate(-1.6deg); }
-          100% { transform: translateY(0px) rotate(-0.8deg); }
+        @keyframes chibiWaddleLeft {
+          0%, 100% { transform: translateY(0px) rotate(-2deg); }
+          50% { transform: translateY(-4px) rotate(0.8deg); }
         }
-        @keyframes shimejiWalkRight {
-          0% { transform: translateY(0px) rotate(0.8deg); }
-          25% { transform: translateY(-3px) rotate(1.6deg); }
-          50% { transform: translateY(0px) rotate(0.8deg); }
-          75% { transform: translateY(-3px) rotate(1.6deg); }
-          100% { transform: translateY(0px) rotate(0.8deg); }
-        }
-        @keyframes walkHairSway {
-          0%, 100% { transform: rotate(-0.8deg); }
-          50% { transform: rotate(0.8deg); }
+        @keyframes chibiWaddleRight {
+          0%, 100% { transform: translateY(0px) rotate(-0.8deg); }
+          50% { transform: translateY(-4px) rotate(2deg); }
         }
       `}</style>
 
@@ -197,8 +187,8 @@ export default function SawakoSvg({
               ? "translate-y-[-6px]"
               : isWalking
                 ? walkDirection === "left"
-                  ? "animate-[shimejiWalkLeft_1.15s_ease-in-out_infinite]"
-                  : "animate-[shimejiWalkRight_1.15s_ease-in-out_infinite]"
+                  ? "animate-[chibiWaddleLeft_0.6s_ease-in-out_infinite]"
+                  : "animate-[chibiWaddleRight_0.6s_ease-in-out_infinite]"
                 : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
@@ -242,13 +232,7 @@ export default function SawakoSvg({
 
           {/* ===================== LAYER 0: SLEEK BACK HAIR (BEHIND LEGS & ENTIRE BODY) ===================== */}
           <g
-            className={
-              isBeingPatted
-                ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]"
-                : isWalking
-                  ? "animate-[walkHairSway_1.15s_ease-in-out_infinite]"
-                  : ""
-            }
+            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : ""}
             style={{
               transform: isBeingPatted ? undefined : `rotate(${effectiveHeadRotate}deg)`,
               transformOrigin: "368px 486px",

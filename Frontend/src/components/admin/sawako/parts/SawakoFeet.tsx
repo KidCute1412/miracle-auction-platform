@@ -23,7 +23,6 @@ interface SawakoFeetProps {
 export function SawakoFeet({
   isDragging,
   isWalking = false,
-  walkDirection = "left",
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
@@ -31,20 +30,14 @@ export function SawakoFeet({
     ? "animate-[airborneFeetDangle_0.42s_ease-in-out_infinite]"
     : "transition-transform duration-200 ease-out";
 
-  const isWalkingLeft = !isDragging && isWalking && walkDirection === "left";
-  const isWalkingRight = !isDragging && isWalking && walkDirection === "right";
+  const isWalkingActive = !isDragging && isWalking;
+  const leftLegClass = isWalkingActive
+    ? "animate-[shimejiStepLeft_0.6s_ease-in-out_infinite]"
+    : "";
 
-  const leftLegClass = isWalkingLeft
-    ? "animate-[shimejiStrideLeftLead_1.15s_ease-in-out_infinite]"
-    : isWalkingRight
-      ? "animate-[shimejiStrideRightFollow_1.15s_ease-in-out_infinite]"
-      : "";
-
-  const rightLegClass = isWalkingLeft
-    ? "animate-[shimejiStrideLeftFollow_1.15s_ease-in-out_infinite]"
-    : isWalkingRight
-      ? "animate-[shimejiStrideRightLead_1.15s_ease-in-out_infinite]"
-      : "";
+  const rightLegClass = isWalkingActive
+    ? "animate-[shimejiStepRight_0.6s_ease-in-out_infinite]"
+    : "";
 
   return (
     <g
@@ -64,36 +57,14 @@ export function SawakoFeet({
       }}
     >
       <style>{`
-        /* Walking Leftwards: Slow, graceful stride */
-        @keyframes shimejiStrideLeftLead {
-          0%, 100% { transform: rotate(0deg) translateY(0px); }
-          20% { transform: rotate(-3deg) translateY(-2px); }
-          38% { transform: rotate(-6deg) translateY(-4px); }
-          52% { transform: rotate(-2deg) translateY(-1px); }
-          58% { transform: rotate(0deg) translateY(0px); }
+        /* Simple classic chibi alternating step */
+        @keyframes shimejiStepLeft {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-5px); }
         }
-        @keyframes shimejiStrideLeftFollow {
-          0%, 58% { transform: rotate(0deg) translateY(0px); }
-          70% { transform: rotate(2deg) translateY(-2px); }
-          86% { transform: rotate(-4deg) translateY(-4px); }
-          96% { transform: rotate(-1deg) translateY(-1px); }
-          100% { transform: rotate(0deg) translateY(0px); }
-        }
-
-        /* Walking Rightwards: Slow, graceful stride */
-        @keyframes shimejiStrideRightLead {
-          0%, 100% { transform: rotate(0deg) translateY(0px); }
-          20% { transform: rotate(3deg) translateY(-2px); }
-          38% { transform: rotate(6deg) translateY(-4px); }
-          52% { transform: rotate(2deg) translateY(-1px); }
-          58% { transform: rotate(0deg) translateY(0px); }
-        }
-        @keyframes shimejiStrideRightFollow {
-          0%, 58% { transform: rotate(0deg) translateY(0px); }
-          70% { transform: rotate(-2deg) translateY(-2px); }
-          86% { transform: rotate(4deg) translateY(-4px); }
-          96% { transform: rotate(1deg) translateY(-1px); }
-          100% { transform: rotate(0deg) translateY(0px); }
+        @keyframes shimejiStepRight {
+          0%, 100% { transform: translateY(-5px); }
+          50% { transform: translateY(0px); }
         }
       `}</style>
       <defs>

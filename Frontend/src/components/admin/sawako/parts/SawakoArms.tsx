@@ -25,19 +25,10 @@ export function SawakoArms({
   onPokeHand,
   setHoveredZone,
   isProtectingStar,
-  isWalking = false,
 }: SawakoArmsProps) {
   const armClass = isDragging
     ? "animate-[airborneArmsFlail_0.45s_ease-in-out_infinite]"
     : "transition-transform duration-200 ease-out";
-
-  const isArmWalking = !isDragging && !isProtectingStar && isWalking;
-  const leftArmWalkClass = isArmWalking
-    ? "animate-[walkArmSwingLeft_1.15s_ease-in-out_infinite]"
-    : "";
-  const rightArmWalkClass = isArmWalking
-    ? "animate-[walkArmSwingRight_1.15s_ease-in-out_infinite]"
-    : "";
 
   return (
     <g
@@ -125,34 +116,6 @@ export function SawakoArms({
             transform: translateY(0);
           }
         }
-        @keyframes walkArmSwingLeft {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          25% {
-            transform: translate(-1.5px, -2px) rotate(-2.5deg);
-          }
-          50% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          75% {
-            transform: translate(1.5px, 1px) rotate(2deg);
-          }
-        }
-        @keyframes walkArmSwingRight {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          25% {
-            transform: translate(1.5px, 1px) rotate(2deg);
-          }
-          50% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          75% {
-            transform: translate(-1.5px, -2px) rotate(-2.5deg);
-          }
-        }
       `}</style>
       <defs>
         {/* Puffed Muse Sleeve Gradient */}
@@ -182,7 +145,7 @@ export function SawakoArms({
       </defs>
 
       {/* ===================== LEFT ARM & HAND ===================== */}
-      <g id="left-arm-render" className={leftArmWalkClass} style={{ transformOrigin: "276px 524px" }}>
+      <g id="left-arm-render">
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="left-sleeve-group"
@@ -242,7 +205,7 @@ export function SawakoArms({
       </g>
 
       {/* ===================== RIGHT ARM & HAND ===================== */}
-      <g id="right-arm-render" className={rightArmWalkClass} style={{ transformOrigin: "460px 524px" }}>
+      <g id="right-arm-render">
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="right-sleeve-group"
