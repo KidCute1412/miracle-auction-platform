@@ -1,4 +1,5 @@
 import React from "react";
+import type { SawakoWalkDirection } from "../types";
 
 interface SawakoArmsProps {
   isHovered?: boolean;
@@ -7,6 +8,8 @@ interface SawakoArmsProps {
   onPokeHand?: (e: React.MouseEvent) => void;
   setHoveredZone: (zone: "hand" | "foot" | null) => void;
   isProtectingStar?: boolean;
+  isWalking?: boolean;
+  walkDirection?: SawakoWalkDirection;
 }
 
 /**
@@ -14,7 +17,7 @@ interface SawakoArmsProps {
  * Features:
  * - Slightly puffed sleeves with a clean, soft cuff
  * - Connected forearms and plain, bun-shaped chibi hands
- * - Fluid kinematics: airborne flailing when dragged, cute bashful chest clutching when startled
+ * - Fluid kinematics: airborne flailing when dragged, cute bashful chest clutching when startled, gentle natural swinging when walking
  * - Interactive hotspot with `sawako-hands-target`
  */
 export function SawakoArms({
@@ -22,10 +25,19 @@ export function SawakoArms({
   onPokeHand,
   setHoveredZone,
   isProtectingStar,
+  isWalking = false,
 }: SawakoArmsProps) {
   const armClass = isDragging
     ? "animate-[airborneArmsFlail_0.45s_ease-in-out_infinite]"
     : "transition-transform duration-200 ease-out";
+
+  const isArmWalking = !isDragging && !isProtectingStar && isWalking;
+  const leftArmWalkClass = isArmWalking
+    ? "animate-[walkArmSwingLeft_0.52s_ease-in-out_infinite]"
+    : "";
+  const rightArmWalkClass = isArmWalking
+    ? "animate-[walkArmSwingRight_0.52s_ease-in-out_infinite]"
+    : "";
 
   return (
     <g
@@ -113,6 +125,34 @@ export function SawakoArms({
             transform: translateY(0);
           }
         }
+        @keyframes walkArmSwingLeft {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          25% {
+            transform: translate(-3px, -3px) rotate(-5deg);
+          }
+          50% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          75% {
+            transform: translate(2px, 2px) rotate(4deg);
+          }
+        }
+        @keyframes walkArmSwingRight {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          25% {
+            transform: translate(2px, 2px) rotate(4deg);
+          }
+          50% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          75% {
+            transform: translate(-3px, -3px) rotate(-5deg);
+          }
+        }
       `}</style>
       <defs>
         {/* Puffed Muse Sleeve Gradient */}
@@ -142,7 +182,7 @@ export function SawakoArms({
       </defs>
 
       {/* ===================== LEFT ARM & HAND ===================== */}
-      <g id="left-arm-render">
+      <g id="left-arm-render" className={leftArmWalkClass} style={{ transformOrigin: "276px 524px" }}>
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="left-sleeve-group"
@@ -202,7 +242,7 @@ export function SawakoArms({
       </g>
 
       {/* ===================== RIGHT ARM & HAND ===================== */}
-      <g id="right-arm-render">
+      <g id="right-arm-render" className={rightArmWalkClass} style={{ transformOrigin: "460px 524px" }}>
         {/* Voluminous Dreamy Puffed Muse Sleeve (anchored to dress shoulder) */}
         <g
           id="right-sleeve-group"

@@ -35,15 +35,15 @@ export function SawakoFeet({
   const isWalkingRight = !isDragging && isWalking && walkDirection === "right";
 
   const leftLegClass = isWalkingLeft
-    ? "animate-[shimejiStrideLeftLead_0.65s_ease-in-out_infinite]"
+    ? "animate-[shimejiStrideLeftLead_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
     : isWalkingRight
-      ? "animate-[shimejiStrideRightFollow_0.65s_ease-in-out_infinite]"
+      ? "animate-[shimejiStrideRightFollow_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
       : "";
 
   const rightLegClass = isWalkingLeft
-    ? "animate-[shimejiStrideLeftFollow_0.65s_ease-in-out_infinite]"
+    ? "animate-[shimejiStrideLeftFollow_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
     : isWalkingRight
-      ? "animate-[shimejiStrideRightLead_0.65s_ease-in-out_infinite]"
+      ? "animate-[shimejiStrideRightLead_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
       : "";
 
   return (
@@ -64,32 +64,38 @@ export function SawakoFeet({
       }}
     >
       <style>{`
-        /* Walking Leftwards: Left leg leads, Right leg pushes & follows */
+        /* Walking Leftwards: Left leg swings 0-50%, Plants 50-100% */
         @keyframes shimejiStrideLeftLead {
-          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
-          25% { transform: translate(-8px, -7px) rotate(-11deg); }
-          50% { transform: translate(-3px, 0px) rotate(-4deg); }
-          75% { transform: translate(1px, 2px) rotate(3deg); }
+          0% { transform: translate(0px, 0px) rotate(0deg); }
+          18% { transform: translate(-4px, -6px) rotate(-5deg); }
+          32% { transform: translate(-7px, -9px) rotate(-8deg); }
+          44% { transform: translate(-3px, -2px) rotate(-3deg); }
+          50%, 100% { transform: translate(0px, 0px) rotate(0deg); }
         }
+        /* Right leg Plants 0-50%, Swings 50-100% */
         @keyframes shimejiStrideLeftFollow {
-          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
-          25% { transform: translate(1px, 2px) rotate(3deg); }
-          50% { transform: translate(0px, 0px) rotate(0deg); }
-          75% { transform: translate(-6px, -6px) rotate(-8deg); }
+          0%, 50% { transform: translate(0px, 0px) rotate(0deg); }
+          68% { transform: translate(-3px, -6px) rotate(5deg); }
+          82% { transform: translate(-6px, -8px) rotate(-3deg); }
+          94% { transform: translate(-2px, -2px) rotate(0deg); }
+          100% { transform: translate(0px, 0px) rotate(0deg); }
         }
 
-        /* Walking Rightwards: Right leg leads, Left leg pushes & follows */
+        /* Walking Rightwards: Right leg swings 0-50%, Plants 50-100% */
         @keyframes shimejiStrideRightLead {
-          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
-          25% { transform: translate(8px, -7px) rotate(11deg); }
-          50% { transform: translate(3px, 0px) rotate(4deg); }
-          75% { transform: translate(-1px, 2px) rotate(-3deg); }
+          0% { transform: translate(0px, 0px) rotate(0deg); }
+          18% { transform: translate(4px, -6px) rotate(5deg); }
+          32% { transform: translate(7px, -9px) rotate(8deg); }
+          44% { transform: translate(3px, -2px) rotate(3deg); }
+          50%, 100% { transform: translate(0px, 0px) rotate(0deg); }
         }
+        /* Left leg Plants 0-50%, Swings 50-100% */
         @keyframes shimejiStrideRightFollow {
-          0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
-          25% { transform: translate(-1px, 2px) rotate(-3deg); }
-          50% { transform: translate(0px, 0px) rotate(0deg); }
-          75% { transform: translate(6px, -6px) rotate(8deg); }
+          0%, 50% { transform: translate(0px, 0px) rotate(0deg); }
+          68% { transform: translate(3px, -6px) rotate(-5deg); }
+          82% { transform: translate(6px, -8px) rotate(3deg); }
+          94% { transform: translate(2px, -2px) rotate(0deg); }
+          100% { transform: translate(0px, 0px) rotate(0deg); }
         }
       `}</style>
       <defs>

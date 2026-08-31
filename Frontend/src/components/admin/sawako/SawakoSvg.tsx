@@ -169,16 +169,22 @@ export default function SawakoSvg({
           72% { transform: scaleX(0.78); }
         }
         @keyframes shimejiWalkLeft {
-          0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
-          25% { transform: translateY(-5px) rotate(-3.2deg); }
+          0% { transform: translateY(0px) rotate(-1deg); }
+          25% { transform: translateY(-6px) rotate(-2.8deg); }
           50% { transform: translateY(0px) rotate(-1.5deg); }
-          75% { transform: translateY(-5px) rotate(-3.2deg); }
+          75% { transform: translateY(-6px) rotate(-2.8deg); }
+          100% { transform: translateY(0px) rotate(-1deg); }
         }
         @keyframes shimejiWalkRight {
-          0%, 100% { transform: translateY(0px) rotate(1.5deg); }
-          25% { transform: translateY(-5px) rotate(3.2deg); }
+          0% { transform: translateY(0px) rotate(1deg); }
+          25% { transform: translateY(-6px) rotate(2.8deg); }
           50% { transform: translateY(0px) rotate(1.5deg); }
-          75% { transform: translateY(-5px) rotate(3.2deg); }
+          75% { transform: translateY(-6px) rotate(2.8deg); }
+          100% { transform: translateY(0px) rotate(1deg); }
+        }
+        @keyframes walkHairSway {
+          0%, 100% { transform: rotate(-1.2deg); }
+          50% { transform: rotate(1.2deg); }
         }
       `}</style>
 
@@ -191,8 +197,8 @@ export default function SawakoSvg({
               ? "translate-y-[-6px]"
               : isWalking
                 ? walkDirection === "left"
-                  ? "animate-[shimejiWalkLeft_0.65s_ease-in-out_infinite]"
-                  : "animate-[shimejiWalkRight_0.65s_ease-in-out_infinite]"
+                  ? "animate-[shimejiWalkLeft_0.52s_ease-in-out_infinite]"
+                  : "animate-[shimejiWalkRight_0.52s_ease-in-out_infinite]"
                 : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
@@ -236,7 +242,13 @@ export default function SawakoSvg({
 
           {/* ===================== LAYER 0: SLEEK BACK HAIR (BEHIND LEGS & ENTIRE BODY) ===================== */}
           <g
-            className={isBeingPatted ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]" : ""}
+            className={
+              isBeingPatted
+                ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]"
+                : isWalking
+                  ? "animate-[walkHairSway_0.52s_ease-in-out_infinite]"
+                  : ""
+            }
             style={{
               transform: isBeingPatted ? undefined : `rotate(${effectiveHeadRotate}deg)`,
               transformOrigin: "368px 486px",
@@ -281,6 +293,8 @@ export default function SawakoSvg({
                 onPokeHand={onPokeHand}
                 setHoveredZone={setHoveredZone}
                 isProtectingStar={isProtectingStar}
+                isWalking={isWalking}
+                walkDirection={walkDirection}
               />
 
               {/* 3. Independent Eyes (Tracking pupils, eyelid blinking, 4 lower lashes, shy gaze when dragging) */}
