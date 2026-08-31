@@ -53,7 +53,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#E0E7FF",
     glowRgba: "rgba(165, 180, 252, 0.75)",
     dialogue: {
-      text: "0h đêm rồi! Trăng rằm nửa đêm và sao Bắc Cực đang canh gác cùng Admin-san nè~ 🌙",
+      text: "Midnight already... Rest well, Admin-san! 🌙",
       expression: "sleepy",
       symbol: "zzz",
     },
@@ -70,7 +70,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#EDE9FE",
     glowRgba: "rgba(196, 181, 253, 0.7)",
     dialogue: {
-      text: "1h sáng rồi, trăng cũng đang tựa gối mây ngủ khì... Admin-san đừng thức khuya quá nha! ☁️",
+      text: "1 AM... Stars are drowsy too. Zzz~ ☁️",
       expression: "sleepy",
       symbol: "zzz",
     },
@@ -87,7 +87,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#F472B6",
     glowRgba: "rgba(192, 132, 252, 0.8)",
     dialogue: {
-      text: "2h sáng... Tinh vân vũ trụ huyền bí đang tỏa sáng kỳ ảo! Admin-san vẫn còn code sao? ✨",
+      text: "2 AM... Mystic nebula is shining! Still coding? ✨",
       expression: "shy",
       symbol: "sparkle",
     },
@@ -104,7 +104,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#A5F3FC",
     glowRgba: "rgba(34, 211, 238, 0.8)",
     dialogue: {
-      text: "Oa, 3h sáng có sao băng vút qua kìa! Admin-san mau ước một điều ước đi nào~ 🌠",
+      text: "A shooting star! Quick, make a wish! 🌠",
       expression: "happy",
       symbol: "sparkle",
     },
@@ -121,7 +121,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#D1FAE5",
     glowRgba: "rgba(52, 211, 153, 0.75)",
     dialogue: {
-      text: "4h sáng rồi! Sao Mai (Venus) lấp lánh báo hiệu bình minh sắp ghé thăm rồi đó! 💎",
+      text: "The Morning Star is up! Dawn is near~ 💎",
       expression: "normal",
       symbol: "sparkle",
     },
@@ -138,7 +138,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#F472B6",
     glowRgba: "rgba(251, 146, 60, 0.75)",
     dialogue: {
-      text: "5h sáng rạng đông hé rạng... Bầu trời chuyển sắc cam tím tuyệt đẹp, chào ngày mới! 🌅",
+      text: "5 AM dawn glow... Beautiful sunrise ahead! 🌅",
       expression: "happy",
       symbol: "sparkle",
     },
@@ -155,7 +155,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FDE047",
     glowRgba: "rgba(234, 88, 12, 0.8)",
     dialogue: {
-      text: "6h sáng bình minh bừng sáng! Vươn vai hít thở không khí trong lành cùng Sawako nào! ☀️",
+      text: "6 AM sunrise! Morning stretch with Sawako? ☀️",
       expression: "happy",
       symbol: "sparkle",
     },
@@ -172,7 +172,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FDE047",
     glowRgba: "rgba(56, 189, 248, 0.75)",
     dialogue: {
-      text: "7h sáng sớm mai trong trẻo, giọt sương mai lấp lánh như ngọc! Admin-san ăn sáng chưa? 💧",
+      text: "7 AM dewdrop morning! Had breakfast yet? 💧",
       expression: "happy",
       symbol: "heart",
     },
@@ -189,7 +189,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#F472B6",
     glowRgba: "rgba(245, 158, 11, 0.75)",
     dialogue: {
-      text: "8h sáng bắt đầu phiên làm việc tràn đầy năng lượng! Cố gắng hết mình nha Admin-san! 💪",
+      text: "8 AM! Let's do our best today, Admin-san! 💪",
       expression: "happy",
       symbol: "sparkle",
     },
@@ -206,7 +206,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FEF08A",
     glowRgba: "rgba(234, 179, 8, 0.8)",
     dialogue: {
-      text: "9h sáng ánh kim vàng rực rỡ! Hào quang thái dương đang tiếp thêm may mắn cho bạn đó! 👑",
+      text: "9 AM golden sunshine! Luck is on your side! 👑",
       expression: "smug",
       symbol: "sparkle",
     },
@@ -223,7 +223,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#F472B6",
     glowRgba: "rgba(236, 72, 153, 0.75)",
     dialogue: {
-      text: "10h sáng nắng ấm thơm ngát... Những cánh hoa anh đào phấn hồng đang lượn bay theo gió nè~ 🌸",
+      text: "10 AM sakura breeze... So refreshing~ 🌸",
       expression: "happy",
       symbol: "heart",
     },
@@ -240,7 +240,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FDE047",
     glowRgba: "rgba(99, 102, 241, 0.75)",
     dialogue: {
-      text: "11h trưa ánh sáng hội tụ lấp lánh như kim cương lăng kính! Sắp đến giờ nghỉ trưa rồi! 💎",
+      text: "11 AM solar diamond! Lunch is coming up! 💎",
       expression: "normal",
       symbol: "sparkle",
     },
@@ -257,7 +257,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FBBF24",
     glowRgba: "rgba(217, 119, 6, 0.8)",
     dialogue: {
-      text: "12h trưa tròn bóng, vương miện mặt trời chói lọi! Admin-san đi ăn trưa nạp lại năng lượng nhé! 🍱",
+      text: "High noon! Time for a delicious lunch break! 🍱",
       expression: "happy",
       symbol: "heart",
     },
@@ -274,7 +274,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FDE047",
     glowRgba: "rgba(56, 189, 248, 0.7)",
     dialogue: {
-      text: "13h chiều nắng êm dịu, mây trắng lơ lửng... Sawako cũng thấy hơi buồn ngủ rồi nga~ 😴",
+      text: "1 PM siesta cloud... Getting a bit sleepy~ 😴",
       expression: "sleepy",
       symbol: "zzz",
     },
@@ -291,7 +291,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#F59E0B",
     glowRgba: "rgba(180, 83, 9, 0.75)",
     dialogue: {
-      text: "14h chiều trà ấm mật ong thơm phức! Uống một tách matcha cùng Sawako cho tỉnh táo nhé! 🍵",
+      text: "2 PM teatime! Enjoy some matcha with me? 🍵",
       expression: "happy",
       symbol: "heart",
     },
@@ -308,7 +308,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FBBF24",
     glowRgba: "rgba(234, 88, 12, 0.75)",
     dialogue: {
-      text: "15h chiều nắng màu hổ phách dịu êm, lá phong vàng bay bay... Thơ mộng quá Admin-san ơi! 🍂",
+      text: "3 PM amber breeze... The leaves are dancing! 🍂",
       expression: "normal",
       symbol: "sparkle",
     },
@@ -325,7 +325,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FB7185",
     glowRgba: "rgba(244, 63, 94, 0.75)",
     dialogue: {
-      text: "16h chiều sắc mơ đào dịu ngọt, báo hiệu sắp đến giờ tan sở rồi! Cố nốt hôm nay nào! 🍑",
+      text: "4 PM apricot glow! Almost time to wrap up! 🍑",
       expression: "happy",
       symbol: "sparkle",
     },
@@ -342,7 +342,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FDE047",
     glowRgba: "rgba(251, 113, 133, 0.8)",
     dialogue: {
-      text: "17h hoàng hôn buông xuống rồi... Tàn lửa chiều tà ấm áp vỗ về bạn sau một ngày dài! 🌇",
+      text: "5 PM sunset... Great work today, Admin-san! 🌇",
       expression: "shy",
       symbol: "heart",
     },
@@ -359,7 +359,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#F472B6",
     glowRgba: "rgba(168, 85, 247, 0.8)",
     dialogue: {
-      text: "18h bầu trời chạng vạng tím hồng san hô vi diệu! Admin-san đã hoàn thành công việc chưa? 🌆",
+      text: "6 PM twilight dusk... Such a lovely evening! 🌆",
       expression: "happy",
       symbol: "sparkle",
     },
@@ -376,7 +376,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FDE047",
     glowRgba: "rgba(99, 102, 241, 0.8)",
     dialogue: {
-      text: "19h tối bầu trời tím thẫm xuất hiện ngôi Sao Hôm đầu tiên! Thắp sáng bàn làm việc nào! ⭐",
+      text: "7 PM! The Evening Star is sparkling bright! ⭐",
       expression: "normal",
       symbol: "sparkle",
     },
@@ -393,7 +393,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FFFFFF",
     glowRgba: "rgba(96, 165, 250, 0.8)",
     dialogue: {
-      text: "20h tối vầng trăng bạc kiêu sa nhô cao cùng bụi sao lấp lánh! Buổi tối thật yên bình~ 🌙",
+      text: "8 PM silver moonrise... Peaceful night, isn't it? 🌙",
       expression: "happy",
       symbol: "sparkle",
     },
@@ -410,7 +410,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#FEF08A",
     glowRgba: "rgba(245, 158, 11, 0.8)",
     dialogue: {
-      text: "21h tối vầng trăng tròn vàng dịu như chiếc đèn lồng ấm áp thắp sáng đêm tĩnh lặng! 🏮",
+      text: "9 PM lantern moon! Cozy warm glow~ 🏮",
       expression: "happy",
       symbol: "heart",
     },
@@ -427,7 +427,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#BAE6FD",
     glowRgba: "rgba(56, 189, 248, 0.8)",
     dialogue: {
-      text: "22h đêm mặt trăng xanh ngọc bích êm đềm... Đêm đã sâu rồi, Admin-san nhớ nghỉ ngơi nhé! 🌌",
+      text: "10 PM azure moon... Time to unwind and rest! 🌌",
       expression: "sleepy",
       symbol: "zzz",
     },
@@ -444,7 +444,7 @@ export const HOURLY_THEMES: Record<number, HourlyTheme> = {
     accentColor: "#F3E8FF",
     glowRgba: "rgba(168, 85, 247, 0.8)",
     dialogue: {
-      text: "23h khuya ánh trăng khép mi cùng đốm đom đóm mộng... Chúc Admin-san có giấc mơ thật đẹp! 💫",
+      text: "11 PM dreamscape... Sweet dreams, Admin-san! 💫",
       expression: "sleepy",
       symbol: "zzz",
     },

@@ -256,4 +256,28 @@ describe("SawakoMascot Component", () => {
     expect(bubble).toBeDefined();
     expect((bubble.textContent || "").length).toBeGreaterThan(5);
   });
+
+  it("automatically resets manual celestial time back to real-time clock after 1 minute", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <SawakoMascot />
+      </MemoryRouter>,
+    );
+
+    const weatherGroup = container.querySelector("#weather-mood-interactive-group");
+    expect(weatherGroup).not.toBeNull();
+
+    // Click to advance
+    act(() => {
+      fireEvent.click(weatherGroup!);
+    });
+
+    // Advance 61 seconds (past the 1-minute auto-reset window)
+    act(() => {
+      vi.advanceTimersByTime(61000);
+    });
+
+    const realHour = new Date().getHours().toString();
+    expect(weatherGroup?.getAttribute("data-hour")).toBe(realHour);
+  });
 });

@@ -122,14 +122,25 @@ export default function SawakoMascot() {
     };
   }, [isWalking, isDragging, prefs.minimized]);
 
-  // Sync ambient mood with real clock every 30 seconds
+  const manualTimeResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync ambient mood with real clock every 1 minute (60 seconds)
   useEffect(() => {
     const timer = setInterval(() => {
-      const h = new Date().getHours();
-      setCurrentHour(h);
-      setTimeOfDay(getRealTimeOfDay());
-    }, 30000);
-    return () => clearInterval(timer);
+      // Only sync if there is no active manual override inspection
+      if (!manualTimeResetTimerRef.current) {
+        const h = new Date().getHours();
+        setCurrentHour(h);
+        setTimeOfDay(getRealTimeOfDay());
+      }
+    }, 60000);
+
+    return () => {
+      clearInterval(timer);
+      if (manualTimeResetTimerRef.current) {
+        clearTimeout(manualTimeResetTimerRef.current);
+      }
+    };
   }, []);
 
   // 5-second time limit for initial greeting speech bubble
@@ -313,7 +324,7 @@ export default function SawakoMascot() {
     [isBeingPatted, prefs.muted, say],
   );
 
-  // Click on weather mood to cycle through 24 hourly celestial moods
+  // Click on weather mood to cycle through 24 hourly celestial moods (auto-resets to real-time after 1 minute)
   const handleCycleTimeOfDay = useCallback(() => {
     setCurrentHour((prevHour) => {
       const nextHour = (prevHour + 1) % 24;
@@ -322,6 +333,18 @@ export default function SawakoMascot() {
       say(theme.dialogue, 4500);
       sawakoSound.setMuted(prefs.muted);
       sawakoSound.playChime();
+
+      // Schedule automatic reset to real-time clock after 1 minute (60000ms)
+      if (manualTimeResetTimerRef.current) {
+        clearTimeout(manualTimeResetTimerRef.current);
+      }
+      manualTimeResetTimerRef.current = setTimeout(() => {
+        const realHour = new Date().getHours();
+        setCurrentHour(realHour);
+        setTimeOfDay(getRealTimeOfDay());
+        manualTimeResetTimerRef.current = null;
+      }, 60000);
+
       return nextHour;
     });
   }, [prefs.muted, say]);

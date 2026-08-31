@@ -103,20 +103,21 @@ export function SawakoAmbientMood({
             transform: scale(1.04);
           }
         }
-        @keyframes orbitalRingSpin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+        #weather-mood-interactive-group {
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        #weather-mood-interactive-group:focus,
+        #weather-mood-interactive-group:focus-visible {
+          outline: none;
         }
       `}</style>
 
       {/* Interactive Weather Mood Clickable Container */}
       <g
         id="weather-mood-interactive-group"
-        className="cursor-pointer pointer-events-auto"
+        className="cursor-pointer pointer-events-auto outline-none focus:outline-none focus-visible:outline-none select-none"
+        style={{ outline: "none" }}
         onClick={(e) => {
           e.stopPropagation();
           onCycleTimeOfDay?.();
