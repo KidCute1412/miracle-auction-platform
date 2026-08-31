@@ -100,8 +100,8 @@ export function useSawakoRoaming({
           return;
         }
 
-        // Calm leisurely walking speed: ~22px per second matching 1.15s step cadence
-        const durationSec = Math.max(3.5, Math.min(8.0, actualDistance / 22));
+        // Gentle, slow, graceful strolling speed: ~20px per second matching 0.95s cadence
+        const durationSec = Math.max(3.5, Math.min(7.0, actualDistance / 20));
         const deltaX = direction === "left" ? -actualDistance : actualDistance;
         const nextOffset = roamingOffsetRef.current + deltaX;
 
@@ -111,11 +111,11 @@ export function useSawakoRoaming({
         setRoamingOffsetX(nextOffset);
         roamingOffsetRef.current = nextOffset;
 
-        // When walking animation finishes, pause and schedule next idle rest
+        // When walking animation finishes, plant feet cleanly at destination
         walkCompleteTimerRef.current = setTimeout(() => {
           setIsWalking(false);
           scheduleNextRoam();
-        }, durationSec * 1000);
+        }, Math.max(0, durationSec * 1000 - 200));
       }, restDelay);
     };
 

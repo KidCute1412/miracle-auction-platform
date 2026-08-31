@@ -23,6 +23,7 @@ interface SawakoFeetProps {
 export function SawakoFeet({
   isDragging,
   isWalking = false,
+  walkDirection = "left",
   onPokeFoot,
   setHoveredZone,
 }: SawakoFeetProps) {
@@ -30,14 +31,20 @@ export function SawakoFeet({
     ? "animate-[airborneFeetDangle_0.42s_ease-in-out_infinite]"
     : "transition-transform duration-200 ease-out";
 
-  const isWalkingActive = !isDragging && isWalking;
-  const leftLegClass = isWalkingActive
-    ? "animate-[shimejiStepLeft_0.6s_ease-in-out_infinite]"
-    : "";
+  const isWalkingLeft = !isDragging && isWalking && walkDirection === "left";
+  const isWalkingRight = !isDragging && isWalking && walkDirection === "right";
 
-  const rightLegClass = isWalkingActive
-    ? "animate-[shimejiStepRight_0.6s_ease-in-out_infinite]"
-    : "";
+  const leftLegClass = isWalkingLeft
+    ? "animate-[gentleStrideLeftLead_0.95s_ease-in-out_infinite]"
+    : isWalkingRight
+      ? "animate-[gentleStrideRightFollow_0.95s_ease-in-out_infinite]"
+      : "";
+
+  const rightLegClass = isWalkingLeft
+    ? "animate-[gentleStrideLeftFollow_0.95s_ease-in-out_infinite]"
+    : isWalkingRight
+      ? "animate-[gentleStrideRightLead_0.95s_ease-in-out_infinite]"
+      : "";
 
   return (
     <g
@@ -57,14 +64,36 @@ export function SawakoFeet({
       }}
     >
       <style>{`
-        /* Simple classic chibi alternating step */
-        @keyframes shimejiStepLeft {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-5px); }
+        /* Vòng bước chân elip liên tục khi đi qua trái (Continuous Elliptical Stride) */
+        @keyframes gentleStrideLeftLead {
+          0% { transform: translate(0px, 0px) rotate(0deg); }
+          25% { transform: translate(-4px, -4px) rotate(-3deg); }
+          50% { transform: translate(-2px, 0px) rotate(1deg); }
+          75% { transform: translate(2px, 0px) rotate(0deg); }
+          100% { transform: translate(0px, 0px) rotate(0deg); }
         }
-        @keyframes shimejiStepRight {
-          0%, 100% { transform: translateY(-5px); }
-          50% { transform: translateY(0px); }
+        @keyframes gentleStrideLeftFollow {
+          0% { transform: translate(-2px, 0px) rotate(1deg); }
+          25% { transform: translate(2px, 0px) rotate(0deg); }
+          50% { transform: translate(0px, 0px) rotate(0deg); }
+          75% { transform: translate(-4px, -4px) rotate(-3deg); }
+          100% { transform: translate(-2px, 0px) rotate(1deg); }
+        }
+
+        /* Vòng bước chân elip liên tục khi đi qua phải (Continuous Elliptical Stride) */
+        @keyframes gentleStrideRightLead {
+          0% { transform: translate(0px, 0px) rotate(0deg); }
+          25% { transform: translate(4px, -4px) rotate(3deg); }
+          50% { transform: translate(2px, 0px) rotate(-1deg); }
+          75% { transform: translate(-2px, 0px) rotate(0deg); }
+          100% { transform: translate(0px, 0px) rotate(0deg); }
+        }
+        @keyframes gentleStrideRightFollow {
+          0% { transform: translate(2px, 0px) rotate(-1deg); }
+          25% { transform: translate(-2px, 0px) rotate(0deg); }
+          50% { transform: translate(0px, 0px) rotate(0deg); }
+          75% { transform: translate(4px, -4px) rotate(3deg); }
+          100% { transform: translate(2px, 0px) rotate(-1deg); }
         }
       `}</style>
       <defs>
@@ -92,7 +121,7 @@ export function SawakoFeet({
       {/* ===================== CHIBI LEGS & BLACK HIGH-TOP BOOTS ===================== */}
       <g id="chibi-legs-render">
         {/* ==================== LEFT LEG & BLACK HIGH-TOP BOOT ==================== */}
-        <g id="left-boot-leg" className={leftLegClass} style={{ transformOrigin: "329px 780px" }}>
+        <g id="left-boot-leg" className={leftLegClass} style={{ transformOrigin: "329px 888px" }}>
           {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
           <path d="M 314 770 L 314 888 L 344 888 L 344 770 Z" fill="url(#thighSkin)" />
 
@@ -179,7 +208,7 @@ export function SawakoFeet({
         </g>
 
         {/* ==================== RIGHT LEG & BLACK HIGH-TOP BOOT ==================== */}
-        <g id="right-boot-leg" className={rightLegClass} style={{ transformOrigin: "407px 780px" }}>
+        <g id="right-boot-leg" className={rightLegClass} style={{ transformOrigin: "407px 888px" }}>
           {/* Upper Thigh (Tucked cleanly behind the muse dress) */}
           <path d="M 392 770 L 392 888 L 422 888 L 422 770 Z" fill="url(#thighSkin)" />
 

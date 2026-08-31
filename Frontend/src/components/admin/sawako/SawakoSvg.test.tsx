@@ -199,7 +199,7 @@ describe("SawakoSvg Modular Puppet Rig", () => {
 
     const puppetWrapper = leftContainer.firstElementChild as HTMLElement;
     expect(puppetWrapper.style.transform).toContain("scale(0.82, 0.82)");
-    expect(leftContainer.innerHTML).toContain("chibiWaddleLeft");
+    expect(leftContainer.innerHTML).toContain("gentleBodySwayLeft");
 
     const { container: rightContainer } = render(
       <SawakoSvg
@@ -214,6 +214,6 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     );
 
     expect((rightContainer.firstElementChild as HTMLElement).style.transform).toContain("scale(0.82, 0.82)");
-    expect(rightContainer.innerHTML).toContain("chibiWaddleRight");
+    expect(rightContainer.innerHTML).toContain("gentleBodySwayRight");
   });
 });
