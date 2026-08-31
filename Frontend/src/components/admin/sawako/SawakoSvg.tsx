@@ -83,10 +83,10 @@ export default function SawakoSvg({
   // Authentic directional cues: head and gaze subtly lean towards walking direction without mirroring
   let effectiveHeadRotate = headRotate;
   if (isWalking && !isDragging && !isBeingPatted) {
-    effectiveHeadRotate += walkDirection === "left" ? -4.5 : 4.5;
+    effectiveHeadRotate += walkDirection === "left" ? -2.5 : 2.5;
   }
   const effectivePupilX = isWalking && !isDragging
-    ? Math.max(-5, Math.min(5, pupilX + (walkDirection === "left" ? -1.8 : 1.8)))
+    ? Math.max(-5, Math.min(5, pupilX + (walkDirection === "left" ? -1.2 : 1.2)))
     : pupilX;
 
   return (
@@ -169,22 +169,22 @@ export default function SawakoSvg({
           72% { transform: scaleX(0.78); }
         }
         @keyframes shimejiWalkLeft {
-          0% { transform: translateY(0px) rotate(-1deg); }
-          25% { transform: translateY(-6px) rotate(-2.8deg); }
-          50% { transform: translateY(0px) rotate(-1.5deg); }
-          75% { transform: translateY(-6px) rotate(-2.8deg); }
-          100% { transform: translateY(0px) rotate(-1deg); }
+          0% { transform: translateY(0px) rotate(-0.8deg); }
+          25% { transform: translateY(-3px) rotate(-1.6deg); }
+          50% { transform: translateY(0px) rotate(-0.8deg); }
+          75% { transform: translateY(-3px) rotate(-1.6deg); }
+          100% { transform: translateY(0px) rotate(-0.8deg); }
         }
         @keyframes shimejiWalkRight {
-          0% { transform: translateY(0px) rotate(1deg); }
-          25% { transform: translateY(-6px) rotate(2.8deg); }
-          50% { transform: translateY(0px) rotate(1.5deg); }
-          75% { transform: translateY(-6px) rotate(2.8deg); }
-          100% { transform: translateY(0px) rotate(1deg); }
+          0% { transform: translateY(0px) rotate(0.8deg); }
+          25% { transform: translateY(-3px) rotate(1.6deg); }
+          50% { transform: translateY(0px) rotate(0.8deg); }
+          75% { transform: translateY(-3px) rotate(1.6deg); }
+          100% { transform: translateY(0px) rotate(0.8deg); }
         }
         @keyframes walkHairSway {
-          0%, 100% { transform: rotate(-1.2deg); }
-          50% { transform: rotate(1.2deg); }
+          0%, 100% { transform: rotate(-0.8deg); }
+          50% { transform: rotate(0.8deg); }
         }
       `}</style>
 
@@ -197,8 +197,8 @@ export default function SawakoSvg({
               ? "translate-y-[-6px]"
               : isWalking
                 ? walkDirection === "left"
-                  ? "animate-[shimejiWalkLeft_0.52s_ease-in-out_infinite]"
-                  : "animate-[shimejiWalkRight_0.52s_ease-in-out_infinite]"
+                  ? "animate-[shimejiWalkLeft_1.15s_ease-in-out_infinite]"
+                  : "animate-[shimejiWalkRight_1.15s_ease-in-out_infinite]"
                 : "animate-[chibiBobbing_3.2s_ease-in-out_infinite]"
         }`}
       >
@@ -246,7 +246,7 @@ export default function SawakoSvg({
               isBeingPatted
                 ? "animate-[headpatPurrLean_1.2s_ease-in-out_infinite]"
                 : isWalking
-                  ? "animate-[walkHairSway_0.52s_ease-in-out_infinite]"
+                  ? "animate-[walkHairSway_1.15s_ease-in-out_infinite]"
                   : ""
             }
             style={{

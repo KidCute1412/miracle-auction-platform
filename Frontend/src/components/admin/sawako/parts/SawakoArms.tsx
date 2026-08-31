@@ -33,10 +33,10 @@ export function SawakoArms({
 
   const isArmWalking = !isDragging && !isProtectingStar && isWalking;
   const leftArmWalkClass = isArmWalking
-    ? "animate-[walkArmSwingLeft_0.52s_ease-in-out_infinite]"
+    ? "animate-[walkArmSwingLeft_1.15s_ease-in-out_infinite]"
     : "";
   const rightArmWalkClass = isArmWalking
-    ? "animate-[walkArmSwingRight_0.52s_ease-in-out_infinite]"
+    ? "animate-[walkArmSwingRight_1.15s_ease-in-out_infinite]"
     : "";
 
   return (
@@ -130,13 +130,13 @@ export function SawakoArms({
             transform: translateY(0px) rotate(0deg);
           }
           25% {
-            transform: translate(-3px, -3px) rotate(-5deg);
+            transform: translate(-1.5px, -2px) rotate(-2.5deg);
           }
           50% {
             transform: translateY(0px) rotate(0deg);
           }
           75% {
-            transform: translate(2px, 2px) rotate(4deg);
+            transform: translate(1.5px, 1px) rotate(2deg);
           }
         }
         @keyframes walkArmSwingRight {
@@ -144,13 +144,13 @@ export function SawakoArms({
             transform: translateY(0px) rotate(0deg);
           }
           25% {
-            transform: translate(2px, 2px) rotate(4deg);
+            transform: translate(1.5px, 1px) rotate(2deg);
           }
           50% {
             transform: translateY(0px) rotate(0deg);
           }
           75% {
-            transform: translate(-3px, -3px) rotate(-5deg);
+            transform: translate(-1.5px, -2px) rotate(-2.5deg);
           }
         }
       `}</style>

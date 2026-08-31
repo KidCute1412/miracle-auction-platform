@@ -35,15 +35,15 @@ export function SawakoFeet({
   const isWalkingRight = !isDragging && isWalking && walkDirection === "right";
 
   const leftLegClass = isWalkingLeft
-    ? "animate-[shimejiStrideLeftLead_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
+    ? "animate-[shimejiStrideLeftLead_1.15s_ease-in-out_infinite]"
     : isWalkingRight
-      ? "animate-[shimejiStrideRightFollow_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
+      ? "animate-[shimejiStrideRightFollow_1.15s_ease-in-out_infinite]"
       : "";
 
   const rightLegClass = isWalkingLeft
-    ? "animate-[shimejiStrideLeftFollow_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
+    ? "animate-[shimejiStrideLeftFollow_1.15s_ease-in-out_infinite]"
     : isWalkingRight
-      ? "animate-[shimejiStrideRightLead_0.52s_cubic-bezier(0.35,0,0.25,1)_infinite]"
+      ? "animate-[shimejiStrideRightLead_1.15s_ease-in-out_infinite]"
       : "";
 
   return (
@@ -64,38 +64,36 @@ export function SawakoFeet({
       }}
     >
       <style>{`
-        /* Walking Leftwards: Left leg swings 0-50%, Plants 50-100% */
+        /* Walking Leftwards: Slow, graceful stride */
         @keyframes shimejiStrideLeftLead {
-          0% { transform: translate(0px, 0px) rotate(0deg); }
-          18% { transform: translate(-4px, -6px) rotate(-5deg); }
-          32% { transform: translate(-7px, -9px) rotate(-8deg); }
-          44% { transform: translate(-3px, -2px) rotate(-3deg); }
-          50%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+          0%, 100% { transform: rotate(0deg) translateY(0px); }
+          20% { transform: rotate(-3deg) translateY(-2px); }
+          38% { transform: rotate(-6deg) translateY(-4px); }
+          52% { transform: rotate(-2deg) translateY(-1px); }
+          58% { transform: rotate(0deg) translateY(0px); }
         }
-        /* Right leg Plants 0-50%, Swings 50-100% */
         @keyframes shimejiStrideLeftFollow {
-          0%, 50% { transform: translate(0px, 0px) rotate(0deg); }
-          68% { transform: translate(-3px, -6px) rotate(5deg); }
-          82% { transform: translate(-6px, -8px) rotate(-3deg); }
-          94% { transform: translate(-2px, -2px) rotate(0deg); }
-          100% { transform: translate(0px, 0px) rotate(0deg); }
+          0%, 58% { transform: rotate(0deg) translateY(0px); }
+          70% { transform: rotate(2deg) translateY(-2px); }
+          86% { transform: rotate(-4deg) translateY(-4px); }
+          96% { transform: rotate(-1deg) translateY(-1px); }
+          100% { transform: rotate(0deg) translateY(0px); }
         }
 
-        /* Walking Rightwards: Right leg swings 0-50%, Plants 50-100% */
+        /* Walking Rightwards: Slow, graceful stride */
         @keyframes shimejiStrideRightLead {
-          0% { transform: translate(0px, 0px) rotate(0deg); }
-          18% { transform: translate(4px, -6px) rotate(5deg); }
-          32% { transform: translate(7px, -9px) rotate(8deg); }
-          44% { transform: translate(3px, -2px) rotate(3deg); }
-          50%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+          0%, 100% { transform: rotate(0deg) translateY(0px); }
+          20% { transform: rotate(3deg) translateY(-2px); }
+          38% { transform: rotate(6deg) translateY(-4px); }
+          52% { transform: rotate(2deg) translateY(-1px); }
+          58% { transform: rotate(0deg) translateY(0px); }
         }
-        /* Left leg Plants 0-50%, Swings 50-100% */
         @keyframes shimejiStrideRightFollow {
-          0%, 50% { transform: translate(0px, 0px) rotate(0deg); }
-          68% { transform: translate(3px, -6px) rotate(-5deg); }
-          82% { transform: translate(6px, -8px) rotate(3deg); }
-          94% { transform: translate(2px, -2px) rotate(0deg); }
-          100% { transform: translate(0px, 0px) rotate(0deg); }
+          0%, 58% { transform: rotate(0deg) translateY(0px); }
+          70% { transform: rotate(-2deg) translateY(-2px); }
+          86% { transform: rotate(4deg) translateY(-4px); }
+          96% { transform: rotate(1deg) translateY(-1px); }
+          100% { transform: rotate(0deg) translateY(0px); }
         }
       `}</style>
       <defs>

@@ -49,7 +49,7 @@ describe("useSawakoRoaming Hook", () => {
 
     // Advance past walk duration (durationSec * 1000)
     act(() => {
-      vi.advanceTimersByTime(6000);
+      vi.advanceTimersByTime(10000);
     });
 
     // Walking should stop, resting at the new offset

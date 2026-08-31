@@ -100,8 +100,8 @@ export function useSawakoRoaming({
           return;
         }
 
-        // Gentle walking speed: ~36px per second
-        const durationSec = Math.max(2.5, Math.min(5.5, actualDistance / 36));
+        // Calm leisurely walking speed: ~22px per second matching 1.15s step cadence
+        const durationSec = Math.max(3.5, Math.min(8.0, actualDistance / 22));
         const deltaX = direction === "left" ? -actualDistance : actualDistance;
         const nextOffset = roamingOffsetRef.current + deltaX;
 
