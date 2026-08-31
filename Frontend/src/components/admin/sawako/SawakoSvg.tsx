@@ -42,6 +42,7 @@ export default function SawakoSvg({
   isBeingPatted = false,
   onHeadpatStroke,
   timeOfDay = "day",
+  hour,
   onCycleTimeOfDay,
 }: SawakoSvgProps) {
   const [hoveredZone, setHoveredZone] = useState<"hand" | "foot" | null>(null);
@@ -345,6 +346,7 @@ export default function SawakoSvg({
           {/* ===================== LAYER 5: DYNAMIC REAL-TIME AMBIENT MOOD (MOON / DUSK / SUN) ===================== */}
           <SawakoAmbientMood
             timeOfDay={timeOfDay}
+            hour={hour}
             isDragging={isDragging}
             onCycleTimeOfDay={onCycleTimeOfDay}
           />

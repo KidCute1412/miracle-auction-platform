@@ -237,4 +237,23 @@ describe("SawakoMascot Component", () => {
     // Container should reflect translation offset from walking
     expect(container.style.transform).toMatch(/translate\(-?\d+(\.\d+)?px,\s*0px\)/);
   });
+
+  it("cycles through hourly celestial themes and speaks hourly lines when clicking weather group", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <SawakoMascot />
+      </MemoryRouter>,
+    );
+
+    const weatherGroup = container.querySelector("#weather-mood-interactive-group");
+    expect(weatherGroup).not.toBeNull();
+
+    act(() => {
+      fireEvent.click(weatherGroup!);
+    });
+
+    const bubble = screen.getByTestId("sawako-speech-bubble");
+    expect(bubble).toBeDefined();
+    expect((bubble.textContent || "").length).toBeGreaterThan(5);
+  });
 });

@@ -235,4 +235,50 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     expect(container.innerHTML).toContain("chibiBobbing_4.8s");
     expect(container.querySelector("#sawako-w-sitting-legs")).not.toBeNull();
   });
+
+  it("renders specialized 24-hour celestial themes when hour prop is provided", () => {
+    // Test hour 3: Shooting Star Comet
+    const { container: cometContainer } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        hour={3}
+      />
+    );
+    expect(cometContainer.querySelector("#archetype-comet-group")).not.toBeNull();
+    const cometMood = cometContainer.querySelector("[data-archetype='comet']");
+    expect(cometMood).not.toBeNull();
+    expect(cometMood?.getAttribute("data-hour")).toBe("3");
+
+    // Test hour 12: High Noon Solaris Crown
+    const { container: crownContainer } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        hour={12}
+      />
+    );
+    expect(crownContainer.querySelector("#sun-flame-crown")).not.toBeNull();
+    expect(crownContainer.querySelector("[data-hour='12']")).not.toBeNull();
+
+    // Test hour 18: Coral Twilight Dusk
+    const { container: duskContainer } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        hour={18}
+      />
+    );
+    expect(duskContainer.querySelector("#ambient-sunset-orb")).not.toBeNull();
+    expect(duskContainer.querySelector("[data-archetype='coral_dusk']")).not.toBeNull();
+  });
 });

@@ -22,6 +22,7 @@ import {
 } from "./sawako/sawako-dialogue";
 import { sawakoSound } from "./sawako/sawako-sound";
 import { useSawakoRoaming } from "./sawako/hooks/useSawakoRoaming";
+import { HOURLY_THEMES, getHourlyTheme } from "./sawako/sawako-hourly-theme";
 import { X, Volume2, VolumeX, Minus } from "lucide-react";
 
 const STORAGE_KEY = "sawako_mascot_prefs_v1";
@@ -67,6 +68,7 @@ export default function SawakoMascot() {
   const [isDragging, setIsDragging] = useState(false);
   const [isProtectingStar, setIsProtectingStar] = useState(false);
   const [isBeingPatted, setIsBeingPatted] = useState(false);
+  const [currentHour, setCurrentHour] = useState<number>(() => new Date().getHours());
   const [timeOfDay, setTimeOfDay] = useState<SawakoTimeOfDay>(getRealTimeOfDay);
   const [isSitting, setIsSitting] = useState(false);
   const scale = { x: 1, y: 1 };
@@ -123,6 +125,8 @@ export default function SawakoMascot() {
   // Sync ambient mood with real clock every 30 seconds
   useEffect(() => {
     const timer = setInterval(() => {
+      const h = new Date().getHours();
+      setCurrentHour(h);
       setTimeOfDay(getRealTimeOfDay());
     }, 30000);
     return () => clearInterval(timer);
@@ -309,42 +313,18 @@ export default function SawakoMascot() {
     [isBeingPatted, prefs.muted, say],
   );
 
-  // Click on weather mood to cycle through Day -> Sunset -> Night
+  // Click on weather mood to cycle through 24 hourly celestial moods
   const handleCycleTimeOfDay = useCallback(() => {
-    setTimeOfDay((prev) => {
-      if (prev === "night") {
-        say(
-          {
-            text: "Oa, trời sáng rồi! Ngày mới làm việc thật hiệu quả nhé Admin-san! ☀️",
-            expression: "happy",
-            symbol: "sparkle",
-          },
-          4500,
-        );
-        return "day";
-      }
-      if (prev === "day") {
-        say(
-          {
-            text: "Hoàng hôn buông xuống rồi... Admin-san hôm nay vất vả rồi nha! 🌇",
-            expression: "shy",
-            symbol: "heart",
-          },
-          4500,
-        );
-        return "sunset";
-      }
-      say(
-        {
-          text: "Đêm muộn rồi... Ánh trăng đẹp quá! Admin-san nhớ ngủ sớm kẻo mệt nhé 🌙",
-          expression: "sleepy",
-          symbol: "zzz",
-        },
-        4500,
-      );
-      return "night";
+    setCurrentHour((prevHour) => {
+      const nextHour = (prevHour + 1) % 24;
+      const theme = HOURLY_THEMES[nextHour] ?? getHourlyTheme(nextHour);
+      setTimeOfDay(theme.category);
+      say(theme.dialogue, 4500);
+      sawakoSound.setMuted(prefs.muted);
+      sawakoSound.playChime();
+      return nextHour;
     });
-  }, [say]);
+  }, [prefs.muted, say]);
 
   // Smart Route change awareness with prefix matching for 100% Admin pages
   useEffect(() => {
@@ -735,6 +715,7 @@ export default function SawakoMascot() {
             isBeingPatted={isBeingPatted}
             onHeadpatStroke={handleHeadpatStroke}
             timeOfDay={timeOfDay}
+            hour={currentHour}
             onCycleTimeOfDay={handleCycleTimeOfDay}
           />
         </div>
