@@ -68,6 +68,7 @@ export default function SawakoMascot() {
   const [isProtectingStar, setIsProtectingStar] = useState(false);
   const [isBeingPatted, setIsBeingPatted] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<SawakoTimeOfDay>(getRealTimeOfDay);
+  const [isSitting, setIsSitting] = useState(false);
   const scale = { x: 1, y: 1 };
 
   // Gentle autonomous roaming hook
@@ -82,6 +83,42 @@ export default function SawakoMascot() {
     isDragging,
     minimized: prefs.minimized,
   });
+
+  // Autonomous posture controller:
+  // - Never sits while walking or being dragged
+  // - When coming to a stop or after being dropped, stands for 4-6 seconds first ("đứng một lúc")
+  // - Only sits down on a low-frequency random roll (~30% chance)
+  const sittingDecisionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (sittingDecisionTimerRef.current) {
+      clearTimeout(sittingDecisionTimerRef.current);
+      sittingDecisionTimerRef.current = null;
+    }
+
+    // While walking, dragging, or minimized: stand up immediately!
+    if (isWalking || isDragging || prefs.minimized) {
+      setIsSitting(false);
+      return;
+    }
+
+    // Rule 1: Stand for 4 - 6 seconds first before deciding to sit down ("đứng một lúc rồi mới ngồi")
+    const standDelay = 4000 + Math.random() * 2000;
+
+    sittingDecisionTimerRef.current = setTimeout(() => {
+      // Rule 2: Low-frequency random roll (30% chance to sit down and sip tea, 70% stay standing)
+      const shouldSit = Math.random() < 0.3;
+      if (shouldSit) {
+        setIsSitting(true);
+      }
+    }, standDelay);
+
+    return () => {
+      if (sittingDecisionTimerRef.current) {
+        clearTimeout(sittingDecisionTimerRef.current);
+      }
+    };
+  }, [isWalking, isDragging, prefs.minimized]);
 
   // Sync ambient mood with real clock every 30 seconds
   useEffect(() => {
@@ -499,7 +536,6 @@ export default function SawakoMascot() {
     const onMouseUp = () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
         setIsDragging(false);
@@ -559,6 +595,9 @@ export default function SawakoMascot() {
       </div>
     );
   }
+
+  // Pure single-source-of-truth posture from autonomous controller
+  const isSippingTea = isSitting;
 
   const posX = (prefs.position?.x ?? 0) + roamingOffsetX;
   const posY = prefs.position?.y ?? 0;
@@ -686,8 +725,9 @@ export default function SawakoMascot() {
             isSpeaking={bubbleVisible && Boolean(currentLine)}
             scaleX={scale.x}
             scaleY={scale.y}
-            isWalking={isWalking}
+            isWalking={isSippingTea ? false : isWalking}
             walkDirection={walkDirection}
+            isSippingTea={isSippingTea}
             onPokeHand={handlePokeHand}
             onPokeFoot={handlePokeFoot}
             onPokeStarClip={handlePokeStarClip}
