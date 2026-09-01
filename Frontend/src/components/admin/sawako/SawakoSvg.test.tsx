@@ -283,4 +283,46 @@ describe("SawakoSvg Modular Puppet Rig", () => {
     expect(duskContainer.querySelector("#ambient-sunset-orb")).not.toBeNull();
     expect(duskContainer.querySelector("[data-archetype='coral_dusk']")).not.toBeNull();
   });
+
+  it("renders all 24 hours seamlessly with valid archetypes and data attributes", () => {
+    for (let h = 0; h < 24; h++) {
+      const { container } = render(
+        <SawakoSvg
+          expression="normal"
+          symbol="none"
+          eyeOffset={{ x: 0, y: 0 }}
+          isHovered={false}
+          isDragging={false}
+          hour={h}
+        />
+      );
+      const moodElement = container.querySelector(`[data-hour='${h}']`);
+      expect(moodElement).not.toBeNull();
+      expect(moodElement?.getAttribute("data-archetype")).toBeTruthy();
+    }
+  });
+
+  it("handles click on weather mood interactive group to cycle time of day and show burst effect", () => {
+    const handleCycleTime = vi.fn();
+    const { container } = render(
+      <SawakoSvg
+        expression="normal"
+        symbol="none"
+        eyeOffset={{ x: 0, y: 0 }}
+        isHovered={false}
+        isDragging={false}
+        hour={8}
+        onCycleTimeOfDay={handleCycleTime}
+      />
+    );
+
+    const weatherGroup = container.querySelector("#weather-mood-interactive-group");
+    expect(weatherGroup).not.toBeNull();
+    if (weatherGroup) {
+      fireEvent.click(weatherGroup);
+      expect(handleCycleTime).toHaveBeenCalledTimes(1);
+      expect(container.querySelector("#click-burst-effects")).not.toBeNull();
+    }
+  });
 });
+
