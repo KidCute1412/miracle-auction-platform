@@ -5,7 +5,7 @@ interface SawakoArmsProps {
   isHovered?: boolean;
   isDragging: boolean;
   hoveredZone?: "hand" | "foot" | null;
-  onPokeHand?: (e: React.MouseEvent) => void;
+  onPokeHand?: (e: React.MouseEvent | React.TouchEvent) => void;
   setHoveredZone: (zone: "hand" | "foot" | null) => void;
   isProtectingStar?: boolean;
   isWalking?: boolean;

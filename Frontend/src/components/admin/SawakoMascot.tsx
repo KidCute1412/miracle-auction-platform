@@ -242,7 +242,7 @@ export default function SawakoMascot() {
 
   // Interactive Hand Poke handler
   const handlePokeHand = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.MouseEvent | React.TouchEvent) => {
       e.stopPropagation();
       sawakoSound.setMuted(prefs.muted);
       sawakoSound.playChime();
@@ -254,7 +254,7 @@ export default function SawakoMascot() {
 
   // Interactive Foot Poke handler
   const handlePokeFoot = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.MouseEvent | React.TouchEvent) => {
       e.stopPropagation();
       sawakoSound.setMuted(prefs.muted);
       sawakoSound.playPoke();
@@ -266,7 +266,7 @@ export default function SawakoMascot() {
 
   // Interactive Star Clip Poke handler with startled gesture & hands protecting hair
   const handlePokeStarClip = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.MouseEvent | React.TouchEvent) => {
       e.stopPropagation();
       sawakoSound.setMuted(prefs.muted);
       sawakoSound.playChime();
@@ -286,8 +286,11 @@ export default function SawakoMascot() {
 
   // Interactive Headpat (Xoa đầu) handler with continuous stroke accumulator
   const handleHeadpatStroke = useCallback(
-    (e: React.MouseEvent) => {
-      const currentX = e.clientX;
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.stopPropagation();
+      const currentX = "touches" in e ? e.touches[0]?.clientX : e.clientX;
+      if (currentX === undefined) return;
+
       if (lastHeadpatMouseXRef.current !== null) {
         const deltaX = Math.abs(currentX - lastHeadpatMouseXRef.current);
         if (deltaX > 2 && deltaX < 50) {
@@ -312,7 +315,7 @@ export default function SawakoMascot() {
           sawakoSound.playChime();
         }
 
-        // Keep headpatting active while mouse moves, then speak sweet line when finished
+        // Keep headpatting active while mouse/touch moves, then speak sweet line when finished
         if (headpatActiveTimerRef.current) clearTimeout(headpatActiveTimerRef.current);
         headpatActiveTimerRef.current = setTimeout(() => {
           setIsBeingPatted(false);
@@ -554,6 +557,88 @@ export default function SawakoMascot() {
     window.addEventListener("mouseup", onMouseUp);
   };
 
+  const touchStartRef = useRef<{
+    startX: number;
+    startY: number;
+    initialPosX: number;
+    initialPosY: number;
+  }>({
+    startX: 0,
+    startY: 0,
+    initialPosX: 0,
+    initialPosY: 0,
+  });
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    // Don't drag if touching utility buttons
+    if ((e.target as HTMLElement).closest("button")) return;
+
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    const currentPosX = (prefs.position?.x ?? 0) + roamingOffsetX;
+    const currentPosY = prefs.position?.y ?? 0;
+
+    if (roamingOffsetX !== 0) {
+      resetRoaming();
+      updatePrefs((p) => ({
+        ...p,
+        position: { x: currentPosX, y: currentPosY },
+      }));
+    }
+
+    touchStartRef.current = {
+      startX,
+      startY,
+      initialPosX: currentPosX,
+      initialPosY: currentPosY,
+    };
+    isDraggingRef.current = false;
+    dragHandledRef.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const { startX, startY, initialPosX, initialPosY } = touchStartRef.current;
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+    const dist = Math.hypot(deltaX, deltaY);
+
+    // Only enter drag state if touch has genuinely moved beyond 8px threshold
+    if (!isDraggingRef.current && dist > 8) {
+      isDraggingRef.current = true;
+      dragHandledRef.current = true;
+      setIsDragging(true);
+
+      const dragLine = DRAG_LINES[Math.floor(Math.random() * DRAG_LINES.length)];
+      say(dragLine, 3000);
+    }
+
+    if (isDraggingRef.current) {
+      updatePrefs((p) => ({
+        ...p,
+        position: {
+          x: initialPosX + deltaX,
+          y: initialPosY + deltaY,
+        },
+      }));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      setIsDragging(false);
+
+      sawakoSound.setMuted(prefs.muted);
+
+      const dropLine = DROP_LINES[Math.floor(Math.random() * DROP_LINES.length)];
+      say(dropLine, 3500);
+    }
+  };
+
   // Minimized Cat-Paw Badge View
   if (prefs.minimized) {
     return (
@@ -617,7 +702,7 @@ export default function SawakoMascot() {
       role="complementary"
       aria-label="Sawako Admin Mascot Companion"
       data-testid="sawako-mascot-container"
-      className={`fixed bottom-4 right-4 z-40 flex flex-col items-end select-none ${
+      className={`fixed bottom-4 right-4 z-40 flex flex-col items-end select-none touch-none ${
         isHovered ? "opacity-100" : "opacity-95"
       }`}
       style={{
@@ -628,6 +713,10 @@ export default function SawakoMascot() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       {/* ===================== CUTE SPEECH BUBBLE ===================== */}
       {bubbleVisible && currentLine && (
@@ -666,7 +755,9 @@ export default function SawakoMascot() {
         {/* Quick Utility Control Toolbar docked snugly beside Sawako */}
         <div
           className={`absolute top-12 -left-1 sm:-left-2 z-30 flex flex-col items-center gap-1 rounded-full border border-pink-400/30 bg-zinc-950/75 p-1 backdrop-blur-md shadow-lg transition-all duration-200 ${
-            isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-1 pointer-events-none"
+            isHovered
+              ? "opacity-100 translate-x-0 pointer-events-auto"
+              : "opacity-85 translate-x-0 pointer-events-auto sm:opacity-0 sm:translate-x-1 sm:pointer-events-none"
           }`}
         >
           {/* Mute audio button */}

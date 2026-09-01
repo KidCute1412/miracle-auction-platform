@@ -8,8 +8,8 @@ interface SawakoBaseArtworkProps {
   isSippingTea?: boolean;
   isWalking?: boolean;
   walkDirection?: SawakoWalkDirection;
-  onPokeStarClip?: (e: React.MouseEvent) => void;
-  onHeadpatStroke?: (e: React.MouseEvent) => void;
+  onPokeStarClip?: (e: React.MouseEvent | React.TouchEvent) => void;
+  onHeadpatStroke?: (e: React.MouseEvent | React.TouchEvent) => void;
   children?: React.ReactNode;
 }
 
@@ -424,8 +424,9 @@ export function SawakoBaseArtwork({
           d="M 218 200 C 218 130, 368 118, 518 130 C 530 190, 520 280, 500 320 C 440 330, 300 330, 236 320 Z"
           fill="transparent"
           data-testid="sawako-headpat-target"
-          className="cursor-pointer pointer-events-auto"
+          className="cursor-pointer pointer-events-auto touch-none"
           onMouseMove={onHeadpatStroke}
+          onTouchMove={onHeadpatStroke}
           aria-label="Pet Sawako's hair"
         />
 

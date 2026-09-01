@@ -280,4 +280,63 @@ describe("SawakoMascot Component", () => {
     const realHour = new Date().getHours().toString();
     expect(weatherGroup?.getAttribute("data-hour")).toBe(realHour);
   });
+
+  it("supports dragging Sawako on mobile touchscreen via touch events", () => {
+    render(
+      <MemoryRouter>
+        <SawakoMascot />
+      </MemoryRouter>,
+    );
+
+    const container = screen.getByTestId("sawako-mascot-container");
+    expect(container).toBeDefined();
+
+    // Start touch
+    fireEvent.touchStart(container, {
+      touches: [{ clientX: 100, clientY: 100 }],
+    });
+
+    // Move touch beyond 8px threshold (deltaX: 50, deltaY: 20)
+    act(() => {
+      fireEvent.touchMove(container, {
+        touches: [{ clientX: 150, clientY: 120 }],
+      });
+    });
+
+    // Container should translate to new position
+    expect(container.style.transform).toContain("50px, 20px");
+
+    // End touch / drop
+    act(() => {
+      fireEvent.touchEnd(container);
+    });
+
+    const bubble = screen.getByTestId("sawako-speech-bubble");
+    expect(bubble).toBeDefined();
+  });
+
+  it("triggers sweet headpat reaction when stroking hair via touch events", () => {
+    render(
+      <MemoryRouter>
+        <SawakoMascot />
+      </MemoryRouter>,
+    );
+
+    const headpatTarget = screen.getByTestId("sawako-headpat-target");
+    expect(headpatTarget).toBeDefined();
+
+    act(() => {
+      fireEvent.touchMove(headpatTarget, { touches: [{ clientX: 200 }] });
+      fireEvent.touchMove(headpatTarget, { touches: [{ clientX: 240 }] });
+      fireEvent.touchMove(headpatTarget, { touches: [{ clientX: 280 }] });
+      fireEvent.touchMove(headpatTarget, { touches: [{ clientX: 320 }] });
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    const bubble = screen.getByTestId("sawako-speech-bubble");
+    expect(/warm|Kazehaya|praising|Headpats|hair/i.test(bubble.textContent || "")).toBe(true);
+  });
 });

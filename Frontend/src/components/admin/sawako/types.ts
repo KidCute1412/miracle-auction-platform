@@ -48,12 +48,12 @@ export interface SawakoSvgProps {
   isWalking?: boolean;
   walkDirection?: SawakoWalkDirection;
   isSippingTea?: boolean;
-  onPokeHand?: (e: React.MouseEvent) => void;
-  onPokeFoot?: (e: React.MouseEvent) => void;
-  onPokeStarClip?: (e: React.MouseEvent) => void;
+  onPokeHand?: (e: React.MouseEvent | React.TouchEvent) => void;
+  onPokeFoot?: (e: React.MouseEvent | React.TouchEvent) => void;
+  onPokeStarClip?: (e: React.MouseEvent | React.TouchEvent) => void;
   isProtectingStar?: boolean;
   isBeingPatted?: boolean;
-  onHeadpatStroke?: (e: React.MouseEvent) => void;
+  onHeadpatStroke?: (e: React.MouseEvent | React.TouchEvent) => void;
   timeOfDay?: SawakoTimeOfDay;
   hour?: number;
   onCycleTimeOfDay?: () => void;

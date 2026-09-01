@@ -7,7 +7,7 @@ interface SawakoFeetProps {
   walkDirection?: SawakoWalkDirection;
   isSippingTea?: boolean;
   hoveredZone?: "hand" | "foot" | null;
-  onPokeFoot?: (e: React.MouseEvent) => void;
+  onPokeFoot?: (e: React.MouseEvent | React.TouchEvent) => void;
   setHoveredZone: (zone: "hand" | "foot" | null) => void;
 }
 
