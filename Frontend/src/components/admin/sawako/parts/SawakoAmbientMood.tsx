@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { SawakoTimeOfDay } from "../types";
 import { getHourlyTheme, type HourlyTheme } from "../sawako-hourly-theme";
-import { AmbientStyles, renderHourlyArchetype } from "./ambient";
+import { AmbientStyles, HourlyArchetypeSwitch } from "./ambient";
 
 interface SawakoAmbientMoodProps {
   timeOfDay?: SawakoTimeOfDay;
@@ -135,7 +135,7 @@ export function SawakoAmbientMood({
             )}
 
             {/* ===================== LAYER 3: 24 HILARIOUS CARTOON CHIBI ARCHETYPES ===================== */}
-            {renderHourlyArchetype(theme.archetype, theme)}
+            <HourlyArchetypeSwitch archetype={theme.archetype} theme={theme} />
 
           </g>
         </g>

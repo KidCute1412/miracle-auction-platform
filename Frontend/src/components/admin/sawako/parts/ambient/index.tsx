@@ -1,8 +1,5 @@
 ﻿import React from "react";
 import type { CelestialArchetype, HourlyTheme } from "../../sawako-hourly-theme";
-export { AmbientStyles } from "./ambient-styles";
-export * from "./types";
-
 import { Hour00MidnightMoon } from "./Hour00MidnightMoon";
 import { Hour01CloudMoon } from "./Hour01CloudMoon";
 import { Hour02Nebula } from "./Hour02Nebula";
@@ -28,7 +25,12 @@ import { Hour21LanternMoon } from "./Hour21LanternMoon";
 import { Hour22AzureMoon } from "./Hour22AzureMoon";
 import { Hour23DreamMoon } from "./Hour23DreamMoon";
 
-export function renderHourlyArchetype(archetype: CelestialArchetype, theme: HourlyTheme): React.ReactNode {
+interface HourlyArchetypeSwitchProps {
+  archetype: CelestialArchetype;
+  theme: HourlyTheme;
+}
+
+export function HourlyArchetypeSwitch({ archetype, theme }: HourlyArchetypeSwitchProps) {
   switch (archetype) {
     case "midnight_moon":
       return <Hour00MidnightMoon theme={theme} />;
@@ -82,3 +84,6 @@ export function renderHourlyArchetype(archetype: CelestialArchetype, theme: Hour
       return <Hour08JoyfulSun theme={theme} />;
   }
 }
+
+export { AmbientStyles } from "./ambient-styles";
+export type { HourlyArchetypeProps } from "./types";
